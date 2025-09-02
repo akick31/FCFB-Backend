@@ -2,12 +2,14 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.RunoffType
+import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.service.fcfb.PlayService
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -110,4 +112,14 @@ class PlayController(
     fun getAllPlaysByDiscordTag(
         @RequestParam("discordTag") discordTag: String,
     ) = playService.getAllPlaysByDiscordTag(discordTag)
+
+    /**
+     * Update a play
+     * @param play
+     * @return
+     */
+    @PutMapping("")
+    fun updatePlay(
+        @RequestBody play: Play,
+    ) = playService.updatePlay(play)
 }

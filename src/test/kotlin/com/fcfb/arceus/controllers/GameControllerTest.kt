@@ -355,4 +355,15 @@ class GameControllerTest {
         assertEquals(ResponseEntity.ok(true), response)
         verify { gameService.deleteOngoingGame(channelId) }
     }
+
+    @Test
+    fun `updateGame should return updated game`() {
+        val mockGame = mockk<Game>()
+        every { gameService.updateGame(mockGame) } returns mockGame
+
+        val response = gameController.updateGame(mockGame)
+
+        assertEquals(ResponseEntity.ok(mockGame), response)
+        verify { gameService.updateGame(mockGame) }
+    }
 }

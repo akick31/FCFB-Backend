@@ -1042,6 +1042,77 @@ class GameService(
     }
 
     /**
+     * Update a game
+     * @param game
+     */
+    fun updateGame(game: Game): Game {
+        val existingGame = getGameById(game.gameId)
+
+        existingGame.apply {
+            this.gameId = game.gameId
+            this.homeTeam = game.homeTeam
+            this.awayTeam = game.awayTeam
+            this.homeCoaches = game.homeCoaches
+            this.awayCoaches = game.awayCoaches
+            this.homeCoachDiscordIds = game.homeCoachDiscordIds
+            this.awayCoachDiscordIds = game.awayCoachDiscordIds
+            this.homeOffensivePlaybook = game.homeOffensivePlaybook
+            this.awayOffensivePlaybook = game.awayOffensivePlaybook
+            this.homeDefensivePlaybook = game.homeDefensivePlaybook
+            this.awayDefensivePlaybook = game.awayDefensivePlaybook
+            this.homeScore = game.homeScore
+            this.awayScore = game.awayScore
+            this.possession = game.possession
+            this.quarter = game.quarter
+            this.clock = game.clock
+            this.ballLocation = game.ballLocation
+            this.down = game.down
+            this.yardsToGo = game.yardsToGo
+            this.tvChannel = game.tvChannel
+            this.homeTeamRank = game.homeTeamRank
+            this.homeWins = game.homeWins
+            this.homeLosses = game.homeLosses
+            this.awayTeamRank = game.awayTeamRank
+            this.awayWins = game.awayWins
+            this.awayLosses = game.awayLosses
+            this.subdivision = game.subdivision
+            this.timestamp = game.timestamp
+            this.winProbability = game.winProbability
+            this.season = game.season
+            this.week = game.week
+            this.waitingOn = game.waitingOn
+            this.numPlays = game.numPlays
+            this.homeTimeouts = game.homeTimeouts
+            this.awayTimeouts = game.awayTimeouts
+            this.coinTossWinner = game.coinTossWinner
+            this.coinTossChoice = game.coinTossChoice
+            this.overtimeCoinTossWinner = game.overtimeCoinTossWinner
+            this.overtimeCoinTossChoice = game.overtimeCoinTossChoice
+            this.homePlatform = game.homePlatform
+            this.homePlatformId = game.homePlatformId
+            this.awayPlatform = game.awayPlatform
+            this.awayPlatformId = game.awayPlatformId
+            this.lastMessageTimestamp = game.lastMessageTimestamp
+            this.gameTimer = game.gameTimer
+            this.gameWarning = game.gameWarning
+            this.currentPlayType = game.currentPlayType
+            this.currentPlayId = game.currentPlayId
+            this.clockStopped = game.clockStopped
+            this.requestMessageId = game.requestMessageId
+            this.gameStatus = game.gameStatus
+            this.gameType = game.gameType
+            this.gameMode = game.gameMode
+            this.overtimeHalf = game.overtimeHalf
+            this.closeGame = game.closeGame
+            this.closeGamePinged = game.closeGamePinged
+            this.upsetAlert = game.upsetAlert
+            this.upsetAlertPinged = game.upsetAlertPinged
+        }
+        saveGame(existingGame)
+        return existingGame
+    }
+
+    /**
      * Update the timeouts for a game
      */
     private fun updateTimeouts(

@@ -83,7 +83,7 @@ class EmailService(
             mailSender.send(message)
             Logger.debug("Email sent to $to")
         } catch (e: Exception) {
-            Logger.debug("{}", e)
+            Logger.error("{}", e)
         }
     }
 }

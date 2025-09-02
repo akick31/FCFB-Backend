@@ -10,8 +10,10 @@ import com.fcfb.arceus.service.fcfb.PlayService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -186,5 +188,59 @@ class PlayControllerTest {
         mockMvc.perform(get("/api/v1/arceus/play/1"))
             .andExpect(status().isInternalServerError)
             .andExpect(jsonPath("$.error").value("Play not found"))
+    }
+
+    @Test
+    fun `updatePlay should return updated play`() {
+        val mockPlay = createSamplePlay()
+        every { playService.updatePlay(any<Play>()) } returns mockPlay
+
+        val body = """
+            {
+              "playId": 1,
+              "gameId": 1,
+              "playNumber": 1,
+              "homeScore": 7,
+              "awayScore": 0,
+              "quarter": 1,
+              "clock": 420,
+              "ballLocation": 25,
+              "possession": "HOME",
+              "down": 1,
+              "yardsToGo": 10,
+              "defensiveNumber": "22",
+              "offensiveNumber": "10",
+              "defensiveSubmitter": "coachB",
+              "offensiveSubmitter": "coachA",
+              "playCall": "RUN",
+              "result": "TOUCHDOWN",
+              "actualResult": "TOUCHDOWN",
+              "yards": 75,
+              "playTime": 15,
+              "runoffTime": 0,
+              "winProbability": 0.6,
+              "winProbabilityAdded": 0.1,
+              "homeTeam": "Team1",
+              "awayTeam": "Team2",
+              "difference": 12,
+              "timeoutUsed": false,
+              "offensiveTimeoutCalled": false,
+              "defensiveTimeoutCalled": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3,
+              "playFinished": true,
+              "offensiveResponseSpeed": 5000,
+              "defensiveResponseSpeed": 3000
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            put("/api/v1/arceus/play")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body)
+        )
+            .andExpect(status().isOk)
+
+        verify { playService.updatePlay(any<Play>()) }
     }
 }

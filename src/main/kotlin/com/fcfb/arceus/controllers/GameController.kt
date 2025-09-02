@@ -153,6 +153,11 @@ class GameController(
         return ResponseEntity.noContent().build()
     }
 
+    @PutMapping("")
+    fun updateGame(
+        @RequestBody game: Game,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.updateGame(game))
+
     @DeleteMapping("")
     fun deleteOngoingGame(
         @RequestParam("channelId") channelId: ULong,

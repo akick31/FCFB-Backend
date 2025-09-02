@@ -93,12 +93,34 @@ class DelayOfGameMonitor(
     }
 
     /**
+     * Determine which team should be penalized for delay of game
+     * @param game The game object
+     * @return The team side that should be penalized
+     */
+    private fun getTeamToPenalize(game: Game): TeamSide {
+        // For overtime coin toss scenarios, check overtime coin toss winner
+        if (game.overtimeCoinTossWinner != null) {
+            return game.overtimeCoinTossWinner!!
+        }
+        // For regular coin toss scenarios, check regular coin toss winner
+        if (game.coinTossWinner != null) {
+            return game.coinTossWinner!!
+        }
+        // For non-coin toss scenarios, use the existing logic
+        return game.waitingOn
+    }
+
+    /**
      * Apply a delay of game to a game in pregame status
      * @param game
      */
     private fun applyPregameDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
-        if (game.waitingOn == TeamSide.HOME) {
+        
+        // Determine which team should be penalized (handles both regular and overtime coin toss)
+        val teamToPenalize = getTeamToPenalize(game)
+        
+        if (teamToPenalize == TeamSide.HOME) {
             game.awayScore += 8
             if (game.gameType != GameType.SCRIMMAGE) {
                 for (coach in game.homeCoachDiscordIds!!) {
@@ -131,7 +153,11 @@ class DelayOfGameMonitor(
      */
     private fun applyDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
-        if (game.waitingOn == TeamSide.HOME) {
+        
+        // Determine which team should be penalized (handles both regular and overtime coin toss)
+        val teamToPenalize = getTeamToPenalize(game)
+        
+        if (teamToPenalize == TeamSide.HOME) {
             game.currentPlayType = PlayType.KICKOFF
             game.possession = TeamSide.AWAY
             game.awayScore += 8
@@ -190,7 +216,11 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
-        if (game.waitingOn == TeamSide.HOME) {
+        
+        // Determine which team should be penalized (handles both regular and overtime coin toss)
+        val teamToPenalize = getTeamToPenalize(game)
+        
+        if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
             play.actualResult = ActualResult.DELAY_OF_GAME
         } else {
@@ -210,7 +240,11 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
-        if (game.waitingOn == TeamSide.HOME) {
+        
+        // Determine which team should be penalized (handles both regular and overtime coin toss)
+        val teamToPenalize = getTeamToPenalize(game)
+        
+        if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
             play.actualResult = ActualResult.DELAY_OF_GAME
         } else {

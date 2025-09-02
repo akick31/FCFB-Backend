@@ -282,6 +282,53 @@ class PlayService(
         }
 
     /**
+     * Update a play
+     * @param play
+     */
+    fun updatePlay(play: Play): Play {
+        val existingPlay = getPlayById(play.playId)
+
+        existingPlay.apply {
+            this.playId = play.playId
+            this.gameId = play.gameId
+            this.playNumber = play.playNumber
+            this.homeScore = play.homeScore
+            this.awayScore = play.awayScore
+            this.quarter = play.quarter
+            this.clock = play.clock
+            this.ballLocation = play.ballLocation
+            this.possession = play.possession
+            this.down = play.down
+            this.yardsToGo = play.yardsToGo
+            this.defensiveNumber = play.defensiveNumber
+            this.offensiveNumber = play.offensiveNumber
+            this.defensiveSubmitter = play.defensiveSubmitter
+            this.offensiveSubmitter = play.offensiveSubmitter
+            this.playCall = play.playCall
+            this.result = play.result
+            this.difference = play.difference
+            this.actualResult = play.actualResult
+            this.yards = play.yards
+            this.playTime = play.playTime
+            this.runoffTime = play.runoffTime
+            this.winProbability = play.winProbability
+            this.winProbabilityAdded = play.winProbabilityAdded
+            this.homeTeam = play.homeTeam
+            this.awayTeam = play.awayTeam
+            this.timeoutUsed = play.timeoutUsed
+            this.offensiveTimeoutCalled = play.offensiveTimeoutCalled
+            this.defensiveTimeoutCalled = play.defensiveTimeoutCalled
+            this.homeTimeouts = play.homeTimeouts
+            this.awayTimeouts = play.awayTimeouts
+            this.playFinished = play.playFinished
+            this.offensiveResponseSpeed = play.offensiveResponseSpeed
+            this.defensiveResponseSpeed = play.defensiveResponseSpeed
+        }
+        playRepository.save(existingPlay)
+        return existingPlay
+    }
+
+    /**
      * Get the number of delay of game instances for a home team
      * @param gameId
      */
