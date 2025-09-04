@@ -1386,4 +1386,16 @@ class GameStatsService(
         }
         return (successes.toDouble() / attempts.toDouble()) * 100
     }
+
+    /**
+     * Get all game stats for a specific team and season
+     * @param team Team name
+     * @param season Season number
+     * @return List of GameStats for the team in the specified season
+     */
+    fun getAllGameStatsForTeamAndSeason(team: String, season: Int): List<GameStats> {
+        return gameStatsRepository.findByTeamAndSeason(team, season)
+    }
+
+
 }

@@ -63,6 +63,8 @@ class GameService(
     private val seasonService: SeasonService,
     private val scheduleService: ScheduleService,
     private val gameSpecificationService: GameSpecificationService,
+    private val recordService: RecordService,
+    private val seasonStatsService: SeasonStatsService,
 ) {
     /**
      * Save a game state
@@ -745,6 +747,16 @@ class GameService(
             awayStats.gameStatus = GameStatus.FINAL
             gameStatsService.saveGameStats(homeStats)
             gameStatsService.saveGameStats(awayStats)
+            
+            // Check if any records were broken
+            recordService.checkAndUpdateRecordsForGame(game)
+            
+            // Update season stats for non-scrimmage games
+            if (game.gameType != GameType.SCRIMMAGE) {
+                seasonStatsService.updateSeasonStatsForGame(homeStats)
+                seasonStatsService.updateSeasonStatsForGame(awayStats)
+            }
+            
             Logger.info(
                 "Game ended.\n" +
                     "Game ID: ${game.gameId}\n" +

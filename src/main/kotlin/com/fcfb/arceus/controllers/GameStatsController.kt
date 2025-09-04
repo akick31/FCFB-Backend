@@ -1,6 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.service.fcfb.GameStatsService
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -10,20 +11,37 @@ import org.springframework.web.bind.annotation.RestController
 
 @CrossOrigin(origins = ["*"])
 @RestController
-@RequestMapping("${ApiConstants.FULL_PATH}/game_stats")
+@RequestMapping("${ApiConstants.FULL_PATH}/game-stats")
 class GameStatsController(
     private var gameStatsService: GameStatsService,
 ) {
     /**
-     * Get a game's stats by its game id
-     * @param gameId
-     * @return
+     * Get game stats by game id and team, or get all game stats for a team and season
+     * @param gameId Game ID (optional)
+     * @param team Team name
+     * @param season Season number (optional)
+     * @return GameStats or List of GameStats
      */
     @GetMapping("")
-    fun getGameStatsByIdAndTeam(
-        @RequestParam("gameId") gameId: Int,
-        @RequestParam("team") team: String,
-    ) = gameStatsService.getGameStatsByIdAndTeam(gameId, team)
+    fun getGameStats(
+        @RequestParam(required = false) gameId: Int?,
+        @RequestParam team: String,
+        @RequestParam(required = false) season: Int?
+    ): ResponseEntity<Any> {
+        return when {
+            gameId != null -> {
+                val gameStats = gameStatsService.getGameStatsByIdAndTeam(gameId, team)
+                ResponseEntity.ok(gameStats)
+            }
+            season != null -> {
+                val gameStats = gameStatsService.getAllGameStatsForTeamAndSeason(team, season)
+                ResponseEntity.ok(gameStats)
+            }
+            else -> {
+                ResponseEntity.badRequest().body("Either gameId or season parameter is required")
+            }
+        }
+    }
 
     /**
      * Generate game stats for a game

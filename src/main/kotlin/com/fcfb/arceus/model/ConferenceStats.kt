@@ -1,0 +1,374 @@
+package com.fcfb.arceus.model
+
+import com.fcfb.arceus.enums.team.Conference
+import com.fcfb.arceus.enums.team.Subdivision
+import javax.persistence.Basic
+import javax.persistence.Column
+import javax.persistence.Entity
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType
+import javax.persistence.Id
+import javax.persistence.Table
+
+@Entity
+@Table(name = "conference_stats")
+class ConferenceStats(
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    var id: Int = 0,
+    
+    @Enumerated(EnumType.STRING)
+    @Basic
+    @Column(name = "subdivision", nullable = false)
+    var subdivision: Subdivision,
+    
+    @Enumerated(EnumType.STRING)
+    @Basic
+    @Column(name = "conference", nullable = false)
+    var conference: Conference,
+    
+    @Basic
+    @Column(name = "season_number", nullable = false)
+    var seasonNumber: Int,
+    
+    @Basic
+    @Column(name = "total_teams")
+    var totalTeams: Int = 0,
+    
+    @Basic
+    @Column(name = "total_games")
+    var totalGames: Int = 0,
+    
+    // Passing Stats (League Totals)
+    @Basic
+    @Column(name = "pass_attempts")
+    var passAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "pass_completions")
+    var passCompletions: Int = 0,
+    
+    @Basic
+    @Column(name = "pass_completion_percentage")
+    var passCompletionPercentage: Double? = null,
+    
+    @Basic
+    @Column(name = "pass_yards")
+    var passYards: Int = 0,
+    
+    @Basic
+    @Column(name = "longest_pass")
+    var longestPass: Int = 0,
+    
+    @Basic
+    @Column(name = "pass_touchdowns")
+    var passTouchdowns: Int = 0,
+    
+    @Basic
+    @Column(name = "pass_successes")
+    var passSuccesses: Int = 0,
+    
+    @Basic
+    @Column(name = "pass_success_percentage")
+    var passSuccessPercentage: Double? = null,
+    
+    // Rushing Stats (League Totals)
+    @Basic
+    @Column(name = "rush_attempts")
+    var rushAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "rush_successes")
+    var rushSuccesses: Int = 0,
+    
+    @Basic
+    @Column(name = "rush_success_percentage")
+    var rushSuccessPercentage: Double? = null,
+    
+    @Basic
+    @Column(name = "rush_yards")
+    var rushYards: Int = 0,
+    
+    @Basic
+    @Column(name = "longest_run")
+    var longestRun: Int = 0,
+    
+    @Basic
+    @Column(name = "rush_touchdowns")
+    var rushTouchdowns: Int = 0,
+    
+    // Total Offense (League Totals)
+    @Basic
+    @Column(name = "total_yards")
+    var totalYards: Int = 0,
+    
+    @Basic
+    @Column(name = "average_yards_per_play")
+    var averageYardsPerPlay: Double? = null,
+    
+    @Basic
+    @Column(name = "first_downs")
+    var firstDowns: Int = 0,
+    
+    // Sacks (League Totals)
+    @Basic
+    @Column(name = "sacks_allowed")
+    var sacksAllowed: Int = 0,
+    
+    @Basic
+    @Column(name = "sacks_forced")
+    var sacksForced: Int = 0,
+    
+    // Turnovers (League Totals)
+    @Basic
+    @Column(name = "interceptions_lost")
+    var interceptionsLost: Int = 0,
+    
+    @Basic
+    @Column(name = "interceptions_forced")
+    var interceptionsForced: Int = 0,
+    
+    @Basic
+    @Column(name = "fumbles_lost")
+    var fumblesLost: Int = 0,
+    
+    @Basic
+    @Column(name = "fumbles_forced")
+    var fumblesForced: Int = 0,
+    
+    @Basic
+    @Column(name = "turnovers_lost")
+    var turnoversLost: Int = 0,
+    
+    @Basic
+    @Column(name = "turnovers_forced")
+    var turnoversForced: Int = 0,
+    
+    @Basic
+    @Column(name = "turnover_differential")
+    var turnoverDifferential: Int = 0,
+    
+    @Basic
+    @Column(name = "turnover_touchdowns_lost")
+    var turnoverTouchdownsLost: Int = 0,
+    
+    @Basic
+    @Column(name = "turnover_touchdowns_forced")
+    var turnoverTouchdownsForced: Int = 0,
+    
+    @Basic
+    @Column(name = "pick_sixes_thrown")
+    var pickSixesThrown: Int = 0,
+    
+    @Basic
+    @Column(name = "pick_sixes_forced")
+    var pickSixesForced: Int = 0,
+    
+    @Basic
+    @Column(name = "fumble_return_tds_committed")
+    var fumbleReturnTdsCommitted: Int = 0,
+    
+    @Basic
+    @Column(name = "fumble_return_tds_forced")
+    var fumbleReturnTdsForced: Int = 0,
+    
+    // Field Goals (League Totals)
+    @Basic
+    @Column(name = "field_goal_made")
+    var fieldGoalMade: Int = 0,
+    
+    @Basic
+    @Column(name = "field_goal_attempts")
+    var fieldGoalAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "field_goal_percentage")
+    var fieldGoalPercentage: Double? = null,
+    
+    @Basic
+    @Column(name = "longest_field_goal")
+    var longestFieldGoal: Int = 0,
+    
+    @Basic
+    @Column(name = "blocked_opponent_field_goals")
+    var blockedOpponentFieldGoals: Int = 0,
+    
+    @Basic
+    @Column(name = "field_goal_touchdown")
+    var fieldGoalTouchdown: Int = 0,
+    
+    // Punting (League Totals)
+    @Basic
+    @Column(name = "punts_attempted")
+    var puntsAttempted: Int = 0,
+    
+    @Basic
+    @Column(name = "longest_punt")
+    var longestPunt: Int = 0,
+    
+    @Basic
+    @Column(name = "average_punt_length")
+    var averagePuntLength: Double? = null,
+    
+    @Basic
+    @Column(name = "blocked_opponent_punt")
+    var blockedOpponentPunt: Int = 0,
+    
+    @Basic
+    @Column(name = "punt_return_td")
+    var puntReturnTd: Int = 0,
+    
+    @Basic
+    @Column(name = "punt_return_td_percentage")
+    var puntReturnTdPercentage: Double? = null,
+    
+    // Kickoffs (League Totals)
+    @Basic
+    @Column(name = "number_of_kickoffs")
+    var numberOfKickoffs: Int = 0,
+    
+    @Basic
+    @Column(name = "onside_attempts")
+    var onsideAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "onside_success")
+    var onsideSuccess: Int = 0,
+    
+    @Basic
+    @Column(name = "onside_success_percentage")
+    var onsideSuccessPercentage: Double? = null,
+    
+    @Basic
+    @Column(name = "normal_kickoff_attempts")
+    var normalKickoffAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "touchbacks")
+    var touchbacks: Int = 0,
+    
+    @Basic
+    @Column(name = "touchback_percentage")
+    var touchbackPercentage: Double? = null,
+    
+    @Basic
+    @Column(name = "kick_return_td")
+    var kickReturnTd: Int = 0,
+    
+    @Basic
+    @Column(name = "kick_return_td_percentage")
+    var kickReturnTdPercentage: Double? = null,
+    
+    // Game Flow (League Totals)
+    @Basic
+    @Column(name = "number_of_drives")
+    var numberOfDrives: Int = 0,
+    
+    @Basic
+    @Column(name = "time_of_possession")
+    var timeOfPossession: Int = 0,
+    
+    // Touchdowns (League Totals)
+    @Basic
+    @Column(name = "touchdowns")
+    var touchdowns: Int = 0,
+    
+    // Down Conversions (League Totals)
+    @Basic
+    @Column(name = "third_down_conversion_success")
+    var thirdDownConversionSuccess: Int = 0,
+    
+    @Basic
+    @Column(name = "third_down_conversion_attempts")
+    var thirdDownConversionAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "third_down_conversion_percentage")
+    var thirdDownConversionPercentage: Double? = null,
+    
+    @Basic
+    @Column(name = "fourth_down_conversion_success")
+    var fourthDownConversionSuccess: Int = 0,
+    
+    @Basic
+    @Column(name = "fourth_down_conversion_attempts")
+    var fourthDownConversionAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "fourth_down_conversion_percentage")
+    var fourthDownConversionPercentage: Double? = null,
+    
+    // Game Control (League Totals)
+    @Basic
+    @Column(name = "largest_lead")
+    var largestLead: Int = 0,
+    
+    @Basic
+    @Column(name = "largest_deficit")
+    var largestDeficit: Int = 0,
+    
+    // Red Zone (League Totals)
+    @Basic
+    @Column(name = "red_zone_attempts")
+    var redZoneAttempts: Int = 0,
+    
+    @Basic
+    @Column(name = "red_zone_successes")
+    var redZoneSuccesses: Int = 0,
+    
+    @Basic
+    @Column(name = "red_zone_success_percentage")
+    var redZoneSuccessPercentage: Double? = null,
+    
+    @Basic
+    @Column(name = "red_zone_percentage")
+    var redZonePercentage: Double? = null,
+    
+    // Special Teams (League Totals)
+    @Basic
+    @Column(name = "safeties_forced")
+    var safetiesForced: Int = 0,
+    
+    @Basic
+    @Column(name = "safeties_committed")
+    var safetiesCommitted: Int = 0,
+    
+    // Performance Metrics (League Averages)
+    @Basic
+    @Column(name = "average_offensive_diff")
+    var averageOffensiveDiff: Double? = null,
+    
+    @Basic
+    @Column(name = "average_defensive_diff")
+    var averageDefensiveDiff: Double? = null,
+    
+    @Basic
+    @Column(name = "average_offensive_special_teams_diff")
+    var averageOffensiveSpecialTeamsDiff: Double? = null,
+    
+    @Basic
+    @Column(name = "average_defensive_special_teams_diff")
+    var averageDefensiveSpecialTeamsDiff: Double? = null,
+    
+    @Basic
+    @Column(name = "average_diff")
+    var averageDiff: Double? = null,
+    
+    @Basic
+    @Column(name = "average_response_speed")
+    var averageResponseSpeed: Double? = null,
+    
+    // Additional League Info
+    @Basic
+    @Column(name = "last_modified_ts")
+    var lastModifiedTs: String? = null
+) {
+    constructor() : this(
+        subdivision = Subdivision.FBS,
+        conference = Conference.ACC,
+        seasonNumber = 0
+    )
+}

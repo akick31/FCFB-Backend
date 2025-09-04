@@ -23,4 +23,10 @@ interface GameStatsRepository : CrudRepository<GameStats, Int> {
     fun findByGameId(gameId: Int): List<GameStats>
 
     fun findByTeam(team: String): List<GameStats>
+
+    fun findByTeamAndSeason(team: String, season: Int): List<GameStats>
+    
+    fun findAllByOrderBySeasonDescGameIdAsc(): List<GameStats>
+    
+    fun findBySeasonOrderByGameIdAsc(season: Int): List<GameStats>
 }
