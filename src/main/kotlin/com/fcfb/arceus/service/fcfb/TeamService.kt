@@ -104,7 +104,7 @@ class TeamService(
      * @param id
      */
     fun getTeamById(id: Int) =
-        teamRepository.findById(id)
+        teamRepository.findById(id).orElse(null)
             ?: throw TeamNotFoundException("Team not found with ID: $id")
 
     /**

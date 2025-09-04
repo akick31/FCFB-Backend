@@ -66,6 +66,7 @@ class GameService(
     private val recordService: RecordService,
     private val seasonStatsService: SeasonStatsService,
     private val winProbabilityService: WinProbabilityService,
+    private val vegasOddsService: VegasOddsService,
 ) {
     /**
      * Save a game state
@@ -127,6 +128,9 @@ class GameService(
 
             val (season, currentWeek) = getCurrentSeasonAndWeek(startRequest, week)
             val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
+
+            // Calculate Vegas odds for the game
+            val vegasOdds = vegasOddsService.calculateVegasOdds(homeTeamData, awayTeamData)
 
             // Create and save the Game object and Stats object
             val newGame =
@@ -190,6 +194,8 @@ class GameService(
                             closeGamePinged = false,
                             upsetAlert = false,
                             upsetAlertPinged = false,
+                            homeVegasSpread = vegasOdds.homeSpread,
+                            awayVegasSpread = vegasOdds.awaySpread,
                         ),
                     )
                 }

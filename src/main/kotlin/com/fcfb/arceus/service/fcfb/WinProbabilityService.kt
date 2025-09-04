@@ -1,7 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
-import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
@@ -10,7 +9,7 @@ import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.util.ml.XGBoostPredictor
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import kotlin.math.*
+import kotlin.math.pow
 
 @Service
 class WinProbabilityService(
@@ -43,7 +42,7 @@ class WinProbabilityService(
             val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
             val down = play.down
             val yardsToGo = play.yardsToGo
-            val ballLocation = 100-play.ballLocation
+            val ballLocation = play.ballLocation
             val timeoutDiff = play.homeTimeouts - play.awayTimeouts
             val quarter = play.quarter
             
