@@ -167,6 +167,8 @@ class TeamService(
                         0,
                         false,
                         true,
+                        1500.0,
+                        1500.0,
                     ),
                 )
             return newTeam

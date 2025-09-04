@@ -83,6 +83,8 @@ class TeamControllerTest {
             nationalChampionshipLosses = 0,
             isTaken = false,
             active = true,
+            currentElo = 1500.0,
+            overallElo = 1500.0,
         )
     }
 

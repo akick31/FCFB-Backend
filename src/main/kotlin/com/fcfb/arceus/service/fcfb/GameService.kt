@@ -65,6 +65,7 @@ class GameService(
     private val gameSpecificationService: GameSpecificationService,
     private val recordService: RecordService,
     private val seasonStatsService: SeasonStatsService,
+    private val winProbabilityService: WinProbabilityService,
 ) {
     /**
      * Save a game state
@@ -421,6 +422,39 @@ class GameService(
             updateNormalPlayValues(game, clock, possession, quarter, ballLocation, down, yardsToGo, waitingOn)
         }
 
+        // Calculate Win Probability
+        try {
+            val homeTeam = teamService.getTeamByName(game.homeTeam)
+            val awayTeam = teamService.getTeamByName(game.awayTeam)
+            
+            // Initialize ELO ratings if needed
+            winProbabilityService.initializeEloRatings(homeTeam)
+            winProbabilityService.initializeEloRatings(awayTeam)
+            
+            // Calculate win probability
+            val winProbability = winProbabilityService.calculateWinProbability(game, play, homeTeam, awayTeam)
+            play.winProbability = winProbability
+            
+            // Calculate win probability added
+            val previousWinProbability = game.winProbability ?: 0.5
+            
+            // Get the previous play for proper WPA calculation
+            val previousPlay = try {
+                val allPlays = playRepository.findByGameId(game.gameId)
+                allPlays.find { it.playNumber == play.playNumber - 1 }
+            } catch (e: Exception) {
+                null
+            }
+            
+            val winProbabilityAdded = winProbabilityService.calculateWinProbabilityAdded(game, play, homeTeam, awayTeam, previousWinProbability, previousPlay)
+            play.winProbabilityAdded = winProbabilityAdded
+            
+        } catch (e: Exception) {
+            Logger.error("Error calculating win probability: ${e.message}")
+            play.winProbability = 0.5
+            play.winProbabilityAdded = 0.0
+        }
+
         // Update everything else
         game.homeScore = homeScore
         game.awayScore = awayScore
@@ -704,6 +738,17 @@ class GameService(
             if (game.gameType != GameType.SCRIMMAGE) {
                 teamService.updateTeamWinsAndLosses(game)
                 userService.updateUserWinsAndLosses(game)
+                
+                // Update ELO ratings
+                try {
+                    val homeTeam = teamService.getTeamByName(game.homeTeam)
+                    val awayTeam = teamService.getTeamByName(game.awayTeam)
+                    winProbabilityService.updateEloRatings(game, homeTeam, awayTeam)
+                    teamService.updateTeam(homeTeam)
+                    teamService.updateTeam(awayTeam)
+                } catch (e: Exception) {
+                    Logger.error("Error updating ELO ratings: ${e.message}")
+                }
 
                 val homeUsers =
                     try {
@@ -1452,7 +1497,7 @@ class GameService(
      * @param id
      * @return
      */
-    fun getGameById(id: Int) = gameRepository.getGameById(id) ?: throw GameNotFoundException("No game found with ID: $id")
+    fun getGameById(id: Int): Game = gameRepository.getGameById(id) ?: throw GameNotFoundException("No game found with ID: $id")
 
     /**
      * Get filtered games
