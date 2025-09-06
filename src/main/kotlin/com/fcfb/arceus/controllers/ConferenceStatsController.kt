@@ -40,50 +40,6 @@ class ConferenceStatsController(
         )
 
     /**
-     * Get all conference stats
-     */
-    @GetMapping("/all")
-    fun getAllConferenceStats() = conferenceStatsService.getAllConferenceStats()
-
-    /**
-     * Get conference stats for a specific subdivision, conference, and season
-     */
-    @GetMapping("")
-    fun getConferenceStatsBySubdivisionAndConferenceAndSeason(
-        @RequestParam subdivision: Subdivision,
-        @RequestParam conference: Conference,
-        @RequestParam seasonNumber: Int,
-    ) = conferenceStatsService.getConferenceStatsBySubdivisionAndConferenceAndSeason(
-        subdivision,
-        conference,
-        seasonNumber,
-    )
-
-    /**
-     * Get all conference stats for a specific subdivision
-     */
-    @GetMapping("/subdivision")
-    fun getConferenceStatsBySubdivision(
-        @RequestParam subdivision: Subdivision,
-    ) = conferenceStatsService.getConferenceStatsBySubdivision(subdivision)
-
-    /**
-     * Get all conference stats for a specific conference
-     */
-    @GetMapping("/conference")
-    fun getConferenceStatsByConference(
-        @RequestParam conference: Conference,
-    ) = conferenceStatsService.getConferenceStatsByConference(conference)
-
-    /**
-     * Get all conference stats for a specific season
-     */
-    @GetMapping("/season")
-    fun getConferenceStatsBySeason(
-        @RequestParam seasonNumber: Int,
-    ) = conferenceStatsService.getConferenceStatsBySeason(seasonNumber)
-
-    /**
      * Generate all conference stats (recalculate all conference stats)
      */
     @PostMapping("/generate/all")

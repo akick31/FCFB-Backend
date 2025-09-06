@@ -44,45 +44,6 @@ class ConferenceStatsService(
     }
 
     /**
-     * Get all conference stats
-     */
-    fun getAllConferenceStats(): List<ConferenceStats> {
-        return conferenceStatsRepository.findAllByOrderBySeasonNumberDescSubdivisionAsc()
-    }
-
-    /**
-     * Get conference stats for a specific subdivision, conference, and season
-     */
-    fun getConferenceStatsBySubdivisionAndConferenceAndSeason(
-        subdivision: Subdivision,
-        conference: Conference,
-        seasonNumber: Int,
-    ): ConferenceStats? {
-        return conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)
-    }
-
-    /**
-     * Get all conference stats for a specific subdivision
-     */
-    fun getConferenceStatsBySubdivision(subdivision: Subdivision): List<ConferenceStats> {
-        return conferenceStatsRepository.findBySubdivisionOrderBySeasonNumberDesc(subdivision)
-    }
-
-    /**
-     * Get all conference stats for a specific conference
-     */
-    fun getConferenceStatsByConference(conference: Conference): List<ConferenceStats> {
-        return conferenceStatsRepository.findByConferenceOrderBySeasonNumberDesc(conference)
-    }
-
-    /**
-     * Get all conference stats for a specific season
-     */
-    fun getConferenceStatsBySeason(seasonNumber: Int): List<ConferenceStats> {
-        return conferenceStatsRepository.findBySeasonNumberOrderBySubdivisionAsc(seasonNumber)
-    }
-
-    /**
      * Generate all conference stats (recalculate all conference stats)
      */
     fun generateAllConferenceStats() {

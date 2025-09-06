@@ -181,43 +181,44 @@ class ChartService(
         homeTeam: Team,
         awayTeam: Team,
     ): BufferedImage {
-        val width = 800
-        val height = 600
-        val padding = 60
+        val width = 1000 // Wider
+        val height = 510 // 15% thinner (600 * 0.85 = 510)
+        val padding = 80 // More padding for cleaner look
         val chartWidth = width - (padding * 2)
         val chartHeight = height - (padding * 2)
 
         val image = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
         val g: Graphics2D = image.createGraphics()
 
-        // Enable anti-aliasing
+        // Enable anti-aliasing for crisp graphics
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
 
-        // White background
+        // Clean white background
         g.color = Color.WHITE
         g.fillRect(0, 0, width, height)
 
-        // Black border
-        g.color = Color.BLACK
-        g.stroke = BasicStroke(2f)
+        // Subtle border for ESPN-like look
+        g.color = Color(220, 220, 220) // Light gray border
+        g.stroke = BasicStroke(1f)
         g.drawRect(padding, padding, chartWidth, chartHeight)
 
-        // Title
-        g.font = Font("Arial", Font.BOLD, 20)
-        g.color = Color.BLACK
+        // ESPN-style title with better typography
+        g.font = Font("Arial", Font.BOLD, 24)
+        g.color = Color(51, 51, 51) // Dark gray instead of black
         val title = "${game.awayTeam} @ ${game.homeTeam} - Win Probability"
         val titleWidth = g.fontMetrics.stringWidth(title)
-        g.drawString(title, (width - titleWidth) / 2, 30)
+        g.drawString(title, (width - titleWidth) / 2, 40)
 
         // Get team colors
         val homeColor = parseColor(homeTeam.primaryColor ?: "#000000")
         val awayColor = parseColor(awayTeam.primaryColor ?: "#000000")
 
-        // Draw 50% line
+        // Draw 50% line with ESPN-style dashed line
         val centerY = padding + (chartHeight / 2)
-        g.color = Color.GRAY
-        g.stroke = BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, floatArrayOf(5f, 5f), 0f)
+        g.color = Color(150, 150, 150) // Medium gray
+        g.stroke = BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, floatArrayOf(8f, 4f), 0f)
         g.drawLine(padding, centerY, padding + chartWidth, centerY)
 
         // Draw quarter divisions
@@ -318,21 +319,24 @@ class ChartService(
         chartWidth: Int,
         chartHeight: Int,
     ) {
-        g.stroke = BasicStroke(3f)
+        g.stroke = BasicStroke(4f) // Thicker line for better visibility
 
         val totalPlays = plays.size
         if (totalPlays < 2) return
 
+        // Get win probabilities for the entire game using the service method
+        val winProbabilitiesResponse = winProbabilityService.getWinProbabilitiesForGame(plays[0].gameId, plays)
+        val winProbabilities = winProbabilitiesResponse.plays
+
         for (i in 0 until totalPlays - 1) {
-            // Get win probabilities for each team using the service method
-            // This ensures consistent calculation logic across the application
-            val (homeWinProb1, awayWinProb1) = winProbabilityService.getWinProbabilityForEachTeam(plays[i])
-            val (homeWinProb2, awayWinProb2) = winProbabilityService.getWinProbabilityForEachTeam(plays[i + 1])
+            // Get win probabilities from the response
+            val play1 = winProbabilities[i]
+            val play2 = winProbabilities[i + 1]
 
             // Use home team win probability for the chart (0.0 to 1.0)
             // Above 0.5 = home team advantage, below 0.5 = away team advantage
-            var winProb1 = homeWinProb1
-            var winProb2 = homeWinProb2
+            var winProb1 = play1.homeTeamWinProbability
+            var winProb2 = play2.homeTeamWinProbability
 
             // Normalize win probability values to ensure they're between 0.0 and 1.0
             // Handle case where win probability might be stored as percentage (0-100)
@@ -348,7 +352,7 @@ class ChartService(
             val y1 = padding + chartHeight - ((winProb1 * chartHeight).toInt())
             val y2 = padding + chartHeight - ((winProb2 * chartHeight).toInt())
 
-            // Draw line segment by segment, changing color based on possession and win probability
+            // Draw line segment with simple color scheme based on home team win probability
             drawWinProbabilitySegment(
                 g,
                 x1,
@@ -357,8 +361,6 @@ class ChartService(
                 y2,
                 winProb1,
                 winProb2,
-                plays[i].possession,
-                plays[i + 1].possession,
                 homeColor,
                 awayColor,
             )
@@ -366,7 +368,7 @@ class ChartService(
     }
 
     /**
-     * Draw a segment of the win probability line, changing color based on possession and win probability
+     * Draw a segment of the win probability line with color change exactly at 50%
      */
     private fun drawWinProbabilitySegment(
         g: Graphics2D,
@@ -376,35 +378,32 @@ class ChartService(
         y2: Int,
         winProb1: Double,
         winProb2: Double,
-        possession1: com.fcfb.arceus.enums.team.TeamSide,
-        possession2: com.fcfb.arceus.enums.team.TeamSide,
         homeColor: Color,
         awayColor: Color,
     ) {
-        // Win probability is calculated from the perspective of whichever team has possession
-        // > 0.5 = possessing team advantage, <= 0.5 = defending team advantage
+        // Simple color scheme: > 50% = home team color, <= 50% = away team color
+        // Change color exactly at 50% line
 
-        // Determine colors based on possession
-        val color1 = if (possession1 == com.fcfb.arceus.enums.team.TeamSide.HOME) homeColor else awayColor
-        val color2 = if (possession2 == com.fcfb.arceus.enums.team.TeamSide.HOME) homeColor else awayColor
+        // Check if the line crosses the 50% threshold
+        val crosses50 = (winProb1 > 0.5 && winProb2 <= 0.5) || (winProb1 <= 0.5 && winProb2 > 0.5)
 
-        // If both points have the same possession and are on the same side of 50%, use single color
-        if (possession1 == possession2 && ((winProb1 > 0.5 && winProb2 > 0.5) || (winProb1 <= 0.5 && winProb2 <= 0.5))) {
-            g.color = color1
-            g.drawLine(x1, y1, x2, y2)
-        } else {
-            // Line crosses 50% or possession changes, calculate exact crossing point
+        if (crosses50) {
+            // Calculate exact crossing point
             val crossingPoint = (0.5 - winProb1) / (winProb2 - winProb1)
             val crossingX = x1 + (crossingPoint * (x2 - x1)).toInt()
             val crossingY = y1 + (crossingPoint * (y2 - y1)).toInt()
 
-            // Draw first half
-            g.color = color1
+            // Draw first segment with appropriate color
+            g.color = if (winProb1 > 0.5) homeColor else awayColor
             g.drawLine(x1, y1, crossingX, crossingY)
 
-            // Draw second half
-            g.color = color2
+            // Draw second segment with opposite color
+            g.color = if (winProb2 > 0.5) homeColor else awayColor
             g.drawLine(crossingX, crossingY, x2, y2)
+        } else {
+            // No crossing, use single color for entire segment
+            g.color = if (winProb1 > 0.5) homeColor else awayColor
+            g.drawLine(x1, y1, x2, y2)
         }
     }
 
@@ -449,21 +448,28 @@ class ChartService(
         homeTeam: Team,
         awayTeam: Team,
     ) {
-        g.color = Color.BLACK
-        g.stroke = BasicStroke(2f)
+        // Clean axes with subtle styling
+        g.color = Color(200, 200, 200) // Light gray axes
+        g.stroke = BasicStroke(1f)
 
         // Y-axis (Win Probability)
         g.drawLine(padding, padding, padding, padding + chartHeight)
         g.drawLine(padding, padding + chartHeight, padding + chartWidth, padding + chartHeight)
 
-        // Draw team logos instead of Y-axis labels
-        drawTeamLogo(g, homeTeam, 10, padding + 20, 40, 40)
-        drawTeamLogo(g, awayTeam, 10, padding + chartHeight - 60, 40, 40)
+        // Draw team logos with better quality
+        drawTeamLogo(g, homeTeam, 15, padding + 15, 50, 50) // Larger logos
+        drawTeamLogo(g, awayTeam, 15, padding + chartHeight - 65, 50, 50)
 
-        // X-axis label
-        g.font = Font("Arial", Font.BOLD, 14)
-        g.color = Color.BLACK
-        g.drawString("Play Number", padding + chartWidth / 2 - 50, padding + chartHeight + 40)
+        // Add subtle grid lines for better readability
+        g.color = Color(240, 240, 240) // Very light gray grid
+        g.stroke = BasicStroke(0.5f)
+
+        // Horizontal grid lines at 25%, 50%, 75%
+        val quarterHeight = chartHeight / 4
+        for (i in 1..3) {
+            val y = padding + (quarterHeight * i)
+            g.drawLine(padding, y, padding + chartWidth, y)
+        }
     }
 
     /**
@@ -481,19 +487,26 @@ class ChartService(
         if (logoUrl != null) {
             try {
                 val logoImage = ImageIO.read(URI(logoUrl).toURL())
+                // Use high-quality rendering for logos
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
                 g.drawImage(logoImage, x, y, width, height, null)
             } catch (e: IOException) {
                 Logger.error("Error loading logo for ${team.name}: ${e.message}")
-                // Fallback to team abbreviation if logo fails to load
-                g.font = Font("Arial", Font.BOLD, 12)
+                // Fallback to team abbreviation with better styling
+                g.font = Font("Arial", Font.BOLD, 16)
                 g.color = parseColor(team.primaryColor ?: "#000000")
-                g.drawString(team.abbreviation ?: "TEAM", x, y + height / 2)
+                val abbreviation = team.abbreviation ?: "TEAM"
+                val textWidth = g.fontMetrics.stringWidth(abbreviation)
+                g.drawString(abbreviation, x + (width - textWidth) / 2, y + height / 2 + 6)
             }
         } else {
-            // Fallback to team abbreviation if no logo URL
-            g.font = Font("Arial", Font.BOLD, 12)
+            // Fallback to team abbreviation with better styling
+            g.font = Font("Arial", Font.BOLD, 16)
             g.color = parseColor(team.primaryColor ?: "#000000")
-            g.drawString(team.abbreviation ?: "TEAM", x, y + height / 2)
+            val abbreviation = team.abbreviation ?: "TEAM"
+            val textWidth = g.fontMetrics.stringWidth(abbreviation)
+            g.drawString(abbreviation, x + (width - textWidth) / 2, y + height / 2 + 6)
         }
     }
 
