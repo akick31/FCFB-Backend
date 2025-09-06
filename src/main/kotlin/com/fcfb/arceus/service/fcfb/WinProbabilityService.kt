@@ -91,7 +91,6 @@ class WinProbabilityService(
                     else -> {
                         // Regular play - use XGBoost model
                         val rawWinProbability = xgboostPredictor.predict(features)
-                        logger.info("Raw XGBoost prediction: $rawWinProbability")
                         rawWinProbability
                     }
                 }

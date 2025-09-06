@@ -18,14 +18,39 @@ class XGBoostPredictor {
 
     private fun loadModel() {
         try {
-            val modelFile = File("src/main/resources/wpmodel.json")
-            if (!modelFile.exists()) {
-                logger.error("Model file not found: ${modelFile.absolutePath}")
+            logger.info("Attempting to load XGBoost model...")
+
+            // Try to load from classpath first (for JAR deployment)
+            val classpathResource = this::class.java.classLoader.getResource("wpmodel.json")
+            if (classpathResource != null) {
+                logger.info("Found model in classpath: ${classpathResource.path}")
+
+                // Copy resource to temporary file since XGBoost needs a file path
+                val tempFile = File.createTempFile("wpmodel", ".json")
+                tempFile.deleteOnExit()
+
+                classpathResource.openStream().use { inputStream ->
+                    tempFile.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+
+                logger.info("Copied model to temporary file: ${tempFile.absolutePath}")
+                booster = XGBoost.loadModel(tempFile.absolutePath)
+                logger.info("XGBoost model loaded successfully from classpath")
                 return
             }
 
-            booster = XGBoost.loadModel(modelFile.absolutePath)
-            logger.info("XGBoost model loaded successfully")
+            // Fallback to file system (for development)
+            val modelFile = File("src/main/resources/wpmodel.json")
+            logger.info("Checking for model file at: ${modelFile.absolutePath}")
+            if (modelFile.exists()) {
+                booster = XGBoost.loadModel(modelFile.absolutePath)
+                logger.info("XGBoost model loaded successfully from file system")
+                return
+            }
+
+            logger.error("Model file not found in classpath or file system")
         } catch (e: Exception) {
             logger.error("Error loading XGBoost model", e)
         }
