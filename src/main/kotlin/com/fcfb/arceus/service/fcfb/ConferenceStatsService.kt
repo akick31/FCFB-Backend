@@ -6,7 +6,12 @@ import com.fcfb.arceus.model.ConferenceStats
 import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.ConferenceStatsRepository
 import com.fcfb.arceus.repositories.SeasonStatsRepository
+import com.fcfb.arceus.service.specification.ConferenceStatsSpecificationService
 import com.fcfb.arceus.util.Logger
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -16,7 +21,28 @@ import java.time.format.DateTimeFormatter
 class ConferenceStatsService(
     private val conferenceStatsRepository: ConferenceStatsRepository,
     private val seasonStatsRepository: SeasonStatsRepository,
+    private val conferenceStatsSpecificationService: ConferenceStatsSpecificationService,
 ) {
+    /**
+     * Get filtered conference stats with pagination
+     */
+    fun getFilteredConferenceStats(
+        conference: Conference?,
+        season: Int?,
+        subdivision: Subdivision?,
+        pageable: Pageable,
+    ): Page<ConferenceStats> {
+        val spec = conferenceStatsSpecificationService.createSpecification(conference, season, subdivision)
+        val sortOrders = conferenceStatsSpecificationService.createSort()
+        val sortedPageable =
+            PageRequest.of(
+                pageable.pageNumber,
+                pageable.pageSize,
+                Sort.by(sortOrders),
+            )
+        return conferenceStatsRepository.findAll(spec, sortedPageable)
+    }
+
     /**
      * Get all conference stats
      */
@@ -33,26 +59,6 @@ class ConferenceStatsService(
         seasonNumber: Int,
     ): ConferenceStats? {
         return conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)
-    }
-
-    /**
-     * Get all conference stats for a specific subdivision and season
-     */
-    fun getConferenceStatsBySubdivisionAndSeason(
-        subdivision: Subdivision,
-        seasonNumber: Int,
-    ): List<ConferenceStats> {
-        return conferenceStatsRepository.findBySubdivisionAndSeasonNumber(subdivision, seasonNumber)
-    }
-
-    /**
-     * Get all conference stats for a specific conference and season
-     */
-    fun getConferenceStatsByConferenceAndSeason(
-        conference: Conference,
-        seasonNumber: Int,
-    ): List<ConferenceStats> {
-        return conferenceStatsRepository.findByConferenceAndSeasonNumber(conference, seasonNumber)
     }
 
     /**
@@ -108,40 +114,9 @@ class ConferenceStatsService(
     }
 
     /**
-     * Generate conference stats for a specific subdivision and season (all conferences)
-     */
-    fun generateConferenceStatsForSubdivisionAndSeason(
-        subdivision: Subdivision,
-        seasonNumber: Int,
-    ) {
-        Logger.info("Starting generation of conference stats for $subdivision in season $seasonNumber")
-
-        // Get all season stats for this subdivision and season
-        val seasonStatsList =
-            seasonStatsRepository.findBySeasonNumberOrderByTeamAsc(seasonNumber)
-                .filter { seasonStats -> seasonStats.subdivision == subdivision }
-
-        if (seasonStatsList.isEmpty()) {
-            Logger.warn("No season stats found for $subdivision in season $seasonNumber")
-            return
-        }
-
-        // Group by conference and generate conference stats for each conference
-        val groupedByConference = seasonStatsList.groupBy { it.conference }
-
-        for ((conference, conferenceSeasonStats) in groupedByConference) {
-            if (conference != null) {
-                generateConferenceStatsForSubdivisionAndConferenceAndSeason(subdivision, conference, seasonNumber)
-            }
-        }
-
-        Logger.info("Completed generating conference stats for $subdivision in season $seasonNumber")
-    }
-
-    /**
      * Generate conference stats for a specific subdivision, conference, and season
      */
-    fun generateConferenceStatsForSubdivisionAndConferenceAndSeason(
+    private fun generateConferenceStatsForSubdivisionAndConferenceAndSeason(
         subdivision: Subdivision,
         conference: Conference,
         seasonNumber: Int,
@@ -290,89 +265,5 @@ class ConferenceStatsService(
     private fun calculateAverage(values: List<Double>): Double? {
         if (values.isEmpty()) return null
         return values.average()
-    }
-
-    /**
-     * Check if conference stats exist for a specific subdivision, conference, and season
-     */
-    fun conferenceStatsExistForSubdivisionAndConferenceAndSeason(
-        subdivision: Subdivision,
-        conference: Conference,
-        seasonNumber: Int,
-    ): Boolean {
-        return conferenceStatsRepository.existsBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)
-    }
-
-    /**
-     * Check if conference stats exist for a specific subdivision and season
-     */
-    fun conferenceStatsExistForSubdivisionAndSeason(
-        subdivision: Subdivision,
-        seasonNumber: Int,
-    ): Boolean {
-        return conferenceStatsRepository.existsBySubdivisionAndSeasonNumber(subdivision, seasonNumber)
-    }
-
-    /**
-     * Check if conference stats exist for a specific conference and season
-     */
-    fun conferenceStatsExistForConferenceAndSeason(
-        conference: Conference,
-        seasonNumber: Int,
-    ): Boolean {
-        return conferenceStatsRepository.existsByConferenceAndSeasonNumber(conference, seasonNumber)
-    }
-
-    /**
-     * Check if conference stats exist for a specific subdivision
-     */
-    fun conferenceStatsExistForSubdivision(subdivision: Subdivision): Boolean {
-        return conferenceStatsRepository.countBySubdivision(subdivision) > 0
-    }
-
-    /**
-     * Check if conference stats exist for a specific conference
-     */
-    fun conferenceStatsExistForConference(conference: Conference): Boolean {
-        return conferenceStatsRepository.countByConference(conference) > 0
-    }
-
-    /**
-     * Check if conference stats exist for a specific season
-     */
-    fun conferenceStatsExistForSeason(seasonNumber: Int): Boolean {
-        return conferenceStatsRepository.countBySeasonNumber(seasonNumber) > 0
-    }
-
-    /**
-     * Diagnostic method to check data availability
-     */
-    fun diagnoseDataAvailability(): Map<String, Any> {
-        val allSeasonStats = seasonStatsRepository.findAllByOrderBySeasonNumberDescTeamAsc()
-        val seasonStatsWithSubdivision = allSeasonStats.count { it.subdivision != null }
-        val seasonStatsWithConference = allSeasonStats.count { it.conference != null }
-        val seasonStatsWithBoth = allSeasonStats.count { it.subdivision != null && it.conference != null }
-
-        val groupedStats =
-            allSeasonStats.groupBy {
-                Triple(it.subdivision, it.conference, it.seasonNumber)
-            }.filterKeys { it.first != null && it.second != null }
-
-        return mapOf(
-            "totalSeasonStats" to allSeasonStats.size,
-            "seasonStatsWithSubdivision" to seasonStatsWithSubdivision,
-            "seasonStatsWithConference" to seasonStatsWithConference,
-            "seasonStatsWithBoth" to seasonStatsWithBoth,
-            "validGroupings" to groupedStats.size,
-            "sampleSeasonStats" to
-                allSeasonStats.take(3).map {
-                    mapOf(
-                        "team" to it.team,
-                        "season" to it.seasonNumber,
-                        "subdivision" to it.subdivision,
-                        "conference" to it.conference,
-                    )
-                },
-        )
     }
 }

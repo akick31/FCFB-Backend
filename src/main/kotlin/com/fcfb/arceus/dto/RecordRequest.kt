@@ -1,4 +1,4 @@
-package com.fcfb.arceus.models.requests
+package com.fcfb.arceus.dto
 
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats

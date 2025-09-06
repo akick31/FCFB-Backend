@@ -6,7 +6,12 @@ import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.PlaybookStats
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlaybookStatsRepository
+import com.fcfb.arceus.service.specification.PlaybookStatsSpecificationService
 import com.fcfb.arceus.util.Logger
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -16,68 +21,26 @@ import java.time.format.DateTimeFormatter
 class PlaybookStatsService(
     private val playbookStatsRepository: PlaybookStatsRepository,
     private val gameStatsRepository: GameStatsRepository,
+    private val playbookStatsSpecificationService: PlaybookStatsSpecificationService,
 ) {
     /**
-     * Get all playbook stats
+     * Get filtered playbook stats with pagination
      */
-    fun getAllPlaybookStats(): List<PlaybookStats> {
-        return playbookStatsRepository.findAllByOrderBySeasonNumberDescOffensivePlaybookAscDefensivePlaybookAsc()
-    }
-
-    /**
-     * Get playbook stats for a specific offensive playbook, defensive playbook, and season
-     */
-    fun getPlaybookStatsByOffensivePlaybookAndDefensivePlaybookAndSeason(
-        offensivePlaybook: OffensivePlaybook,
-        defensivePlaybook: DefensivePlaybook,
-        seasonNumber: Int,
-    ): PlaybookStats? {
-        return playbookStatsRepository.findByOffensivePlaybookAndDefensivePlaybookAndSeasonNumber(
-            offensivePlaybook,
-            defensivePlaybook,
-            seasonNumber,
-        )
-    }
-
-    /**
-     * Get all playbook stats for a specific offensive playbook and season
-     */
-    fun getPlaybookStatsByOffensivePlaybookAndSeason(
-        offensivePlaybook: OffensivePlaybook,
-        seasonNumber: Int,
-    ): List<PlaybookStats> {
-        return playbookStatsRepository.findByOffensivePlaybookAndSeasonNumber(offensivePlaybook, seasonNumber)
-    }
-
-    /**
-     * Get all playbook stats for a specific defensive playbook and season
-     */
-    fun getPlaybookStatsByDefensivePlaybookAndSeason(
-        defensivePlaybook: DefensivePlaybook,
-        seasonNumber: Int,
-    ): List<PlaybookStats> {
-        return playbookStatsRepository.findByDefensivePlaybookAndSeasonNumber(defensivePlaybook, seasonNumber)
-    }
-
-    /**
-     * Get all playbook stats for a specific offensive playbook
-     */
-    fun getPlaybookStatsByOffensivePlaybook(offensivePlaybook: OffensivePlaybook): List<PlaybookStats> {
-        return playbookStatsRepository.findByOffensivePlaybookOrderBySeasonNumberDesc(offensivePlaybook)
-    }
-
-    /**
-     * Get all playbook stats for a specific defensive playbook
-     */
-    fun getPlaybookStatsByDefensivePlaybook(defensivePlaybook: DefensivePlaybook): List<PlaybookStats> {
-        return playbookStatsRepository.findByDefensivePlaybookOrderBySeasonNumberDesc(defensivePlaybook)
-    }
-
-    /**
-     * Get all playbook stats for a specific season
-     */
-    fun getPlaybookStatsBySeason(seasonNumber: Int): List<PlaybookStats> {
-        return playbookStatsRepository.findBySeasonNumberOrderByOffensivePlaybookAscDefensivePlaybookAsc(seasonNumber)
+    fun getFilteredPlaybookStats(
+        offensivePlaybook: OffensivePlaybook?,
+        defensivePlaybook: DefensivePlaybook?,
+        season: Int?,
+        pageable: Pageable,
+    ): Page<PlaybookStats> {
+        val spec = playbookStatsSpecificationService.createSpecification(offensivePlaybook, defensivePlaybook, season)
+        val sortOrders = playbookStatsSpecificationService.createSort()
+        val sortedPageable =
+            PageRequest.of(
+                pageable.pageNumber,
+                pageable.pageSize,
+                Sort.by(sortOrders),
+            )
+        return playbookStatsRepository.findAll(spec, sortedPageable)
     }
 
     /**
@@ -109,7 +72,7 @@ class PlaybookStatsService(
                     "Generating playbook stats for $offensivePlaybook/$defensivePlaybook " +
                         "in season $seasonNumber with ${gameStatsList.size} games",
                 )
-                generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(
+                generateByPlaybooksAndSeason(
                     offensivePlaybook,
                     defensivePlaybook,
                     seasonNumber,
@@ -121,71 +84,9 @@ class PlaybookStatsService(
     }
 
     /**
-     * Generate playbook stats for a specific offensive playbook and season (all defensive playbooks)
-     */
-    fun generatePlaybookStatsForOffensivePlaybookAndSeason(
-        offensivePlaybook: OffensivePlaybook,
-        seasonNumber: Int,
-    ) {
-        Logger.info("Starting generation of playbook stats for $offensivePlaybook in season $seasonNumber")
-
-        // Get all game stats for this offensive playbook and season
-        val gameStatsList =
-            gameStatsRepository.findBySeasonOrderByGameIdAsc(seasonNumber)
-                .filter { gameStats -> gameStats.offensivePlaybook == offensivePlaybook }
-
-        if (gameStatsList.isEmpty()) {
-            Logger.warn("No game stats found for $offensivePlaybook in season $seasonNumber")
-            return
-        }
-
-        // Group by defensive playbook and generate playbook stats for each defensive playbook
-        val groupedByDefensivePlaybook = gameStatsList.groupBy { it.defensivePlaybook }
-
-        for ((defensivePlaybook, defensivePlaybookGameStats) in groupedByDefensivePlaybook) {
-            if (defensivePlaybook != null) {
-                generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(offensivePlaybook, defensivePlaybook, seasonNumber)
-            }
-        }
-
-        Logger.info("Completed generating playbook stats for $offensivePlaybook in season $seasonNumber")
-    }
-
-    /**
-     * Generate playbook stats for a specific defensive playbook and season (all offensive playbooks)
-     */
-    fun generatePlaybookStatsForDefensivePlaybookAndSeason(
-        defensivePlaybook: DefensivePlaybook,
-        seasonNumber: Int,
-    ) {
-        Logger.info("Starting generation of playbook stats for $defensivePlaybook in season $seasonNumber")
-
-        // Get all game stats for this defensive playbook and season
-        val gameStatsList =
-            gameStatsRepository.findBySeasonOrderByGameIdAsc(seasonNumber)
-                .filter { gameStats -> gameStats.defensivePlaybook == defensivePlaybook }
-
-        if (gameStatsList.isEmpty()) {
-            Logger.warn("No game stats found for $defensivePlaybook in season $seasonNumber")
-            return
-        }
-
-        // Group by offensive playbook and generate playbook stats for each offensive playbook
-        val groupedByOffensivePlaybook = gameStatsList.groupBy { it.offensivePlaybook }
-
-        for ((offensivePlaybook, offensivePlaybookGameStats) in groupedByOffensivePlaybook) {
-            if (offensivePlaybook != null) {
-                generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(offensivePlaybook, defensivePlaybook, seasonNumber)
-            }
-        }
-
-        Logger.info("Completed generating playbook stats for $defensivePlaybook in season $seasonNumber")
-    }
-
-    /**
      * Generate playbook stats for a specific offensive playbook, defensive playbook, and season
      */
-    fun generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(
+    private fun generateByPlaybooksAndSeason(
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,
         seasonNumber: Int,
@@ -318,61 +219,5 @@ class PlaybookStatsService(
     private fun calculateAverage(values: List<Double>): Double? {
         if (values.isEmpty()) return null
         return values.average()
-    }
-
-    /**
-     * Check if playbook stats exist for a specific offensive playbook, defensive playbook, and season
-     */
-    fun playbookStatsExistForOffensivePlaybookAndDefensivePlaybookAndSeason(
-        offensivePlaybook: OffensivePlaybook,
-        defensivePlaybook: DefensivePlaybook,
-        seasonNumber: Int,
-    ): Boolean {
-        return playbookStatsRepository.existsByOffensivePlaybookAndDefensivePlaybookAndSeasonNumber(
-            offensivePlaybook,
-            defensivePlaybook,
-            seasonNumber,
-        )
-    }
-
-    /**
-     * Check if playbook stats exist for a specific offensive playbook and season
-     */
-    fun playbookStatsExistForOffensivePlaybookAndSeason(
-        offensivePlaybook: OffensivePlaybook,
-        seasonNumber: Int,
-    ): Boolean {
-        return playbookStatsRepository.existsByOffensivePlaybookAndSeasonNumber(offensivePlaybook, seasonNumber)
-    }
-
-    /**
-     * Check if playbook stats exist for a specific defensive playbook and season
-     */
-    fun playbookStatsExistForDefensivePlaybookAndSeason(
-        defensivePlaybook: DefensivePlaybook,
-        seasonNumber: Int,
-    ): Boolean {
-        return playbookStatsRepository.existsByDefensivePlaybookAndSeasonNumber(defensivePlaybook, seasonNumber)
-    }
-
-    /**
-     * Check if playbook stats exist for a specific offensive playbook
-     */
-    fun playbookStatsExistForOffensivePlaybook(offensivePlaybook: OffensivePlaybook): Boolean {
-        return playbookStatsRepository.countByOffensivePlaybook(offensivePlaybook) > 0
-    }
-
-    /**
-     * Check if playbook stats exist for a specific defensive playbook
-     */
-    fun playbookStatsExistForDefensivePlaybook(defensivePlaybook: DefensivePlaybook): Boolean {
-        return playbookStatsRepository.countByDefensivePlaybook(defensivePlaybook) > 0
-    }
-
-    /**
-     * Check if playbook stats exist for a specific season
-     */
-    fun playbookStatsExistForSeason(seasonNumber: Int): Boolean {
-        return playbookStatsRepository.countBySeasonNumber(seasonNumber) > 0
     }
 }

@@ -2,11 +2,12 @@ package com.fcfb.arceus.repositories
 
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.ConferenceStats
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface ConferenceStatsRepository : CrudRepository<ConferenceStats, Int> {
+interface ConferenceStatsRepository : CrudRepository<ConferenceStats, Int>, JpaSpecificationExecutor<ConferenceStats> {
     fun findAllByOrderBySeasonNumberDescSubdivisionAsc(): List<ConferenceStats>
 
     fun findBySubdivisionAndConferenceAndSeasonNumber(

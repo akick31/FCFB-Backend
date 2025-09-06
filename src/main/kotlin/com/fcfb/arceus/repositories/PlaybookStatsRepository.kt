@@ -1,11 +1,12 @@
 package com.fcfb.arceus.repositories
 
 import com.fcfb.arceus.model.PlaybookStats
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface PlaybookStatsRepository : CrudRepository<PlaybookStats, Int> {
+interface PlaybookStatsRepository : CrudRepository<PlaybookStats, Int>, JpaSpecificationExecutor<PlaybookStats> {
     fun findAllByOrderBySeasonNumberDescOffensivePlaybookAscDefensivePlaybookAsc(): List<PlaybookStats>
 
     fun findByOffensivePlaybookAndDefensivePlaybookAndSeasonNumber(

@@ -6,9 +6,9 @@ import com.fcfb.arceus.enums.gameflow.CoinTossChoice
 import com.fcfb.arceus.enums.gameflow.OvertimeCoinTossChoice
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameCategory
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameFilter
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault

@@ -7,9 +7,9 @@ import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameCategory
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameFilter
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import com.fcfb.arceus.util.Logger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl

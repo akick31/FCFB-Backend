@@ -5,7 +5,12 @@ import com.fcfb.arceus.model.LeagueStats
 import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.LeagueStatsRepository
 import com.fcfb.arceus.repositories.SeasonStatsRepository
+import com.fcfb.arceus.service.specification.LeagueStatsSpecificationService
 import com.fcfb.arceus.util.Logger
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -15,36 +20,25 @@ import java.time.format.DateTimeFormatter
 class LeagueStatsService(
     private val leagueStatsRepository: LeagueStatsRepository,
     private val seasonStatsRepository: SeasonStatsRepository,
+    private val leagueStatsSpecificationService: LeagueStatsSpecificationService,
 ) {
     /**
-     * Get all league stats
+     * Get filtered league stats with pagination
      */
-    fun getAllLeagueStats(): List<LeagueStats> {
-        return leagueStatsRepository.findAllByOrderBySeasonNumberDescSubdivisionAsc()
-    }
-
-    /**
-     * Get league stats for a specific subdivision and season
-     */
-    fun getLeagueStatsBySubdivisionAndSeason(
-        subdivision: Subdivision,
-        seasonNumber: Int,
-    ): LeagueStats? {
-        return leagueStatsRepository.findBySubdivisionAndSeasonNumber(subdivision, seasonNumber)
-    }
-
-    /**
-     * Get all league stats for a specific subdivision
-     */
-    fun getLeagueStatsBySubdivision(subdivision: Subdivision): List<LeagueStats> {
-        return leagueStatsRepository.findBySubdivisionOrderBySeasonNumberDesc(subdivision)
-    }
-
-    /**
-     * Get all league stats for a specific season
-     */
-    fun getLeagueStatsBySeason(seasonNumber: Int): List<LeagueStats> {
-        return leagueStatsRepository.findBySeasonNumberOrderBySubdivisionAsc(seasonNumber)
+    fun getFilteredLeagueStats(
+        subdivision: Subdivision?,
+        season: Int?,
+        pageable: Pageable,
+    ): Page<LeagueStats> {
+        val spec = leagueStatsSpecificationService.createSpecification(subdivision, season)
+        val sortOrders = leagueStatsSpecificationService.createSort()
+        val sortedPageable =
+            PageRequest.of(
+                pageable.pageNumber,
+                pageable.pageSize,
+                Sort.by(sortOrders),
+            )
+        return leagueStatsRepository.findAll(spec, sortedPageable)
     }
 
     /**
@@ -63,7 +57,7 @@ class LeagueStatsService(
             }.filterKeys { it.first != null }
 
         // Generate league stats for each subdivision/season combination
-        for ((subdivisionSeason, seasonStatsList) in groupedStats) {
+        for ((subdivisionSeason) in groupedStats) {
             val subdivision = subdivisionSeason.first!!
             val seasonNumber = subdivisionSeason.second
 
@@ -77,7 +71,7 @@ class LeagueStatsService(
     /**
      * Generate league stats for a specific subdivision and season
      */
-    fun generateLeagueStatsForSubdivisionAndSeason(
+    private fun generateLeagueStatsForSubdivisionAndSeason(
         subdivision: Subdivision,
         seasonNumber: Int,
     ) {
@@ -201,29 +195,5 @@ class LeagueStatsService(
     private fun calculateAverage(values: List<Double>): Double? {
         if (values.isEmpty()) return null
         return values.average()
-    }
-
-    /**
-     * Check if league stats exist for a specific subdivision and season
-     */
-    fun leagueStatsExistForSubdivisionAndSeason(
-        subdivision: Subdivision,
-        seasonNumber: Int,
-    ): Boolean {
-        return leagueStatsRepository.existsBySubdivisionAndSeasonNumber(subdivision, seasonNumber)
-    }
-
-    /**
-     * Check if league stats exist for a specific subdivision
-     */
-    fun leagueStatsExistForSubdivision(subdivision: Subdivision): Boolean {
-        return leagueStatsRepository.countBySubdivision(subdivision) > 0
-    }
-
-    /**
-     * Check if league stats exist for a specific season
-     */
-    fun leagueStatsExistForSeason(seasonNumber: Int): Boolean {
-        return leagueStatsRepository.countBySeasonNumber(seasonNumber) > 0
     }
 }

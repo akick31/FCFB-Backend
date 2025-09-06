@@ -5,11 +5,15 @@ import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Record
-import com.fcfb.arceus.models.requests.RecordFilterRequest
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
+import com.fcfb.arceus.service.specification.RecordSpecificationService
 import com.fcfb.arceus.util.Logger
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
@@ -19,8 +23,29 @@ class RecordService(
     private val recordRepository: RecordRepository,
     private val gameStatsRepository: GameStatsRepository,
     private val gameRepository: GameRepository,
-    private val seasonService: SeasonService,
+    private val recordSpecificationService: RecordSpecificationService,
 ) {
+    /**
+     * Get filtered records with pagination
+     */
+    fun getFilteredRecords(
+        season: Int?,
+        conference: String?,
+        recordType: RecordType?,
+        recordName: Stats?,
+        pageable: Pageable,
+    ): Page<Record> {
+        val spec = recordSpecificationService.createSpecification(season, conference, recordType, recordName)
+        val sortOrders = recordSpecificationService.createSort()
+        val sortedPageable =
+            PageRequest.of(
+                pageable.pageNumber,
+                pageable.pageSize,
+                Sort.by(sortOrders),
+            )
+        return recordRepository.findAll(spec, sortedPageable)
+    }
+
     /**
      * Stats that should track both highest and lowest values
      */
@@ -86,48 +111,6 @@ class RecordService(
         )
 
     /**
-     * Get all records
-     */
-    fun getAllRecords(): List<Record> {
-        return recordRepository.findAllByOrderBySeasonNumberDescWeekDesc()
-    }
-
-    /**
-     * Get a specific record by stat name and record type
-     */
-    fun getRecord(
-        recordName: Stats,
-        recordType: RecordType,
-    ): Record? {
-        return recordRepository.findByRecordNameAndRecordType(recordName, recordType)
-    }
-
-    /**
-     * Get filtered records based on the filter request
-     */
-    fun getFilteredRecords(filter: RecordFilterRequest): List<Record> {
-        var records = recordRepository.findAllByOrderBySeasonNumberDescWeekDesc()
-
-        filter.recordName?.let { recordName ->
-            records = records.filter { it.recordName == recordName }
-        }
-
-        filter.recordType?.let { recordType ->
-            records = records.filter { it.recordType == recordType }
-        }
-
-        filter.seasonNumber?.let { seasonNumber ->
-            records = records.filter { it.seasonNumber == seasonNumber }
-        }
-
-        filter.team?.let { team ->
-            records = records.filter { it.recordTeam.equals(team, ignoreCase = true) }
-        }
-
-        return records
-    }
-
-    /**
      * Generate all records for all seasons
      */
     fun generateAllRecords() {
@@ -144,35 +127,6 @@ class RecordService(
         }
 
         Logger.info("Completed generation of all records")
-    }
-
-    /**
-     * Generate records for a specific stat
-     */
-    fun generateRecord(
-        recordName: Stats,
-        recordType: RecordType,
-    ) {
-        Logger.info("Generating record for $recordName ($recordType)")
-
-        // Delete existing records for this stat and type
-        recordRepository.findByRecordNameAndRecordType(recordName, recordType)?.let {
-            recordRepository.delete(it)
-        }
-
-        // Get all game stats
-        val allGameStats = gameStatsRepository.findAll().toList()
-
-        when (recordType) {
-            RecordType.SINGLE_GAME -> generateGameRecord(recordName, allGameStats, RecordType.SINGLE_GAME)
-            RecordType.SINGLE_GAME_LOWEST -> generateGameRecord(recordName, allGameStats, RecordType.SINGLE_GAME_LOWEST)
-            RecordType.SINGLE_SEASON -> generateSeasonRecord(recordName, allGameStats, RecordType.SINGLE_SEASON)
-            RecordType.SINGLE_SEASON_LOWEST -> generateSeasonRecord(recordName, allGameStats, RecordType.SINGLE_SEASON_LOWEST)
-            RecordType.GENERAL -> generateGeneralRecord(recordName, allGameStats, RecordType.GENERAL)
-            RecordType.GENERAL_LOWEST -> generateGeneralRecord(recordName, allGameStats, RecordType.GENERAL_LOWEST)
-        }
-
-        Logger.info("Completed generating record for $recordName ($recordType)")
     }
 
     /**

@@ -6,7 +6,12 @@ import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.SeasonStatsRepository
 import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.service.specification.SeasonStatsSpecificationService
 import com.fcfb.arceus.util.Logger
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -18,43 +23,34 @@ class SeasonStatsService(
     private val gameStatsRepository: GameStatsRepository,
     private val teamRepository: TeamRepository,
     private val conferenceStatsService: ConferenceStatsService,
+    private val seasonStatsSpecificationService: SeasonStatsSpecificationService,
 ) {
+    /**
+     * Get filtered season stats with pagination
+     */
+    fun getFilteredSeasonStats(
+        team: String?,
+        conference: String?,
+        season: Int?,
+        stat: String?,
+        pageable: Pageable,
+    ): Page<SeasonStats> {
+        val spec = seasonStatsSpecificationService.createSpecification(team, conference, season, stat)
+        val sortOrders = seasonStatsSpecificationService.createSort()
+        val sortedPageable =
+            PageRequest.of(
+                pageable.pageNumber,
+                pageable.pageSize,
+                Sort.by(sortOrders),
+            )
+        return seasonStatsRepository.findAll(spec, sortedPageable)
+    }
+
     /**
      * Filter out scrimmage games from game stats
      */
     private fun filterOutScrimmageGames(gameStatsList: List<GameStats>): List<GameStats> {
         return gameStatsList.filter { it.gameType != GameType.SCRIMMAGE }
-    }
-
-    /**
-     * Get all season stats
-     */
-    fun getAllSeasonStats(): List<SeasonStats> {
-        return seasonStatsRepository.findAllByOrderBySeasonNumberDescTeamAsc()
-    }
-
-    /**
-     * Get season stats for a specific team and season
-     */
-    fun getSeasonStatsByTeamAndSeason(
-        team: String,
-        seasonNumber: Int,
-    ): SeasonStats? {
-        return seasonStatsRepository.findByTeamAndSeasonNumber(team, seasonNumber)
-    }
-
-    /**
-     * Get all season stats for a specific team
-     */
-    fun getSeasonStatsByTeam(team: String): List<SeasonStats> {
-        return seasonStatsRepository.findByTeamOrderBySeasonNumberDesc(team)
-    }
-
-    /**
-     * Get all season stats for a specific season
-     */
-    fun getSeasonStatsBySeason(seasonNumber: Int): List<SeasonStats> {
-        return seasonStatsRepository.findBySeasonNumberOrderByTeamAsc(seasonNumber)
     }
 
     /**
@@ -249,192 +245,6 @@ class SeasonStatsService(
         }
     }
 
-    // ==================== COMPREHENSIVE CRUD METHODS ====================
-
-    /**
-     * Generate season stats for all teams in a specific season
-     */
-    fun generateSeasonStatsForSeason(seasonNumber: Int) {
-        Logger.info("Generating season stats for all teams in season $seasonNumber")
-
-        // Get all unique teams for this season (excluding scrimmage games)
-        val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
-        val teams =
-            allGameStats
-                .filter { it.season == seasonNumber }
-                .mapNotNull { it.team }
-                .distinct()
-
-        for (team in teams) {
-            generateSeasonStatsForTeam(team, seasonNumber)
-        }
-
-        Logger.info("Completed generating season stats for all teams in season $seasonNumber")
-    }
-
-    /**
-     * Generate season stats for all seasons for a specific team
-     */
-    fun generateSeasonStatsForAllSeasons(team: String) {
-        Logger.info("Generating season stats for $team across all seasons")
-
-        // Get all unique seasons for this team (excluding scrimmage games)
-        val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
-        val seasons =
-            allGameStats
-                .filter { it.team == team }
-                .mapNotNull { it.season }
-                .distinct()
-                .sorted()
-
-        for (season in seasons) {
-            generateSeasonStatsForTeam(team, season)
-        }
-
-        Logger.info("Completed generating season stats for $team across all seasons")
-    }
-
-    /**
-     * Get season stats for a specific stat across all teams and seasons
-     */
-    fun getSeasonStatsByStat(statName: String): List<SeasonStats> {
-        // This would require a custom repository method to filter by specific stat fields
-        // For now, return all season stats and let the caller filter
-        return getAllSeasonStats()
-    }
-
-    /**
-     * Get season stats for a specific stat for a specific team
-     */
-    fun getSeasonStatsByTeamAndStat(
-        team: String,
-        statName: String,
-    ): List<SeasonStats> {
-        // This would require a custom repository method to filter by specific stat fields
-        // For now, return all season stats for the team and let the caller filter
-        return getSeasonStatsByTeam(team)
-    }
-
-    /**
-     * Get season stats for a specific stat for a specific team and season
-     */
-    fun getSeasonStatsByTeamSeasonAndStat(
-        team: String,
-        seasonNumber: Int,
-        statName: String,
-    ): SeasonStats? {
-        // This would require a custom repository method to filter by specific stat fields
-        // For now, return the season stats for the team and season and let the caller filter
-        return getSeasonStatsByTeamAndSeason(team, seasonNumber)
-    }
-
-    /**
-     * Get season stats for a specific stat across all teams in a specific season
-     */
-    fun getSeasonStatsBySeasonAndStat(
-        seasonNumber: Int,
-        statName: String,
-    ): List<SeasonStats> {
-        // This would require a custom repository method to filter by specific stat fields
-        // For now, return all season stats for the season and let the caller filter
-        return getSeasonStatsBySeason(seasonNumber)
-    }
-
-    /**
-     * Delete season stats for a specific team and season
-     */
-    fun deleteSeasonStatsForTeam(
-        team: String,
-        seasonNumber: Int,
-    ) {
-        Logger.info("Deleting season stats for $team in season $seasonNumber")
-        seasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
-        Logger.info("Completed deleting season stats for $team in season $seasonNumber")
-    }
-
-    /**
-     * Delete all season stats for a specific team
-     */
-    fun deleteSeasonStatsForTeam(team: String) {
-        Logger.info("Deleting all season stats for $team")
-        seasonStatsRepository.deleteByTeam(team)
-        Logger.info("Completed deleting all season stats for $team")
-    }
-
-    /**
-     * Delete all season stats for a specific season
-     */
-    fun deleteSeasonStatsForSeason(seasonNumber: Int) {
-        Logger.info("Deleting all season stats for season $seasonNumber")
-        seasonStatsRepository.deleteBySeasonNumber(seasonNumber)
-        Logger.info("Completed deleting all season stats for season $seasonNumber")
-    }
-
-    /**
-     * Get all unique teams that have season stats
-     */
-    fun getAllTeamsWithSeasonStats(): List<String> {
-        return seasonStatsRepository.findAll()
-            .map { it.team }
-            .distinct()
-            .sorted()
-    }
-
-    /**
-     * Get all unique seasons that have season stats
-     */
-    fun getAllSeasonsWithSeasonStats(): List<Int> {
-        return seasonStatsRepository.findAll()
-            .map { it.seasonNumber }
-            .distinct()
-            .sorted()
-    }
-
-    /**
-     * Get count of season stats records
-     */
-    fun getSeasonStatsCount(): Long {
-        return seasonStatsRepository.count()
-    }
-
-    /**
-     * Get count of season stats records for a specific team
-     */
-    fun getSeasonStatsCountForTeam(team: String): Long {
-        return seasonStatsRepository.countByTeam(team)
-    }
-
-    /**
-     * Get count of season stats records for a specific season
-     */
-    fun getSeasonStatsCountForSeason(seasonNumber: Int): Long {
-        return seasonStatsRepository.countBySeasonNumber(seasonNumber)
-    }
-
-    /**
-     * Check if season stats exist for a specific team and season
-     */
-    fun seasonStatsExistForTeam(
-        team: String,
-        seasonNumber: Int,
-    ): Boolean {
-        return seasonStatsRepository.existsByTeamAndSeasonNumber(team, seasonNumber)
-    }
-
-    /**
-     * Check if season stats exist for a specific team
-     */
-    fun seasonStatsExistForTeam(team: String): Boolean {
-        return seasonStatsRepository.existsByTeam(team)
-    }
-
-    /**
-     * Check if season stats exist for a specific season
-     */
-    fun seasonStatsExistForSeason(seasonNumber: Int): Boolean {
-        return seasonStatsRepository.existsBySeasonNumber(seasonNumber)
-    }
-
     /**
      * Get leaderboard for a specific stat
      */
@@ -446,7 +256,14 @@ class SeasonStatsService(
         limit: Int = 10,
         ascending: Boolean = false,
     ): List<SeasonStats> {
-        val allStats = getAllSeasonStats()
+        val allStats =
+            getFilteredSeasonStats(
+                team = null,
+                conference = null,
+                season = null,
+                stat = null,
+                pageable = Pageable.unpaged(),
+            )
 
         val filteredStats =
             allStats.filter { stats ->

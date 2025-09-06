@@ -4,12 +4,13 @@ import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.Record
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 
 @Repository
-interface RecordRepository : JpaRepository<Record, Long> {
+interface RecordRepository : JpaRepository<Record, Long>, JpaSpecificationExecutor<Record> {
     /**
      * Find all records
      */

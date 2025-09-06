@@ -15,7 +15,7 @@ import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify

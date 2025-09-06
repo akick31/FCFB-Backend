@@ -1,4 +1,4 @@
-package com.fcfb.arceus.models.response
+package com.fcfb.arceus.dto
 
 data class VegasOddsResponse(
     val homeTeam: String,

@@ -2,12 +2,13 @@ package com.fcfb.arceus.repositories
 
 import com.fcfb.arceus.model.SeasonStats
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 
 @Repository
-interface SeasonStatsRepository : JpaRepository<SeasonStats, Int> {
+interface SeasonStatsRepository : JpaRepository<SeasonStats, Int>, JpaSpecificationExecutor<SeasonStats> {
     /**
      * Find all season stats ordered by season and team
      */

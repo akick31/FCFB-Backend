@@ -22,9 +22,10 @@ import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameCategory
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameFilter
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.specification.GameSpecificationService
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.InvalidCoinTossChoiceException
 import com.fcfb.arceus.util.InvalidHalfTimePossessionChangeException

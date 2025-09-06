@@ -1,8 +1,9 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.dto.VegasOddsResponse
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.models.response.VegasOddsResponse
 import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import kotlin.math.roundToInt
 
@@ -46,16 +47,12 @@ class VegasOddsService {
      * @param awayTeamName Optional away team name for response
      * @return VegasOddsResponse with home and away spreads
      */
-    fun calculateVegasOdds(
+    private fun calculateVegasOdds(
         homeElo: Double,
         awayElo: Double,
         homeTeamName: String? = null,
         awayTeamName: String? = null,
     ): VegasOddsResponse {
-        logger.info(
-            "Calculating Vegas odds: ${homeTeamName ?: "Home"} (${homeElo.toInt()}) vs ${awayTeamName ?: "Away"} (${awayElo.toInt()})",
-        )
-
         val homeSpread = calculateVegasSpread(homeElo, awayElo)
         val awaySpread = calculateVegasSpread(awayElo, homeElo)
 
@@ -68,6 +65,44 @@ class VegasOddsService {
             awayElo = awayElo,
         )
     }
+
+    /**
+     * Get Vegas odds for a matchup based on team names
+     */
+    fun getVegasOddsByTeams(
+        homeTeamName: String,
+        awayTeamName: String,
+        teamService: TeamService,
+    ): ResponseEntity<VegasOddsResponse> =
+        try {
+            logger.info("Getting Vegas odds for $homeTeamName vs $awayTeamName")
+
+            val homeTeam = teamService.getTeamByName(homeTeamName)
+            val awayTeam = teamService.getTeamByName(awayTeamName)
+
+            val odds = calculateVegasOdds(homeTeam = homeTeam, awayTeam = awayTeam)
+            ResponseEntity.ok(odds)
+        } catch (e: Exception) {
+            logger.error("Error getting Vegas odds for teams: ${e.message}", e)
+            ResponseEntity.badRequest().build()
+        }
+
+    /**
+     * Get Vegas odds for a matchup based on custom ELO ratings
+     */
+    fun getVegasOddsByElo(
+        homeElo: Double,
+        awayElo: Double,
+    ): ResponseEntity<VegasOddsResponse> =
+        try {
+            logger.info("Getting Vegas odds for ELO: $homeElo vs $awayElo")
+
+            val odds = calculateVegasOdds(homeElo, awayElo)
+            ResponseEntity.ok(odds)
+        } catch (e: Exception) {
+            logger.error("Error getting Vegas odds for ELO: ${e.message}", e)
+            ResponseEntity.internalServerError().build()
+        }
 
     /**
      * Calculate the Vegas spread for a team based on ELO difference

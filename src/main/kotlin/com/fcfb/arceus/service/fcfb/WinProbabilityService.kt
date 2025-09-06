@@ -1,5 +1,13 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.dto.EloRatingResponse
+import com.fcfb.arceus.dto.GameWinProbabilitiesResponse
+import com.fcfb.arceus.dto.InitializeEloResponse
+import com.fcfb.arceus.dto.PlayWinProbabilityResponse
+import com.fcfb.arceus.dto.ProcessedGameResult
+import com.fcfb.arceus.dto.SingleGameWinProbabilitiesResponse
+import com.fcfb.arceus.dto.SinglePlayWinProbabilityResponse
+import com.fcfb.arceus.dto.WinProbabilitiesForAllGamesResponse
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
@@ -43,8 +51,6 @@ class WinProbabilityService(
             val down = play.down
             val yardsToGo = play.yardsToGo
             val ballLocation = 100 - play.ballLocation
-            val timeoutDiff = play.homeTimeouts - play.awayTimeouts
-            val quarter = play.quarter
 
             // Calculate additional features needed for model
             val secondsLeftGame = timeRemaining
@@ -62,9 +68,9 @@ class WinProbabilityService(
             // Calculate margin from the possessing team's perspective
             val margin =
                 if (play.possession == TeamSide.HOME) {
-                    scoreDiff // HOME possession: positive if HOME ahead
+                    scoreDiff
                 } else {
-                    -scoreDiff // AWAY possession: positive if AWAY ahead
+                    -scoreDiff
                 }
 
             val features =
@@ -111,52 +117,6 @@ class WinProbabilityService(
             play.winProbabilityAdded = 0.0
             return defaultProbability
         }
-    }
-
-    /**
-     * Get win probability for a specific team
-     * @param game The game object
-     * @param play The play object
-     * @param homeTeam The home team
-     * @param awayTeam The away team
-     * @param teamSide Which team to get win probability for
-     * @param previousWinProbability Previous win probability for the HOME team
-     * @return Win probability for the specified team (0.0 to 1.0)
-     */
-    fun getWinProbabilityForTeam(
-        game: Game,
-        play: Play,
-        homeTeam: Team,
-        awayTeam: Team,
-        teamSide: TeamSide,
-        previousWinProbability: Double? = null,
-    ): Double {
-        val homeTeamProbability = calculateWinProbability(game, play, homeTeam, awayTeam, previousWinProbability)
-
-        return when (teamSide) {
-            TeamSide.HOME -> homeTeamProbability
-            TeamSide.AWAY -> 1.0 - homeTeamProbability
-        }
-    }
-
-    /**
-     * Get win probability for the AWAY team (convenience method)
-     * @param game The game object
-     * @param play The play object
-     * @param homeTeam The home team
-     * @param awayTeam The away team
-     * @param previousWinProbability Previous win probability for the HOME team
-     * @return Win probability for the AWAY team (0.0 to 1.0)
-     */
-    fun getAwayTeamWinProbability(
-        game: Game,
-        play: Play,
-        homeTeam: Team,
-        awayTeam: Team,
-        previousWinProbability: Double? = null,
-    ): Double {
-        val homeTeamProbability = calculateWinProbability(game, play, homeTeam, awayTeam, previousWinProbability)
-        return 1.0 - homeTeamProbability
     }
 
     /**
@@ -311,6 +271,12 @@ class WinProbabilityService(
         awayTeam: Team,
     ): Double {
         val scoreDiff = play.homeScore - play.awayScore
+        val margin =
+            if (play.possession == TeamSide.HOME) {
+                scoreDiff
+            } else {
+                -scoreDiff
+            }
         val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
         val secondsLeftHalf = calculateSecondsLeftHalf(play.quarter, play.clock)
         val half = if (play.quarter <= 2) 1 else 2
@@ -320,17 +286,17 @@ class WinProbabilityService(
         // Calculate probabilities for different PAT outcomes
         val probIfSuccess =
             calculateWinProbabilityForScenario(
-                1, 10, 75, -(scoreDiff + 1), timeRemaining, secondsLeftHalf,
+                1, 10, 75, -(margin + 1), timeRemaining, secondsLeftHalf,
                 half, hadFirstPossession, -eloDiffTime,
             )
         val probIfFail =
             calculateWinProbabilityForScenario(
-                1, 10, 75, -scoreDiff, timeRemaining, secondsLeftHalf,
+                1, 10, 75, -margin, timeRemaining, secondsLeftHalf,
                 half, 1 - hadFirstPossession, -eloDiffTime,
             )
         val probIfReturn =
             calculateWinProbabilityForScenario(
-                1, 10, 75, -(scoreDiff - 2), timeRemaining, secondsLeftHalf,
+                1, 10, 75, -(margin - 2), timeRemaining, secondsLeftHalf,
                 half, 1 - hadFirstPossession, -eloDiffTime,
             )
 
@@ -351,6 +317,12 @@ class WinProbabilityService(
         awayTeam: Team,
     ): Double {
         val scoreDiff = play.homeScore - play.awayScore
+        val margin =
+            if (play.possession == TeamSide.HOME) {
+                scoreDiff
+            } else {
+                -scoreDiff
+            }
         val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
         val secondsLeftHalf = calculateSecondsLeftHalf(play.quarter, play.clock)
         val half = if (play.quarter <= 2) 1 else 2
@@ -360,17 +332,17 @@ class WinProbabilityService(
         // Calculate probabilities for different TWO_POINT outcomes
         val probIfSuccess =
             calculateWinProbabilityForScenario(
-                1, 10, 75, -(scoreDiff + 2), timeRemaining, secondsLeftHalf,
+                1, 10, 75, -(margin + 2), timeRemaining, secondsLeftHalf,
                 half, hadFirstPossession, -eloDiffTime,
             )
         val probIfFail =
             calculateWinProbabilityForScenario(
-                1, 10, 75, -scoreDiff, timeRemaining, secondsLeftHalf,
+                1, 10, 75, -margin, timeRemaining, secondsLeftHalf,
                 half, 1 - hadFirstPossession, -eloDiffTime,
             )
         val probIfReturn =
             calculateWinProbabilityForScenario(
-                1, 10, 75, -(scoreDiff - 2), timeRemaining, secondsLeftHalf,
+                1, 10, 75, -(margin - 2), timeRemaining, secondsLeftHalf,
                 half, 1 - hadFirstPossession, -eloDiffTime,
             )
 
@@ -391,6 +363,12 @@ class WinProbabilityService(
         awayTeam: Team,
     ): Double {
         val scoreDiff = play.homeScore - play.awayScore
+        val margin =
+            if (play.possession == TeamSide.HOME) {
+                scoreDiff
+            } else {
+                -scoreDiff
+            }
         val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
         val secondsLeftHalf = calculateSecondsLeftHalf(play.quarter, play.clock)
         val half = if (play.quarter <= 2) 1 else 2
@@ -399,7 +377,7 @@ class WinProbabilityService(
 
         return 1.0 -
             calculateWinProbabilityForScenario(
-                1, 10, 75, -scoreDiff, timeRemaining, secondsLeftHalf,
+                1, 10, 75, -margin, timeRemaining, secondsLeftHalf,
                 half, 1 - hadFirstPossession, -eloDiffTime,
             )
     }
@@ -414,6 +392,12 @@ class WinProbabilityService(
         awayTeam: Team,
     ): Double {
         val scoreDiff = play.homeScore - play.awayScore
+        val margin =
+            if (play.possession == TeamSide.HOME) {
+                scoreDiff
+            } else {
+                -scoreDiff
+            }
         val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
         val secondsLeftHalf = maxOf(calculateSecondsLeftHalf(play.quarter, play.clock) - 5, 0)
         val half = if (play.quarter <= 2) 1 else 2
@@ -423,7 +407,7 @@ class WinProbabilityService(
 
         return 1.0 -
             calculateWinProbabilityForScenario(
-                1, 10, 65, -scoreDiff, slg, secondsLeftHalf,
+                1, 10, 65, -margin, slg, secondsLeftHalf,
                 half, 1 - hadFirstPossession, -eloDiffTime,
             )
     }
@@ -438,6 +422,12 @@ class WinProbabilityService(
         awayTeam: Team,
     ): Double {
         val scoreDiff = play.homeScore - play.awayScore
+        val margin =
+            if (play.possession == TeamSide.HOME) {
+                scoreDiff
+            } else {
+                -scoreDiff
+            }
         val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
         val secondsLeftHalf = maxOf(calculateSecondsLeftHalf(play.quarter, play.clock) - 3, 0)
         val half = if (play.quarter <= 2) 1 else 2
@@ -446,11 +436,11 @@ class WinProbabilityService(
         val slg = ((2 - half) * 840) + secondsLeftHalf
 
         val probIfSuccess =
-            calculateWinProbabilityForScenario(1, 10, 55, scoreDiff, slg, secondsLeftHalf, half, hadFirstPossession, eloDiffTime)
+            calculateWinProbabilityForScenario(1, 10, 55, margin, slg, secondsLeftHalf, half, hadFirstPossession, eloDiffTime)
         val probIfFail =
             1.0 -
                 calculateWinProbabilityForScenario(
-                    1, 10, 45, -scoreDiff, slg, secondsLeftHalf,
+                    1, 10, 45, -margin, slg, secondsLeftHalf,
                     half, 1 - hadFirstPossession, -eloDiffTime,
                 )
         val slhr = maxOf(secondsLeftHalf - 10, 0)
@@ -458,7 +448,7 @@ class WinProbabilityService(
         val probIfReturn =
             1.0 -
                 calculateWinProbabilityForScenario(
-                    1, 10, 75, scoreDiff - 6, slgr, slhr,
+                    1, 10, 75, margin - 6, slgr, slhr,
                     half, 1 - hadFirstPossession, -eloDiffTime,
                 )
 
@@ -507,7 +497,7 @@ class WinProbabilityService(
      * Calculate win probability added accounting for possession changes
      * When possession changes, we need to account for the flip in perspective
      */
-    fun calculateWinProbabilityAdded(
+    private fun calculateWinProbabilityAdded(
         currentPlay: Play,
         previousPlay: Play?,
     ): Double {
@@ -567,32 +557,234 @@ class WinProbabilityService(
     /**
      * Get current ELO rating for a team
      */
-    fun getCurrentElo(team: Team): Double {
+    private fun getCurrentElo(team: Team): Double {
         initializeEloRatings(team)
         return team.currentElo
     }
 
-    /**
-     * Get model information for debugging and monitoring
-     */
-    fun getModelInfo(): Map<String, Any> {
-        return mapOf(
-            "model_type" to "XGBoost4J",
-            "num_features" to 9,
-            "feature_names" to
-                listOf(
-                    "down",
-                    "distance",
-                    "position",
-                    "margin",
-                    "seconds_left_game",
-                    "seconds_left_half",
-                    "half",
-                    "had_first_possession",
-                    "elo_diff_time",
-                ),
-            "k_factor" to kFactor,
-            "default_elo" to defaultElo,
-        )
+    fun getWinProbabilityForEachTeam(play: Play): Pair<Double, Double> {
+        val homeTeamWinProbability =
+            if (play.possession == TeamSide.HOME) {
+                play.winProbability ?: 0.0
+            } else {
+                1.0 - (play.winProbability ?: 0.0)
+            }
+        val awayTeamWinProbability =
+            if (play.possession == TeamSide.AWAY) {
+                play.winProbability ?: 0.0
+            } else {
+                1.0 - (play.winProbability ?: 0.0)
+            }
+        return Pair(homeTeamWinProbability, awayTeamWinProbability)
     }
+
+    /**
+     * Get ELO ratings for all teams
+     */
+    fun getEloRatings(teams: List<Team>): List<EloRatingResponse> =
+        try {
+            teams.map { team ->
+                EloRatingResponse(
+                    teamId = team.id,
+                    teamName = team.name ?: "",
+                    currentElo = getCurrentElo(team),
+                    overallElo = team.overallElo,
+                )
+            }.sortedByDescending { it.currentElo }
+        } catch (e: Exception) {
+            logger.error("Error getting ELO ratings response: ${e.message}", e)
+            throw e
+        }
+
+    /**
+     * Initialize ELO ratings for all teams
+     */
+    fun initializeAllEloRatings(
+        teams: List<Team>,
+        teamService: TeamService,
+    ): InitializeEloResponse =
+        try {
+            var initializedCount = 0
+
+            teams.forEach { team ->
+                initializeEloRatings(team)
+                teamService.updateTeam(team)
+                initializedCount++
+            }
+
+            InitializeEloResponse(
+                message = "ELO ratings initialized for $initializedCount teams",
+                initializedCount = initializedCount,
+            )
+        } catch (e: Exception) {
+            logger.error("Error initializing ELO ratings: ${e.message}", e)
+            throw e
+        }
+
+    /**
+     * Calculate win probability for all plays in a specific game
+     */
+    fun calculateWinProbabilitiesForSingleGame(
+        gameId: Int,
+        game: Game,
+        plays: List<Play>,
+        homeTeam: Team,
+        awayTeam: Team,
+        playService: PlayService,
+    ): SingleGameWinProbabilitiesResponse =
+        try {
+            // Initialize ELO ratings if needed
+            initializeEloRatings(homeTeam)
+            initializeEloRatings(awayTeam)
+
+            var processedPlays = 0
+            val currentHomeElo = homeTeam.currentElo
+            val currentAwayElo = awayTeam.currentElo
+
+            val results =
+                plays.sortedBy { it.playNumber }.map { play ->
+                    // Calculate win probability for this play
+                    val winProbability = calculateWinProbability(game, play, homeTeam, awayTeam)
+
+                    // Update play with calculated values
+                    play.winProbability = winProbability
+                    play.winProbabilityAdded =
+                        if (processedPlays > 0) {
+                            val previousPlay = plays.find { it.playNumber == play.playNumber - 1 }
+                            calculateWinProbabilityAdded(play, previousPlay)
+                        } else {
+                            0.0
+                        }
+
+                    processedPlays++
+
+                    SinglePlayWinProbabilityResponse(
+                        playId = play.playId,
+                        playNumber = play.playNumber,
+                        quarter = play.quarter,
+                        clock = play.clock,
+                        homeScore = play.homeScore,
+                        awayScore = play.awayScore,
+                        winProbability = winProbability,
+                        winProbabilityAdded = play.winProbabilityAdded ?: 0.0,
+                        possession = play.possession.name,
+                        possessionTeam = if (play.possession == TeamSide.HOME) game.homeTeam else game.awayTeam,
+                        ballLocation = play.ballLocation,
+                        down = play.down,
+                        distance = play.yardsToGo,
+                        playCall = play.playCall?.name,
+                        homeElo = currentHomeElo,
+                        awayElo = currentAwayElo,
+                    )
+                }
+
+            // Save the updated plays
+            plays.forEach { playService.updatePlay(it) }
+
+            SingleGameWinProbabilitiesResponse(
+                gameId = gameId,
+                homeTeam = game.homeTeam,
+                awayTeam = game.awayTeam,
+                totalPlays = plays.size,
+                processedPlays = processedPlays,
+                plays = results,
+            )
+        } catch (e: Exception) {
+            logger.error("Error calculating win probability for game response: ${e.message}", e)
+            throw e
+        }
+
+    /**
+     * Calculate win probability for ALL games in the database
+     */
+    fun calculateWinProbabilitiesForAllGames(
+        games: List<Game>,
+        playService: PlayService,
+        teamService: TeamService,
+    ): WinProbabilitiesForAllGamesResponse =
+        try {
+            var totalGamesProcessed = 0
+            var totalPlaysProcessed = 0
+            val processedGames = mutableListOf<ProcessedGameResult>()
+
+            games.forEach { game ->
+                try {
+                    val plays = playService.getAllPlaysByGameId(game.gameId)
+                    if (plays.isNotEmpty()) {
+                        val homeTeam = teamService.getTeamByName(game.homeTeam)
+                        val awayTeam = teamService.getTeamByName(game.awayTeam)
+
+                        // Use the single game method to calculate win probabilities
+                        val singleGameResult =
+                            calculateWinProbabilitiesForSingleGame(
+                                game.gameId,
+                                game,
+                                plays,
+                                homeTeam,
+                                awayTeam,
+                                playService,
+                            )
+
+                        // Add to our results
+                        processedGames.add(
+                            ProcessedGameResult(
+                                gameId = game.gameId,
+                                homeTeam = game.homeTeam,
+                                awayTeam = game.awayTeam,
+                                playsProcessed = singleGameResult.processedPlays,
+                            ),
+                        )
+
+                        totalPlaysProcessed += singleGameResult.processedPlays
+                        totalGamesProcessed++
+                    }
+                } catch (e: Exception) {
+                    // Log error but continue with other games
+                    logger.error("Error processing game ${game.gameId}: ${e.message}")
+                }
+            }
+
+            WinProbabilitiesForAllGamesResponse(
+                totalGames = games.size,
+                gamesProcessed = totalGamesProcessed,
+                totalPlaysProcessed = totalPlaysProcessed,
+                processedGames = processedGames,
+            )
+        } catch (e: Exception) {
+            logger.error("Error calculating win probability for all games response: ${e.message}", e)
+            throw e
+        }
+
+    /**
+     * Get win probability for each team for all plays in a game
+     */
+    fun getWinProbabilitiesForGame(
+        gameId: Int,
+        plays: List<Play>,
+    ): GameWinProbabilitiesResponse =
+        try {
+            val results =
+                plays.sortedBy { it.playNumber }.map { play ->
+                    val (homeTeamWinProbability, awayTeamWinProbability) = getWinProbabilityForEachTeam(play)
+
+                    PlayWinProbabilityResponse(
+                        playNumber = play.playNumber,
+                        quarter = play.quarter,
+                        clock = play.clock,
+                        homeScore = play.homeScore,
+                        awayScore = play.awayScore,
+                        homeTeamWinProbability = homeTeamWinProbability,
+                        awayTeamWinProbability = awayTeamWinProbability,
+                    )
+                }
+
+            GameWinProbabilitiesResponse(
+                gameId = gameId,
+                totalPlays = plays.size,
+                plays = results,
+            )
+        } catch (e: Exception) {
+            logger.error("Error getting team win probabilities response: ${e.message}", e)
+            throw e
+        }
 }
