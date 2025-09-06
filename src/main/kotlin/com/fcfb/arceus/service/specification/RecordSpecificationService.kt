@@ -17,7 +17,6 @@ class RecordSpecificationService {
      */
     fun createSpecification(
         season: Int?,
-        conference: String?,
         recordType: RecordType?,
         recordName: Stats?,
     ): Specification<Record> {
@@ -25,7 +24,6 @@ class RecordSpecificationService {
             val predicates = mutableListOf<Predicate>()
 
             season?.let { predicates.add(cb.equal(root.get<Int>("seasonNumber"), it)) }
-            conference?.let { predicates.add(cb.like(cb.lower(root.get<String>("conference")), "%${it.lowercase()}%")) }
             recordType?.let { predicates.add(cb.equal(root.get<RecordType>("recordType"), it)) }
             recordName?.let { predicates.add(cb.equal(root.get<Stats>("recordName"), it)) }
 
@@ -39,7 +37,6 @@ class RecordSpecificationService {
     fun createSort(): List<org.springframework.data.domain.Sort.Order> {
         return listOf(
             org.springframework.data.domain.Sort.Order.desc("seasonNumber"),
-            org.springframework.data.domain.Sort.Order.asc("conference"),
             org.springframework.data.domain.Sort.Order.asc("recordType"),
             org.springframework.data.domain.Sort.Order.asc("recordName"),
         )

@@ -15,17 +15,13 @@ class SeasonStatsSpecificationService {
      */
     fun createSpecification(
         team: String?,
-        conference: String?,
         season: Int?,
-        stat: String?,
     ): Specification<SeasonStats> {
         return Specification { root: Root<SeasonStats>, _: CriteriaQuery<*>, cb: CriteriaBuilder ->
             val predicates = mutableListOf<Predicate>()
 
             team?.let { predicates.add(cb.like(cb.lower(root.get<String>("team")), "%${it.lowercase()}%")) }
-            conference?.let { predicates.add(cb.like(cb.lower(root.get<String>("conference")), "%${it.lowercase()}%")) }
             season?.let { predicates.add(cb.equal(root.get<Int>("seasonNumber"), it)) }
-            stat?.let { predicates.add(cb.like(cb.lower(root.get<String>("stat")), "%${it.lowercase()}%")) }
 
             cb.and(*predicates.toTypedArray())
         }
@@ -37,9 +33,7 @@ class SeasonStatsSpecificationService {
     fun createSort(): List<org.springframework.data.domain.Sort.Order> {
         return listOf(
             org.springframework.data.domain.Sort.Order.desc("seasonNumber"),
-            org.springframework.data.domain.Sort.Order.asc("conference"),
             org.springframework.data.domain.Sort.Order.asc("team"),
-            org.springframework.data.domain.Sort.Order.asc("stat"),
         )
     }
 }

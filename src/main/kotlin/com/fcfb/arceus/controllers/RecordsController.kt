@@ -26,7 +26,6 @@ class RecordsController(
     @GetMapping
     fun getFilteredRecords(
         @RequestParam(required = false) season: Int?,
-        @RequestParam(required = false) conference: String?,
         @RequestParam(required = false) recordType: RecordType?,
         @RequestParam(required = false) recordName: Stats?,
         @PageableDefault(size = 20) pageable: Pageable,
@@ -34,7 +33,6 @@ class RecordsController(
         ResponseEntity.ok(
             recordService.getFilteredRecords(
                 season = season,
-                conference = conference,
                 recordType = recordType,
                 recordName = recordName,
                 pageable = pageable,

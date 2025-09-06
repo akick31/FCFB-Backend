@@ -30,19 +30,23 @@ class SeasonStatsService(
      */
     fun getFilteredSeasonStats(
         team: String?,
-        conference: String?,
         season: Int?,
-        stat: String?,
         pageable: Pageable,
     ): Page<SeasonStats> {
-        val spec = seasonStatsSpecificationService.createSpecification(team, conference, season, stat)
+        val spec = seasonStatsSpecificationService.createSpecification(team, season)
         val sortOrders = seasonStatsSpecificationService.createSort()
-        val sortedPageable =
+        
+        val sortedPageable = if (pageable.isPaged) {
             PageRequest.of(
                 pageable.pageNumber,
                 pageable.pageSize,
                 Sort.by(sortOrders),
             )
+        } else {
+            // For unpaged requests, create a pageable with a large page size
+            PageRequest.of(0, Integer.MAX_VALUE, Sort.by(sortOrders))
+        }
+        
         return seasonStatsRepository.findAll(spec, sortedPageable)
     }
 
@@ -250,27 +254,28 @@ class SeasonStatsService(
      */
     fun getLeaderboard(
         statName: String,
-        seasonNumber: Int? = null,
+        season: Int? = null,
         subdivision: String? = null,
         conference: String? = null,
         limit: Int = 10,
         ascending: Boolean = false,
     ): List<SeasonStats> {
-        val allStats =
-            getFilteredSeasonStats(
-                team = null,
-                conference = null,
-                season = null,
-                stat = null,
-                pageable = Pageable.unpaged(),
-            )
+        try {
+            val allStatsPage =
+                getFilteredSeasonStats(
+                    team = null,
+                    season = null,
+                    pageable = Pageable.unpaged(),
+                )
 
-        val filteredStats =
-            allStats.filter { stats ->
-                seasonNumber?.let { stats.seasonNumber == it } ?: true &&
-                    subdivision?.let { stats.subdivision?.name.equals(it, ignoreCase = true) } ?: true &&
-                    conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
-            }
+            val allStats = allStatsPage.content
+
+            val filteredStats =
+                allStats.filter { stats ->
+                    season?.let { stats.seasonNumber == it } ?: true &&
+                        subdivision?.let { stats.subdivision?.name.equals(it, ignoreCase = true) } ?: true &&
+                        conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
+                }
 
         return when (statName.lowercase()) {
             "wins" -> filteredStats.sortedByDescending { it.wins }
@@ -359,5 +364,9 @@ class SeasonStatsService(
                 sortedStats
             }
         }.take(limit)
+        } catch (e: Exception) {
+            Logger.error("Error in getLeaderboard: ${e.message}", e)
+            throw e
+        }
     }
 }

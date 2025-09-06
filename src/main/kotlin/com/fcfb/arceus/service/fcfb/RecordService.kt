@@ -30,12 +30,11 @@ class RecordService(
      */
     fun getFilteredRecords(
         season: Int?,
-        conference: String?,
         recordType: RecordType?,
         recordName: Stats?,
         pageable: Pageable,
     ): Page<Record> {
-        val spec = recordSpecificationService.createSpecification(season, conference, recordType, recordName)
+        val spec = recordSpecificationService.createSpecification(season, recordType, recordName)
         val sortOrders = recordSpecificationService.createSort()
         val sortedPageable =
             PageRequest.of(
