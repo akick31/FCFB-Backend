@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("${ApiConstants.FULL_PATH}/season-stats")
 @CrossOrigin(origins = ["*"])
 class SeasonStatsController(
-    private val seasonStatsService: SeasonStatsService
+    private val seasonStatsService: SeasonStatsService,
 ) {
-
     /**
      * Get all season stats with optional filtering
      */
@@ -19,16 +18,17 @@ class SeasonStatsController(
     fun getAllSeasonStats(
         @RequestParam(required = false) team: String?,
         @RequestParam(required = false) seasonNumber: Int?,
-        @RequestParam(required = false) subdivision: String?
+        @RequestParam(required = false) subdivision: String?,
     ): ResponseEntity<List<SeasonStats>> {
         val allStats = seasonStatsService.getAllSeasonStats()
-        
-        val filteredStats = allStats.filter { stats ->
-            team?.let { stats.team.equals(it, ignoreCase = true) } ?: true &&
-            seasonNumber?.let { stats.seasonNumber == it } ?: true &&
-            subdivision?.let { stats.subdivision?.name.equals(it, ignoreCase = true) } ?: true
-        }
-        
+
+        val filteredStats =
+            allStats.filter { stats ->
+                team?.let { stats.team.equals(it, ignoreCase = true) } ?: true &&
+                    seasonNumber?.let { stats.seasonNumber == it } ?: true &&
+                    subdivision?.let { stats.subdivision?.name.equals(it, ignoreCase = true) } ?: true
+            }
+
         return ResponseEntity.ok(filteredStats)
     }
 
@@ -38,7 +38,7 @@ class SeasonStatsController(
     @GetMapping("")
     fun getSeasonStatsByTeamAndSeason(
         @RequestParam team: String,
-        @RequestParam seasonNumber: Int
+        @RequestParam seasonNumber: Int,
     ): ResponseEntity<SeasonStats> {
         val seasonStats = seasonStatsService.getSeasonStatsByTeamAndSeason(team, seasonNumber)
         return if (seasonStats != null) {
@@ -52,7 +52,9 @@ class SeasonStatsController(
      * Get all season stats for a specific team
      */
     @GetMapping("/team")
-    fun getSeasonStatsByTeam(@RequestParam team: String): ResponseEntity<List<SeasonStats>> {
+    fun getSeasonStatsByTeam(
+        @RequestParam team: String,
+    ): ResponseEntity<List<SeasonStats>> {
         val seasonStats = seasonStatsService.getSeasonStatsByTeam(team)
         return ResponseEntity.ok(seasonStats)
     }
@@ -61,7 +63,9 @@ class SeasonStatsController(
      * Get all season stats for a specific season
      */
     @GetMapping("/season")
-    fun getSeasonStatsBySeason(@RequestParam seasonNumber: Int): ResponseEntity<List<SeasonStats>> {
+    fun getSeasonStatsBySeason(
+        @RequestParam seasonNumber: Int,
+    ): ResponseEntity<List<SeasonStats>> {
         val seasonStats = seasonStatsService.getSeasonStatsBySeason(seasonNumber)
         return ResponseEntity.ok(seasonStats)
     }
@@ -85,7 +89,7 @@ class SeasonStatsController(
     @PostMapping("/generate/team-season")
     fun generateSeasonStatsForTeam(
         @RequestParam team: String,
-        @RequestParam seasonNumber: Int
+        @RequestParam seasonNumber: Int,
     ): ResponseEntity<String> {
         return try {
             seasonStatsService.generateSeasonStatsForTeam(team, seasonNumber)
@@ -105,17 +109,18 @@ class SeasonStatsController(
         @RequestParam(required = false) subdivision: String?,
         @RequestParam(required = false) conference: String?,
         @RequestParam(defaultValue = "10") limit: Int,
-        @RequestParam(defaultValue = "false") ascending: Boolean
+        @RequestParam(defaultValue = "false") ascending: Boolean,
     ): ResponseEntity<List<SeasonStats>> {
         return try {
-            val leaderboard = seasonStatsService.getLeaderboard(
-                statName = statName,
-                seasonNumber = seasonNumber,
-                subdivision = subdivision,
-                conference = conference,
-                limit = limit,
-                ascending = ascending
-            )
+            val leaderboard =
+                seasonStatsService.getLeaderboard(
+                    statName = statName,
+                    seasonNumber = seasonNumber,
+                    subdivision = subdivision,
+                    conference = conference,
+                    limit = limit,
+                    ascending = ascending,
+                )
             ResponseEntity.ok(leaderboard)
         } catch (e: Exception) {
             ResponseEntity.internalServerError().build()

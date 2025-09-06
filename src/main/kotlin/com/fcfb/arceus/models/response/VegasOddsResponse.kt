@@ -6,5 +6,5 @@ data class VegasOddsResponse(
     val homeSpread: Double,
     val awaySpread: Double,
     val homeElo: Double,
-    val awayElo: Double
+    val awayElo: Double,
 )

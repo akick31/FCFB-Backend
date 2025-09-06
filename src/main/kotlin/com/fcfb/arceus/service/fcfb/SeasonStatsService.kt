@@ -17,9 +17,8 @@ class SeasonStatsService(
     private val seasonStatsRepository: SeasonStatsRepository,
     private val gameStatsRepository: GameStatsRepository,
     private val teamRepository: TeamRepository,
-    private val conferenceStatsService: ConferenceStatsService
+    private val conferenceStatsService: ConferenceStatsService,
 ) {
-
     /**
      * Filter out scrimmage games from game stats
      */
@@ -37,7 +36,10 @@ class SeasonStatsService(
     /**
      * Get season stats for a specific team and season
      */
-    fun getSeasonStatsByTeamAndSeason(team: String, seasonNumber: Int): SeasonStats? {
+    fun getSeasonStatsByTeamAndSeason(
+        team: String,
+        seasonNumber: Int,
+    ): SeasonStats? {
         return seasonStatsRepository.findByTeamAndSeasonNumber(team, seasonNumber)
     }
 
@@ -60,48 +62,53 @@ class SeasonStatsService(
      */
     fun generateAllSeasonStats() {
         Logger.info("Starting generation of all season stats")
-        
+
         // Clear existing season stats
         seasonStatsRepository.deleteAll()
-        
+
         // Get all unique team-season combinations (excluding scrimmage games)
         val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
-        val teamSeasonCombinations = allGameStats
-            .map { "${it.team}_${it.season}" }
-            .distinct()
-        
+        val teamSeasonCombinations =
+            allGameStats
+                .map { "${it.team}_${it.season}" }
+                .distinct()
+
         for (combination in teamSeasonCombinations) {
             val (team, seasonStr) = combination.split("_")
             val season = seasonStr.toInt()
             generateSeasonStatsForTeam(team, season)
         }
-        
+
         Logger.info("Completed generation of all season stats")
     }
 
     /**
      * Generate season stats for a specific team and season
      */
-    fun generateSeasonStatsForTeam(team: String, seasonNumber: Int) {
+    fun generateSeasonStatsForTeam(
+        team: String,
+        seasonNumber: Int,
+    ) {
         Logger.info("Generating season stats for $team in season $seasonNumber")
-        
+
         // Delete existing season stats for this team and season
         seasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
-        
+
         // Get all game stats for this team and season (excluding scrimmage games)
-        val teamGameStats = filterOutScrimmageGames(
-            gameStatsRepository.findAll()
-                .filter { it.team == team && it.season == seasonNumber }
-        )
-        
+        val teamGameStats =
+            filterOutScrimmageGames(
+                gameStatsRepository.findAll()
+                    .filter { it.team == team && it.season == seasonNumber },
+            )
+
         if (teamGameStats.isEmpty()) {
             Logger.warn("No game stats found for $team in season $seasonNumber")
             return
         }
-        
+
         // Create season stats by aggregating game stats
         val seasonStats = aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber)
-        
+
         seasonStatsRepository.save(seasonStats)
         Logger.info("Completed generating season stats for $team in season $seasonNumber")
     }
@@ -113,13 +120,13 @@ class SeasonStatsService(
         val team = gameStats.team ?: return
         val season = gameStats.season ?: return
         val subdivision = gameStats.subdivision ?: return
-        
+
         // Regenerate season stats for this team and season
         generateSeasonStatsForTeam(team, season)
-        
+
         // Update conference stats for this subdivision and season
         conferenceStatsService.updateConferenceStatsForSeasonStats(
-            seasonStatsRepository.findByTeamAndSeasonNumber(team, season) ?: return
+            seasonStatsRepository.findByTeamAndSeasonNumber(team, season) ?: return,
         )
     }
 
@@ -129,14 +136,14 @@ class SeasonStatsService(
     private fun aggregateGameStatsToSeasonStats(
         gameStatsList: List<GameStats>,
         team: String,
-        seasonNumber: Int
+        seasonNumber: Int,
     ): SeasonStats {
         val firstGameStats = gameStatsList.first()
-        
+
         // Get conference from Team entity instead of GameStats
         val teamEntity = teamRepository.findByName(team)
         val conference = teamEntity?.conference
-        
+
         return SeasonStats(
             team = team,
             seasonNumber = seasonNumber,
@@ -146,7 +153,6 @@ class SeasonStatsService(
             conference = conference,
             offensivePlaybook = firstGameStats.offensivePlaybook,
             defensivePlaybook = firstGameStats.defensivePlaybook,
-            
             // Aggregate all the stats
             passAttempts = gameStatsList.sumOf { it.passAttempts },
             passCompletions = gameStatsList.sumOf { it.passCompletions },
@@ -156,21 +162,17 @@ class SeasonStatsService(
             passTouchdowns = gameStatsList.sumOf { it.passTouchdowns },
             passSuccesses = gameStatsList.sumOf { it.passSuccesses },
             passSuccessPercentage = calculateAverage(gameStatsList.mapNotNull { it.passSuccessPercentage }),
-            
             rushAttempts = gameStatsList.sumOf { it.rushAttempts },
             rushSuccesses = gameStatsList.sumOf { it.rushSuccesses },
             rushSuccessPercentage = calculateAverage(gameStatsList.mapNotNull { it.rushSuccessPercentage }),
             rushYards = gameStatsList.sumOf { it.rushYards },
             longestRun = gameStatsList.maxOfOrNull { it.longestRun } ?: 0,
             rushTouchdowns = gameStatsList.sumOf { it.rushTouchdowns },
-            
             totalYards = gameStatsList.sumOf { it.totalYards },
             averageYardsPerPlay = calculateAverage(gameStatsList.mapNotNull { it.averageYardsPerPlay }),
             firstDowns = gameStatsList.sumOf { it.firstDowns },
-            
             sacksAllowed = gameStatsList.sumOf { it.sacksAllowed },
             sacksForced = gameStatsList.sumOf { it.sacksForced },
-            
             interceptionsLost = gameStatsList.sumOf { it.interceptionsLost },
             interceptionsForced = gameStatsList.sumOf { it.interceptionsForced },
             fumblesLost = gameStatsList.sumOf { it.fumblesLost },
@@ -184,21 +186,18 @@ class SeasonStatsService(
             pickSixesForced = gameStatsList.sumOf { it.pickSixesForced },
             fumbleReturnTdsCommitted = gameStatsList.sumOf { it.fumbleReturnTdsCommitted },
             fumbleReturnTdsForced = gameStatsList.sumOf { it.fumbleReturnTdsForced },
-            
             fieldGoalMade = gameStatsList.sumOf { it.fieldGoalMade },
             fieldGoalAttempts = gameStatsList.sumOf { it.fieldGoalAttempts },
             fieldGoalPercentage = calculateAverage(gameStatsList.mapNotNull { it.fieldGoalPercentage }),
             longestFieldGoal = gameStatsList.maxOfOrNull { it.longestFieldGoal } ?: 0,
             blockedOpponentFieldGoals = gameStatsList.sumOf { it.blockedOpponentFieldGoals },
             fieldGoalTouchdown = gameStatsList.sumOf { it.fieldGoalTouchdown },
-            
             puntsAttempted = gameStatsList.sumOf { it.puntsAttempted },
             longestPunt = gameStatsList.maxOfOrNull { it.longestPunt } ?: 0,
             averagePuntLength = calculateAverage(gameStatsList.mapNotNull { it.averagePuntLength }),
             blockedOpponentPunt = gameStatsList.sumOf { it.blockedOpponentPunt },
             puntReturnTd = gameStatsList.sumOf { it.puntReturnTd },
             puntReturnTdPercentage = calculateAverage(gameStatsList.mapNotNull { it.puntReturnTdPercentage }),
-            
             numberOfKickoffs = gameStatsList.sumOf { it.numberOfKickoffs },
             onsideAttempts = gameStatsList.sumOf { it.onsideAttempts },
             onsideSuccess = gameStatsList.sumOf { it.onsideSuccess },
@@ -208,39 +207,32 @@ class SeasonStatsService(
             touchbackPercentage = calculateAverage(gameStatsList.mapNotNull { it.touchbackPercentage }),
             kickReturnTd = gameStatsList.sumOf { it.kickReturnTd },
             kickReturnTdPercentage = calculateAverage(gameStatsList.mapNotNull { it.kickReturnTdPercentage }),
-            
             numberOfDrives = gameStatsList.sumOf { it.numberOfDrives },
             timeOfPossession = gameStatsList.sumOf { it.timeOfPossession },
-            
             touchdowns = gameStatsList.sumOf { it.touchdowns },
-            
             thirdDownConversionSuccess = gameStatsList.sumOf { it.thirdDownConversionSuccess },
             thirdDownConversionAttempts = gameStatsList.sumOf { it.thirdDownConversionAttempts },
             thirdDownConversionPercentage = calculateAverage(gameStatsList.mapNotNull { it.thirdDownConversionPercentage }),
             fourthDownConversionSuccess = gameStatsList.sumOf { it.fourthDownConversionSuccess },
             fourthDownConversionAttempts = gameStatsList.sumOf { it.fourthDownConversionAttempts },
             fourthDownConversionPercentage = calculateAverage(gameStatsList.mapNotNull { it.fourthDownConversionPercentage }),
-            
             largestLead = gameStatsList.maxOfOrNull { it.largestLead } ?: 0,
             largestDeficit = gameStatsList.maxOfOrNull { it.largestDeficit } ?: 0,
-            
             redZoneAttempts = gameStatsList.sumOf { it.redZoneAttempts },
             redZoneSuccesses = gameStatsList.sumOf { it.redZoneSuccesses },
             redZoneSuccessPercentage = calculateAverage(gameStatsList.mapNotNull { it.redZoneSuccessPercentage }),
             redZonePercentage = calculateAverage(gameStatsList.mapNotNull { it.redZonePercentage }),
-            
             safetiesForced = gameStatsList.sumOf { it.safetiesForced },
             safetiesCommitted = gameStatsList.sumOf { it.safetiesCommitted },
-            
             averageOffensiveDiff = calculateAverage(gameStatsList.mapNotNull { it.averageOffensiveDiff }),
             averageDefensiveDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDefensiveDiff }),
             averageOffensiveSpecialTeamsDiff = calculateAverage(gameStatsList.mapNotNull { it.averageOffensiveSpecialTeamsDiff }),
             averageDefensiveSpecialTeamsDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDefensiveSpecialTeamsDiff }),
             averageDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDiff }),
             averageResponseSpeed = calculateAverage(gameStatsList.mapNotNull { it.averageResponseSpeed }),
-            
-            lastModifiedTs = ZonedDateTime.now(ZoneId.of("America/New_York"))
-                .format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
+            lastModifiedTs =
+                ZonedDateTime.now(ZoneId.of("America/New_York"))
+                    .format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
         )
     }
 
@@ -262,18 +254,19 @@ class SeasonStatsService(
      */
     fun generateSeasonStatsForSeason(seasonNumber: Int) {
         Logger.info("Generating season stats for all teams in season $seasonNumber")
-        
+
         // Get all unique teams for this season (excluding scrimmage games)
         val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
-        val teams = allGameStats
-            .filter { it.season == seasonNumber }
-            .mapNotNull { it.team }
-            .distinct()
-        
+        val teams =
+            allGameStats
+                .filter { it.season == seasonNumber }
+                .mapNotNull { it.team }
+                .distinct()
+
         for (team in teams) {
             generateSeasonStatsForTeam(team, seasonNumber)
         }
-        
+
         Logger.info("Completed generating season stats for all teams in season $seasonNumber")
     }
 
@@ -282,19 +275,20 @@ class SeasonStatsService(
      */
     fun generateSeasonStatsForAllSeasons(team: String) {
         Logger.info("Generating season stats for $team across all seasons")
-        
+
         // Get all unique seasons for this team (excluding scrimmage games)
         val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
-        val seasons = allGameStats
-            .filter { it.team == team }
-            .mapNotNull { it.season }
-            .distinct()
-            .sorted()
-        
+        val seasons =
+            allGameStats
+                .filter { it.team == team }
+                .mapNotNull { it.season }
+                .distinct()
+                .sorted()
+
         for (season in seasons) {
             generateSeasonStatsForTeam(team, season)
         }
-        
+
         Logger.info("Completed generating season stats for $team across all seasons")
     }
 
@@ -310,7 +304,10 @@ class SeasonStatsService(
     /**
      * Get season stats for a specific stat for a specific team
      */
-    fun getSeasonStatsByTeamAndStat(team: String, statName: String): List<SeasonStats> {
+    fun getSeasonStatsByTeamAndStat(
+        team: String,
+        statName: String,
+    ): List<SeasonStats> {
         // This would require a custom repository method to filter by specific stat fields
         // For now, return all season stats for the team and let the caller filter
         return getSeasonStatsByTeam(team)
@@ -319,7 +316,11 @@ class SeasonStatsService(
     /**
      * Get season stats for a specific stat for a specific team and season
      */
-    fun getSeasonStatsByTeamSeasonAndStat(team: String, seasonNumber: Int, statName: String): SeasonStats? {
+    fun getSeasonStatsByTeamSeasonAndStat(
+        team: String,
+        seasonNumber: Int,
+        statName: String,
+    ): SeasonStats? {
         // This would require a custom repository method to filter by specific stat fields
         // For now, return the season stats for the team and season and let the caller filter
         return getSeasonStatsByTeamAndSeason(team, seasonNumber)
@@ -328,7 +329,10 @@ class SeasonStatsService(
     /**
      * Get season stats for a specific stat across all teams in a specific season
      */
-    fun getSeasonStatsBySeasonAndStat(seasonNumber: Int, statName: String): List<SeasonStats> {
+    fun getSeasonStatsBySeasonAndStat(
+        seasonNumber: Int,
+        statName: String,
+    ): List<SeasonStats> {
         // This would require a custom repository method to filter by specific stat fields
         // For now, return all season stats for the season and let the caller filter
         return getSeasonStatsBySeason(seasonNumber)
@@ -337,7 +341,10 @@ class SeasonStatsService(
     /**
      * Delete season stats for a specific team and season
      */
-    fun deleteSeasonStatsForTeam(team: String, seasonNumber: Int) {
+    fun deleteSeasonStatsForTeam(
+        team: String,
+        seasonNumber: Int,
+    ) {
         Logger.info("Deleting season stats for $team in season $seasonNumber")
         seasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
         Logger.info("Completed deleting season stats for $team in season $seasonNumber")
@@ -405,7 +412,10 @@ class SeasonStatsService(
     /**
      * Check if season stats exist for a specific team and season
      */
-    fun seasonStatsExistForTeam(team: String, seasonNumber: Int): Boolean {
+    fun seasonStatsExistForTeam(
+        team: String,
+        seasonNumber: Int,
+    ): Boolean {
         return seasonStatsRepository.existsByTeamAndSeasonNumber(team, seasonNumber)
     }
 
@@ -432,16 +442,17 @@ class SeasonStatsService(
         subdivision: String? = null,
         conference: String? = null,
         limit: Int = 10,
-        ascending: Boolean = false
+        ascending: Boolean = false,
     ): List<SeasonStats> {
         val allStats = getAllSeasonStats()
-        
-        val filteredStats = allStats.filter { stats ->
-            seasonNumber?.let { stats.seasonNumber == it } ?: true &&
-            subdivision?.let { stats.subdivision?.name.equals(it, ignoreCase = true) } ?: true &&
-            conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
-        }
-        
+
+        val filteredStats =
+            allStats.filter { stats ->
+                seasonNumber?.let { stats.seasonNumber == it } ?: true &&
+                    subdivision?.let { stats.subdivision?.name.equals(it, ignoreCase = true) } ?: true &&
+                    conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
+            }
+
         return when (statName.lowercase()) {
             "wins" -> filteredStats.sortedByDescending { it.wins }
             "losses" -> filteredStats.sortedByDescending { it.losses }

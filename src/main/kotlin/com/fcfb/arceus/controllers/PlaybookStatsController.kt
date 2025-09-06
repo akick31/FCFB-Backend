@@ -11,9 +11,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("${ApiConstants.FULL_PATH}/playbook-stats")
 @CrossOrigin(origins = ["*"])
 class PlaybookStatsController(
-    private val playbookStatsService: PlaybookStatsService
+    private val playbookStatsService: PlaybookStatsService,
 ) {
-
     /**
      * Get all playbook stats with optional filtering
      */
@@ -21,16 +20,17 @@ class PlaybookStatsController(
     fun getAllPlaybookStats(
         @RequestParam(required = false) offensivePlaybook: String?,
         @RequestParam(required = false) defensivePlaybook: String?,
-        @RequestParam(required = false) seasonNumber: Int?
+        @RequestParam(required = false) seasonNumber: Int?,
     ): ResponseEntity<List<PlaybookStats>> {
         val allStats = playbookStatsService.getAllPlaybookStats()
-        
-        val filteredStats = allStats.filter { stats ->
-            offensivePlaybook?.let { stats.offensivePlaybook.name.equals(it, ignoreCase = true) } ?: true &&
-            defensivePlaybook?.let { stats.defensivePlaybook.name.equals(it, ignoreCase = true) } ?: true &&
-            seasonNumber?.let { stats.seasonNumber == it } ?: true
-        }
-        
+
+        val filteredStats =
+            allStats.filter { stats ->
+                offensivePlaybook?.let { stats.offensivePlaybook.name.equals(it, ignoreCase = true) } ?: true &&
+                    defensivePlaybook?.let { stats.defensivePlaybook.name.equals(it, ignoreCase = true) } ?: true &&
+                    seasonNumber?.let { stats.seasonNumber == it } ?: true
+            }
+
         return ResponseEntity.ok(filteredStats)
     }
 
@@ -41,23 +41,28 @@ class PlaybookStatsController(
     fun getPlaybookStatsByOffensivePlaybookAndDefensivePlaybookAndSeason(
         @RequestParam offensivePlaybook: String,
         @RequestParam defensivePlaybook: String,
-        @RequestParam seasonNumber: Int
+        @RequestParam seasonNumber: Int,
     ): ResponseEntity<PlaybookStats> {
-        val offensivePlaybookEnum = try {
-            OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
-        
-        val defensivePlaybookEnum = try {
-            DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
-        
-        val playbookStats = playbookStatsService.getPlaybookStatsByOffensivePlaybookAndDefensivePlaybookAndSeason(
-            offensivePlaybookEnum, defensivePlaybookEnum, seasonNumber
-        )
+        val offensivePlaybookEnum =
+            try {
+                OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().build()
+            }
+
+        val defensivePlaybookEnum =
+            try {
+                DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().build()
+            }
+
+        val playbookStats =
+            playbookStatsService.getPlaybookStatsByOffensivePlaybookAndDefensivePlaybookAndSeason(
+                offensivePlaybookEnum,
+                defensivePlaybookEnum,
+                seasonNumber,
+            )
         return if (playbookStats != null) {
             ResponseEntity.ok(playbookStats)
         } else {
@@ -69,13 +74,16 @@ class PlaybookStatsController(
      * Get all playbook stats for a specific offensive playbook
      */
     @GetMapping("/offensive-playbook")
-    fun getPlaybookStatsByOffensivePlaybook(@RequestParam offensivePlaybook: String): ResponseEntity<List<PlaybookStats>> {
-        val offensivePlaybookEnum = try {
-            OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
-        
+    fun getPlaybookStatsByOffensivePlaybook(
+        @RequestParam offensivePlaybook: String,
+    ): ResponseEntity<List<PlaybookStats>> {
+        val offensivePlaybookEnum =
+            try {
+                OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().build()
+            }
+
         val playbookStats = playbookStatsService.getPlaybookStatsByOffensivePlaybook(offensivePlaybookEnum)
         return ResponseEntity.ok(playbookStats)
     }
@@ -84,13 +92,16 @@ class PlaybookStatsController(
      * Get all playbook stats for a specific defensive playbook
      */
     @GetMapping("/defensive-playbook")
-    fun getPlaybookStatsByDefensivePlaybook(@RequestParam defensivePlaybook: String): ResponseEntity<List<PlaybookStats>> {
-        val defensivePlaybookEnum = try {
-            DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
-        
+    fun getPlaybookStatsByDefensivePlaybook(
+        @RequestParam defensivePlaybook: String,
+    ): ResponseEntity<List<PlaybookStats>> {
+        val defensivePlaybookEnum =
+            try {
+                DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().build()
+            }
+
         val playbookStats = playbookStatsService.getPlaybookStatsByDefensivePlaybook(defensivePlaybookEnum)
         return ResponseEntity.ok(playbookStats)
     }
@@ -99,7 +110,9 @@ class PlaybookStatsController(
      * Get all playbook stats for a specific season
      */
     @GetMapping("/season")
-    fun getPlaybookStatsBySeason(@RequestParam seasonNumber: Int): ResponseEntity<List<PlaybookStats>> {
+    fun getPlaybookStatsBySeason(
+        @RequestParam seasonNumber: Int,
+    ): ResponseEntity<List<PlaybookStats>> {
         val playbookStats = playbookStatsService.getPlaybookStatsBySeason(seasonNumber)
         return ResponseEntity.ok(playbookStats)
     }
@@ -123,14 +136,15 @@ class PlaybookStatsController(
     @PostMapping("/generate/offensive-playbook-season")
     fun generatePlaybookStatsForOffensivePlaybookAndSeason(
         @RequestParam offensivePlaybook: String,
-        @RequestParam seasonNumber: Int
+        @RequestParam seasonNumber: Int,
     ): ResponseEntity<String> {
-        val offensivePlaybookEnum = try {
-            OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().body("Invalid offensive playbook: $offensivePlaybook")
-        }
-        
+        val offensivePlaybookEnum =
+            try {
+                OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().body("Invalid offensive playbook: $offensivePlaybook")
+            }
+
         return try {
             playbookStatsService.generatePlaybookStatsForOffensivePlaybookAndSeason(offensivePlaybookEnum, seasonNumber)
             ResponseEntity.ok("Playbook stats for $offensivePlaybook in season $seasonNumber generated successfully")
@@ -145,14 +159,15 @@ class PlaybookStatsController(
     @PostMapping("/generate/defensive-playbook-season")
     fun generatePlaybookStatsForDefensivePlaybookAndSeason(
         @RequestParam defensivePlaybook: String,
-        @RequestParam seasonNumber: Int
+        @RequestParam seasonNumber: Int,
     ): ResponseEntity<String> {
-        val defensivePlaybookEnum = try {
-            DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().body("Invalid defensive playbook: $defensivePlaybook")
-        }
-        
+        val defensivePlaybookEnum =
+            try {
+                DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().body("Invalid defensive playbook: $defensivePlaybook")
+            }
+
         return try {
             playbookStatsService.generatePlaybookStatsForDefensivePlaybookAndSeason(defensivePlaybookEnum, seasonNumber)
             ResponseEntity.ok("Playbook stats for $defensivePlaybook in season $seasonNumber generated successfully")
@@ -168,23 +183,27 @@ class PlaybookStatsController(
     fun generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(
         @RequestParam offensivePlaybook: String,
         @RequestParam defensivePlaybook: String,
-        @RequestParam seasonNumber: Int
+        @RequestParam seasonNumber: Int,
     ): ResponseEntity<String> {
-        val offensivePlaybookEnum = try {
-            OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().body("Invalid offensive playbook: $offensivePlaybook")
-        }
-        
-        val defensivePlaybookEnum = try {
-            DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().body("Invalid defensive playbook: $defensivePlaybook")
-        }
-        
+        val offensivePlaybookEnum =
+            try {
+                OffensivePlaybook.valueOf(offensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().body("Invalid offensive playbook: $offensivePlaybook")
+            }
+
+        val defensivePlaybookEnum =
+            try {
+                DefensivePlaybook.valueOf(defensivePlaybook.uppercase())
+            } catch (e: IllegalArgumentException) {
+                return ResponseEntity.badRequest().body("Invalid defensive playbook: $defensivePlaybook")
+            }
+
         return try {
             playbookStatsService.generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(
-                offensivePlaybookEnum, defensivePlaybookEnum, seasonNumber
+                offensivePlaybookEnum,
+                defensivePlaybookEnum,
+                seasonNumber,
             )
             ResponseEntity.ok("Playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber generated successfully")
         } catch (e: Exception) {

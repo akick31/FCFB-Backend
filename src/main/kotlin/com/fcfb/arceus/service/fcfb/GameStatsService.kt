@@ -1393,9 +1393,10 @@ class GameStatsService(
      * @param season Season number
      * @return List of GameStats for the team in the specified season
      */
-    fun getAllGameStatsForTeamAndSeason(team: String, season: Int): List<GameStats> {
+    fun getAllGameStatsForTeamAndSeason(
+        team: String,
+        season: Int,
+    ): List<GameStats> {
         return gameStatsRepository.findByTeamAndSeason(team, season)
     }
-
-
 }

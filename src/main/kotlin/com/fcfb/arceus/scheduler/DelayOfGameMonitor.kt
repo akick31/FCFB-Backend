@@ -116,10 +116,10 @@ class DelayOfGameMonitor(
      */
     private fun applyPregameDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
-        
+
         // Determine which team should be penalized (handles both regular and overtime coin toss)
         val teamToPenalize = getTeamToPenalize(game)
-        
+
         if (teamToPenalize == TeamSide.HOME) {
             game.awayScore += 8
             if (game.gameType != GameType.SCRIMMAGE) {
@@ -153,10 +153,10 @@ class DelayOfGameMonitor(
      */
     private fun applyDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
-        
+
         // Determine which team should be penalized (handles both regular and overtime coin toss)
         val teamToPenalize = getTeamToPenalize(game)
-        
+
         if (teamToPenalize == TeamSide.HOME) {
             game.currentPlayType = PlayType.KICKOFF
             game.possession = TeamSide.AWAY
@@ -216,10 +216,10 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
-        
+
         // Determine which team should be penalized (handles both regular and overtime coin toss)
         val teamToPenalize = getTeamToPenalize(game)
-        
+
         if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
             play.actualResult = ActualResult.DELAY_OF_GAME
@@ -240,10 +240,10 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
-        
+
         // Determine which team should be penalized (handles both regular and overtime coin toss)
         val teamToPenalize = getTeamToPenalize(game)
-        
+
         if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
             play.actualResult = ActualResult.DELAY_OF_GAME

@@ -195,7 +195,8 @@ class PlayControllerTest {
         val mockPlay = createSamplePlay()
         every { playService.updatePlay(any<Play>()) } returns mockPlay
 
-        val body = """
+        val body =
+            """
             {
               "playId": 1,
               "gameId": 1,
@@ -232,12 +233,12 @@ class PlayControllerTest {
               "offensiveResponseSpeed": 5000,
               "defensiveResponseSpeed": 3000
             }
-        """.trimIndent()
+            """.trimIndent()
 
         mockMvc.perform(
             put("/api/v1/arceus/play")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(body)
+                .content(body),
         )
             .andExpect(status().isOk)
 

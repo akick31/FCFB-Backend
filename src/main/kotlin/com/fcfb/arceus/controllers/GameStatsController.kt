@@ -26,7 +26,7 @@ class GameStatsController(
     fun getGameStats(
         @RequestParam(required = false) gameId: Int?,
         @RequestParam team: String,
-        @RequestParam(required = false) season: Int?
+        @RequestParam(required = false) season: Int?,
     ): ResponseEntity<Any> {
         return when {
             gameId != null -> {

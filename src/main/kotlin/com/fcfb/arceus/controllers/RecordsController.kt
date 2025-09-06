@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("${ApiConstants.FULL_PATH}/records")
 @CrossOrigin(origins = ["*"])
 class RecordsController(
-    private val recordService: RecordService
+    private val recordService: RecordService,
 ) {
-
     /**
      * Get all records with optional filtering
      */
@@ -24,7 +23,7 @@ class RecordsController(
         @RequestParam(required = false) recordName: Stats?,
         @RequestParam(required = false) recordType: RecordType?,
         @RequestParam(required = false) seasonNumber: Int?,
-        @RequestParam(required = false) team: String?
+        @RequestParam(required = false) team: String?,
     ): ResponseEntity<List<Record>> {
         val filter = RecordFilterRequest(recordName, recordType, seasonNumber, team)
         val records = recordService.getFilteredRecords(filter)
@@ -37,7 +36,7 @@ class RecordsController(
     @GetMapping("")
     fun getRecord(
         @RequestParam recordName: Stats,
-        @RequestParam recordType: RecordType
+        @RequestParam recordType: RecordType,
     ): ResponseEntity<Record> {
         val record = recordService.getRecord(recordName, recordType)
         return if (record != null) {
@@ -65,7 +64,7 @@ class RecordsController(
      */
     @PostMapping("/generate")
     fun generateRecord(
-        @RequestBody request: GenerateRecordRequest
+        @RequestBody request: GenerateRecordRequest,
     ): ResponseEntity<String> {
         return try {
             recordService.generateRecord(request.recordName, request.recordType)
@@ -79,7 +78,9 @@ class RecordsController(
      * Get all records for a specific season
      */
     @GetMapping("/season")
-    fun getRecordsBySeason(@RequestParam seasonNumber: Int): ResponseEntity<List<Record>> {
+    fun getRecordsBySeason(
+        @RequestParam seasonNumber: Int,
+    ): ResponseEntity<List<Record>> {
         val filter = RecordFilterRequest(seasonNumber = seasonNumber)
         val records = recordService.getFilteredRecords(filter)
         return ResponseEntity.ok(records)
@@ -89,7 +90,9 @@ class RecordsController(
      * Get all records for a specific team
      */
     @GetMapping("/team")
-    fun getRecordsByTeam(@RequestParam team: String): ResponseEntity<List<Record>> {
+    fun getRecordsByTeam(
+        @RequestParam team: String,
+    ): ResponseEntity<List<Record>> {
         val filter = RecordFilterRequest(team = team)
         val records = recordService.getFilteredRecords(filter)
         return ResponseEntity.ok(records)
@@ -99,7 +102,9 @@ class RecordsController(
      * Get all records for a specific stat type
      */
     @GetMapping("/stat")
-    fun getRecordsByStat(@RequestParam recordName: Stats): ResponseEntity<List<Record>> {
+    fun getRecordsByStat(
+        @RequestParam recordName: Stats,
+    ): ResponseEntity<List<Record>> {
         val filter = RecordFilterRequest(recordName = recordName)
         val records = recordService.getFilteredRecords(filter)
         return ResponseEntity.ok(records)
