@@ -42,7 +42,7 @@ class WinProbabilityService(
             val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
             val down = play.down
             val yardsToGo = play.yardsToGo
-            val ballLocation = play.ballLocation
+            val ballLocation = 100-play.ballLocation
             val timeoutDiff = play.homeTimeouts - play.awayTimeouts
             val quarter = play.quarter
             
@@ -507,11 +507,9 @@ class WinProbabilityService(
      */
     fun getModelInfo(): Map<String, Any> {
         return mapOf(
-            "model_type" to "XGBoost",
-            "num_trees" to xgboostPredictor.modelLoader.getNumTrees(),
-            "num_features" to xgboostPredictor.modelLoader.getNumFeatures(),
-            "feature_names" to xgboostPredictor.modelLoader.getFeatureNames(),
-            "base_score" to xgboostPredictor.modelLoader.getBaseScore(),
+            "model_type" to "XGBoost4J",
+            "num_features" to 9,
+            "feature_names" to listOf("down", "distance", "position", "margin", "seconds_left_game", "seconds_left_half", "half", "had_first_possession", "elo_diff_time"),
             "k_factor" to kFactor,
             "default_elo" to defaultElo
         )

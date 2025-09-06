@@ -1,77 +1,67 @@
 package com.fcfb.arceus.util.ml
 
+import ml.dmlc.xgboost4j.java.Booster
+import ml.dmlc.xgboost4j.java.DMatrix
+import ml.dmlc.xgboost4j.java.XGBoost
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.io.File
 
 @Component
-class XGBoostPredictor(
-    val modelLoader: XGBoostModelLoader
-) {
+class XGBoostPredictor {
     private val logger = LoggerFactory.getLogger(XGBoostPredictor::class.java)
+    private var booster: Booster? = null
+
+    init {
+        loadModel()
+    }
+
+    private fun loadModel() {
+        try {
+            val modelFile = File("src/main/resources/wpmodel.json")
+            if (!modelFile.exists()) {
+                logger.error("Model file not found: ${modelFile.absolutePath}")
+                return
+            }
+            
+            booster = XGBoost.loadModel(modelFile.absolutePath)
+            logger.info("XGBoost model loaded successfully")
+        } catch (e: Exception) {
+            logger.error("Error loading XGBoost model", e)
+        }
+    }
 
     /**
      * Predict win probability using the XGBoost model
-     * @param features Array of 9 features in order: [score_diff, time_remaining, down, yards_to_go, ball_location, elo_diff, timeout_diff, field_position, quarter]
+     * @param features Array of 9 features in order: [down, distance, position, margin, seconds_left_game, seconds_left_half, half, had_first_possession, elo_diff_time]
      * @return Win probability between 0 and 1
      */
     fun predict(features: DoubleArray): Double {
-        val model = modelLoader.getModel() ?: run {
+        val model = booster ?: run {
             logger.error("Model not loaded, returning default probability")
             return 0.5
         }
 
-        if (features.size != modelLoader.getNumFeatures()) {
-            logger.error("Expected ${modelLoader.getNumFeatures()} features, got ${features.size}")
+        if (features.size != 9) {
+            logger.error("Expected 9 features, got ${features.size}")
             return 0.5
         }
 
         try {
-            val trees = model.learner.gradient_booster.model.trees
-            var prediction = modelLoader.getBaseScore()
-
-            // Sum predictions from all trees
-            for (tree in trees) {
-                val treePrediction = predictTree(tree, features)
-                prediction += treePrediction
-            }
-
-            // Apply sigmoid to get probability
-            return sigmoid(prediction)
+            // Create DMatrix for prediction - convert DoubleArray to FloatArray
+            val floatFeatures = features.map { it.toFloat() }.toFloatArray()
+            val dMatrix = DMatrix(floatFeatures, 1, features.size)
+            
+            // Get prediction from XGBoost
+            val predictions = model.predict(dMatrix)
+            
+            // XGBoost4J returns Array<FloatArray>, so we need to get the first FloatArray and then the first Float
+            val rawPrediction = predictions[0][0].toDouble()
+            return rawPrediction
         } catch (e: Exception) {
             logger.error("Error during prediction", e)
             return 0.5
         }
-    }
-
-    private fun predictTree(tree: XGBoostModelLoader.Tree, features: DoubleArray): Double {
-        var nodeIndex = 0
-        
-        while (true) {
-            val leftChild = tree.left_children[nodeIndex]
-            val rightChild = tree.right_children[nodeIndex]
-            
-            // Leaf node
-            if (leftChild == -1 && rightChild == -1) {
-                return tree.base_weights[nodeIndex]
-            }
-            
-            val splitIndex = tree.split_indices[nodeIndex]
-            val splitCondition = tree.split_conditions[nodeIndex]
-            val featureValue = features[splitIndex]
-            
-            // Determine which child to go to
-            val goLeft = if (tree.default_left[nodeIndex]) {
-                featureValue <= splitCondition
-            } else {
-                featureValue < splitCondition
-            }
-            
-            nodeIndex = if (goLeft) leftChild else rightChild
-        }
-    }
-
-    private fun sigmoid(x: Double): Double {
-        return 1.0 / (1.0 + Math.exp(-x))
     }
 
     /**
@@ -89,7 +79,7 @@ class XGBoostPredictor(
         hadFirstPossession: Int,
         eloDiffTime: Double
     ): DoubleArray {
-        // Use the exact features from Python model - no scaling needed
+        // Use the exact features from Python model - MUST match Python order exactly
         return doubleArrayOf(
             down.toDouble(),                    // down
             distance.toDouble(),                // distance  
