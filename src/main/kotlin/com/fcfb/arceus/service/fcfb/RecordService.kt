@@ -353,10 +353,14 @@ class RecordService(
                 recordName = statName,
                 recordType = recordType,
                 seasonNumber = season,
-                week = null, // Season records don't have a specific week
-                gameId = null, // Season records don't have a specific game ID
-                homeTeam = null, // Season records don't have specific home/away teams
-                awayTeam = null, // Season records don't have specific home/away teams
+                // Season records don't have a specific week
+                week = null,
+                // Season records don't have a specific game ID
+                gameId = null,
+                // Season records don't have specific home/away teams
+                homeTeam = null,
+                // Season records don't have specific home/away teams
+                awayTeam = null,
                 recordTeam = team,
                 coach = getCoachForSeasonRecord(teamSeasonGameStats),
                 recordValue = bestTeamSeason.value,
@@ -518,10 +522,14 @@ class RecordService(
                         recordName = statName,
                         recordType = recordType,
                         seasonNumber = season,
-                        week = null, // Season records don't have a specific week
-                        gameId = null, // Season records don't have a specific game ID
-                        homeTeam = null, // Season records don't have specific home/away teams
-                        awayTeam = null, // Season records don't have specific home/away teams
+                        // Season records don't have a specific week
+                        week = null,
+                        // Season records don't have a specific game ID
+                        gameId = null,
+                        // Season records don't have specific home/away teams
+                        homeTeam = null,
+                        // Season records don't have specific home/away teams
+                        awayTeam = null,
                         recordTeam = team,
                         coach = getCoachForSeasonRecord(teamSeasonGameStats),
                         recordValue = bestTeamSeason.value,

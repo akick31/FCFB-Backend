@@ -166,17 +166,9 @@ class LeagueStatsService(
                     seasonStatsList.sumOf { it.fieldGoalAttempts },
                 ),
             longestFieldGoal = seasonStatsList.maxOfOrNull { it.longestFieldGoal } ?: 0,
-            extraPointsAttempted = 0, // Not tracked in SeasonStats
-            extraPointsMade = 0, // Not tracked in SeasonStats
-            extraPointPercentage = 0.0, // Not tracked in SeasonStats
             punts = seasonStatsList.sumOf { it.puntsAttempted },
-            puntYards = 0, // Not tracked in SeasonStats
             longestPunt = seasonStatsList.maxOfOrNull { it.longestPunt } ?: 0,
-            kickoffReturns = 0, // Not tracked in SeasonStats
-            kickoffReturnYards = 0, // Not tracked in SeasonStats
             kickoffReturnTouchdowns = seasonStatsList.sumOf { it.kickReturnTd },
-            puntReturns = 0, // Not tracked in SeasonStats
-            puntReturnYards = 0, // Not tracked in SeasonStats
             puntReturnTouchdowns = seasonStatsList.sumOf { it.puntReturnTd },
             // Performance metrics are averages of team averages
             averageOffensiveDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageOffensiveDiff }) ?: 0.0,

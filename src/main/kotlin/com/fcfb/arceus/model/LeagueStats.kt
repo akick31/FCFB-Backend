@@ -121,38 +121,14 @@ class LeagueStats(
     @Column(name = "longest_field_goal")
     var longestFieldGoal: Int = 0,
     @Basic
-    @Column(name = "extra_points_attempted")
-    var extraPointsAttempted: Int = 0,
-    @Basic
-    @Column(name = "extra_points_made")
-    var extraPointsMade: Int = 0,
-    @Basic
-    @Column(name = "extra_point_percentage")
-    var extraPointPercentage: Double = 0.0,
-    @Basic
     @Column(name = "punts")
     var punts: Int = 0,
-    @Basic
-    @Column(name = "punt_yards")
-    var puntYards: Int = 0,
     @Basic
     @Column(name = "longest_punt")
     var longestPunt: Int = 0,
     @Basic
-    @Column(name = "kickoff_returns")
-    var kickoffReturns: Int = 0,
-    @Basic
-    @Column(name = "kickoff_return_yards")
-    var kickoffReturnYards: Int = 0,
-    @Basic
     @Column(name = "kickoff_return_touchdowns")
     var kickoffReturnTouchdowns: Int = 0,
-    @Basic
-    @Column(name = "punt_returns")
-    var puntReturns: Int = 0,
-    @Basic
-    @Column(name = "punt_return_yards")
-    var puntReturnYards: Int = 0,
     @Basic
     @Column(name = "punt_return_touchdowns")
     var puntReturnTouchdowns: Int = 0,

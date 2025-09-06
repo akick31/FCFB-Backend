@@ -3,7 +3,11 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.service.fcfb.SeasonStatsService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/season-stats")
@@ -11,7 +15,7 @@ import org.springframework.web.bind.annotation.*
 class SeasonStatsController(
     private val seasonStatsService: SeasonStatsService,
 ) {
-    /**
+    /*
      * Get all season stats with optional filtering
      */
     @GetMapping("/all")

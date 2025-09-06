@@ -106,9 +106,14 @@ class PlaybookStatsService(
 
             if (seasonNumber != null) {
                 Logger.info(
-                    "Generating playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber with ${gameStatsList.size} games",
+                    "Generating playbook stats for $offensivePlaybook/$defensivePlaybook " +
+                        "in season $seasonNumber with ${gameStatsList.size} games",
                 )
-                generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(offensivePlaybook, defensivePlaybook, seasonNumber)
+                generatePlaybookStatsForOffensivePlaybookAndDefensivePlaybookAndSeason(
+                    offensivePlaybook,
+                    defensivePlaybook,
+                    seasonNumber,
+                )
             }
         }
 
@@ -278,17 +283,9 @@ class PlaybookStatsService(
                     gameStatsList.sumOf { it.fieldGoalAttempts },
                 ),
             longestFieldGoal = gameStatsList.maxOfOrNull { it.longestFieldGoal } ?: 0,
-            extraPointsAttempted = 0, // Not tracked in GameStats
-            extraPointsMade = 0, // Not tracked in GameStats
-            extraPointPercentage = 0.0, // Not tracked in GameStats
             punts = gameStatsList.sumOf { it.puntsAttempted },
-            puntYards = 0, // Not tracked in GameStats
             longestPunt = gameStatsList.maxOfOrNull { it.longestPunt } ?: 0,
-            kickoffReturns = 0, // Not tracked in GameStats
-            kickoffReturnYards = 0, // Not tracked in GameStats
             kickoffReturnTouchdowns = gameStatsList.sumOf { it.kickReturnTd },
-            puntReturns = 0, // Not tracked in GameStats
-            puntReturnYards = 0, // Not tracked in GameStats
             puntReturnTouchdowns = gameStatsList.sumOf { it.puntReturnTd },
             // Performance metrics are averages of individual game values
             averageOffensiveDiff = calculateAverage(gameStatsList.mapNotNull { it.averageOffensiveDiff }) ?: 0.0,

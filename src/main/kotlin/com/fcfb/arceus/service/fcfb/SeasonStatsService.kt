@@ -147,8 +147,10 @@ class SeasonStatsService(
         return SeasonStats(
             team = team,
             seasonNumber = seasonNumber,
-            wins = gameStatsList.count { it.score > 0 }, // This is a simplified win calculation
-            losses = gameStatsList.count { it.score <= 0 }, // This is a simplified loss calculation
+            // This is a simplified win calculation
+            wins = gameStatsList.count { it.score > 0 },
+            // This is a simplified loss calculation
+            losses = gameStatsList.count { it.score <= 0 },
             subdivision = firstGameStats.subdivision,
             conference = conference,
             offensivePlaybook = firstGameStats.offensivePlaybook,
