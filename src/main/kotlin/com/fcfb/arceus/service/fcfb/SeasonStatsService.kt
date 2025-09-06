@@ -35,18 +35,19 @@ class SeasonStatsService(
     ): Page<SeasonStats> {
         val spec = seasonStatsSpecificationService.createSpecification(team, season)
         val sortOrders = seasonStatsSpecificationService.createSort()
-        
-        val sortedPageable = if (pageable.isPaged) {
-            PageRequest.of(
-                pageable.pageNumber,
-                pageable.pageSize,
-                Sort.by(sortOrders),
-            )
-        } else {
-            // For unpaged requests, create a pageable with a large page size
-            PageRequest.of(0, Integer.MAX_VALUE, Sort.by(sortOrders))
-        }
-        
+
+        val sortedPageable =
+            if (pageable.isPaged) {
+                PageRequest.of(
+                    pageable.pageNumber,
+                    pageable.pageSize,
+                    Sort.by(sortOrders),
+                )
+            } else {
+                // For unpaged requests, create a pageable with a large page size
+                PageRequest.of(0, Integer.MAX_VALUE, Sort.by(sortOrders))
+            }
+
         return seasonStatsRepository.findAll(spec, sortedPageable)
     }
 
@@ -277,93 +278,93 @@ class SeasonStatsService(
                         conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
                 }
 
-        return when (statName.lowercase()) {
-            "wins" -> filteredStats.sortedByDescending { it.wins }
-            "losses" -> filteredStats.sortedByDescending { it.losses }
-            "passattempts" -> filteredStats.sortedByDescending { it.passAttempts }
-            "passcompletions" -> filteredStats.sortedByDescending { it.passCompletions }
-            "passcompletionpercentage" -> filteredStats.sortedByDescending { it.passCompletionPercentage ?: 0.0 }
-            "passyards" -> filteredStats.sortedByDescending { it.passYards }
-            "longestpass" -> filteredStats.sortedByDescending { it.longestPass }
-            "passtouchdowns" -> filteredStats.sortedByDescending { it.passTouchdowns }
-            "passsuccesses" -> filteredStats.sortedByDescending { it.passSuccesses }
-            "passsuccesspercentage" -> filteredStats.sortedByDescending { it.passSuccessPercentage ?: 0.0 }
-            "rushattempts" -> filteredStats.sortedByDescending { it.rushAttempts }
-            "rushsuccesses" -> filteredStats.sortedByDescending { it.rushSuccesses }
-            "rushsuccesspercentage" -> filteredStats.sortedByDescending { it.rushSuccessPercentage ?: 0.0 }
-            "rushyards" -> filteredStats.sortedByDescending { it.rushYards }
-            "longestrun" -> filteredStats.sortedByDescending { it.longestRun }
-            "rushtouchdowns" -> filteredStats.sortedByDescending { it.rushTouchdowns }
-            "totalyards" -> filteredStats.sortedByDescending { it.totalYards }
-            "averageyardsperplay" -> filteredStats.sortedByDescending { it.averageYardsPerPlay ?: 0.0 }
-            "firstdowns" -> filteredStats.sortedByDescending { it.firstDowns }
-            "sacksallowed" -> filteredStats.sortedByDescending { it.sacksAllowed }
-            "sacksforced" -> filteredStats.sortedByDescending { it.sacksForced }
-            "interceptionslost" -> filteredStats.sortedByDescending { it.interceptionsLost }
-            "interceptionsforced" -> filteredStats.sortedByDescending { it.interceptionsForced }
-            "fumbleslost" -> filteredStats.sortedByDescending { it.fumblesLost }
-            "fumblesforced" -> filteredStats.sortedByDescending { it.fumblesForced }
-            "turnoverslost" -> filteredStats.sortedByDescending { it.turnoversLost }
-            "turnoversforced" -> filteredStats.sortedByDescending { it.turnoversForced }
-            "turnoverdifferential" -> filteredStats.sortedByDescending { it.turnoverDifferential }
-            "turnovertouchdownslost" -> filteredStats.sortedByDescending { it.turnoverTouchdownsLost }
-            "turnovertouchdownsforced" -> filteredStats.sortedByDescending { it.turnoverTouchdownsForced }
-            "picksixesthrown" -> filteredStats.sortedByDescending { it.pickSixesThrown }
-            "picksixesforced" -> filteredStats.sortedByDescending { it.pickSixesForced }
-            "fumblereturntdscommitted" -> filteredStats.sortedByDescending { it.fumbleReturnTdsCommitted }
-            "fumblereturntdsforced" -> filteredStats.sortedByDescending { it.fumbleReturnTdsForced }
-            "fieldgoalmade" -> filteredStats.sortedByDescending { it.fieldGoalMade }
-            "fieldgoalattempts" -> filteredStats.sortedByDescending { it.fieldGoalAttempts }
-            "fieldgoalpercentage" -> filteredStats.sortedByDescending { it.fieldGoalPercentage ?: 0.0 }
-            "longestfieldgoal" -> filteredStats.sortedByDescending { it.longestFieldGoal }
-            "blockedopponentfieldgoals" -> filteredStats.sortedByDescending { it.blockedOpponentFieldGoals }
-            "fieldgoaltouchdown" -> filteredStats.sortedByDescending { it.fieldGoalTouchdown }
-            "puntsattempted" -> filteredStats.sortedByDescending { it.puntsAttempted }
-            "longestpunt" -> filteredStats.sortedByDescending { it.longestPunt }
-            "averagepuntlength" -> filteredStats.sortedByDescending { it.averagePuntLength ?: 0.0 }
-            "blockedopponentpunt" -> filteredStats.sortedByDescending { it.blockedOpponentPunt }
-            "puntreturntd" -> filteredStats.sortedByDescending { it.puntReturnTd }
-            "puntreturntdpercentage" -> filteredStats.sortedByDescending { it.puntReturnTdPercentage ?: 0.0 }
-            "numberofkickoffs" -> filteredStats.sortedByDescending { it.numberOfKickoffs }
-            "onsideattempts" -> filteredStats.sortedByDescending { it.onsideAttempts }
-            "onsidesuccess" -> filteredStats.sortedByDescending { it.onsideSuccess }
-            "onsidesuccesspercentage" -> filteredStats.sortedByDescending { it.onsideSuccessPercentage ?: 0.0 }
-            "normalkickoffattempts" -> filteredStats.sortedByDescending { it.normalKickoffAttempts }
-            "touchbacks" -> filteredStats.sortedByDescending { it.touchbacks }
-            "touchbackpercentage" -> filteredStats.sortedByDescending { it.touchbackPercentage ?: 0.0 }
-            "kickreturntd" -> filteredStats.sortedByDescending { it.kickReturnTd }
-            "kickreturntdpercentage" -> filteredStats.sortedByDescending { it.kickReturnTdPercentage ?: 0.0 }
-            "numberofdrives" -> filteredStats.sortedByDescending { it.numberOfDrives }
-            "timeofpossession" -> filteredStats.sortedByDescending { it.timeOfPossession }
-            "touchdowns" -> filteredStats.sortedByDescending { it.touchdowns }
-            "thirddownconversionsuccess" -> filteredStats.sortedByDescending { it.thirdDownConversionSuccess }
-            "thirddownconversionattempts" -> filteredStats.sortedByDescending { it.thirdDownConversionAttempts }
-            "thirddownconversionpercentage" -> filteredStats.sortedByDescending { it.thirdDownConversionPercentage ?: 0.0 }
-            "fourthdownconversionsuccess" -> filteredStats.sortedByDescending { it.fourthDownConversionSuccess }
-            "fourthdownconversionattempts" -> filteredStats.sortedByDescending { it.fourthDownConversionAttempts }
-            "fourthdownconversionpercentage" -> filteredStats.sortedByDescending { it.fourthDownConversionPercentage ?: 0.0 }
-            "largestlead" -> filteredStats.sortedByDescending { it.largestLead }
-            "largestdeficit" -> filteredStats.sortedByDescending { it.largestDeficit }
-            "redzoneattempts" -> filteredStats.sortedByDescending { it.redZoneAttempts }
-            "redzonesuccesses" -> filteredStats.sortedByDescending { it.redZoneSuccesses }
-            "redzonesuccesspercentage" -> filteredStats.sortedByDescending { it.redZoneSuccessPercentage ?: 0.0 }
-            "redzonepercentage" -> filteredStats.sortedByDescending { it.redZonePercentage ?: 0.0 }
-            "safetiesforced" -> filteredStats.sortedByDescending { it.safetiesForced }
-            "safetiescommitted" -> filteredStats.sortedByDescending { it.safetiesCommitted }
-            "averageoffensivediff" -> filteredStats.sortedByDescending { it.averageOffensiveDiff ?: 0.0 }
-            "averagedefensivediff" -> filteredStats.sortedByDescending { it.averageDefensiveDiff ?: 0.0 }
-            "averageoffensivespecialteamsdiff" -> filteredStats.sortedByDescending { it.averageOffensiveSpecialTeamsDiff ?: 0.0 }
-            "averagedefensivespecialteamsdiff" -> filteredStats.sortedByDescending { it.averageDefensiveSpecialTeamsDiff ?: 0.0 }
-            "averagediff" -> filteredStats.sortedByDescending { it.averageDiff ?: 0.0 }
-            "averageresponsespeed" -> filteredStats.sortedByDescending { it.averageResponseSpeed ?: 0.0 }
-            else -> filteredStats
-        }.let { sortedStats ->
-            if (ascending) {
-                sortedStats.reversed()
-            } else {
-                sortedStats
-            }
-        }.take(limit)
+            return when (statName.lowercase()) {
+                "wins" -> filteredStats.sortedByDescending { it.wins }
+                "losses" -> filteredStats.sortedByDescending { it.losses }
+                "passattempts" -> filteredStats.sortedByDescending { it.passAttempts }
+                "passcompletions" -> filteredStats.sortedByDescending { it.passCompletions }
+                "passcompletionpercentage" -> filteredStats.sortedByDescending { it.passCompletionPercentage ?: 0.0 }
+                "passyards" -> filteredStats.sortedByDescending { it.passYards }
+                "longestpass" -> filteredStats.sortedByDescending { it.longestPass }
+                "passtouchdowns" -> filteredStats.sortedByDescending { it.passTouchdowns }
+                "passsuccesses" -> filteredStats.sortedByDescending { it.passSuccesses }
+                "passsuccesspercentage" -> filteredStats.sortedByDescending { it.passSuccessPercentage ?: 0.0 }
+                "rushattempts" -> filteredStats.sortedByDescending { it.rushAttempts }
+                "rushsuccesses" -> filteredStats.sortedByDescending { it.rushSuccesses }
+                "rushsuccesspercentage" -> filteredStats.sortedByDescending { it.rushSuccessPercentage ?: 0.0 }
+                "rushyards" -> filteredStats.sortedByDescending { it.rushYards }
+                "longestrun" -> filteredStats.sortedByDescending { it.longestRun }
+                "rushtouchdowns" -> filteredStats.sortedByDescending { it.rushTouchdowns }
+                "totalyards" -> filteredStats.sortedByDescending { it.totalYards }
+                "averageyardsperplay" -> filteredStats.sortedByDescending { it.averageYardsPerPlay ?: 0.0 }
+                "firstdowns" -> filteredStats.sortedByDescending { it.firstDowns }
+                "sacksallowed" -> filteredStats.sortedByDescending { it.sacksAllowed }
+                "sacksforced" -> filteredStats.sortedByDescending { it.sacksForced }
+                "interceptionslost" -> filteredStats.sortedByDescending { it.interceptionsLost }
+                "interceptionsforced" -> filteredStats.sortedByDescending { it.interceptionsForced }
+                "fumbleslost" -> filteredStats.sortedByDescending { it.fumblesLost }
+                "fumblesforced" -> filteredStats.sortedByDescending { it.fumblesForced }
+                "turnoverslost" -> filteredStats.sortedByDescending { it.turnoversLost }
+                "turnoversforced" -> filteredStats.sortedByDescending { it.turnoversForced }
+                "turnoverdifferential" -> filteredStats.sortedByDescending { it.turnoverDifferential }
+                "turnovertouchdownslost" -> filteredStats.sortedByDescending { it.turnoverTouchdownsLost }
+                "turnovertouchdownsforced" -> filteredStats.sortedByDescending { it.turnoverTouchdownsForced }
+                "picksixesthrown" -> filteredStats.sortedByDescending { it.pickSixesThrown }
+                "picksixesforced" -> filteredStats.sortedByDescending { it.pickSixesForced }
+                "fumblereturntdscommitted" -> filteredStats.sortedByDescending { it.fumbleReturnTdsCommitted }
+                "fumblereturntdsforced" -> filteredStats.sortedByDescending { it.fumbleReturnTdsForced }
+                "fieldgoalmade" -> filteredStats.sortedByDescending { it.fieldGoalMade }
+                "fieldgoalattempts" -> filteredStats.sortedByDescending { it.fieldGoalAttempts }
+                "fieldgoalpercentage" -> filteredStats.sortedByDescending { it.fieldGoalPercentage ?: 0.0 }
+                "longestfieldgoal" -> filteredStats.sortedByDescending { it.longestFieldGoal }
+                "blockedopponentfieldgoals" -> filteredStats.sortedByDescending { it.blockedOpponentFieldGoals }
+                "fieldgoaltouchdown" -> filteredStats.sortedByDescending { it.fieldGoalTouchdown }
+                "puntsattempted" -> filteredStats.sortedByDescending { it.puntsAttempted }
+                "longestpunt" -> filteredStats.sortedByDescending { it.longestPunt }
+                "averagepuntlength" -> filteredStats.sortedByDescending { it.averagePuntLength ?: 0.0 }
+                "blockedopponentpunt" -> filteredStats.sortedByDescending { it.blockedOpponentPunt }
+                "puntreturntd" -> filteredStats.sortedByDescending { it.puntReturnTd }
+                "puntreturntdpercentage" -> filteredStats.sortedByDescending { it.puntReturnTdPercentage ?: 0.0 }
+                "numberofkickoffs" -> filteredStats.sortedByDescending { it.numberOfKickoffs }
+                "onsideattempts" -> filteredStats.sortedByDescending { it.onsideAttempts }
+                "onsidesuccess" -> filteredStats.sortedByDescending { it.onsideSuccess }
+                "onsidesuccesspercentage" -> filteredStats.sortedByDescending { it.onsideSuccessPercentage ?: 0.0 }
+                "normalkickoffattempts" -> filteredStats.sortedByDescending { it.normalKickoffAttempts }
+                "touchbacks" -> filteredStats.sortedByDescending { it.touchbacks }
+                "touchbackpercentage" -> filteredStats.sortedByDescending { it.touchbackPercentage ?: 0.0 }
+                "kickreturntd" -> filteredStats.sortedByDescending { it.kickReturnTd }
+                "kickreturntdpercentage" -> filteredStats.sortedByDescending { it.kickReturnTdPercentage ?: 0.0 }
+                "numberofdrives" -> filteredStats.sortedByDescending { it.numberOfDrives }
+                "timeofpossession" -> filteredStats.sortedByDescending { it.timeOfPossession }
+                "touchdowns" -> filteredStats.sortedByDescending { it.touchdowns }
+                "thirddownconversionsuccess" -> filteredStats.sortedByDescending { it.thirdDownConversionSuccess }
+                "thirddownconversionattempts" -> filteredStats.sortedByDescending { it.thirdDownConversionAttempts }
+                "thirddownconversionpercentage" -> filteredStats.sortedByDescending { it.thirdDownConversionPercentage ?: 0.0 }
+                "fourthdownconversionsuccess" -> filteredStats.sortedByDescending { it.fourthDownConversionSuccess }
+                "fourthdownconversionattempts" -> filteredStats.sortedByDescending { it.fourthDownConversionAttempts }
+                "fourthdownconversionpercentage" -> filteredStats.sortedByDescending { it.fourthDownConversionPercentage ?: 0.0 }
+                "largestlead" -> filteredStats.sortedByDescending { it.largestLead }
+                "largestdeficit" -> filteredStats.sortedByDescending { it.largestDeficit }
+                "redzoneattempts" -> filteredStats.sortedByDescending { it.redZoneAttempts }
+                "redzonesuccesses" -> filteredStats.sortedByDescending { it.redZoneSuccesses }
+                "redzonesuccesspercentage" -> filteredStats.sortedByDescending { it.redZoneSuccessPercentage ?: 0.0 }
+                "redzonepercentage" -> filteredStats.sortedByDescending { it.redZonePercentage ?: 0.0 }
+                "safetiesforced" -> filteredStats.sortedByDescending { it.safetiesForced }
+                "safetiescommitted" -> filteredStats.sortedByDescending { it.safetiesCommitted }
+                "averageoffensivediff" -> filteredStats.sortedByDescending { it.averageOffensiveDiff ?: 0.0 }
+                "averagedefensivediff" -> filteredStats.sortedByDescending { it.averageDefensiveDiff ?: 0.0 }
+                "averageoffensivespecialteamsdiff" -> filteredStats.sortedByDescending { it.averageOffensiveSpecialTeamsDiff ?: 0.0 }
+                "averagedefensivespecialteamsdiff" -> filteredStats.sortedByDescending { it.averageDefensiveSpecialTeamsDiff ?: 0.0 }
+                "averagediff" -> filteredStats.sortedByDescending { it.averageDiff ?: 0.0 }
+                "averageresponsespeed" -> filteredStats.sortedByDescending { it.averageResponseSpeed ?: 0.0 }
+                else -> filteredStats
+            }.let { sortedStats ->
+                if (ascending) {
+                    sortedStats.reversed()
+                } else {
+                    sortedStats
+                }
+            }.take(limit)
         } catch (e: Exception) {
             Logger.error("Error in getLeaderboard: ${e.message}", e)
             throw e
