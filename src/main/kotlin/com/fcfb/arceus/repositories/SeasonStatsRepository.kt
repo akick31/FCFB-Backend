@@ -3,9 +3,11 @@ package com.fcfb.arceus.repositories
 import com.fcfb.arceus.model.SeasonStats
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 
 @Repository
 interface SeasonStatsRepository : JpaRepository<SeasonStats, Int>, JpaSpecificationExecutor<SeasonStats> {
@@ -96,9 +98,12 @@ interface SeasonStatsRepository : JpaRepository<SeasonStats, Int>, JpaSpecificat
     /**
      * Delete season stats for a specific team and season
      */
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM SeasonStats s WHERE s.team = :team AND s.seasonNumber = :seasonNumber")
     fun deleteByTeamAndSeasonNumber(
-        team: String,
-        seasonNumber: Int,
+        @Param("team") team: String,
+        @Param("seasonNumber") seasonNumber: Int,
     )
 
     /**

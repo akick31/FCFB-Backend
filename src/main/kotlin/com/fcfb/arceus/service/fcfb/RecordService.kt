@@ -8,6 +8,7 @@ import com.fcfb.arceus.model.Record
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
+import com.fcfb.arceus.repositories.SeasonRepository
 import com.fcfb.arceus.service.specification.RecordSpecificationService
 import com.fcfb.arceus.util.Logger
 import org.springframework.data.domain.Page
@@ -24,6 +25,7 @@ class RecordService(
     private val gameStatsRepository: GameStatsRepository,
     private val gameRepository: GameRepository,
     private val recordSpecificationService: RecordSpecificationService,
+    private val seasonRepository: SeasonRepository,
 ) {
     /**
      * Get filtered records with pagination
@@ -139,6 +141,12 @@ class RecordService(
 
         val gameStatsList = listOfNotNull(homeStats, awayStats)
 
+        // Get current season stats for both teams (for season record checking)
+        val currentSeason = game.season ?: return
+        val homeSeasonStats = getCurrentSeasonStatsForTeam(game.homeTeam, currentSeason)
+        val awaySeasonStats = getCurrentSeasonStatsForTeam(game.awayTeam, currentSeason)
+        val currentSeasonStats = listOfNotNull(homeSeasonStats, awaySeasonStats)
+
         // Check each stat type
         for (stat in Stats.values()) {
             if (generalRecordStats.contains(stat)) {
@@ -163,12 +171,12 @@ class RecordService(
                     // Check both highest and lowest records for dual-record stats
                     checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
                     checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
-                    checkAndUpdateSeasonRecord(stat, gameStatsList, game, RecordType.SINGLE_SEASON)
-                    checkAndUpdateSeasonRecord(stat, gameStatsList, game, RecordType.SINGLE_SEASON_LOWEST)
+                    checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON)
+                    checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON_LOWEST)
                 } else {
                     // Check only highest records for regular stats
                     checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
-                    checkAndUpdateSeasonRecord(stat, gameStatsList, game, RecordType.SINGLE_SEASON)
+                    checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON)
                 }
             }
         }
@@ -263,9 +271,23 @@ class RecordService(
     ) {
         // Get game stats only for available seasons (10 and above, data unavailable for seasons 1-9)
         val availableSeasons = getAvailableSeasons()
+
+        // For percentage stats, only include seasons that have ended (have end_date)
+        val seasonsToProcess =
+            if (percentageStats.contains(statName)) {
+                val finishedSeasons =
+                    seasonRepository.findAll()
+                        .filter { it.endDate != null }
+                        .map { it.seasonNumber }
+                        .filter { it in availableSeasons }
+                finishedSeasons
+            } else {
+                availableSeasons
+            }
+
         val allGameStats =
             gameStatsRepository.findAll().toList()
-                .filter { it.season in availableSeasons }
+                .filter { it.season in seasonsToProcess }
 
         // Group by team and season, then calculate season totals/averages
         val teamSeasonTotals =
@@ -409,66 +431,63 @@ class RecordService(
     }
 
     /**
+     * Get current season stats for a team
+     */
+    private fun getCurrentSeasonStatsForTeam(
+        team: String,
+        season: Int,
+    ): GameStats? {
+        return gameStatsRepository.findAll()
+            .filter { it.team == team && it.season == season }
+            .firstOrNull()
+    }
+
+    /**
      * Check and update season record for a specific stat
      */
     private fun checkAndUpdateSeasonRecord(
         statName: Stats,
-        gameStatsList: List<GameStats>,
-        game: Game,
+        homeSeasonStats: GameStats?,
+        awaySeasonStats: GameStats?,
         recordType: RecordType,
     ) {
+        // Skip percentage stats - they should only be calculated when the season ends
+        if (percentageStats.contains(statName)) {
+            return
+        }
+
         val currentRecord = recordRepository.findTopByRecordNameAndRecordTypeOrderByRecordValueDesc(statName, recordType)
 
-        // Calculate season totals for each team across available seasons (10 and above)
-        val availableSeasons = getAvailableSeasons()
-        val allGameStats =
-            gameStatsRepository.findAll().toList()
-                .filter { it.season in availableSeasons }
-        val teamSeasonTotals =
-            allGameStats
-                .groupBy { "${it.team}_${it.season}" }
-                .mapValues { (_, stats) ->
-                    when {
-                        percentageStats.contains(statName) -> {
-                            // For percentage stats, calculate from season totals
-                            calculatePercentageForStat(statName, stats)
-                        }
-                        dualRecordStats.contains(statName) -> {
-                            // For diff stats, calculate average instead of sum
-                            calculateAverageForStat(statName, stats)
-                        }
-                        else -> {
-                            // For regular stats, sum the values
-                            stats.sumOf { getStatValue(statName, it) }
-                        }
-                    }
-                }
+        // Check both teams' season stats
+        val teamStats = listOfNotNull(homeSeasonStats, awaySeasonStats)
 
         val isLowest = recordType == RecordType.SINGLE_SEASON_LOWEST
-        val bestTeamSeason =
+        val bestTeamStats =
             if (isLowest) {
-                teamSeasonTotals.minByOrNull { it.value }
+                teamStats.minByOrNull { gameStats ->
+                    getStatValue(statName, gameStats)
+                }
             } else {
-                teamSeasonTotals.maxByOrNull { it.value }
+                teamStats.maxByOrNull { gameStats ->
+                    getStatValue(statName, gameStats)
+                }
             }
 
-        if (bestTeamSeason != null) {
+        if (bestTeamStats != null) {
+            val currentValue = getStatValue(statName, bestTeamStats)
             val recordValue = currentRecord?.recordValue ?: if (isLowest) Double.MAX_VALUE else 0.0
 
             val isNewRecord =
                 if (isLowest) {
-                    bestTeamSeason.value < recordValue
+                    currentValue < recordValue
                 } else {
-                    bestTeamSeason.value > recordValue
+                    currentValue > recordValue
                 }
 
             if (isNewRecord) {
                 // New record!
-                val (team, seasonStr) = bestTeamSeason.key.split("_")
-                val season = seasonStr.toInt()
-
-                // Get all game stats for this team and season to determine the coach
-                val teamSeasonGameStats = allGameStats.filter { it.team == team && it.season == season }
+                val team = bestTeamStats.team ?: return
+                val season = bestTeamStats.season ?: return
 
                 val newRecord =
                     Record(
@@ -484,8 +503,8 @@ class RecordService(
                         // Season records don't have specific home/away teams
                         awayTeam = null,
                         recordTeam = team,
-                        coach = getCoachForSeasonRecord(teamSeasonGameStats),
-                        recordValue = bestTeamSeason.value,
+                        coach = getCoachForSeasonRecord(listOf(bestTeamStats)),
+                        recordValue = currentValue,
                         previousRecordValue = recordValue,
                         previousRecordTeam = currentRecord?.recordTeam,
                         previousRecordGameId = currentRecord?.gameId,
@@ -493,7 +512,7 @@ class RecordService(
 
                 recordRepository.save(newRecord)
                 val recordTypeStr = if (isLowest) "LOWEST SINGLE SEASON" else "SINGLE SEASON"
-                Logger.info("New $recordTypeStr record: ${statName.name} = ${bestTeamSeason.value} by $team in season $season")
+                Logger.info("New $recordTypeStr record: ${statName.name} = $currentValue by $team in season $season")
             }
         }
     }
