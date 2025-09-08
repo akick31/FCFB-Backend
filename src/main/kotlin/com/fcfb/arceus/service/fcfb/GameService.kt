@@ -789,8 +789,10 @@ class GameService(
                     val responseTime =
                         playRepository.getUserAverageResponseTime(
                             user.discordId
-                                ?: throw Exception("User does not have a discord id, " +
-                                        "could not get average response time for user ${user.username}"),
+                                ?: throw Exception(
+                                    "User does not have a discord id, " +
+                                        "could not get average response time for user ${user.username}",
+                                ),
                             seasonService.getCurrentSeason().seasonNumber,
                         ) ?: throw Exception("Could not get average response time for user ${user.username}")
                     userService.updateUserAverageResponseTime(user.id, responseTime)
