@@ -787,7 +787,7 @@ class GameService(
                     }
                 for (user in homeUsers + awayUsers) {
                     val responseTime =
-                        playRepository.getUserAveraggeResponseTime(
+                        playRepository.getUserAverageResponseTime(
                             user.discordId
                                 ?: throw Exception(
                                     "User does not have a discord id, " +
