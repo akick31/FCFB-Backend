@@ -48,6 +48,7 @@ class PlayService(
     fun defensiveNumberSubmitted(
         gameId: Int,
         defensiveSubmitter: String,
+        defensiveSubmitterId: String,
         defensiveNumber: Int,
         timeoutCalled: Boolean = false,
     ): Play {
@@ -62,42 +63,44 @@ class PlayService(
 
             val encryptedDefensiveNumber = encryptionUtils.encrypt(defensiveNumber.toString())
             val clock = gameService.convertClockToSeconds(game.clock)
-            val gamePlay =
+            val gamePlay: Play =
                 playRepository.save(
                     Play(
-                        gameId,
-                        game.numPlays.plus(1),
-                        game.homeScore,
-                        game.awayScore,
-                        game.quarter,
-                        clock,
-                        game.ballLocation,
-                        game.possession,
-                        game.down,
-                        game.yardsToGo,
-                        encryptedDefensiveNumber,
-                        "0",
-                        null,
-                        defensiveSubmitter,
-                        null,
-                        null,
-                        null,
-                        0,
-                        0,
-                        0,
-                        game.winProbability,
-                        0.0,
-                        game.homeTeam,
-                        game.awayTeam,
-                        0,
-                        timeoutCalled,
-                        false,
-                        timeoutCalled,
-                        game.homeTimeouts,
-                        game.awayTimeouts,
-                        false,
-                        null,
-                        responseSpeed,
+                        gameId = gameId,
+                        playNumber = game.numPlays.plus(1),
+                        homeScore = game.homeScore,
+                        awayScore = game.awayScore,
+                        quarter = game.quarter,
+                        clock = clock,
+                        ballLocation = game.ballLocation,
+                        possession = game.possession,
+                        down = game.down,
+                        yardsToGo = game.yardsToGo,
+                        defensiveNumber = encryptedDefensiveNumber,
+                        offensiveNumber = "0",
+                        offensiveSubmitter = null,
+                        offensiveSubmitterId = null,
+                        defensiveSubmitter = defensiveSubmitter,
+                        defensiveSubmitterId = defensiveSubmitterId,
+                        playCall = null,
+                        result = null,
+                        actualResult = null,
+                        yards = 0,
+                        playTime = 0,
+                        runoffTime = 0,
+                        winProbability = game.winProbability,
+                        winProbabilityAdded = 0.0,
+                        homeTeam = game.homeTeam,
+                        awayTeam = game.awayTeam,
+                        difference = 0,
+                        timeoutUsed = timeoutCalled,
+                        offensiveTimeoutCalled = false,
+                        defensiveTimeoutCalled = timeoutCalled,
+                        homeTimeouts = game.homeTimeouts,
+                        awayTimeouts = game.awayTimeouts,
+                        playFinished = false,
+                        offensiveResponseSpeed = null,
+                        defensiveResponseSpeed = responseSpeed,
                     ),
                 )
 
@@ -122,6 +125,7 @@ class PlayService(
     fun offensiveNumberSubmitted(
         gameId: Int,
         offensiveSubmitter: String,
+        offensiveSubmitterId: String,
         offensiveNumber: Int?,
         playCall: PlayCall,
         runoffType: RunoffType,
@@ -134,6 +138,7 @@ class PlayService(
 
             gamePlay.offensiveResponseSpeed = responseSpeed
             gamePlay.offensiveSubmitter = offensiveSubmitter
+            gamePlay.offensiveSubmitterId = offensiveSubmitterId
 
             val decryptedDefensiveNumber = encryptionUtils.decrypt(gamePlay.defensiveNumber ?: throw DefensiveNumberNotFound())
 
@@ -303,7 +308,9 @@ class PlayService(
             this.defensiveNumber = play.defensiveNumber
             this.offensiveNumber = play.offensiveNumber
             this.defensiveSubmitter = play.defensiveSubmitter
+            this.defensiveSubmitterId = play.defensiveSubmitterId
             this.offensiveSubmitter = play.offensiveSubmitter
+            this.offensiveSubmitterId = play.offensiveSubmitterId
             this.playCall = play.playCall
             this.result = play.result
             this.difference = play.difference
@@ -1459,7 +1466,7 @@ class PlayService(
                     playTime,
                 )
             if (updatedQuarter != quarter) {
-                finalPlayTime = clock + (420 - updatedClock)
+                finalPlayTime = clock
             }
             possession = updatedPossession
             clock = updatedClock
@@ -1489,8 +1496,6 @@ class PlayService(
             gamePlay.defensiveNumber = decryptedDefensiveNumber
             gamePlay.offensiveNumber = offensiveNumber?.toString()
         }
-        gamePlay.offensiveSubmitter = gamePlay.offensiveSubmitter
-        gamePlay.defensiveSubmitter = gamePlay.defensiveSubmitter
         gamePlay.playCall = playCall
         gamePlay.result = result
         gamePlay.actualResult = actualResult

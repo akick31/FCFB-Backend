@@ -52,18 +52,18 @@ interface PlayRepository : CrudRepository<Play, Int> {
         value =
             "SELECT AVG(" +
                 "CASE " +
-                "WHEN p.offensive_submitter = :discordTag THEN p.offensive_response_speed " +
-                "WHEN p.defensive_submitter = :discordTag THEN p.defensive_response_speed " +
+                "WHEN p.offensive_submitter_id = :discordId THEN p.offensive_response_speed " +
+                "WHEN p.defensive_submitter_id = :discordId THEN p.defensive_response_speed " +
                 "END " +
                 ") AS avg_response_time " +
                 "FROM play p " +
                 "JOIN game g ON p.game_id = g.game_id " +
-                "WHERE (p.offensive_submitter = :discordTag OR p.defensive_submitter = :discordTag) " +
+                "WHERE (p.offensive_submitter_id = :discordId OR p.defensive_submitter_id = :discordId) " +
                 "AND g.season = :season",
         nativeQuery = true,
     )
     fun getUserAverageResponseTime(
-        discordTag: String,
+        discordId: String,
         season: Int,
     ): Double?
 

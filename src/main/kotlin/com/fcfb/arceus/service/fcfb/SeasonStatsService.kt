@@ -145,13 +145,46 @@ class SeasonStatsService(
         val teamEntity = teamRepository.findByName(team)
         val conference = teamEntity?.conference
 
+        // Get all game IDs for this team's games
+        val gameIds = gameStatsList.map { it.gameId }.toSet()
+
+        // Get all GameStats for these games (both teams)
+        val allGameStatsForGames =
+            gameStatsRepository.findAll()
+                .filter { it.gameId in gameIds }
+
+        // Group by game ID for easy lookup
+        val gameStatsByGameId = allGameStatsForGames.groupBy { it.gameId }
+
+        // Calculate wins/losses properly by comparing scores in each game
+        var wins = 0
+        var losses = 0
+
+        for (teamGameStats in gameStatsList) {
+            val gameId = teamGameStats.gameId
+            val teamScore = teamGameStats.score
+
+            // Find the opponent's GameStats for this game
+            val opponentGameStats =
+                gameStatsByGameId[gameId]
+                    ?.firstOrNull { it.team != team }
+
+            if (opponentGameStats != null) {
+                val opponentScore = opponentGameStats.score
+                if (teamScore > opponentScore) {
+                    wins++
+                } else if (teamScore < opponentScore) {
+                    losses++
+                }
+                // Ties are not counted as wins or losses
+            }
+        }
+
         return SeasonStats(
             team = team,
             seasonNumber = seasonNumber,
-            // This is a simplified win calculation
-            wins = gameStatsList.count { it.score > 0 },
-            // This is a simplified loss calculation
-            losses = gameStatsList.count { it.score <= 0 },
+            wins = wins,
+            losses = losses,
             subdivision = firstGameStats.subdivision,
             conference = conference,
             offensivePlaybook = firstGameStats.offensivePlaybook,
@@ -159,15 +192,27 @@ class SeasonStatsService(
             // Aggregate all the stats
             passAttempts = gameStatsList.sumOf { it.passAttempts },
             passCompletions = gameStatsList.sumOf { it.passCompletions },
-            passCompletionPercentage = calculateAverage(gameStatsList.mapNotNull { it.passCompletionPercentage }),
+            passCompletionPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.passCompletions },
+                    gameStatsList.sumOf { it.passAttempts },
+                ),
             passYards = gameStatsList.sumOf { it.passYards },
             longestPass = gameStatsList.maxOfOrNull { it.longestPass } ?: 0,
             passTouchdowns = gameStatsList.sumOf { it.passTouchdowns },
             passSuccesses = gameStatsList.sumOf { it.passSuccesses },
-            passSuccessPercentage = calculateAverage(gameStatsList.mapNotNull { it.passSuccessPercentage }),
+            passSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.passSuccesses },
+                    gameStatsList.sumOf { it.passAttempts },
+                ),
             rushAttempts = gameStatsList.sumOf { it.rushAttempts },
             rushSuccesses = gameStatsList.sumOf { it.rushSuccesses },
-            rushSuccessPercentage = calculateAverage(gameStatsList.mapNotNull { it.rushSuccessPercentage }),
+            rushSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.rushSuccesses },
+                    gameStatsList.sumOf { it.rushAttempts },
+                ),
             rushYards = gameStatsList.sumOf { it.rushYards },
             longestRun = gameStatsList.maxOfOrNull { it.longestRun } ?: 0,
             rushTouchdowns = gameStatsList.sumOf { it.rushTouchdowns },
@@ -191,7 +236,11 @@ class SeasonStatsService(
             fumbleReturnTdsForced = gameStatsList.sumOf { it.fumbleReturnTdsForced },
             fieldGoalMade = gameStatsList.sumOf { it.fieldGoalMade },
             fieldGoalAttempts = gameStatsList.sumOf { it.fieldGoalAttempts },
-            fieldGoalPercentage = calculateAverage(gameStatsList.mapNotNull { it.fieldGoalPercentage }),
+            fieldGoalPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.fieldGoalMade },
+                    gameStatsList.sumOf { it.fieldGoalAttempts },
+                ),
             longestFieldGoal = gameStatsList.maxOfOrNull { it.longestFieldGoal } ?: 0,
             blockedOpponentFieldGoals = gameStatsList.sumOf { it.blockedOpponentFieldGoals },
             fieldGoalTouchdown = gameStatsList.sumOf { it.fieldGoalTouchdown },
@@ -200,31 +249,63 @@ class SeasonStatsService(
             averagePuntLength = calculateAverage(gameStatsList.mapNotNull { it.averagePuntLength }),
             blockedOpponentPunt = gameStatsList.sumOf { it.blockedOpponentPunt },
             puntReturnTd = gameStatsList.sumOf { it.puntReturnTd },
-            puntReturnTdPercentage = calculateAverage(gameStatsList.mapNotNull { it.puntReturnTdPercentage }),
+            puntReturnTdPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.puntReturnTd },
+                    gameStatsList.sumOf { it.puntsAttempted },
+                ),
             numberOfKickoffs = gameStatsList.sumOf { it.numberOfKickoffs },
             onsideAttempts = gameStatsList.sumOf { it.onsideAttempts },
             onsideSuccess = gameStatsList.sumOf { it.onsideSuccess },
-            onsideSuccessPercentage = calculateAverage(gameStatsList.mapNotNull { it.onsideSuccessPercentage }),
+            onsideSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.onsideSuccess },
+                    gameStatsList.sumOf { it.onsideAttempts },
+                ),
             normalKickoffAttempts = gameStatsList.sumOf { it.normalKickoffAttempts },
             touchbacks = gameStatsList.sumOf { it.touchbacks },
-            touchbackPercentage = calculateAverage(gameStatsList.mapNotNull { it.touchbackPercentage }),
+            touchbackPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.touchbacks },
+                    gameStatsList.sumOf { it.normalKickoffAttempts },
+                ),
             kickReturnTd = gameStatsList.sumOf { it.kickReturnTd },
-            kickReturnTdPercentage = calculateAverage(gameStatsList.mapNotNull { it.kickReturnTdPercentage }),
+            kickReturnTdPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.kickReturnTd },
+                    gameStatsList.sumOf { it.numberOfKickoffs },
+                ),
             numberOfDrives = gameStatsList.sumOf { it.numberOfDrives },
             timeOfPossession = gameStatsList.sumOf { it.timeOfPossession },
             touchdowns = gameStatsList.sumOf { it.touchdowns },
             thirdDownConversionSuccess = gameStatsList.sumOf { it.thirdDownConversionSuccess },
             thirdDownConversionAttempts = gameStatsList.sumOf { it.thirdDownConversionAttempts },
-            thirdDownConversionPercentage = calculateAverage(gameStatsList.mapNotNull { it.thirdDownConversionPercentage }),
+            thirdDownConversionPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.thirdDownConversionSuccess },
+                    gameStatsList.sumOf { it.thirdDownConversionAttempts },
+                ),
             fourthDownConversionSuccess = gameStatsList.sumOf { it.fourthDownConversionSuccess },
             fourthDownConversionAttempts = gameStatsList.sumOf { it.fourthDownConversionAttempts },
-            fourthDownConversionPercentage = calculateAverage(gameStatsList.mapNotNull { it.fourthDownConversionPercentage }),
+            fourthDownConversionPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.fourthDownConversionSuccess },
+                    gameStatsList.sumOf { it.fourthDownConversionAttempts },
+                ),
             largestLead = gameStatsList.maxOfOrNull { it.largestLead } ?: 0,
             largestDeficit = gameStatsList.maxOfOrNull { it.largestDeficit } ?: 0,
             redZoneAttempts = gameStatsList.sumOf { it.redZoneAttempts },
             redZoneSuccesses = gameStatsList.sumOf { it.redZoneSuccesses },
-            redZoneSuccessPercentage = calculateAverage(gameStatsList.mapNotNull { it.redZoneSuccessPercentage }),
-            redZonePercentage = calculateAverage(gameStatsList.mapNotNull { it.redZonePercentage }),
+            redZoneSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.redZoneSuccesses },
+                    gameStatsList.sumOf { it.redZoneAttempts },
+                ),
+            redZonePercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { it.redZoneAttempts },
+                    gameStatsList.sumOf { it.numberOfDrives },
+                ),
             safetiesForced = gameStatsList.sumOf { it.safetiesForced },
             safetiesCommitted = gameStatsList.sumOf { it.safetiesCommitted },
             averageOffensiveDiff = calculateAverage(gameStatsList.mapNotNull { it.averageOffensiveDiff }),
@@ -233,6 +314,227 @@ class SeasonStatsService(
             averageDefensiveSpecialTeamsDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDefensiveSpecialTeamsDiff }),
             averageDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDiff }),
             averageResponseSpeed = calculateAverage(gameStatsList.mapNotNull { it.averageResponseSpeed }),
+            // Opponent Stats (what the team allowed opponents to do)
+            opponentPassAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passAttempts ?: 0
+                },
+            opponentPassCompletions =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passCompletions ?: 0
+                },
+            opponentPassCompletionPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passCompletions ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passAttempts ?: 0 },
+                ),
+            opponentPassYards =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passYards ?: 0
+                },
+            opponentLongestPass =
+                gameStatsList.mapNotNull {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.longestPass
+                }.maxOrNull() ?: 0,
+            opponentPassTouchdowns =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passTouchdowns ?: 0
+                },
+            opponentPassSuccesses =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passSuccesses ?: 0
+                },
+            opponentPassSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passSuccesses ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passAttempts ?: 0 },
+                ),
+            opponentRushAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.rushAttempts ?: 0
+                },
+            opponentRushSuccesses =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.rushSuccesses ?: 0
+                },
+            opponentRushSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.rushSuccesses ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.rushAttempts ?: 0 },
+                ),
+            opponentRushYards =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.rushYards ?: 0
+                },
+            opponentLongestRun =
+                gameStatsList.mapNotNull {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.longestRun
+                }.maxOrNull() ?: 0,
+            opponentRushTouchdowns =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.rushTouchdowns ?: 0
+                },
+            opponentTotalYards =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.totalYards ?: 0
+                },
+            opponentAverageYardsPerPlay =
+                calculateAverage(
+                    gameStatsList.mapNotNull {
+                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.averageYardsPerPlay
+                    },
+                ),
+            opponentFirstDowns =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.firstDowns ?: 0
+                },
+            opponentFieldGoalMade =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fieldGoalMade ?: 0
+                },
+            opponentFieldGoalAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fieldGoalAttempts ?: 0
+                },
+            opponentFieldGoalPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fieldGoalMade ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fieldGoalAttempts ?: 0 },
+                ),
+            opponentLongestFieldGoal =
+                gameStatsList.mapNotNull {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.longestFieldGoal
+                }.maxOrNull() ?: 0,
+            opponentFieldGoalTouchdown =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fieldGoalTouchdown ?: 0
+                },
+            opponentPuntsAttempted =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.puntsAttempted ?: 0
+                },
+            opponentLongestPunt =
+                gameStatsList.mapNotNull {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.longestPunt
+                }.maxOrNull() ?: 0,
+            opponentAveragePuntLength =
+                calculateAverage(
+                    gameStatsList.mapNotNull {
+                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.averagePuntLength
+                    },
+                ),
+            opponentPuntReturnTd =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.puntReturnTd ?: 0
+                },
+            opponentPuntReturnTdPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.puntReturnTd ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.puntsAttempted ?: 0 },
+                ),
+            opponentNumberOfKickoffs =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.numberOfKickoffs ?: 0
+                },
+            opponentOnsideAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.onsideAttempts ?: 0
+                },
+            opponentOnsideSuccess =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.onsideSuccess ?: 0
+                },
+            opponentOnsideSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.onsideSuccess ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.onsideAttempts ?: 0 },
+                ),
+            opponentNormalKickoffAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.normalKickoffAttempts ?: 0
+                },
+            opponentTouchbacks =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.touchbacks ?: 0
+                },
+            opponentTouchbackPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.touchbacks ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.normalKickoffAttempts ?: 0 },
+                ),
+            opponentKickReturnTd =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.kickReturnTd ?: 0
+                },
+            opponentKickReturnTdPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.kickReturnTd ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.numberOfKickoffs ?: 0 },
+                ),
+            opponentNumberOfDrives =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.numberOfDrives ?: 0
+                },
+            opponentTimeOfPossession =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.timeOfPossession ?: 0
+                },
+            opponentTouchdowns =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.touchdowns ?: 0
+                },
+            opponentThirdDownConversionSuccess =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.thirdDownConversionSuccess ?: 0
+                },
+            opponentThirdDownConversionAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.thirdDownConversionAttempts ?: 0
+                },
+            opponentThirdDownConversionPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf {
+                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.thirdDownConversionSuccess ?: 0
+                    },
+                    gameStatsList.sumOf {
+                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.thirdDownConversionAttempts ?: 0
+                    },
+                ),
+            opponentFourthDownConversionSuccess =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fourthDownConversionSuccess ?: 0
+                },
+            opponentFourthDownConversionAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fourthDownConversionAttempts ?: 0
+                },
+            opponentFourthDownConversionPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf {
+                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fourthDownConversionSuccess ?: 0
+                    },
+                    gameStatsList.sumOf {
+                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.fourthDownConversionAttempts ?: 0
+                    },
+                ),
+            opponentRedZoneAttempts =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.redZoneAttempts ?: 0
+                },
+            opponentRedZoneSuccesses =
+                gameStatsList.sumOf {
+                    getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.redZoneSuccesses ?: 0
+                },
+            opponentRedZoneSuccessPercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.redZoneSuccesses ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.redZoneAttempts ?: 0 },
+                ),
+            opponentRedZonePercentage =
+                calculatePercentage(
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.redZoneAttempts ?: 0 },
+                    gameStatsList.sumOf { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.numberOfDrives ?: 0 },
+                ),
             lastModifiedTs =
                 ZonedDateTime.now(ZoneId.of("America/New_York"))
                     .format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
@@ -248,6 +550,18 @@ class SeasonStatsService(
         } else {
             null
         }
+    }
+
+    /**
+     * Get opponent GameStats for a given game using pre-fetched data
+     */
+    private fun getOpponentGameStatsByGameId(
+        gameId: Int,
+        gameStatsByGameId: Map<Int, List<GameStats>>,
+        team: String,
+    ): GameStats? {
+        return gameStatsByGameId[gameId]
+            ?.firstOrNull { it.team != team }
     }
 
     /**
@@ -369,5 +683,16 @@ class SeasonStatsService(
             Logger.error("Error in getLeaderboard: ${e.message}", e)
             throw e
         }
+    }
+
+    /**
+     * Calculate percentage from totals (successes/attempts * 100)
+     */
+    private fun calculatePercentage(
+        successes: Int,
+        attempts: Int,
+    ): Double? {
+        if (attempts == 0) return null
+        return (successes.toDouble() / attempts.toDouble()) * 100.0
     }
 }

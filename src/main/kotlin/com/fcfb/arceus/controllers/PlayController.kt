@@ -30,9 +30,10 @@ class PlayController(
     fun defensiveNumberSubmitted(
         @RequestParam("gameId") gameId: Int,
         @RequestParam("defensiveSubmitter") defensiveSubmitter: String,
+        @RequestParam("defensiveSubmitterId") defensiveSubmitterId: String,
         @RequestParam("defensiveNumber") defensiveNumber: Int,
         @RequestParam("timeoutCalled") timeoutCalled: Boolean = false,
-    ) = playService.defensiveNumberSubmitted(gameId, defensiveSubmitter, defensiveNumber, timeoutCalled)
+    ) = playService.defensiveNumberSubmitted(gameId, defensiveSubmitter, defensiveSubmitterId, defensiveNumber, timeoutCalled)
 
     /**
      * The offensive number was submitted, run the play
@@ -47,11 +48,20 @@ class PlayController(
     fun offensiveNumberSubmitted(
         @RequestParam("gameId") gameId: Int,
         @RequestParam("offensiveSubmitter") offensiveSubmitter: String,
+        @RequestParam("offensiveSubmitterId") offensiveSubmitterId: String,
         @RequestParam("offensiveNumber") offensiveNumber: Int?,
         @RequestParam("playCall") playCall: PlayCall,
         @RequestParam("runoffType") runoffType: RunoffType,
         @RequestParam("timeoutCalled") timeoutCalled: Boolean,
-    ) = playService.offensiveNumberSubmitted(gameId, offensiveSubmitter, offensiveNumber, playCall, runoffType, timeoutCalled)
+    ) = playService.offensiveNumberSubmitted(
+        gameId,
+        offensiveSubmitter,
+        offensiveSubmitterId,
+        offensiveNumber,
+        playCall,
+        runoffType,
+        timeoutCalled,
+    )
 
     /**
      * Rollback the last play

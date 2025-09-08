@@ -76,8 +76,16 @@ class Play {
     var defensiveSubmitter: String? = null
 
     @Basic
+    @Column(name = "defensive_submitter_id")
+    var defensiveSubmitterId: String? = null
+
+    @Basic
     @Column(name = "offensive_submitter")
     var offensiveSubmitter: String? = null
+
+    @Basic
+    @Column(name = "offensive_submitter_id")
+    var offensiveSubmitterId: String? = null
 
     @Enumerated(EnumType.STRING)
     @Basic
@@ -171,7 +179,9 @@ class Play {
         defensiveNumber: String?,
         offensiveNumber: String?,
         offensiveSubmitter: String?,
+        offensiveSubmitterId: String?,
         defensiveSubmitter: String?,
+        defensiveSubmitterId: String?,
         playCall: PlayCall?,
         result: Scenario?,
         actualResult: ActualResult?,
@@ -205,7 +215,9 @@ class Play {
         this.defensiveNumber = defensiveNumber
         this.offensiveNumber = offensiveNumber
         this.offensiveSubmitter = offensiveSubmitter
+        this.offensiveSubmitterId = offensiveSubmitterId
         this.defensiveSubmitter = defensiveSubmitter
+        this.defensiveSubmitterId = defensiveSubmitterId
         this.playCall = playCall
         this.result = result
         this.actualResult = actualResult

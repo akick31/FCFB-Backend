@@ -73,26 +73,4 @@ class Record(
     @UpdateTimestamp
     @Column(name = "updated_at")
     var updatedAt: LocalDateTime? = null,
-) {
-    // Default constructor for JPA
-    constructor() : this(
-        id = 0,
-        recordName = Stats.SCORE,
-        recordType = RecordType.SINGLE_GAME,
-        seasonNumber = 0,
-        week = null,
-        gameId = null,
-        homeTeam = null,
-        awayTeam = null,
-        recordTeam = "",
-        coach = null,
-        recordValue = 0.0,
-        previousRecordValue = null,
-        previousRecordTeam = null,
-        previousRecordGameId = null,
-        isTied = false,
-        tiedTeams = null,
-        createdAt = null,
-        updatedAt = null,
-    )
-}
+)

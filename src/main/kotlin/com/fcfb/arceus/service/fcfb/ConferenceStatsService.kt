@@ -141,15 +141,27 @@ class ConferenceStatsService(
             // Aggregate all the stats
             passAttempts = seasonStatsList.sumOf { it.passAttempts },
             passCompletions = seasonStatsList.sumOf { it.passCompletions },
-            passCompletionPercentage = calculateAverage(seasonStatsList.mapNotNull { it.passCompletionPercentage }),
+            passCompletionPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.passCompletions },
+                    seasonStatsList.sumOf { it.passAttempts },
+                ),
             passYards = seasonStatsList.sumOf { it.passYards },
             longestPass = seasonStatsList.maxOfOrNull { it.longestPass } ?: 0,
             passTouchdowns = seasonStatsList.sumOf { it.passTouchdowns },
             passSuccesses = seasonStatsList.sumOf { it.passSuccesses },
-            passSuccessPercentage = calculateAverage(seasonStatsList.mapNotNull { it.passSuccessPercentage }),
+            passSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.passSuccesses },
+                    seasonStatsList.sumOf { it.passAttempts },
+                ),
             rushAttempts = seasonStatsList.sumOf { it.rushAttempts },
             rushSuccesses = seasonStatsList.sumOf { it.rushSuccesses },
-            rushSuccessPercentage = calculateAverage(seasonStatsList.mapNotNull { it.rushSuccessPercentage }),
+            rushSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.rushSuccesses },
+                    seasonStatsList.sumOf { it.rushAttempts },
+                ),
             rushYards = seasonStatsList.sumOf { it.rushYards },
             longestRun = seasonStatsList.maxOfOrNull { it.longestRun } ?: 0,
             rushTouchdowns = seasonStatsList.sumOf { it.rushTouchdowns },
@@ -173,7 +185,11 @@ class ConferenceStatsService(
             fumbleReturnTdsForced = seasonStatsList.sumOf { it.fumbleReturnTdsForced },
             fieldGoalMade = seasonStatsList.sumOf { it.fieldGoalMade },
             fieldGoalAttempts = seasonStatsList.sumOf { it.fieldGoalAttempts },
-            fieldGoalPercentage = calculateAverage(seasonStatsList.mapNotNull { it.fieldGoalPercentage }),
+            fieldGoalPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.fieldGoalMade },
+                    seasonStatsList.sumOf { it.fieldGoalAttempts },
+                ),
             longestFieldGoal = seasonStatsList.maxOfOrNull { it.longestFieldGoal } ?: 0,
             blockedOpponentFieldGoals = seasonStatsList.sumOf { it.blockedOpponentFieldGoals },
             fieldGoalTouchdown = seasonStatsList.sumOf { it.fieldGoalTouchdown },
@@ -182,31 +198,63 @@ class ConferenceStatsService(
             averagePuntLength = calculateAverage(seasonStatsList.mapNotNull { it.averagePuntLength }),
             blockedOpponentPunt = seasonStatsList.sumOf { it.blockedOpponentPunt },
             puntReturnTd = seasonStatsList.sumOf { it.puntReturnTd },
-            puntReturnTdPercentage = calculateAverage(seasonStatsList.mapNotNull { it.puntReturnTdPercentage }),
+            puntReturnTdPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.puntReturnTd },
+                    seasonStatsList.sumOf { it.puntsAttempted },
+                ),
             numberOfKickoffs = seasonStatsList.sumOf { it.numberOfKickoffs },
             onsideAttempts = seasonStatsList.sumOf { it.onsideAttempts },
             onsideSuccess = seasonStatsList.sumOf { it.onsideSuccess },
-            onsideSuccessPercentage = calculateAverage(seasonStatsList.mapNotNull { it.onsideSuccessPercentage }),
+            onsideSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.onsideSuccess },
+                    seasonStatsList.sumOf { it.onsideAttempts },
+                ),
             normalKickoffAttempts = seasonStatsList.sumOf { it.normalKickoffAttempts },
             touchbacks = seasonStatsList.sumOf { it.touchbacks },
-            touchbackPercentage = calculateAverage(seasonStatsList.mapNotNull { it.touchbackPercentage }),
+            touchbackPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.touchbacks },
+                    seasonStatsList.sumOf { it.normalKickoffAttempts },
+                ),
             kickReturnTd = seasonStatsList.sumOf { it.kickReturnTd },
-            kickReturnTdPercentage = calculateAverage(seasonStatsList.mapNotNull { it.kickReturnTdPercentage }),
+            kickReturnTdPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.kickReturnTd },
+                    seasonStatsList.sumOf { it.numberOfKickoffs },
+                ),
             numberOfDrives = seasonStatsList.sumOf { it.numberOfDrives },
             timeOfPossession = seasonStatsList.sumOf { it.timeOfPossession },
             touchdowns = seasonStatsList.sumOf { it.touchdowns },
             thirdDownConversionSuccess = seasonStatsList.sumOf { it.thirdDownConversionSuccess },
             thirdDownConversionAttempts = seasonStatsList.sumOf { it.thirdDownConversionAttempts },
-            thirdDownConversionPercentage = calculateAverage(seasonStatsList.mapNotNull { it.thirdDownConversionPercentage }),
+            thirdDownConversionPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.thirdDownConversionSuccess },
+                    seasonStatsList.sumOf { it.thirdDownConversionAttempts },
+                ),
             fourthDownConversionSuccess = seasonStatsList.sumOf { it.fourthDownConversionSuccess },
             fourthDownConversionAttempts = seasonStatsList.sumOf { it.fourthDownConversionAttempts },
-            fourthDownConversionPercentage = calculateAverage(seasonStatsList.mapNotNull { it.fourthDownConversionPercentage }),
+            fourthDownConversionPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.fourthDownConversionSuccess },
+                    seasonStatsList.sumOf { it.fourthDownConversionAttempts },
+                ),
             largestLead = seasonStatsList.maxOfOrNull { it.largestLead } ?: 0,
             largestDeficit = seasonStatsList.maxOfOrNull { it.largestDeficit } ?: 0,
             redZoneAttempts = seasonStatsList.sumOf { it.redZoneAttempts },
             redZoneSuccesses = seasonStatsList.sumOf { it.redZoneSuccesses },
-            redZoneSuccessPercentage = calculateAverage(seasonStatsList.mapNotNull { it.redZoneSuccessPercentage }),
-            redZonePercentage = calculateAverage(seasonStatsList.mapNotNull { it.redZonePercentage }),
+            redZoneSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.redZoneSuccesses },
+                    seasonStatsList.sumOf { it.redZoneAttempts },
+                ),
+            redZonePercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.redZoneAttempts },
+                    seasonStatsList.sumOf { it.numberOfDrives },
+                ),
             safetiesForced = seasonStatsList.sumOf { it.safetiesForced },
             safetiesCommitted = seasonStatsList.sumOf { it.safetiesCommitted },
             // Performance metrics are averages of team averages
@@ -216,6 +264,104 @@ class ConferenceStatsService(
             averageDefensiveSpecialTeamsDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageDefensiveSpecialTeamsDiff }),
             averageDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageDiff }),
             averageResponseSpeed = calculateAverage(seasonStatsList.mapNotNull { it.averageResponseSpeed }),
+            // Opponent Stats (what teams allowed opponents to do)
+            opponentPassAttempts = seasonStatsList.sumOf { it.opponentPassAttempts },
+            opponentPassCompletions = seasonStatsList.sumOf { it.opponentPassCompletions },
+            opponentPassCompletionPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentPassCompletions },
+                    seasonStatsList.sumOf { it.opponentPassAttempts },
+                ),
+            opponentPassYards = seasonStatsList.sumOf { it.opponentPassYards },
+            opponentLongestPass = seasonStatsList.maxOfOrNull { it.opponentLongestPass } ?: 0,
+            opponentPassTouchdowns = seasonStatsList.sumOf { it.opponentPassTouchdowns },
+            opponentPassSuccesses = seasonStatsList.sumOf { it.opponentPassSuccesses },
+            opponentPassSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentPassSuccesses },
+                    seasonStatsList.sumOf { it.opponentPassAttempts },
+                ),
+            opponentRushAttempts = seasonStatsList.sumOf { it.opponentRushAttempts },
+            opponentRushSuccesses = seasonStatsList.sumOf { it.opponentRushSuccesses },
+            opponentRushSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentRushSuccesses },
+                    seasonStatsList.sumOf { it.opponentRushAttempts },
+                ),
+            opponentRushYards = seasonStatsList.sumOf { it.opponentRushYards },
+            opponentLongestRun = seasonStatsList.maxOfOrNull { it.opponentLongestRun } ?: 0,
+            opponentRushTouchdowns = seasonStatsList.sumOf { it.opponentRushTouchdowns },
+            opponentTotalYards = seasonStatsList.sumOf { it.opponentTotalYards },
+            opponentAverageYardsPerPlay = calculateAverage(seasonStatsList.mapNotNull { it.opponentAverageYardsPerPlay }),
+            opponentFirstDowns = seasonStatsList.sumOf { it.opponentFirstDowns },
+            opponentFieldGoalMade = seasonStatsList.sumOf { it.opponentFieldGoalMade },
+            opponentFieldGoalAttempts = seasonStatsList.sumOf { it.opponentFieldGoalAttempts },
+            opponentFieldGoalPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentFieldGoalMade },
+                    seasonStatsList.sumOf { it.opponentFieldGoalAttempts },
+                ),
+            opponentLongestFieldGoal = seasonStatsList.maxOfOrNull { it.opponentLongestFieldGoal } ?: 0,
+            opponentFieldGoalTouchdown = seasonStatsList.sumOf { it.opponentFieldGoalTouchdown },
+            opponentPuntsAttempted = seasonStatsList.sumOf { it.opponentPuntsAttempted },
+            opponentLongestPunt = seasonStatsList.maxOfOrNull { it.opponentLongestPunt } ?: 0,
+            opponentAveragePuntLength = calculateAverage(seasonStatsList.mapNotNull { it.opponentAveragePuntLength }),
+            opponentPuntReturnTd = seasonStatsList.sumOf { it.opponentPuntReturnTd },
+            opponentPuntReturnTdPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentPuntReturnTd },
+                    seasonStatsList.sumOf { it.opponentPuntsAttempted },
+                ),
+            opponentNumberOfKickoffs = seasonStatsList.sumOf { it.opponentNumberOfKickoffs },
+            opponentOnsideAttempts = seasonStatsList.sumOf { it.opponentOnsideAttempts },
+            opponentOnsideSuccess = seasonStatsList.sumOf { it.opponentOnsideSuccess },
+            opponentOnsideSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentOnsideSuccess },
+                    seasonStatsList.sumOf { it.opponentOnsideAttempts },
+                ),
+            opponentNormalKickoffAttempts = seasonStatsList.sumOf { it.opponentNormalKickoffAttempts },
+            opponentTouchbacks = seasonStatsList.sumOf { it.opponentTouchbacks },
+            opponentTouchbackPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentTouchbacks },
+                    seasonStatsList.sumOf { it.opponentNormalKickoffAttempts },
+                ),
+            opponentKickReturnTd = seasonStatsList.sumOf { it.opponentKickReturnTd },
+            opponentKickReturnTdPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentKickReturnTd },
+                    seasonStatsList.sumOf { it.opponentNumberOfKickoffs },
+                ),
+            opponentNumberOfDrives = seasonStatsList.sumOf { it.opponentNumberOfDrives },
+            opponentTimeOfPossession = seasonStatsList.sumOf { it.opponentTimeOfPossession },
+            opponentTouchdowns = seasonStatsList.sumOf { it.opponentTouchdowns },
+            opponentThirdDownConversionSuccess = seasonStatsList.sumOf { it.opponentThirdDownConversionSuccess },
+            opponentThirdDownConversionAttempts = seasonStatsList.sumOf { it.opponentThirdDownConversionAttempts },
+            opponentThirdDownConversionPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentThirdDownConversionSuccess },
+                    seasonStatsList.sumOf { it.opponentThirdDownConversionAttempts },
+                ),
+            opponentFourthDownConversionSuccess = seasonStatsList.sumOf { it.opponentFourthDownConversionSuccess },
+            opponentFourthDownConversionAttempts = seasonStatsList.sumOf { it.opponentFourthDownConversionAttempts },
+            opponentFourthDownConversionPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentFourthDownConversionSuccess },
+                    seasonStatsList.sumOf { it.opponentFourthDownConversionAttempts },
+                ),
+            opponentRedZoneAttempts = seasonStatsList.sumOf { it.opponentRedZoneAttempts },
+            opponentRedZoneSuccesses = seasonStatsList.sumOf { it.opponentRedZoneSuccesses },
+            opponentRedZoneSuccessPercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentRedZoneSuccesses },
+                    seasonStatsList.sumOf { it.opponentRedZoneAttempts },
+                ),
+            opponentRedZonePercentage =
+                calculatePercentage(
+                    seasonStatsList.sumOf { it.opponentRedZoneAttempts },
+                    seasonStatsList.sumOf { it.opponentNumberOfDrives },
+                ),
             lastModifiedTs = ZonedDateTime.now(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT),
         )
     }
@@ -226,5 +372,16 @@ class ConferenceStatsService(
     private fun calculateAverage(values: List<Double>): Double? {
         if (values.isEmpty()) return null
         return values.average()
+    }
+
+    /**
+     * Calculate percentage from totals (successes/attempts * 100)
+     */
+    private fun calculatePercentage(
+        successes: Int,
+        attempts: Int,
+    ): Double? {
+        if (attempts == 0) return null
+        return (successes.toDouble() / attempts.toDouble()) * 100.0
     }
 }

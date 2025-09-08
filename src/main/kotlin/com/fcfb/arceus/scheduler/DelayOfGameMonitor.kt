@@ -235,7 +235,7 @@ class DelayOfGameMonitor(
      * @param game
      */
     private fun saveDelayOfGameOnOffensePlay(game: Game): Play {
-        val play = playService.defensiveNumberSubmitted(game.gameId, "NONE", 0, false)
+        val play = playService.defensiveNumberSubmitted(game.gameId, "NONE", "NONE", 0, false)
         play.playFinished = true
         play.offensiveNumber = null
         play.defensiveNumber = null

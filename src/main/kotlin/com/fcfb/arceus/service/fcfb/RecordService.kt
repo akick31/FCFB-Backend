@@ -52,15 +52,47 @@ class RecordService(
      */
     private val dualRecordStats =
         setOf(
+            // Performance metrics (already had these)
             Stats.AVERAGE_OFFENSIVE_DIFF,
             Stats.AVERAGE_DEFENSIVE_DIFF,
             Stats.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
             Stats.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF,
             Stats.AVERAGE_DIFF,
             Stats.AVERAGE_RESPONSE_SPEED,
+            // Game flow stats
             Stats.TIME_OF_POSSESSION,
+            // Total offense stats
             Stats.TOTAL_YARDS,
             Stats.AVERAGE_YARDS_PER_PLAY,
+            Stats.FIRST_DOWNS,
+            // Passing stats (except longest)
+            Stats.PASS_ATTEMPTS,
+            Stats.PASS_COMPLETIONS,
+            Stats.PASS_YARDS,
+            Stats.PASS_TOUCHDOWNS,
+            Stats.PASS_SUCCESSES,
+            // Rushing stats (except longest)
+            Stats.RUSH_ATTEMPTS,
+            Stats.RUSH_SUCCESSES,
+            Stats.RUSH_YARDS,
+            Stats.RUSH_TOUCHDOWNS,
+            // Down conversions
+            Stats.THIRD_DOWN_CONVERSION_SUCCESS,
+            Stats.THIRD_DOWN_CONVERSION_ATTEMPTS,
+            Stats.FOURTH_DOWN_CONVERSION_SUCCESS,
+            Stats.FOURTH_DOWN_CONVERSION_ATTEMPTS,
+            // Red zone
+            Stats.RED_ZONE_ATTEMPTS,
+            Stats.RED_ZONE_SUCCESSES,
+            // Touchdowns
+            Stats.TOUCHDOWNS,
+            // Kickoffs
+            Stats.NUMBER_OF_KICKOFFS,
+            Stats.ONSIDE_ATTEMPTS,
+            Stats.ONSIDE_SUCCESS,
+            Stats.NORMAL_KICKOFF_ATTEMPTS,
+            Stats.TOUCHBACKS,
+            Stats.KICK_RETURN_TD,
         )
 
     /**
@@ -73,26 +105,6 @@ class RecordService(
             Stats.LONGEST_RUN,
             Stats.LONGEST_FIELD_GOAL,
             Stats.LONGEST_PUNT,
-        )
-
-    /**
-     * Stats that are percentages and should be calculated from season totals
-     * instead of summing individual game percentages
-     */
-    private val percentageStats =
-        setOf(
-            Stats.PASS_COMPLETION_PERCENTAGE,
-            Stats.PASS_SUCCESS_PERCENTAGE,
-            Stats.RUSH_SUCCESS_PERCENTAGE,
-            Stats.FIELD_GOAL_PERCENTAGE,
-            Stats.PUNT_RETURN_TD_PERCENTAGE,
-            Stats.ONSIDE_SUCCESS_PERCENTAGE,
-            Stats.TOUCHBACK_PERCENTAGE,
-            Stats.KICK_RETURN_TD_PERCENTAGE,
-            Stats.THIRD_DOWN_CONVERSION_PERCENTAGE,
-            Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE,
-            Stats.RED_ZONE_SUCCESS_PERCENTAGE,
-            Stats.RED_ZONE_PERCENTAGE,
         )
 
     /**
@@ -272,22 +284,9 @@ class RecordService(
         // Get game stats only for available seasons (10 and above, data unavailable for seasons 1-9)
         val availableSeasons = getAvailableSeasons()
 
-        // For percentage stats, only include seasons that have ended (have end_date)
-        val seasonsToProcess =
-            if (percentageStats.contains(statName)) {
-                val finishedSeasons =
-                    seasonRepository.findAll()
-                        .filter { it.endDate != null }
-                        .map { it.seasonNumber }
-                        .filter { it in availableSeasons }
-                finishedSeasons
-            } else {
-                availableSeasons
-            }
-
         val allGameStats =
             gameStatsRepository.findAll().toList()
-                .filter { it.season in seasonsToProcess }
+                .filter { it.season in availableSeasons }
 
         // Group by team and season, then calculate season totals/averages
         val teamSeasonTotals =
@@ -295,10 +294,6 @@ class RecordService(
                 .groupBy { "${it.team}_${it.season}" }
                 .mapValues { (_, stats) ->
                     when {
-                        percentageStats.contains(statName) -> {
-                            // For percentage stats, calculate from season totals
-                            calculatePercentageForStat(statName, stats)
-                        }
                         dualRecordStats.contains(statName) -> {
                             // For diff stats, calculate average instead of sum
                             calculateAverageForStat(statName, stats)
@@ -451,11 +446,6 @@ class RecordService(
         awaySeasonStats: GameStats?,
         recordType: RecordType,
     ) {
-        // Skip percentage stats - they should only be calculated when the season ends
-        if (percentageStats.contains(statName)) {
-            return
-        }
-
         val currentRecord = recordRepository.findTopByRecordNameAndRecordTypeOrderByRecordValueDesc(statName, recordType)
 
         // Check both teams' season stats
@@ -580,17 +570,14 @@ class RecordService(
                 // Passing Stats
                 Stats.PASS_ATTEMPTS -> "passAttempts"
                 Stats.PASS_COMPLETIONS -> "passCompletions"
-                Stats.PASS_COMPLETION_PERCENTAGE -> "passCompletionPercentage"
                 Stats.PASS_YARDS -> "passYards"
                 Stats.LONGEST_PASS -> "longestPass"
                 Stats.PASS_TOUCHDOWNS -> "passTouchdowns"
                 Stats.PASS_SUCCESSES -> "passSuccesses"
-                Stats.PASS_SUCCESS_PERCENTAGE -> "passSuccessPercentage"
 
                 // Rushing Stats
                 Stats.RUSH_ATTEMPTS -> "rushAttempts"
                 Stats.RUSH_SUCCESSES -> "rushSuccesses"
-                Stats.RUSH_SUCCESS_PERCENTAGE -> "rushSuccessPercentage"
                 Stats.RUSH_YARDS -> "rushYards"
                 Stats.LONGEST_RUN -> "longestRun"
                 Stats.RUSH_TOUCHDOWNS -> "rushTouchdowns"
@@ -622,7 +609,6 @@ class RecordService(
                 // Field Goals
                 Stats.FIELD_GOAL_MADE -> "fieldGoalMade"
                 Stats.FIELD_GOAL_ATTEMPTS -> "fieldGoalAttempts"
-                Stats.FIELD_GOAL_PERCENTAGE -> "fieldGoalPercentage"
                 Stats.LONGEST_FIELD_GOAL -> "longestFieldGoal"
                 Stats.BLOCKED_OPPONENT_FIELD_GOALS -> "blockedOpponentFieldGoals"
                 Stats.FIELD_GOAL_TOUCHDOWN -> "fieldGoalTouchdown"
@@ -633,18 +619,14 @@ class RecordService(
                 Stats.AVERAGE_PUNT_LENGTH -> "averagePuntLength"
                 Stats.BLOCKED_OPPONENT_PUNT -> "blockedOpponentPunt"
                 Stats.PUNT_RETURN_TD -> "puntReturnTd"
-                Stats.PUNT_RETURN_TD_PERCENTAGE -> "puntReturnTdPercentage"
 
                 // Kickoffs
                 Stats.NUMBER_OF_KICKOFFS -> "numberOfKickoffs"
                 Stats.ONSIDE_ATTEMPTS -> "onsideAttempts"
                 Stats.ONSIDE_SUCCESS -> "onsideSuccess"
-                Stats.ONSIDE_SUCCESS_PERCENTAGE -> "onsideSuccessPercentage"
                 Stats.NORMAL_KICKOFF_ATTEMPTS -> "normalKickoffAttempts"
                 Stats.TOUCHBACKS -> "touchbacks"
-                Stats.TOUCHBACK_PERCENTAGE -> "touchbackPercentage"
                 Stats.KICK_RETURN_TD -> "kickReturnTd"
-                Stats.KICK_RETURN_TD_PERCENTAGE -> "kickReturnTdPercentage"
 
                 // Game Flow
                 Stats.NUMBER_OF_DRIVES -> "numberOfDrives"
@@ -663,10 +645,8 @@ class RecordService(
                 // Down Conversions
                 Stats.THIRD_DOWN_CONVERSION_SUCCESS -> "thirdDownConversionSuccess"
                 Stats.THIRD_DOWN_CONVERSION_ATTEMPTS -> "thirdDownConversionAttempts"
-                Stats.THIRD_DOWN_CONVERSION_PERCENTAGE -> "thirdDownConversionPercentage"
                 Stats.FOURTH_DOWN_CONVERSION_SUCCESS -> "fourthDownConversionSuccess"
                 Stats.FOURTH_DOWN_CONVERSION_ATTEMPTS -> "fourthDownConversionAttempts"
-                Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE -> "fourthDownConversionPercentage"
 
                 // Game Control
                 Stats.LARGEST_LEAD -> "largestLead"
@@ -675,8 +655,6 @@ class RecordService(
                 // Red Zone
                 Stats.RED_ZONE_ATTEMPTS -> "redZoneAttempts"
                 Stats.RED_ZONE_SUCCESSES -> "redZoneSuccesses"
-                Stats.RED_ZONE_SUCCESS_PERCENTAGE -> "redZoneSuccessPercentage"
-                Stats.RED_ZONE_PERCENTAGE -> "redZonePercentage"
 
                 // Special Teams
                 Stats.SAFETIES_FORCED -> "safetiesForced"
@@ -781,77 +759,5 @@ class RecordService(
 
         // Return the coach who coached in the most games
         return coachGameCounts.maxByOrNull { it.value }?.key
-    }
-
-    /**
-     * Calculate percentage for a specific stat from season totals
-     */
-    private fun calculatePercentageForStat(
-        statName: Stats,
-        gameStatsList: List<GameStats>,
-    ): Double {
-        return when (statName) {
-            Stats.PASS_COMPLETION_PERCENTAGE -> {
-                val completions = gameStatsList.sumOf { getStatValue(Stats.PASS_COMPLETIONS, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.PASS_ATTEMPTS, it) }
-                if (attempts > 0) (completions / attempts) * 100.0 else 0.0
-            }
-            Stats.PASS_SUCCESS_PERCENTAGE -> {
-                val successes = gameStatsList.sumOf { getStatValue(Stats.PASS_SUCCESSES, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.PASS_ATTEMPTS, it) }
-                if (attempts > 0) (successes / attempts) * 100.0 else 0.0
-            }
-            Stats.RUSH_SUCCESS_PERCENTAGE -> {
-                val successes = gameStatsList.sumOf { getStatValue(Stats.RUSH_SUCCESSES, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.RUSH_ATTEMPTS, it) }
-                if (attempts > 0) (successes / attempts) * 100.0 else 0.0
-            }
-            Stats.FIELD_GOAL_PERCENTAGE -> {
-                val made = gameStatsList.sumOf { getStatValue(Stats.FIELD_GOAL_MADE, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.FIELD_GOAL_ATTEMPTS, it) }
-                if (attempts > 0) (made / attempts) * 100.0 else 0.0
-            }
-            Stats.PUNT_RETURN_TD_PERCENTAGE -> {
-                val tds = gameStatsList.sumOf { getStatValue(Stats.PUNT_RETURN_TD, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.PUNTS_ATTEMPTED, it) }
-                if (attempts > 0) (tds / attempts) * 100.0 else 0.0
-            }
-            Stats.ONSIDE_SUCCESS_PERCENTAGE -> {
-                val successes = gameStatsList.sumOf { getStatValue(Stats.ONSIDE_SUCCESS, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.ONSIDE_ATTEMPTS, it) }
-                if (attempts > 0) (successes / attempts) * 100.0 else 0.0
-            }
-            Stats.TOUCHBACK_PERCENTAGE -> {
-                val touchbacks = gameStatsList.sumOf { getStatValue(Stats.TOUCHBACKS, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.NORMAL_KICKOFF_ATTEMPTS, it) }
-                if (attempts > 0) (touchbacks / attempts) * 100.0 else 0.0
-            }
-            Stats.KICK_RETURN_TD_PERCENTAGE -> {
-                val tds = gameStatsList.sumOf { getStatValue(Stats.KICK_RETURN_TD, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.NUMBER_OF_KICKOFFS, it) }
-                if (attempts > 0) (tds / attempts) * 100.0 else 0.0
-            }
-            Stats.THIRD_DOWN_CONVERSION_PERCENTAGE -> {
-                val successes = gameStatsList.sumOf { getStatValue(Stats.THIRD_DOWN_CONVERSION_SUCCESS, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.THIRD_DOWN_CONVERSION_ATTEMPTS, it) }
-                if (attempts > 0) (successes / attempts) * 100.0 else 0.0
-            }
-            Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE -> {
-                val successes = gameStatsList.sumOf { getStatValue(Stats.FOURTH_DOWN_CONVERSION_SUCCESS, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.FOURTH_DOWN_CONVERSION_ATTEMPTS, it) }
-                if (attempts > 0) (successes / attempts) * 100.0 else 0.0
-            }
-            Stats.RED_ZONE_SUCCESS_PERCENTAGE -> {
-                val successes = gameStatsList.sumOf { getStatValue(Stats.RED_ZONE_SUCCESSES, it) }
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.RED_ZONE_ATTEMPTS, it) }
-                if (attempts > 0) (successes / attempts) * 100.0 else 0.0
-            }
-            Stats.RED_ZONE_PERCENTAGE -> {
-                val attempts = gameStatsList.sumOf { getStatValue(Stats.RED_ZONE_ATTEMPTS, it) }
-                val totalDrives = gameStatsList.sumOf { getStatValue(Stats.NUMBER_OF_DRIVES, it) }
-                if (totalDrives > 0) (attempts / totalDrives) * 100.0 else 0.0
-            }
-            else -> 0.0
-        }
     }
 }

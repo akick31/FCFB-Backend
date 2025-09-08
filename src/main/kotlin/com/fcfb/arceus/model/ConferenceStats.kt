@@ -279,6 +279,164 @@ class ConferenceStats(
     @Basic
     @Column(name = "average_response_speed")
     var averageResponseSpeed: Double? = null,
+    // Opponent Stats (what teams allowed opponents to do)
+    // Opponent Passing Stats (Conference Totals)
+    @Basic
+    @Column(name = "opponent_pass_attempts")
+    var opponentPassAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_pass_completions")
+    var opponentPassCompletions: Int = 0,
+    @Basic
+    @Column(name = "opponent_pass_completion_percentage")
+    var opponentPassCompletionPercentage: Double? = null,
+    @Basic
+    @Column(name = "opponent_pass_yards")
+    var opponentPassYards: Int = 0,
+    @Basic
+    @Column(name = "opponent_longest_pass")
+    var opponentLongestPass: Int = 0,
+    @Basic
+    @Column(name = "opponent_pass_touchdowns")
+    var opponentPassTouchdowns: Int = 0,
+    @Basic
+    @Column(name = "opponent_pass_successes")
+    var opponentPassSuccesses: Int = 0,
+    @Basic
+    @Column(name = "opponent_pass_success_percentage")
+    var opponentPassSuccessPercentage: Double? = null,
+    // Opponent Rushing Stats (Conference Totals)
+    @Basic
+    @Column(name = "opponent_rush_attempts")
+    var opponentRushAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_rush_successes")
+    var opponentRushSuccesses: Int = 0,
+    @Basic
+    @Column(name = "opponent_rush_success_percentage")
+    var opponentRushSuccessPercentage: Double? = null,
+    @Basic
+    @Column(name = "opponent_rush_yards")
+    var opponentRushYards: Int = 0,
+    @Basic
+    @Column(name = "opponent_longest_run")
+    var opponentLongestRun: Int = 0,
+    @Basic
+    @Column(name = "opponent_rush_touchdowns")
+    var opponentRushTouchdowns: Int = 0,
+    // Opponent Total Offense (Conference Totals)
+    @Basic
+    @Column(name = "opponent_total_yards")
+    var opponentTotalYards: Int = 0,
+    @Basic
+    @Column(name = "opponent_average_yards_per_play")
+    var opponentAverageYardsPerPlay: Double? = null,
+    @Basic
+    @Column(name = "opponent_first_downs")
+    var opponentFirstDowns: Int = 0,
+    // Opponent Field Goals (Conference Totals)
+    @Basic
+    @Column(name = "opponent_field_goal_made")
+    var opponentFieldGoalMade: Int = 0,
+    @Basic
+    @Column(name = "opponent_field_goal_attempts")
+    var opponentFieldGoalAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_field_goal_percentage")
+    var opponentFieldGoalPercentage: Double? = null,
+    @Basic
+    @Column(name = "opponent_longest_field_goal")
+    var opponentLongestFieldGoal: Int = 0,
+    @Basic
+    @Column(name = "opponent_field_goal_touchdown")
+    var opponentFieldGoalTouchdown: Int = 0,
+    // Opponent Punting (Conference Totals)
+    @Basic
+    @Column(name = "opponent_punts_attempted")
+    var opponentPuntsAttempted: Int = 0,
+    @Basic
+    @Column(name = "opponent_longest_punt")
+    var opponentLongestPunt: Int = 0,
+    @Basic
+    @Column(name = "opponent_average_punt_length")
+    var opponentAveragePuntLength: Double? = null,
+    @Basic
+    @Column(name = "opponent_punt_return_td")
+    var opponentPuntReturnTd: Int = 0,
+    @Basic
+    @Column(name = "opponent_punt_return_td_percentage")
+    var opponentPuntReturnTdPercentage: Double? = null,
+    // Opponent Kickoffs (Conference Totals)
+    @Basic
+    @Column(name = "opponent_number_of_kickoffs")
+    var opponentNumberOfKickoffs: Int = 0,
+    @Basic
+    @Column(name = "opponent_onside_attempts")
+    var opponentOnsideAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_onside_success")
+    var opponentOnsideSuccess: Int = 0,
+    @Basic
+    @Column(name = "opponent_onside_success_percentage")
+    var opponentOnsideSuccessPercentage: Double? = null,
+    @Basic
+    @Column(name = "opponent_normal_kickoff_attempts")
+    var opponentNormalKickoffAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_touchbacks")
+    var opponentTouchbacks: Int = 0,
+    @Basic
+    @Column(name = "opponent_touchback_percentage")
+    var opponentTouchbackPercentage: Double? = null,
+    @Basic
+    @Column(name = "opponent_kick_return_td")
+    var opponentKickReturnTd: Int = 0,
+    @Basic
+    @Column(name = "opponent_kick_return_td_percentage")
+    var opponentKickReturnTdPercentage: Double? = null,
+    // Opponent Game Flow (Conference Totals)
+    @Basic
+    @Column(name = "opponent_number_of_drives")
+    var opponentNumberOfDrives: Int = 0,
+    @Basic
+    @Column(name = "opponent_time_of_possession")
+    var opponentTimeOfPossession: Int = 0,
+    // Opponent Touchdowns (Conference Totals)
+    @Basic
+    @Column(name = "opponent_touchdowns")
+    var opponentTouchdowns: Int = 0,
+    // Opponent Down Conversions (Conference Totals)
+    @Basic
+    @Column(name = "opponent_third_down_conversion_success")
+    var opponentThirdDownConversionSuccess: Int = 0,
+    @Basic
+    @Column(name = "opponent_third_down_conversion_attempts")
+    var opponentThirdDownConversionAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_third_down_conversion_percentage")
+    var opponentThirdDownConversionPercentage: Double? = null,
+    @Basic
+    @Column(name = "opponent_fourth_down_conversion_success")
+    var opponentFourthDownConversionSuccess: Int = 0,
+    @Basic
+    @Column(name = "opponent_fourth_down_conversion_attempts")
+    var opponentFourthDownConversionAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_fourth_down_conversion_percentage")
+    var opponentFourthDownConversionPercentage: Double? = null,
+    // Opponent Red Zone (Conference Totals)
+    @Basic
+    @Column(name = "opponent_red_zone_attempts")
+    var opponentRedZoneAttempts: Int = 0,
+    @Basic
+    @Column(name = "opponent_red_zone_successes")
+    var opponentRedZoneSuccesses: Int = 0,
+    @Basic
+    @Column(name = "opponent_red_zone_success_percentage")
+    var opponentRedZoneSuccessPercentage: Double? = null,
+    @Basic
+    @Column(name = "opponent_red_zone_percentage")
+    var opponentRedZonePercentage: Double? = null,
     // Additional League Info
     @Basic
     @Column(name = "last_modified_ts")
