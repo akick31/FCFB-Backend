@@ -74,17 +74,27 @@ class GameController(
     ): ResponseEntity<List<Game>> = ResponseEntity.status(201).body(gameService.startWeek(season, week))
 
     @PostMapping("/end")
-    fun endGame(
+    fun endGameByChannelId(
         @RequestParam("channelId") channelId: ULong,
-    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGame(channelId))
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGameByChannelId(channelId))
+
+    @PostMapping("{gameId}/end")
+    fun endGameByGameId(
+        @PathVariable("gameId") gameId: Int,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGameByGameId(gameId))
 
     @PostMapping("/end-all")
     fun endAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.endAllGames())
 
     @PostMapping("/chew")
-    fun chewGame(
+    fun chewGameByPlatformId(
         @RequestParam("channelId") channelId: ULong,
-    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(channelId))
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(gameService.getGameByPlatformId(channelId)))
+
+    @PostMapping("{gameId}/chew")
+    fun chewGameByGameId(
+        @PathVariable("gameId") gameId: Int,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(gameService.getGameById(gameId)))
 
     @PutMapping("/{gameId}/coin-toss")
     fun runCoinToss(

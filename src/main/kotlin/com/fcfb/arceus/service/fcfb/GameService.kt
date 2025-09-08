@@ -733,12 +733,22 @@ class GameService(
     }
 
     /**
-     * End a single game
+     * End a single game by channel id
      * @param channelId
      * @return
      */
-    fun endSingleGame(channelId: ULong): Game {
+    fun endSingleGameByChannelId(channelId: ULong): Game {
         val game = getGameByPlatformId(channelId)
+        return endGame(game)
+    }
+
+    /**
+     * End a single game by game id
+     * @param gameId
+     * @return
+     */
+    fun endSingleGameByGameId(gameId: Int): Game {
+        val game = getGameById(gameId)
         return endGame(game)
     }
 
@@ -865,9 +875,7 @@ class GameService(
      * @param channelId
      * @return
      */
-    fun chewGame(channelId: ULong): Game {
-        val game = getGameByPlatformId(channelId)
-
+    fun chewGame(game: Game): Game {
         try {
             game.gameMode = GameMode.CHEW
             saveGame(game)
