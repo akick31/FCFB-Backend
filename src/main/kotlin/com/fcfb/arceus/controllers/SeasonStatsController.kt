@@ -1,11 +1,8 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.service.fcfb.SeasonStatsService
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -27,14 +24,11 @@ class SeasonStatsController(
         @RequestParam(required = false) team: String?,
         @RequestParam(required = false) season: Int?,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ResponseEntity<Page<com.fcfb.arceus.model.SeasonStats>> =
-        ResponseEntity.ok(
-            seasonStatsService.getFilteredSeasonStats(
-                team = team,
-                season = season,
-                pageable = pageable,
-            ),
-        )
+    ) = seasonStatsService.getFilteredSeasonStats(
+        team = team,
+        season = season,
+        pageable = pageable,
+    )
 
     /**
      * Generate all season stats (recalculate all season stats)

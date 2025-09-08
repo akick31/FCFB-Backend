@@ -2,10 +2,8 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.service.fcfb.LeagueStatsService
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -27,14 +25,11 @@ class LeagueStatsController(
         @RequestParam(required = false) subdivision: Subdivision?,
         @RequestParam(required = false) season: Int?,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ResponseEntity<Page<com.fcfb.arceus.model.LeagueStats>> =
-        ResponseEntity.ok(
-            leagueStatsService.getFilteredLeagueStats(
-                subdivision = subdivision,
-                season = season,
-                pageable = pageable,
-            ),
-        )
+    ) = leagueStatsService.getFilteredLeagueStats(
+        subdivision = subdivision,
+        season = season,
+        pageable = pageable,
+    )
 
     /**
      * Generate all league stats (recalculate all league stats)

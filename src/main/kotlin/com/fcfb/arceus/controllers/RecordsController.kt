@@ -3,10 +3,8 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.service.fcfb.RecordService
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -29,15 +27,12 @@ class RecordsController(
         @RequestParam(required = false) recordType: RecordType?,
         @RequestParam(required = false) recordName: Stats?,
         @PageableDefault(size = 20) pageable: Pageable,
-    ): ResponseEntity<Page<com.fcfb.arceus.model.Record>> =
-        ResponseEntity.ok(
-            recordService.getFilteredRecords(
-                season = season,
-                recordType = recordType,
-                recordName = recordName,
-                pageable = pageable,
-            ),
-        )
+    ) = recordService.getFilteredRecords(
+        season = season,
+        recordType = recordType,
+        recordName = recordName,
+        pageable = pageable,
+    )
 
     /**
      * Generate all records (recalculate all records)
