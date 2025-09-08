@@ -37,6 +37,6 @@ class PlaybookStatsController(
     /**
      * Generate all playbook stats
      */
-    @PostMapping("/generate")
+    @PostMapping("/generate/all")
     fun generateAll() = playbookStatsService.generateAllPlaybookStats()
 }
