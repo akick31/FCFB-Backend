@@ -311,4 +311,7 @@ class GameStats(
     @Basic
     @Column(name = "last_modified_ts")
     var lastModifiedTs: String? = null,
+    @Basic
+    @Column(name = "team_elo")
+    var teamElo: Double = 1500.0,
 )

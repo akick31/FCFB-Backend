@@ -10,6 +10,7 @@ import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameStatsNotFoundException
 import com.fcfb.arceus.util.Logger
@@ -23,12 +24,21 @@ class GameStatsService(
     private val gameStatsRepository: GameStatsRepository,
     private val gameRepository: GameRepository,
     private val playRepository: PlayRepository,
+    private val teamRepository: TeamRepository,
 ) {
     /**
      * Create a game stats entry
      * @param game
      */
     fun createGameStats(game: Game): List<GameStats> {
+        // Get current ELO for both teams
+        val homeTeam =
+            teamRepository.getTeamByName(game.homeTeam)
+                ?: throw Exception("Could not find home team: ${game.homeTeam}")
+        val awayTeam =
+            teamRepository.getTeamByName(game.awayTeam)
+                ?: throw Exception("Could not find away team: ${game.awayTeam}")
+
         val homeStats =
             GameStats(
                 gameId = game.gameId,
@@ -42,6 +52,7 @@ class GameStatsService(
                 subdivision = game.subdivision,
                 gameStatus = game.gameStatus,
                 gameType = game.gameType,
+                teamElo = homeTeam.currentElo,
             )
         gameStatsRepository.save(homeStats) ?: throw Exception("Could not create game stats for home team")
 
@@ -58,6 +69,7 @@ class GameStatsService(
                 subdivision = game.subdivision,
                 gameStatus = game.gameStatus,
                 gameType = game.gameType,
+                teamElo = awayTeam.currentElo,
             )
         gameStatsRepository.save(awayStats) ?: throw Exception("Could not create game stats for away team")
 

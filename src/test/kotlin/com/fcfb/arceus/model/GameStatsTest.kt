@@ -124,6 +124,7 @@ class GameStatsTest {
         assertEquals(0, gameStats.safetiesCommitted)
         assertEquals(0.0, gameStats.averageResponseSpeed)
         assertNull(gameStats.lastModifiedTs)
+        assertEquals(1500.0, gameStats.teamElo)
     }
 
     @Test
@@ -145,6 +146,7 @@ class GameStatsTest {
         gameStats.gameType = GameType.CONFERENCE_GAME
         gameStats.gameStatus = GameStatus.FINAL
         gameStats.lastModifiedTs = "2024-01-01T12:00:00Z"
+        gameStats.teamElo = 1650.5
 
         assertEquals(1, gameStats.id)
         assertEquals(123, gameStats.gameId)
@@ -160,6 +162,7 @@ class GameStatsTest {
         assertEquals(GameType.CONFERENCE_GAME, gameStats.gameType)
         assertEquals(GameStatus.FINAL, gameStats.gameStatus)
         assertEquals("2024-01-01T12:00:00Z", gameStats.lastModifiedTs)
+        assertEquals(1650.5, gameStats.teamElo)
     }
 
     @Test
@@ -411,6 +414,24 @@ class GameStatsTest {
         gameStats.averageResponseSpeed = 45.5
 
         assertEquals(45.5, gameStats.averageResponseSpeed)
+    }
+
+    @Test
+    fun `test GameStats team ELO`() {
+        val gameStats = GameStats()
+
+        // Test default value
+        assertEquals(1500.0, gameStats.teamElo)
+
+        // Test setting custom ELO values
+        gameStats.teamElo = 1750.25
+        assertEquals(1750.25, gameStats.teamElo)
+
+        gameStats.teamElo = 1200.0
+        assertEquals(1200.0, gameStats.teamElo)
+
+        gameStats.teamElo = 2000.0
+        assertEquals(2000.0, gameStats.teamElo)
     }
 
     @Test
