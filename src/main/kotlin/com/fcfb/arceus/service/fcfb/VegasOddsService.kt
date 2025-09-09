@@ -34,7 +34,7 @@ class VegasOddsService(
         logger.info("Calculating Vegas odds: ${homeTeam.name} (${homeElo.toInt()}) vs ${awayTeam.name} (${awayElo.toInt()})")
 
         val homeSpread = calculateVegasSpread(homeElo, awayElo)
-        val awaySpread = calculateVegasSpread(awayElo, homeElo)
+        val awaySpread = -homeSpread
 
         return VegasOddsResponse(
             homeTeam = homeTeam.name ?: "Unknown",
@@ -114,17 +114,17 @@ class VegasOddsService(
     /**
      * Calculate the Vegas spread for a team based on ELO difference
      * This is based on the standard ELO to point spread conversion
-     * @param teamElo The team's ELO rating
-     * @param opponentElo The opponent's ELO rating
-     * @return The point spread (negative means team is favored, positive means underdog)
+     * @param homeElo The home team's ELO rating
+     * @param awayElo The away team's ELO rating
+     * @return The point spread from home team's perspective (negative means home is favored, positive means home is underdog)
      */
     private fun calculateVegasSpread(
-        teamElo: Double,
-        opponentElo: Double,
+        homeElo: Double,
+        awayElo: Double,
     ): Double {
         // Standard ELO to point spread conversion: ~3 points per 100 ELO difference
         // Add home field advantage (~2.5 points)
-        val eloDifference = teamElo - opponentElo
+        val eloDifference = homeElo - awayElo
         val spread = (eloDifference / 100.0) * 3.0 + 2.5
 
         // Round to nearest 0.5 (standard Vegas practice)
@@ -201,8 +201,9 @@ class VegasOddsService(
                 }
 
                 // Calculate spreads using team_elo from game_stats
-                val homeSpread = calculateVegasSpread(homeStats.teamElo, awayStats.teamElo)
-                val awaySpread = calculateVegasSpread(awayStats.teamElo, homeStats.teamElo)
+                val spread = calculateVegasSpread(homeStats.teamElo, awayStats.teamElo)
+                val homeSpread = spread
+                val awaySpread = -spread
 
                 // Update the game with the calculated spreads
                 game.homeVegasSpread = homeSpread
