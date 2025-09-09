@@ -1,14 +1,21 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.dto.GameSpreadResult
+import com.fcfb.arceus.dto.UpdateSpreadsResponse
 import com.fcfb.arceus.dto.VegasOddsResponse
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.repositories.GameRepository
+import com.fcfb.arceus.repositories.GameStatsRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import kotlin.math.roundToInt
 
 @Service
-class VegasOddsService {
+class VegasOddsService(
+    private val gameRepository: GameRepository,
+    private val gameStatsRepository: GameStatsRepository,
+) {
     private val logger = LoggerFactory.getLogger(VegasOddsService::class.java)
 
     /**
@@ -123,5 +130,129 @@ class VegasOddsService {
         // Round to nearest 0.5 (standard Vegas practice)
         // Return negative for favored team, positive for underdog
         return -((spread * 2).roundToInt() / 2.0)
+    }
+
+    /**
+     * Calculate and update Vegas spreads for all games in a specific season and week
+     * using team_elo from game_stats
+     * @param season Season number
+     * @param week Week number
+     * @return Response indicating success and number of games updated
+     */
+    fun updateSpreadsForSeasonAndWeek(
+        season: Int,
+        week: Int,
+    ): ResponseEntity<UpdateSpreadsResponse> {
+        return try {
+            logger.info("Updating Vegas spreads for season $season, week $week")
+
+            // Get all games for the specified season and week
+            val games = gameRepository.getGamesBySeasonAndWeek(season, week)
+            if (games.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(
+                        UpdateSpreadsResponse(
+                            message = "No games found for season $season, week $week",
+                            season = season,
+                            week = week,
+                            totalGames = 0,
+                            updatedGames = 0,
+                            results = emptyList(),
+                        ),
+                    )
+            }
+
+            // Get all game stats for the specified season and week
+            val gameStatsList = gameStatsRepository.getGameStatsBySeasonAndWeek(season, week)
+            if (gameStatsList.isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(
+                        UpdateSpreadsResponse(
+                            message = "No game stats found for season $season, week $week",
+                            season = season,
+                            week = week,
+                            totalGames = games.size,
+                            updatedGames = 0,
+                            results = emptyList(),
+                        ),
+                    )
+            }
+
+            // Group game stats by game ID for easy lookup
+            val gameStatsByGameId = gameStatsList.groupBy { it.gameId }
+
+            var updatedGames = 0
+            val results = mutableListOf<GameSpreadResult>()
+
+            for (game in games) {
+                val gameStats = gameStatsByGameId[game.gameId]
+                if (gameStats == null || gameStats.size != 2) {
+                    logger.warn("Skipping game ${game.gameId}: Expected 2 game stats, found ${gameStats?.size ?: 0}")
+                    continue
+                }
+
+                // Find home and away team stats
+                val homeStats = gameStats.find { it.team == game.homeTeam }
+                val awayStats = gameStats.find { it.team == game.awayTeam }
+
+                if (homeStats == null || awayStats == null) {
+                    logger.warn("Skipping game ${game.gameId}: Missing team stats for home=${game.homeTeam} or away=${game.awayTeam}")
+                    continue
+                }
+
+                // Calculate spreads using team_elo from game_stats
+                val homeSpread = calculateVegasSpread(homeStats.teamElo, awayStats.teamElo)
+                val awaySpread = calculateVegasSpread(awayStats.teamElo, homeStats.teamElo)
+
+                // Update the game with the calculated spreads
+                game.homeVegasSpread = homeSpread
+                game.awayVegasSpread = awaySpread
+
+                // Save the updated game
+                gameRepository.save(game)
+
+                updatedGames++
+                results.add(
+                    GameSpreadResult(
+                        gameId = game.gameId,
+                        homeTeam = game.homeTeam,
+                        awayTeam = game.awayTeam,
+                        homeElo = homeStats.teamElo,
+                        awayElo = awayStats.teamElo,
+                        homeSpread = homeSpread,
+                        awaySpread = awaySpread,
+                    ),
+                )
+
+                logger.info(
+                    "Updated spreads for game ${game.gameId}: ${game.homeTeam} (${homeStats.teamElo.toInt()}) " +
+                        "vs ${game.awayTeam} (${awayStats.teamElo.toInt()}) - Home: $homeSpread, Away: $awaySpread",
+                )
+            }
+
+            ResponseEntity.ok(
+                UpdateSpreadsResponse(
+                    message = "Successfully updated Vegas spreads",
+                    season = season,
+                    week = week,
+                    totalGames = games.size,
+                    updatedGames = updatedGames,
+                    results = results,
+                ),
+            )
+        } catch (e: Exception) {
+            logger.error("Error updating Vegas spreads for season $season, week $week: ${e.message}", e)
+            return ResponseEntity.internalServerError()
+                .body(
+                    UpdateSpreadsResponse(
+                        message = "Failed to update Vegas spreads: ${e.message}",
+                        season = season,
+                        week = week,
+                        totalGames = 0,
+                        updatedGames = 0,
+                        results = emptyList(),
+                    ),
+                )
+        }
     }
 }

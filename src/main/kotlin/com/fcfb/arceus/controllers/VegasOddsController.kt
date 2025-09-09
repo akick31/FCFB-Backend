@@ -3,6 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.service.fcfb.VegasOddsService
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -36,4 +37,17 @@ class VegasOddsController(
         @RequestParam homeElo: Double,
         @RequestParam awayElo: Double,
     ) = vegasOddsService.getVegasOddsByElo(homeElo, awayElo)
+
+    /**
+     * Calculate and update Vegas spreads for all games in a specific season and week
+     * using team_elo from game_stats
+     * @param season Season number
+     * @param week Week number
+     * @return Response indicating success and number of games updated
+     */
+    @PostMapping("/update-spreads")
+    fun updateSpreadsForSeasonAndWeek(
+        @RequestParam season: Int,
+        @RequestParam week: Int,
+    ) = vegasOddsService.updateSpreadsForSeasonAndWeek(season, week)
 }

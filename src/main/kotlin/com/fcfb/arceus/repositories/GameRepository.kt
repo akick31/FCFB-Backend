@@ -119,4 +119,17 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
     fun findByCloseGamePinged(closeGamePinged: Boolean): List<Game>
 
     fun findByUpsetAlertPinged(upsetAlertPinged: Boolean): List<Game>
+
+    @Query(
+        value =
+            "SELECT * FROM game " +
+                "WHERE season = :season " +
+                "AND week = :week " +
+                "AND game_type != 'SCRIMMAGE'",
+        nativeQuery = true,
+    )
+    fun getGamesBySeasonAndWeek(
+        season: Int,
+        week: Int,
+    ): List<Game>
 }

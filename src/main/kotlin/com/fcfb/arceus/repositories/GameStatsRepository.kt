@@ -32,4 +32,18 @@ interface GameStatsRepository : CrudRepository<GameStats, Int> {
     fun findAllByOrderBySeasonDescGameIdAsc(): List<GameStats>
 
     fun findBySeasonOrderByGameIdAsc(season: Int): List<GameStats>
+
+    @Query(
+        value =
+            "SELECT gs.* FROM game_stats gs " +
+                "JOIN game g ON gs.game_id = g.game_id " +
+                "WHERE g.season = :season " +
+                "AND g.week = :week " +
+                "AND g.game_type != 'SCRIMMAGE'",
+        nativeQuery = true,
+    )
+    fun getGameStatsBySeasonAndWeek(
+        season: Int,
+        week: Int,
+    ): List<GameStats>
 }
