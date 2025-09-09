@@ -32,4 +32,14 @@ class ChartController(
     fun getWinProbabilityChart(
         @RequestParam gameId: Int,
     ) = chartService.getWinProbabilityChartResponse(gameId)
+
+    /**
+     * Generate an ELO chart for all teams in a season
+     * @param season The season number
+     * @return PNG image of the ELO chart
+     */
+    @GetMapping("/elo")
+    fun getEloChart(
+        @RequestParam season: Int,
+    ) = chartService.getEloChartResponse(season)
 }
