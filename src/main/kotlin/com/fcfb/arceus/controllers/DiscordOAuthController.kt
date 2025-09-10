@@ -88,7 +88,7 @@ class DiscordOAuthController(
                     return ResponseEntity.status(302)
                         .header(
                             "Location",
-                            "$websiteUrl/finish-registration?" +
+                            "$websiteUrl/register/complete?" +
                                 "discordId=$discordId&discordTag=$discordTag",
                         )
                         .build()
