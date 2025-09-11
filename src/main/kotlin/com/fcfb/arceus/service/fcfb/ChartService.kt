@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.dto.PlayWinProbabilityResponse
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
@@ -121,9 +122,9 @@ class ChartService(
         homeTeam: Team,
         awayTeam: Team,
     ): BufferedImage {
-        val width = 800
-        val height = 600
-        val padding = 60
+        val width = 1000 // Match win probability chart width
+        val height = 510 // Match win probability chart height
+        val padding = 80 // Match win probability chart padding
         val chartWidth = width - (padding * 2)
         val chartHeight = height - (padding * 2)
 
@@ -133,45 +134,44 @@ class ChartService(
         // Enable anti-aliasing
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
 
-        // White background
-        g.color = Color.WHITE
+        // Dark background like the win probability chart
+        g.color = Color(30, 30, 30) // Dark gray background
         g.fillRect(0, 0, width, height)
 
-        // Black border
-        g.color = Color.BLACK
-        g.stroke = BasicStroke(2f)
-        g.drawRect(padding, padding, chartWidth, chartHeight)
+        // Calculate actual chart width based on data
+        val actualChartWidth =
+            if (plays.isNotEmpty()) {
+                ((plays.size - 1).toFloat() / plays.size * chartWidth).toInt()
+            } else {
+                chartWidth
+            }
 
-        // Title
-        g.font = Font("Arial", Font.BOLD, 20)
-        g.color = Color.BLACK
-        val title = "${game.awayTeam} @ ${game.homeTeam}"
-        val titleWidth = g.fontMetrics.stringWidth(title)
-        g.drawString(title, (width - titleWidth) / 2, 30)
+        // Chart area background (only fill the area with data)
+        g.color = Color(40, 40, 40) // Slightly lighter for chart area
+        g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
         // Get team colors
-        val homeColor = parseColor(homeTeam.primaryColor ?: "#000000")
-        val awayColor = parseColor(awayTeam.primaryColor ?: "#000000")
+        val homeColor = parseColor(homeTeam.primaryColor ?: "#FF0000")
+        val awayColor = parseColor(awayTeam.primaryColor ?: "#0000FF")
 
-        // Find max score for scaling
-        val maxScore =
+        // Find max score for scaling (0-49, or higher if needed)
+        val actualMaxScore =
             maxOf(
                 plays.maxOfOrNull { it.homeScore } ?: 0,
                 plays.maxOfOrNull { it.awayScore } ?: 0,
             )
+        val scaleMax = maxOf(49, actualMaxScore)
 
         // Draw quarter divisions
         drawQuarterDivisions(g, plays, padding, chartWidth, chartHeight)
 
         // Draw score lines
-        drawScoreLines(g, plays, homeColor, awayColor, padding, chartWidth, chartHeight, maxScore)
+        drawScoreLines(g, plays, homeColor, awayColor, padding, chartWidth, chartHeight, scaleMax)
 
         // Draw axes
-        drawScoreAxes(g, padding, chartWidth, chartHeight, maxScore)
-
-        // Draw legend
-        drawScoreLegend(g, homeTeam, awayTeam, homeColor, awayColor, width, height)
+        drawScoreAxes(g, padding, chartWidth, chartHeight, scaleMax, homeTeam, awayTeam, plays, game)
 
         g.dispose()
         return image
@@ -200,31 +200,25 @@ class ChartService(
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
 
-        // Clean white background
-        g.color = Color.WHITE
+        // Dark background like the reference image
+        g.color = Color(30, 30, 30) // Dark gray background
         g.fillRect(0, 0, width, height)
 
-        // Subtle border for ESPN-like look
-        g.color = Color(220, 220, 220) // Light gray border
-        g.stroke = BasicStroke(1f)
-        g.drawRect(padding, padding, chartWidth, chartHeight)
+        // Calculate actual chart width based on data
+        val actualChartWidth =
+            if (plays.isNotEmpty()) {
+                ((plays.size - 1).toFloat() / plays.size * chartWidth).toInt()
+            } else {
+                chartWidth
+            }
 
-        // ESPN-style title with better typography
-        g.font = Font("Arial", Font.BOLD, 24)
-        g.color = Color(51, 51, 51) // Dark gray instead of black
-        val title = "${game.awayTeam} @ ${game.homeTeam} - Win Probability"
-        val titleWidth = g.fontMetrics.stringWidth(title)
-        g.drawString(title, (width - titleWidth) / 2, 40)
+        // Chart area background (only fill the area with data)
+        g.color = Color(40, 40, 40) // Slightly lighter for chart area
+        g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
         // Get team colors
-        val homeColor = parseColor(homeTeam.primaryColor ?: "#000000")
-        val awayColor = parseColor(awayTeam.primaryColor ?: "#000000")
-
-        // Draw 50% line with ESPN-style dashed line
-        val centerY = padding + (chartHeight / 2)
-        g.color = Color(150, 150, 150) // Medium gray
-        g.stroke = BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, floatArrayOf(8f, 4f), 0f)
-        g.drawLine(padding, centerY, padding + chartWidth, centerY)
+        val homeColor = parseColor(homeTeam.primaryColor ?: "#FF0000")
+        val awayColor = parseColor(awayTeam.primaryColor ?: "#0000FF")
 
         // Draw quarter divisions
         drawQuarterDivisions(g, plays, padding, chartWidth, chartHeight)
@@ -232,8 +226,12 @@ class ChartService(
         // Draw win probability line
         drawWinProbabilityLine(g, game, plays, homeColor, awayColor, padding, chartWidth, chartHeight)
 
+        // Get win probabilities for the axes
+        val winProbabilitiesResponse = winProbabilityService.getWinProbabilitiesForGame(plays[0].gameId, plays)
+        val winProbabilities = winProbabilitiesResponse.plays
+
         // Draw axes
-        drawWinProbabilityAxes(g, padding, chartWidth, chartHeight, homeTeam, awayTeam)
+        drawWinProbabilityAxes(g, padding, chartWidth, chartHeight, homeTeam, awayTeam, winProbabilities, game)
 
         g.dispose()
         return image
@@ -294,8 +292,8 @@ class ChartService(
         // Draw home team line
         g.color = homeColor
         for (i in 0 until totalPlays - 1) {
-            val x1 = padding + (i.toFloat() / (totalPlays - 1) * chartWidth).toInt()
-            val x2 = padding + ((i + 1).toFloat() / (totalPlays - 1) * chartWidth).toInt()
+            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
+            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
             val y1 = padding + chartHeight - ((plays[i].homeScore.toFloat() / maxScore) * chartHeight).toInt()
             val y2 = padding + chartHeight - ((plays[i + 1].homeScore.toFloat() / maxScore) * chartHeight).toInt()
             g.drawLine(x1, y1, x2, y2)
@@ -304,8 +302,8 @@ class ChartService(
         // Draw away team line
         g.color = awayColor
         for (i in 0 until totalPlays - 1) {
-            val x1 = padding + (i.toFloat() / (totalPlays - 1) * chartWidth).toInt()
-            val x2 = padding + ((i + 1).toFloat() / (totalPlays - 1) * chartWidth).toInt()
+            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
+            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
             val y1 = padding + chartHeight - ((plays[i].awayScore.toFloat() / maxScore) * chartHeight).toInt()
             val y2 = padding + chartHeight - ((plays[i + 1].awayScore.toFloat() / maxScore) * chartHeight).toInt()
             g.drawLine(x1, y1, x2, y2)
@@ -325,8 +323,6 @@ class ChartService(
         chartWidth: Int,
         chartHeight: Int,
     ) {
-        g.stroke = BasicStroke(4f) // Thicker line for better visibility
-
         val totalPlays = plays.size
         if (totalPlays < 2) return
 
@@ -363,33 +359,94 @@ class ChartService(
             }
         }
 
+        // Create filled area chart like the reference image
+        drawWinProbabilityFilledArea(
+            g,
+            winProbabilities,
+            homeColor,
+            awayColor,
+            padding,
+            chartWidth,
+            chartHeight,
+        )
+    }
+
+    /**
+     * Draw win probability as filled areas like the reference image
+     */
+    private fun drawWinProbabilityFilledArea(
+        g: Graphics2D,
+        winProbabilities: List<PlayWinProbabilityResponse>,
+        homeColor: Color,
+        awayColor: Color,
+        padding: Int,
+        chartWidth: Int,
+        chartHeight: Int,
+    ) {
+        val totalPlays = winProbabilities.size
+        if (totalPlays < 2) return
+
+        // Draw the 50% line first (only to the end of actual data)
+        g.color = Color(200, 200, 200)
+        g.stroke = BasicStroke(1f)
+        val midY = padding + chartHeight / 2
+        val actualChartWidth =
+            if (winProbabilities.isNotEmpty()) {
+                ((winProbabilities.size - 1).toFloat() / winProbabilities.size * chartWidth).toInt()
+            } else {
+                chartWidth
+            }
+        g.drawLine(padding, midY, padding + actualChartWidth, midY)
+
+        // Create the win probability line with color changes at 50%
+        g.stroke = BasicStroke(3f)
+
         for (i in 0 until totalPlays - 1) {
-            // Get win probabilities from the response
-            val play1 = winProbabilities[i]
-            val play2 = winProbabilities[i + 1]
+            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
+            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
 
-            // Use home team win probability for the chart (0.0 to 1.0)
-            // Above 0.5 = home team advantage, below 0.5 = away team advantage
-            var winProb1 = play1.homeTeamWinProbability
-            var winProb2 = play2.homeTeamWinProbability
+            // Ensure we don't draw beyond the chart boundaries
+            if (x2 > padding + chartWidth) break
+            val homeWinProb1 = winProbabilities[i].homeTeamWinProbability
+            val homeWinProb2 = winProbabilities[i + 1].homeTeamWinProbability
 
-            val x1 = padding + (i.toFloat() / (totalPlays - 1) * chartWidth).toInt()
-            val x2 = padding + ((i + 1).toFloat() / (totalPlays - 1) * chartWidth).toInt()
-            val y1 = padding + chartHeight - ((winProb1 * chartHeight).toInt())
-            val y2 = padding + chartHeight - ((winProb2 * chartHeight).toInt())
+            val y1 = padding + chartHeight - ((homeWinProb1 * chartHeight).toInt())
+            val y2 = padding + chartHeight - ((homeWinProb2 * chartHeight).toInt())
 
-            // Draw line segment with simple color scheme based on home team win probability
-            drawWinProbabilitySegment(
-                g,
-                x1,
-                y1,
-                x2,
-                y2,
-                winProb1,
-                winProb2,
-                homeColor,
-                awayColor,
-            )
+            // Determine color based on win probability
+            val avgWinProb = (homeWinProb1 + homeWinProb2) / 2.0
+            g.color = if (avgWinProb > 0.5) homeColor else awayColor
+
+            g.drawLine(x1, y1, x2, y2)
+        }
+
+        // Draw filled areas - one continuous area that changes color
+        for (i in 0 until totalPlays - 1) {
+            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
+            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
+
+            // Ensure we don't draw beyond the chart boundaries
+            if (x2 > padding + chartWidth) break
+            val homeWinProb1 = winProbabilities[i].homeTeamWinProbability
+            val homeWinProb2 = winProbabilities[i + 1].homeTeamWinProbability
+
+            val y1 = padding + chartHeight - ((homeWinProb1 * chartHeight).toInt())
+            val y2 = padding + chartHeight - ((homeWinProb2 * chartHeight).toInt())
+
+            // Create filled area for this segment
+            val areaX = intArrayOf(x1, x2, x2, x1)
+            val areaY = intArrayOf(y1, y2, midY, midY)
+
+            // Determine color based on win probability
+            val avgWinProb = (homeWinProb1 + homeWinProb2) / 2.0
+            g.color =
+                if (avgWinProb > 0.5) {
+                    Color(homeColor.red, homeColor.green, homeColor.blue, 120)
+                } else {
+                    Color(awayColor.red, awayColor.green, awayColor.blue, 120)
+                }
+
+            g.fillPolygon(areaX, areaY, 4)
         }
     }
 
@@ -442,25 +499,100 @@ class ChartService(
         chartWidth: Int,
         chartHeight: Int,
         maxScore: Int,
+        homeTeam: Team,
+        awayTeam: Team,
+        plays: List<Play>,
+        game: Game,
     ) {
-        g.color = Color.BLACK
-        g.stroke = BasicStroke(2f)
-        g.font = Font("Arial", Font.PLAIN, 12)
+        // Draw title above the chart (top left)
+        g.font = Font("Arial", Font.BOLD, 24)
+        g.color = Color.WHITE
+        val title = "Score"
+        g.drawString(title, padding, padding - 35)
 
-        // Y-axis (Score)
-        g.drawLine(padding, padding, padding, padding + chartHeight)
-        g.drawLine(padding, padding + chartHeight, padding + chartWidth, padding + chartHeight)
+        // Get team abbreviations
+        val homeTeamAbbr = homeTeam.abbreviation ?: homeTeam.name?.take(3) ?: "HOME"
+        val awayTeamAbbr = awayTeam.abbreviation ?: awayTeam.name?.take(3) ?: "AWAY"
 
-        // Y-axis labels
-        for (i in 0..maxScore step maxOf(1, maxScore / 10)) {
-            val y = padding + chartHeight - ((i.toFloat() / maxScore) * chartHeight).toInt()
-            g.drawString(i.toString(), padding - 30, y + 5)
+        // Draw team labels with colors and logos - both stacked vertically
+        g.font = Font("Arial", Font.BOLD, 15)
+
+        // Home team label (top) with logo on the right
+        val homeLogoSize = 20
+        g.color = parseColor(homeTeam.primaryColor ?: "#FF0000")
+        g.fillRect(padding + 20, padding + 20, 12, 12)
+        g.color = Color.WHITE
+        g.drawString(homeTeamAbbr, padding + 40, padding + 32)
+        // Logo to the right of abbreviation
+        drawTeamLogo(g, homeTeam, padding + 80, padding + 15, homeLogoSize, homeLogoSize)
+
+        // Away team label (right below home team) with logo on the right
+        g.color = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        g.fillRect(padding + 20, padding + 45, 12, 12)
+        g.color = Color.WHITE
+        g.drawString(awayTeamAbbr, padding + 40, padding + 57)
+        // Logo to the right of abbreviation
+        drawTeamLogo(g, awayTeam, padding + 80, padding + 40, homeLogoSize, homeLogoSize)
+
+        // Draw score labels on the RIGHT side of the chart (intervals of 7)
+        g.font = Font("Arial", Font.BOLD, 16)
+        g.color = Color.WHITE
+
+        // Use the scaleMax parameter passed from createScoreChart
+        val scaleMax = maxScore
+
+        // Draw intervals of 7: 0, 7, 14, 21, 28, 35, 42, 49 (stop at 49, don't show 50)
+        val intervals = mutableListOf<Int>()
+        for (i in 0..6) { // Changed from 7 to 6 to stop at 42
+            val score = i * 7
+            intervals.add(score)
+        }
+        // Add 49 as the final interval
+        intervals.add(49)
+
+        // Add the actual max score if it's higher than 49
+        if (maxScore > 49) {
+            intervals.add(maxScore)
         }
 
-        // Axis labels
-        g.font = Font("Arial", Font.BOLD, 14)
-        g.drawString("Score", 10, padding + chartHeight / 2)
-        g.drawString("Play Number", padding + chartWidth / 2 - 50, padding + chartHeight + 40)
+        // Draw the intervals on the right side
+        intervals.forEach { score ->
+            val y = padding + chartHeight - ((score.toFloat() / scaleMax) * chartHeight).toInt()
+            g.drawString(score.toString(), padding + chartWidth + 10, y + 5)
+        }
+
+        // Current scores in top right with both team logos and scores (raised 15% and larger)
+        if (plays.isNotEmpty()) {
+            val finalPlay = plays.last()
+            val homeScore = finalPlay.homeScore
+            val awayScore = finalPlay.awayScore
+
+            // Draw format: [home logo] [home score] - [away score] [away logo]
+            val logoSize = 36
+            val startX = padding + chartWidth - 150
+            val logoY = padding - 60
+
+            // Home team logo
+            drawTeamLogo(g, homeTeam, startX, logoY, logoSize, logoSize)
+
+            // Home score (larger font)
+            g.font = Font("Arial", Font.BOLD, 24)
+            g.color = Color.WHITE
+            val homeScoreX = startX + logoSize + 8
+            g.drawString(homeScore.toString(), homeScoreX, logoY + logoSize / 2 + 8)
+
+            // Dash separator
+            val dashX = homeScoreX + 30
+            g.drawString("-", dashX, logoY + logoSize / 2 + 8)
+
+            // Away score
+            val awayScoreX = dashX + 20
+            g.drawString(awayScore.toString(), awayScoreX, logoY + logoSize / 2 + 8)
+
+            // Away team logo
+            val awayLogoX = awayScoreX + 30
+            drawTeamLogo(g, awayTeam, awayLogoX, logoY, logoSize, logoSize)
+        }
     }
 
     /**
@@ -473,28 +605,78 @@ class ChartService(
         chartHeight: Int,
         homeTeam: Team,
         awayTeam: Team,
+        winProbabilities: List<PlayWinProbabilityResponse>,
+        game: Game,
     ) {
-        // Clean axes with subtle styling
-        g.color = Color(200, 200, 200) // Light gray axes
-        g.stroke = BasicStroke(1f)
+        // Draw title above the chart (top left)
+        g.font = Font("Arial", Font.BOLD, 24)
+        g.color = Color.WHITE
+        val title = "Win Probability"
+        g.drawString(title, padding, padding - 35)
 
-        // Y-axis (Win Probability)
-        g.drawLine(padding, padding, padding, padding + chartHeight)
-        g.drawLine(padding, padding + chartHeight, padding + chartWidth, padding + chartHeight)
+        // Get team abbreviations
+        val homeTeamAbbr = homeTeam.abbreviation ?: homeTeam.name?.take(3) ?: "HOME"
+        val awayTeamAbbr = awayTeam.abbreviation ?: awayTeam.name?.take(3) ?: "AWAY"
 
-        // Draw team logos with better quality
-        drawTeamLogo(g, homeTeam, 15, padding + 15, 50, 50) // Larger logos
-        drawTeamLogo(g, awayTeam, 15, padding + chartHeight - 65, 50, 50)
+        // Draw team labels with colors (5% bigger font)
+        g.font = Font("Arial", Font.BOLD, 15)
 
-        // Add subtle grid lines for better readability
-        g.color = Color(240, 240, 240) // Very light gray grid
-        g.stroke = BasicStroke(0.5f)
+        // Home team label (top)
+        g.color = parseColor(homeTeam.primaryColor ?: "#FF0000")
+        g.fillRect(padding + 20, padding + 20, 12, 12)
+        g.color = Color.WHITE
+        g.drawString(homeTeamAbbr, padding + 40, padding + 32)
 
-        // Horizontal grid lines at 25%, 50%, 75%
-        val quarterHeight = chartHeight / 4
-        for (i in 1..3) {
-            val y = padding + (quarterHeight * i)
-            g.drawLine(padding, y, padding + chartWidth, y)
+        // Away team label (bottom)
+        g.color = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        g.fillRect(padding + 20, padding + chartHeight - 25, 12, 12)
+        g.color = Color.WHITE
+        g.drawString(awayTeamAbbr, padding + 40, padding + chartHeight - 13)
+
+        // Draw percentage labels on the RIGHT side of the chart (larger font)
+        g.font = Font("Arial", Font.BOLD, 16)
+        g.color = Color.WHITE
+
+        // 100% at top
+        g.drawString("100", padding + chartWidth + 10, padding + 20)
+
+        // 50% in middle
+        val midY = padding + chartHeight / 2
+        g.drawString("50", padding + chartWidth + 10, midY + 5)
+
+        // 100% at bottom (for away team)
+        g.drawString("100", padding + chartWidth + 10, padding + chartHeight - 10)
+
+        // Quarter division lines are drawn by drawQuarterDivisions method
+        // No additional grid lines needed here
+
+        // Draw team logo and current win probability in top right
+        if (winProbabilities.isNotEmpty()) {
+            val finalWinProb = winProbabilities.last().homeTeamWinProbability
+            val currentTeam = if (finalWinProb > 0.5) homeTeam else awayTeam
+            val currentWinProb = if (finalWinProb > 0.5) finalWinProb else (1.0 - finalWinProb)
+
+            // For final games, the win probability should be 100% for the winning team
+            // This matches the logic in the chart drawing where final games show 100%
+            val adjustedWinProb =
+                if (game.gameStatus == GameStatus.FINAL) {
+                    1.0 // Show 100% for final games
+                } else {
+                    currentWinProb // Show actual probability for live games
+                }
+
+            // Draw team logo using the proper method
+            val logoSize = 70
+            val logoX = padding + chartWidth - 150
+            val logoY = padding - 80
+
+            drawTeamLogo(g, currentTeam, logoX, logoY, logoSize, logoSize)
+
+            // Draw win probability percentage (bigger font)
+            g.color = Color.WHITE
+            g.font = Font("Arial", Font.BOLD, 25)
+            val winProbText = String.format("%.1f%%", adjustedWinProb * 100)
+            g.drawString(winProbText, logoX + logoSize + 10, logoY + 45)
         }
     }
 
@@ -534,36 +716,6 @@ class ChartService(
             val textWidth = g.fontMetrics.stringWidth(abbreviation)
             g.drawString(abbreviation, x + (width - textWidth) / 2, y + height / 2 + 6)
         }
-    }
-
-    /**
-     * Draw legend for score chart
-     */
-    private fun drawScoreLegend(
-        g: Graphics2D,
-        homeTeam: Team,
-        awayTeam: Team,
-        homeColor: Color,
-        awayColor: Color,
-        width: Int,
-        height: Int,
-    ) {
-        g.font = Font("Arial", Font.BOLD, 14)
-
-        val legendY = height - 30
-        val legendX = width - 200
-
-        // Home team legend
-        g.color = homeColor
-        g.fillRect(legendX, legendY - 10, 15, 3)
-        g.color = Color.BLACK
-        g.drawString(homeTeam.abbreviation ?: "HOME", legendX + 20, legendY)
-
-        // Away team legend
-        g.color = awayColor
-        g.fillRect(legendX + 100, legendY - 10, 15, 3)
-        g.color = Color.BLACK
-        g.drawString(awayTeam.abbreviation ?: "AWAY", legendX + 120, legendY)
     }
 
     /**
