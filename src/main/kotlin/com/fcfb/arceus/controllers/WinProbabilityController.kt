@@ -27,16 +27,6 @@ class WinProbabilityController(
     fun getEloRatings() = winProbabilityService.getEloRatings(teamService.getAllTeams())
 
     /**
-     * Initialize ELO ratings for all teams
-     */
-    @PostMapping("/initialize-elo")
-    fun initializeEloRatings() =
-        winProbabilityService.initializeAllEloRatings(
-            teamService.getAllTeams(),
-            teamService,
-        )
-
-    /**
      * Calculate win probability for all plays in a specific game
      */
     @PostMapping("/calculate")

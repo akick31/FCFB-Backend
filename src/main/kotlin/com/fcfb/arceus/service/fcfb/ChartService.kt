@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
@@ -229,7 +230,7 @@ class ChartService(
         drawQuarterDivisions(g, plays, padding, chartWidth, chartHeight)
 
         // Draw win probability line
-        drawWinProbabilityLine(g, plays, homeColor, awayColor, padding, chartWidth, chartHeight)
+        drawWinProbabilityLine(g, game, plays, homeColor, awayColor, padding, chartWidth, chartHeight)
 
         // Draw axes
         drawWinProbabilityAxes(g, padding, chartWidth, chartHeight, homeTeam, awayTeam)
@@ -316,6 +317,7 @@ class ChartService(
      */
     private fun drawWinProbabilityLine(
         g: Graphics2D,
+        game: Game,
         plays: List<Play>,
         homeColor: Color,
         awayColor: Color,
@@ -330,7 +332,36 @@ class ChartService(
 
         // Get win probabilities for the entire game using the service method
         val winProbabilitiesResponse = winProbabilityService.getWinProbabilitiesForGame(plays[0].gameId, plays)
-        val winProbabilities = winProbabilitiesResponse.plays
+        val originalWinProbabilities = winProbabilitiesResponse.plays
+
+        // Create a mutable list for modifications
+        val winProbabilities = originalWinProbabilities.toMutableList()
+
+        // If game is final, set win probability to 100% for the winning team on the final play only
+        if (game.gameStatus == GameStatus.FINAL && winProbabilities.isNotEmpty()) {
+            val finalPlayIndex = winProbabilities.size - 1
+            val finalPlay = winProbabilities[finalPlayIndex]
+
+            // Determine which team won based on final scores
+            val homeScore = plays.last().homeScore
+            val awayScore = plays.last().awayScore
+
+            if (homeScore > awayScore) {
+                // Home team won
+                winProbabilities[finalPlayIndex] =
+                    finalPlay.copy(
+                        homeTeamWinProbability = 1.0,
+                        awayTeamWinProbability = 0.0,
+                    )
+            } else if (awayScore > homeScore) {
+                // Away team won
+                winProbabilities[finalPlayIndex] =
+                    finalPlay.copy(
+                        homeTeamWinProbability = 0.0,
+                        awayTeamWinProbability = 1.0,
+                    )
+            }
+        }
 
         for (i in 0 until totalPlays - 1) {
             // Get win probabilities from the response
@@ -341,15 +372,6 @@ class ChartService(
             // Above 0.5 = home team advantage, below 0.5 = away team advantage
             var winProb1 = play1.homeTeamWinProbability
             var winProb2 = play2.homeTeamWinProbability
-
-            // Normalize win probability values to ensure they're between 0.0 and 1.0
-            // Handle case where win probability might be stored as percentage (0-100)
-            if (winProb1 > 1.0) winProb1 = winProb1 / 100.0
-            if (winProb2 > 1.0) winProb2 = winProb2 / 100.0
-
-            // Clamp values to valid range
-            winProb1 = winProb1.coerceIn(0.0, 1.0)
-            winProb2 = winProb2.coerceIn(0.0, 1.0)
 
             val x1 = padding + (i.toFloat() / (totalPlays - 1) * chartWidth).toInt()
             val x2 = padding + ((i + 1).toFloat() / (totalPlays - 1) * chartWidth).toInt()

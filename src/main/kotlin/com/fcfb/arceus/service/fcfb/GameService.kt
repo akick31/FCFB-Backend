@@ -20,6 +20,7 @@ import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.GameRepository
+import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.specification.GameSpecificationService
@@ -68,6 +69,7 @@ class GameService(
     private val seasonStatsService: SeasonStatsService,
     private val winProbabilityService: WinProbabilityService,
     private val vegasOddsService: VegasOddsService,
+    private val gameStatsRepository: GameStatsRepository,
 ) {
     /**
      * Save a game state
@@ -434,36 +436,15 @@ class GameService(
             val homeTeam = teamService.getTeamByName(game.homeTeam)
             val awayTeam = teamService.getTeamByName(game.awayTeam)
 
-            // Initialize ELO ratings if needed
-            winProbabilityService.initializeEloRatings(homeTeam)
-            winProbabilityService.initializeEloRatings(awayTeam)
+            // Get game stats to use team_elo instead of current_elo
+            val gameStats = gameStatsRepository.findByGameId(game.gameId)
+            val homeGameStats = gameStats.find { it.team == game.homeTeam }
+            val awayGameStats = gameStats.find { it.team == game.awayTeam }
 
-            // Calculate win probability
-            val winProbability = winProbabilityService.calculateWinProbability(game, play, homeTeam, awayTeam)
-            play.winProbability = winProbability
-
-            // Calculate win probability added
-            val previousWinProbability = game.winProbability ?: 0.5
-
-            // Get the previous play for proper WPA calculation
-            val previousPlay =
-                try {
-                    val allPlays = playRepository.findByGameId(game.gameId)
-                    allPlays.find { it.playNumber == play.playNumber - 1 }
-                } catch (e: Exception) {
-                    null
-                }
-
-            val winProbabilityAdded =
-                winProbabilityService.calculateWinProbabilityAdded(
-                    game,
-                    play,
-                    homeTeam,
-                    awayTeam,
-                    previousWinProbability,
-                    previousPlay,
-                )
-            play.winProbabilityAdded = winProbabilityAdded
+            // Use team_elo from game stats if available, otherwise fall back to current_elo
+            val homeElo = homeGameStats?.teamElo ?: homeTeam.currentElo
+            val awayElo = awayGameStats?.teamElo ?: awayTeam.currentElo
+            winProbabilityService.calculateWinProbability(game, play, homeElo, awayElo)
         } catch (e: Exception) {
             Logger.error("Error calculating win probability: ${e.message}")
             play.winProbability = 0.5
