@@ -162,6 +162,11 @@ class GameStatsService(
         ?: throw GameStatsNotFoundException("Could not find game stats for game $gameId and team $team")
 
     /**
+     * Get game stats by game id
+     */
+    fun getGameStatsById(gameId: Int) = gameStatsRepository.findByGameId(gameId)
+
+    /**
      * Delete game stats entry by game ID
      */
     fun deleteByGameId(gameId: Int) = gameStatsRepository.deleteByGameId(gameId)
