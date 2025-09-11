@@ -38,13 +38,14 @@ class ChartService(
     private val winProbabilityService: WinProbabilityService,
     @Value("\${images.path}")
     private val imagePath: String,
+    private val gameService: GameService,
 ) {
     /**
      * Generate a score chart for a game
      * @param gameId The ID of the game to generate a chart for
      * @return ResponseEntity containing the chart image as PNG bytes
      */
-    fun generateScoreChart(gameId: Int): ResponseEntity<ByteArray> {
+    private fun generateScoreChart(gameId: Int): ByteArray? {
         try {
             val game =
                 gameRepository.getGameById(gameId)
@@ -52,7 +53,7 @@ class ChartService(
 
             val plays = playRepository.getAllPlaysByGameId(gameId).sortedBy { it.playNumber }
             if (plays.isEmpty()) {
-                return ResponseEntity(HttpStatus.NOT_FOUND)
+                return null
             }
 
             val homeTeam = teamService.getTeamByName(game.homeTeam)
@@ -61,16 +62,10 @@ class ChartService(
             val chartImage = createScoreChart(game, plays, homeTeam, awayTeam)
             val chartBytes = saveChartImage(chartImage, "score_$gameId")
 
-            val headers =
-                HttpHeaders().apply {
-                    contentType = MediaType.IMAGE_PNG
-                    contentLength = chartBytes.size.toLong()
-                }
-
-            return ResponseEntity(chartBytes, headers, HttpStatus.OK)
+            return chartBytes
         } catch (e: Exception) {
             Logger.error("Error generating score chart for game $gameId: ${e.message}")
-            return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            return null
         }
     }
 
@@ -79,7 +74,7 @@ class ChartService(
      * @param gameId The ID of the game to generate a chart for
      * @return ResponseEntity containing the chart image as PNG bytes
      */
-    fun generateWinProbabilityChart(gameId: Int): ResponseEntity<ByteArray> {
+    private fun generateWinProbabilityChart(gameId: Int): ByteArray? {
         try {
             val game =
                 gameRepository.getGameById(gameId)
@@ -91,7 +86,7 @@ class ChartService(
                     .sortedBy { it.playNumber }
 
             if (plays.isEmpty()) {
-                return ResponseEntity(HttpStatus.NOT_FOUND)
+                return null
             }
 
             val homeTeam = teamService.getTeamByName(game.homeTeam)
@@ -100,16 +95,10 @@ class ChartService(
             val chartImage = createWinProbabilityChart(game, plays, homeTeam, awayTeam)
             val chartBytes = saveChartImage(chartImage, "win_prob_$gameId")
 
-            val headers =
-                HttpHeaders().apply {
-                    contentType = MediaType.IMAGE_PNG
-                    contentLength = chartBytes.size.toLong()
-                }
-
-            return ResponseEntity(chartBytes, headers, HttpStatus.OK)
+            return chartBytes
         } catch (e: Exception) {
             Logger.error("Error generating win probability chart for game $gameId: ${e.message}")
-            return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            return null
         }
     }
 
@@ -751,32 +740,134 @@ class ChartService(
     /**
      * Get score chart response
      */
-    fun getScoreChartResponse(gameId: Int) = generateScoreChart(gameId)
+    fun getScoreChart(gameId: Int): ResponseEntity<ByteArray> {
+        val chartBytes =
+            generateScoreChart(gameId)
+                ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        val headers =
+            HttpHeaders().apply {
+                contentType = MediaType.IMAGE_PNG
+                contentLength = chartBytes.size.toLong()
+            }
+
+        return ResponseEntity(chartBytes, headers, HttpStatus.OK)
+    }
 
     /**
-     * Get win probability chart response
+     * Get score charts by season and matchup
      */
-    fun getWinProbabilityChartResponse(gameId: Int) = generateWinProbabilityChart(gameId)
+    fun getScoreChartBySeasonAndMatchup(
+        season: Int,
+        firstTeam: String,
+        secondTeam: String,
+    ): ResponseEntity<List<ByteArray>> {
+        try {
+            val gameList = gameService.getGameBySeasonAndMatchup(season, firstTeam, secondTeam)
+            if (gameList.isEmpty()) {
+                return ResponseEntity(HttpStatus.NOT_FOUND)
+            }
+
+            val chartList = mutableListOf<ByteArray>()
+            for (game in gameList) {
+                val chartResponse = generateScoreChart(game.gameId)
+                if (chartResponse == null) {
+                    Logger.error("Failed to generate score chart for game ${game.gameId}")
+                    continue
+                }
+                chartList.add(chartResponse)
+            }
+
+            if (chartList.isEmpty()) {
+                return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            }
+
+            val headers =
+                HttpHeaders().apply {
+                    contentType = MediaType.APPLICATION_JSON
+                }
+
+            return ResponseEntity(chartList, headers, HttpStatus.OK)
+        } catch (e: Exception) {
+            Logger.error("Error generating score charts for season $season, $firstTeam vs $secondTeam: ${e.message}")
+            return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    /**
+     * Get win probability chart
+     */
+    fun getWinProbabilityChart(gameId: Int): ResponseEntity<ByteArray> {
+        val chartBytes =
+            generateWinProbabilityChart(gameId)
+                ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        val headers =
+            HttpHeaders().apply {
+                contentType = MediaType.IMAGE_PNG
+                contentLength = chartBytes.size.toLong()
+            }
+
+        return ResponseEntity(chartBytes, headers, HttpStatus.OK)
+    }
+
+    /**
+     * Get win probability charts by season and matchup
+     */
+    fun getWinProbabilityChartBySeasonAndMatchup(
+        season: Int,
+        firstTeam: String,
+        secondTeam: String,
+    ): ResponseEntity<List<ByteArray>> {
+        try {
+            val gameList = gameService.getGameBySeasonAndMatchup(season, firstTeam, secondTeam)
+            if (gameList.isEmpty()) {
+                return ResponseEntity(HttpStatus.NOT_FOUND)
+            }
+
+            val chartList = mutableListOf<ByteArray>()
+            for (game in gameList) {
+                val chartResponse = generateWinProbabilityChart(game.gameId)
+                if (chartResponse == null) {
+                    Logger.error("Failed to generate win probability chart for game ${game.gameId}")
+                    continue
+                }
+                chartList.add(chartResponse)
+            }
+
+            if (chartList.isEmpty()) {
+                return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            }
+
+            val headers =
+                HttpHeaders().apply {
+                    contentType = MediaType.APPLICATION_JSON
+                }
+
+            return ResponseEntity(chartList, headers, HttpStatus.OK)
+        } catch (e: Exception) {
+            Logger.error("Error generating win probability charts for season $season, $firstTeam vs $secondTeam: ${e.message}")
+            return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
 
     /**
      * Generate an ELO chart for all teams in a season
      * @param season The season number
      * @return ResponseEntity containing the chart image as PNG bytes
      */
-    fun generateEloChart(season: Int): ResponseEntity<ByteArray> {
+    private fun generateEloChart(season: Int): ByteArray? {
         try {
             Logger.info("Generating ELO chart for season $season")
 
             // Get all teams
             val teams = teamRepository.getAllActiveTeams()
             if (teams.isEmpty()) {
-                return ResponseEntity(HttpStatus.NOT_FOUND)
+                return null
             }
 
             // Get all game stats for the season
             val gameStatsList = gameStatsRepository.findBySeasonOrderByGameIdAsc(season)
             if (gameStatsList.isEmpty()) {
-                return ResponseEntity(HttpStatus.NOT_FOUND)
+                return null
             }
 
             // Group game stats by team and week
@@ -803,16 +894,10 @@ class ChartService(
 
             // Save and return the chart
             val chartBytes = saveChartImage(chartImage, "elo_chart_season_$season")
-            val headers = HttpHeaders()
-            headers.contentType = MediaType.IMAGE_PNG
-            headers.contentLength = chartBytes.size.toLong()
-
-            return ResponseEntity.ok()
-                .headers(headers)
-                .body(chartBytes)
+            return chartBytes
         } catch (e: Exception) {
             Logger.error("Error generating ELO chart for season $season: ${e.message}", e)
-            return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            return null
         }
     }
 
@@ -938,5 +1023,5 @@ class ChartService(
     /**
      * Get ELO chart response
      */
-    fun getEloChartResponse(season: Int) = generateEloChart(season)
+    fun getEloChart(season: Int) = generateEloChart(season)
 }

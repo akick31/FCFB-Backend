@@ -1635,6 +1635,15 @@ class GameService(
     }
 
     /**
+     * Get games by season and matchup
+     */
+    fun getGameBySeasonAndMatchup(
+        season: Int,
+        firstTeam: String,
+        secondTeam: String,
+    ) = gameRepository.getGamesBySeasonAndMatchup(season, firstTeam, secondTeam)
+
+    /**
      * Handle the halftime possession change
      * @param game
      * @return

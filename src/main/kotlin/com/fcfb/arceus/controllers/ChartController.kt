@@ -21,7 +21,21 @@ class ChartController(
     @GetMapping("/score")
     fun getScoreChart(
         @RequestParam gameId: Int,
-    ) = chartService.getScoreChartResponse(gameId)
+    ) = chartService.getScoreChart(gameId)
+
+    /**
+     * Generate score charts for all games between two teams in a season
+     * @param season The season number
+     * @param firstTeam
+     * @param secondTeam
+     * @return List of PNG images of score charts
+     */
+    @GetMapping("/score/matchup")
+    fun getScoreChartsBySeasonAndMatchup(
+        @RequestParam season: Int,
+        @RequestParam firstTeam: String,
+        @RequestParam secondTeam: String,
+    ) = chartService.getScoreChartBySeasonAndMatchup(season, firstTeam, secondTeam)
 
     /**
      * Generate a win probability chart for a specific game
@@ -31,7 +45,21 @@ class ChartController(
     @GetMapping("/win-probability")
     fun getWinProbabilityChart(
         @RequestParam gameId: Int,
-    ) = chartService.getWinProbabilityChartResponse(gameId)
+    ) = chartService.getWinProbabilityChart(gameId)
+
+    /**
+     * Generate win probability charts for all games between two teams in a season
+     * @param season The season number
+     * @param firstTeam
+     * @param secondTeam
+     * @return List of PNG images of win probability charts
+     */
+    @GetMapping("/win-probability/matchup")
+    fun getWinProbabilityChartsBySeasonAndMatchup(
+        @RequestParam season: Int,
+        @RequestParam firstTeam: String,
+        @RequestParam secondTeam: String,
+    ) = chartService.getWinProbabilityChartBySeasonAndMatchup(season, firstTeam, secondTeam)
 
     /**
      * Generate an ELO chart for all teams in a season
@@ -41,5 +69,5 @@ class ChartController(
     @GetMapping("/elo")
     fun getEloChart(
         @RequestParam season: Int,
-    ) = chartService.getEloChartResponse(season)
+    ) = chartService.getEloChart(season)
 }
