@@ -227,6 +227,55 @@ class ChartService(
     }
 
     /**
+     * Calculate X position for a play based on play-by-play positioning
+     * For unfinished quarters, assumes 30 plays per quarter unless more than 30 plays exist
+     */
+    private fun calculatePlayXPosition(
+        play: Play,
+        allPlays: List<Play>,
+        quartersToShow: Int,
+        chartWidth: Int,
+        padding: Int,
+    ): Int {
+        val quarter = play.quarter
+        val playsInQuarter = allPlays.filter { it.quarter == quarter }
+        val playIndexInQuarter = playsInQuarter.indexOf(play)
+
+        // Determine if this quarter is finished
+        val maxQuarter = allPlays.maxOfOrNull { it.quarter } ?: quarter
+        val isQuarterFinished =
+            when {
+                quarter < maxQuarter -> true // There are plays in a higher quarter
+                quarter == 4 -> {
+                    // 4th quarter is finished when clock - play_time - runoff_time <= 0
+                    val remainingTime = play.clock - play.playTime - play.runoffTime
+                    remainingTime <= 0
+                }
+                else -> false // Other quarters are not finished if they're the max quarter
+            }
+
+        // For finished quarters, use actual number of plays
+        // For unfinished quarters, assume 30 plays unless we have more than 30
+        val assumedPlaysInQuarter =
+            when {
+                isQuarterFinished -> playsInQuarter.size
+                playsInQuarter.size > 30 -> playsInQuarter.size
+                else -> 30
+            }
+
+        // Calculate position within the quarter
+        val quarterProgress = (quarter - 1).toFloat() / quartersToShow
+        val playProgressInQuarter =
+            if (assumedPlaysInQuarter > 1) {
+                playIndexInQuarter.toFloat() / (assumedPlaysInQuarter - 1)
+            } else {
+                0f // Handle edge case of single play in quarter
+            }
+
+        return padding + ((quarterProgress + playProgressInQuarter / quartersToShow) * chartWidth).toInt()
+    }
+
+    /**
      * Draw quarter divisions on the chart
      */
     private fun drawQuarterDivisions(
@@ -239,24 +288,22 @@ class ChartService(
         g.color = Color.LIGHT_GRAY
         g.stroke = BasicStroke(1f)
 
-        val quarters = plays.groupBy { it.quarter }
-        val totalPlays = plays.size
+        // Always show full 4 quarters, plus OT if present
+        val maxQuarter = plays.maxOfOrNull { it.quarter } ?: 4
+        val quartersToShow = if (maxQuarter > 4) maxQuarter else 4
 
-        quarters.forEach { (quarter, quarterPlays) ->
-            val quarterStart = quarterPlays.minOf { it.playNumber }
-            val quarterEnd = quarterPlays.maxOf { it.playNumber }
-
-            val x1 = padding + ((quarterStart - 1).toFloat() / (totalPlays - 1) * chartWidth).toInt()
-            val x2 = padding + ((quarterEnd - 1).toFloat() / (totalPlays - 1) * chartWidth).toInt()
+        for (quarter in 1..quartersToShow) {
+            val quarterProgress = quarter.toFloat() / quartersToShow
+            val x = padding + (quarterProgress * chartWidth).toInt()
 
             // Draw vertical line at quarter boundary
-            g.drawLine(x2, padding, x2, padding + chartHeight)
+            g.drawLine(x, padding, x, padding + chartHeight)
 
             // Draw quarter label
             g.font = Font("Arial", Font.BOLD, 12)
             val quarterLabel = "${quarter}Q"
             val labelWidth = g.fontMetrics.stringWidth(quarterLabel)
-            g.drawString(quarterLabel, x1 + (x2 - x1 - labelWidth) / 2, padding - 10)
+            g.drawString(quarterLabel, x - labelWidth / 2, padding - 10)
         }
     }
 
@@ -278,24 +325,38 @@ class ChartService(
         val totalPlays = plays.size
         if (totalPlays < 2) return
 
+        // Calculate quarters to show (always 4, plus OT if present)
+        val maxQuarter = plays.maxOfOrNull { it.quarter } ?: 4
+        val quartersToShow = if (maxQuarter > 4) maxQuarter else 4
+
         // Draw home team line
         g.color = homeColor
         for (i in 0 until totalPlays - 1) {
-            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
-            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
-            val y1 = padding + chartHeight - ((plays[i].homeScore.toFloat() / maxScore) * chartHeight).toInt()
-            val y2 = padding + chartHeight - ((plays[i + 1].homeScore.toFloat() / maxScore) * chartHeight).toInt()
-            g.drawLine(x1, y1, x2, y2)
+            val play = plays[i]
+            val nextPlay = plays[i + 1]
+
+            // Calculate X position based on play position within quarters
+            val currentX = calculatePlayXPosition(play, plays, quartersToShow, chartWidth, padding)
+            val nextX = calculatePlayXPosition(nextPlay, plays, quartersToShow, chartWidth, padding)
+
+            val y1 = padding + chartHeight - ((play.homeScore.toFloat() / maxScore) * chartHeight).toInt()
+            val y2 = padding + chartHeight - ((nextPlay.homeScore.toFloat() / maxScore) * chartHeight).toInt()
+            g.drawLine(currentX, y1, nextX, y2)
         }
 
         // Draw away team line
         g.color = awayColor
         for (i in 0 until totalPlays - 1) {
-            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
-            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
-            val y1 = padding + chartHeight - ((plays[i].awayScore.toFloat() / maxScore) * chartHeight).toInt()
-            val y2 = padding + chartHeight - ((plays[i + 1].awayScore.toFloat() / maxScore) * chartHeight).toInt()
-            g.drawLine(x1, y1, x2, y2)
+            val play = plays[i]
+            val nextPlay = plays[i + 1]
+
+            // Calculate X position based on play position within quarters
+            val currentX = calculatePlayXPosition(play, plays, quartersToShow, chartWidth, padding)
+            val nextX = calculatePlayXPosition(nextPlay, plays, quartersToShow, chartWidth, padding)
+
+            val y1 = padding + chartHeight - ((play.awayScore.toFloat() / maxScore) * chartHeight).toInt()
+            val y2 = padding + chartHeight - ((nextPlay.awayScore.toFloat() / maxScore) * chartHeight).toInt()
+            g.drawLine(currentX, y1, nextX, y2)
         }
     }
 
@@ -352,6 +413,7 @@ class ChartService(
         drawWinProbabilityFilledArea(
             g,
             winProbabilities,
+            plays,
             homeColor,
             awayColor,
             padding,
@@ -366,6 +428,7 @@ class ChartService(
     private fun drawWinProbabilityFilledArea(
         g: Graphics2D,
         winProbabilities: List<PlayWinProbabilityResponse>,
+        plays: List<Play>,
         homeColor: Color,
         awayColor: Color,
         padding: Int,
@@ -375,67 +438,117 @@ class ChartService(
         val totalPlays = winProbabilities.size
         if (totalPlays < 2) return
 
-        // Draw the 50% line first (only to the end of actual data)
+        // Calculate quarters to show (always 4, plus OT if present)
+        val maxQuarter = plays.maxOfOrNull { it.quarter } ?: 4
+        val quartersToShow = if (maxQuarter > 4) maxQuarter else 4
+
+        // Draw the 50% line first (full width of chart)
         g.color = Color(200, 200, 200)
         g.stroke = BasicStroke(1f)
         val midY = padding + chartHeight / 2
-        val actualChartWidth =
-            if (winProbabilities.isNotEmpty()) {
-                ((winProbabilities.size - 1).toFloat() / winProbabilities.size * chartWidth).toInt()
-            } else {
-                chartWidth
-            }
-        g.drawLine(padding, midY, padding + actualChartWidth, midY)
+        g.drawLine(padding, midY, padding + chartWidth, midY)
 
         // Create the win probability line with color changes at 50%
         g.stroke = BasicStroke(3f)
 
         for (i in 0 until totalPlays - 1) {
-            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
-            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
+            val play = plays[i]
+            val nextPlay = plays[i + 1]
+
+            // Calculate X position based on play position within quarters
+            val currentX = calculatePlayXPosition(play, plays, quartersToShow, chartWidth, padding)
+            val nextX = calculatePlayXPosition(nextPlay, plays, quartersToShow, chartWidth, padding)
 
             // Ensure we don't draw beyond the chart boundaries
-            if (x2 > padding + chartWidth) break
+            if (nextX > padding + chartWidth) break
             val homeWinProb1 = winProbabilities[i].homeTeamWinProbability
             val homeWinProb2 = winProbabilities[i + 1].homeTeamWinProbability
 
             val y1 = padding + chartHeight - ((homeWinProb1 * chartHeight).toInt())
             val y2 = padding + chartHeight - ((homeWinProb2 * chartHeight).toInt())
 
-            // Determine color based on win probability
-            val avgWinProb = (homeWinProb1 + homeWinProb2) / 2.0
-            g.color = if (avgWinProb > 0.5) homeColor else awayColor
+            // Check if the line crosses the 50% threshold
+            val crosses50 = (homeWinProb1 > 0.5 && homeWinProb2 <= 0.5) || (homeWinProb1 <= 0.5 && homeWinProb2 > 0.5)
 
-            g.drawLine(x1, y1, x2, y2)
+            if (crosses50) {
+                // Calculate the exact crossing point
+                val crossingPoint = (0.5 - homeWinProb1) / (homeWinProb2 - homeWinProb1)
+                val crossingX = currentX + (crossingPoint * (nextX - currentX)).toInt()
+                val crossingY = padding + chartHeight - ((0.5 * chartHeight).toInt())
+
+                // Draw first segment
+                g.color = if (homeWinProb1 > 0.5) homeColor else awayColor
+                g.drawLine(currentX, y1, crossingX, crossingY)
+
+                // Draw second segment
+                g.color = if (homeWinProb2 > 0.5) homeColor else awayColor
+                g.drawLine(crossingX, crossingY, nextX, y2)
+            } else {
+                // No crossing, use single color
+                g.color = if (homeWinProb1 > 0.5) homeColor else awayColor
+                g.drawLine(currentX, y1, nextX, y2)
+            }
         }
 
         // Draw filled areas - one continuous area that changes color
         for (i in 0 until totalPlays - 1) {
-            val x1 = padding + (i.toFloat() / totalPlays * chartWidth).toInt()
-            val x2 = padding + ((i + 1).toFloat() / totalPlays * chartWidth).toInt()
+            val play = plays[i]
+            val nextPlay = plays[i + 1]
+
+            // Calculate X position based on play position within quarters
+            val currentX = calculatePlayXPosition(play, plays, quartersToShow, chartWidth, padding)
+            val nextX = calculatePlayXPosition(nextPlay, plays, quartersToShow, chartWidth, padding)
 
             // Ensure we don't draw beyond the chart boundaries
-            if (x2 > padding + chartWidth) break
+            if (nextX > padding + chartWidth) break
             val homeWinProb1 = winProbabilities[i].homeTeamWinProbability
             val homeWinProb2 = winProbabilities[i + 1].homeTeamWinProbability
 
             val y1 = padding + chartHeight - ((homeWinProb1 * chartHeight).toInt())
             val y2 = padding + chartHeight - ((homeWinProb2 * chartHeight).toInt())
 
-            // Create filled area for this segment
-            val areaX = intArrayOf(x1, x2, x2, x1)
-            val areaY = intArrayOf(y1, y2, midY, midY)
+            // Check if the line crosses the 50% threshold
+            val crosses50 = (homeWinProb1 > 0.5 && homeWinProb2 <= 0.5) || (homeWinProb1 <= 0.5 && homeWinProb2 > 0.5)
 
-            // Determine color based on win probability
-            val avgWinProb = (homeWinProb1 + homeWinProb2) / 2.0
-            g.color =
-                if (avgWinProb > 0.5) {
-                    Color(homeColor.red, homeColor.green, homeColor.blue, 120)
-                } else {
-                    Color(awayColor.red, awayColor.green, awayColor.blue, 120)
-                }
+            if (crosses50) {
+                // Calculate the exact crossing point
+                val crossingPoint = (0.5 - homeWinProb1) / (homeWinProb2 - homeWinProb1)
+                val crossingX = currentX + (crossingPoint * (nextX - currentX)).toInt()
+                val crossingY = padding + chartHeight - ((0.5 * chartHeight).toInt())
 
-            g.fillPolygon(areaX, areaY, 4)
+                // Draw first filled area segment
+                g.color =
+                    if (homeWinProb1 > 0.5) {
+                        Color(homeColor.red, homeColor.green, homeColor.blue, 120)
+                    } else {
+                        Color(awayColor.red, awayColor.green, awayColor.blue, 120)
+                    }
+                val areaX1 = intArrayOf(currentX, crossingX, crossingX, currentX)
+                val areaY1 = intArrayOf(y1, crossingY, midY, midY)
+                g.fillPolygon(areaX1, areaY1, 4)
+
+                // Draw second filled area segment
+                g.color =
+                    if (homeWinProb2 > 0.5) {
+                        Color(homeColor.red, homeColor.green, homeColor.blue, 120)
+                    } else {
+                        Color(awayColor.red, awayColor.green, awayColor.blue, 120)
+                    }
+                val areaX2 = intArrayOf(crossingX, nextX, nextX, crossingX)
+                val areaY2 = intArrayOf(crossingY, y2, midY, midY)
+                g.fillPolygon(areaX2, areaY2, 4)
+            } else {
+                // No crossing, use single color
+                g.color =
+                    if (homeWinProb1 > 0.5) {
+                        Color(homeColor.red, homeColor.green, homeColor.blue, 120)
+                    } else {
+                        Color(awayColor.red, awayColor.green, awayColor.blue, 120)
+                    }
+                val areaX = intArrayOf(currentX, nextX, nextX, currentX)
+                val areaY = intArrayOf(y1, y2, midY, midY)
+                g.fillPolygon(areaX, areaY, 4)
+            }
         }
     }
 
