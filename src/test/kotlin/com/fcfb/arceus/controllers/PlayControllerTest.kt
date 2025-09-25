@@ -54,7 +54,9 @@ class PlayControllerTest {
             defensiveNumber = "B22",
             offensiveNumber = "A10",
             offensiveSubmitter = "coachA",
+            offensiveSubmitterId = "coachA_id",
             defensiveSubmitter = "coachB",
+            defensiveSubmitterId = "coachB_id",
             playCall = PlayCall.RUN,
             result = Scenario.NO_GAIN,
             actualResult = ActualResult.NO_GAIN,
@@ -141,7 +143,7 @@ class PlayControllerTest {
     @Test
     fun `should submit defense successfully`() {
         val play = createSamplePlay()
-        every { playService.defensiveNumberSubmitted(1, "coachB", 22, false) } returns play
+        every { playService.defensiveNumberSubmitted(1, "coachB", "coachB_id", 22, false) } returns play
 
         mockMvc.perform(
             post("/api/v1/arceus/play/submit_defense")
@@ -161,6 +163,7 @@ class PlayControllerTest {
             playService.offensiveNumberSubmitted(
                 gameId = 1,
                 offensiveSubmitter = "coachA",
+                offensiveSubmitterId = "coachA_id",
                 offensiveNumber = 10,
                 playCall = PlayCall.RUN,
                 runoffType = RunoffType.NONE,

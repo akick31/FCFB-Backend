@@ -24,7 +24,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import java.util.Optional
 
 class TeamControllerTest {
     private lateinit var mockMvc: MockMvc
@@ -91,7 +90,7 @@ class TeamControllerTest {
     @Test
     fun `should get team by id`() {
         val team = sampleTeam()
-        every { teamService.getTeamById(1) } returns Optional.ofNullable(team) as Optional<Team?>
+        every { teamService.getTeamById(1) } returns team
 
         mockMvc.perform(get("/api/v1/arceus/team/1"))
             .andExpect(status().isOk)

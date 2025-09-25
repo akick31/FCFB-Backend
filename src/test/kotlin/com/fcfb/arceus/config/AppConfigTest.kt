@@ -29,7 +29,7 @@ class AppConfigTest {
         val restTemplate = appConfig.restTemplate()
 
         assertNotNull(restTemplate, "RestTemplate should not be null")
-        assertTrue(restTemplate is RestTemplate, "Should return RestTemplate instance")
+        assertTrue(restTemplate.javaClass == RestTemplate::class.java, "Should return RestTemplate instance")
     }
 
     @Test
