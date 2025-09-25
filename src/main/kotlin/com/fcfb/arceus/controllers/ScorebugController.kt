@@ -1,5 +1,6 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.service.fcfb.ScorebugService
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
@@ -48,6 +49,7 @@ class ScorebugController(
         @RequestParam(required = false) conference: String?,
         @RequestParam(required = false) season: Int?,
         @RequestParam(required = false) week: Int?,
+        @RequestParam(required = false) gameMode: GameMode?,
         @PageableDefault(size = 20) pageable: Pageable,
     ) = scorebugService.getFilteredScorebugs(
         filters = filters ?: emptyList(),
@@ -55,6 +57,7 @@ class ScorebugController(
         conference = conference,
         season = season,
         week = week,
+        gameMode = gameMode,
         sort = sort,
         pageable = pageable,
     )

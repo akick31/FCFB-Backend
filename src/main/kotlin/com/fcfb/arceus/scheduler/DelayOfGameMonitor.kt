@@ -127,6 +127,7 @@ class DelayOfGameMonitor(
 
         val savedPlay = saveDelayOfGameOnOffensePlay(game.gameId, teamToPenalize)
         game.currentPlayId = savedPlay.playId
+        game.gameWarning = NONE
         gameService.saveGame(game)
         scorebugService.generateScorebug(game)
         return game

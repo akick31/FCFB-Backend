@@ -1510,10 +1510,12 @@ class GameService(
     /**
      * Get filtered games
      * @param filters
-     * @param sort
+     * @param category
      * @param conference
      * @param season
      * @param week
+     * @param gameMode
+     * @param sort
      * @param pageable
      */
     fun getFilteredGames(
@@ -1522,10 +1524,11 @@ class GameService(
         conference: String?,
         season: Int?,
         week: Int?,
+        gameMode: GameMode?,
         sort: GameSort,
         pageable: Pageable,
     ): Page<Game> {
-        val filterSpec = gameSpecificationService.createSpecification(filters, category, conference, season, week)
+        val filterSpec = gameSpecificationService.createSpecification(filters, category, conference, season, week, gameMode)
         val sortOrders = gameSpecificationService.createSort(sort)
         val sortedPageable =
             PageRequest.of(
@@ -1541,7 +1544,8 @@ class GameService(
                     "category = $category, " +
                     "conference = $conference, " +
                     "season = $season, " +
-                    "week = $week",
+                    "week = $week, " +
+                    "gameMode = $gameMode",
             )
     }
 

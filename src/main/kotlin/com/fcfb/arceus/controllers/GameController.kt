@@ -1,6 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.StartRequest
+import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.gameflow.CoinTossCall
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
 import com.fcfb.arceus.enums.gameflow.OvertimeCoinTossChoice
@@ -43,6 +44,7 @@ class GameController(
         @RequestParam(required = false) conference: String?,
         @RequestParam(required = false) season: Int?,
         @RequestParam(required = false) week: Int?,
+        @RequestParam(required = false) gameMode: GameMode?,
         @PageableDefault(size = 20) pageable: Pageable,
     ): ResponseEntity<Page<Game>> =
         ResponseEntity.ok(
@@ -52,6 +54,7 @@ class GameController(
                 conference = conference,
                 season = season,
                 week = week,
+                gameMode = gameMode,
                 sort = sort,
                 pageable = pageable,
             ),

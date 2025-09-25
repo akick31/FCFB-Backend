@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.dto.ScorebugResponse
+import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.Conference
@@ -50,6 +51,7 @@ class ScorebugService(
      * @param conference
      * @param season
      * @param week
+     * @param gameMode
      * @param pageable
      */
     fun getFilteredScorebugs(
@@ -59,6 +61,7 @@ class ScorebugService(
         conference: String?,
         season: Int?,
         week: Int?,
+        gameMode: GameMode?,
         pageable: Pageable,
     ): ResponseEntity<PageImpl<ScorebugResponse>> {
         val filteredGames =
@@ -68,6 +71,7 @@ class ScorebugService(
                 conference = conference,
                 season = season,
                 week = week,
+                gameMode = gameMode,
                 sort = sort,
                 pageable = pageable,
             )

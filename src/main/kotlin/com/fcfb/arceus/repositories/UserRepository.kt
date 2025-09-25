@@ -36,6 +36,11 @@ interface UserRepository : CrudRepository<User, Long> {
         responseTime: Double,
     )
 
+    @Transactional
+    @Modifying
+    @Query("UPDATE user u SET u.delay_of_game_instances = 0", nativeQuery = true)
+    fun resetAllDelayOfGameInstances()
+
     @Query("SELECT * FROM user WHERE hashed_email = :email", nativeQuery = true)
     fun getUserByEmail(email: String): User?
 

@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.specification
 
+import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.model.Game
@@ -63,9 +64,11 @@ class GameSpecificationService(
     /**
      * Create the spec for a game
      * @param filters
+     * @param category
      * @param conference
      * @param season
      * @param week
+     * @param gameMode
      */
     fun createSpecification(
         filters: List<GameFilter>,
@@ -73,6 +76,7 @@ class GameSpecificationService(
         conference: String?,
         season: Int?,
         week: Int?,
+        gameMode: GameMode?,
     ): Specification<Game> {
         return Specification { root: Root<Game>, _: CriteriaQuery<*>, cb: CriteriaBuilder ->
             val predicates = mutableListOf<Predicate>()
@@ -155,6 +159,9 @@ class GameSpecificationService(
             // Season/week filters
             season?.let { predicates.add(cb.equal(root.get<Int>("season"), it)) }
             week?.let { predicates.add(cb.equal(root.get<Int>("week"), it)) }
+
+            // GameMode filter
+            gameMode?.let { predicates.add(cb.equal(root.get<GameMode>("gameMode"), it)) }
 
             cb.and(*predicates.toTypedArray())
         }
