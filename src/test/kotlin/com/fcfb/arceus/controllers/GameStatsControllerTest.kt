@@ -38,7 +38,7 @@ class GameStatsControllerTest {
         every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } returns mockGameStats
 
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .param("gameId", gameId.toString())
                 .param("team", team)
                 .contentType(MediaType.APPLICATION_JSON),
@@ -49,21 +49,21 @@ class GameStatsControllerTest {
     }
 
     @Test
-    fun `getGameStatsByIdAndTeam should return 500 when gameId parameter is missing`() {
+    fun `getGameStatsByIdAndTeam should return 400 when gameId parameter is missing`() {
         val team = "Texas"
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .param("team", team)
                 .contentType(MediaType.APPLICATION_JSON),
         )
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isBadRequest)
     }
 
     @Test
     fun `getGameStatsByIdAndTeam should return 500 when team parameter is missing`() {
         val gameId = 123
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .param("gameId", gameId.toString())
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -73,7 +73,7 @@ class GameStatsControllerTest {
     @Test
     fun `getGameStatsByIdAndTeam should return 500 when both parameters are missing`() {
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .contentType(MediaType.APPLICATION_JSON),
         )
             .andExpect(status().isInternalServerError)
@@ -83,7 +83,7 @@ class GameStatsControllerTest {
     fun `getGameStatsByIdAndTeam should return 500 when gameId is not a number`() {
         val team = "Texas"
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .param("gameId", "invalid")
                 .param("team", team)
                 .contentType(MediaType.APPLICATION_JSON),
@@ -98,7 +98,7 @@ class GameStatsControllerTest {
         every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } throws RuntimeException("Service error")
 
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .param("gameId", gameId.toString())
                 .param("team", team)
                 .contentType(MediaType.APPLICATION_JSON),
@@ -112,7 +112,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateGameStats(gameId) } returns Unit
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate")
+            post("/api/v1/arceus/game-stats/generate")
                 .param("gameId", gameId.toString())
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -124,7 +124,7 @@ class GameStatsControllerTest {
     @Test
     fun `generateGameStats should return 500 when gameId parameter is missing`() {
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate")
+            post("/api/v1/arceus/game-stats/generate")
                 .contentType(MediaType.APPLICATION_JSON),
         )
             .andExpect(status().isInternalServerError)
@@ -133,7 +133,7 @@ class GameStatsControllerTest {
     @Test
     fun `generateGameStats should return 500 when gameId is not a number`() {
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate")
+            post("/api/v1/arceus/game-stats/generate")
                 .param("gameId", "invalid")
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -146,7 +146,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateGameStats(gameId) } throws RuntimeException("Service error")
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate")
+            post("/api/v1/arceus/game-stats/generate")
                 .param("gameId", gameId.toString())
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -159,7 +159,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateGameStatsForGamesMoreRecentThanGameId(gameId) } returns Unit
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate/all/more_recent_than")
+            post("/api/v1/arceus/game-stats/generate/all/more_recent_than")
                 .param("gameId", gameId.toString())
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -171,7 +171,7 @@ class GameStatsControllerTest {
     @Test
     fun `generateAllGameStatsMoreRecentThanGameId should return 500 when gameId parameter is missing`() {
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate/all/more_recent_than")
+            post("/api/v1/arceus/game-stats/generate/all/more_recent_than")
                 .contentType(MediaType.APPLICATION_JSON),
         )
             .andExpect(status().isInternalServerError)
@@ -180,7 +180,7 @@ class GameStatsControllerTest {
     @Test
     fun `generateAllGameStatsMoreRecentThanGameId should return 500 when gameId is not a number`() {
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate/all/more_recent_than")
+            post("/api/v1/arceus/game-stats/generate/all/more_recent_than")
                 .param("gameId", "invalid")
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -193,7 +193,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateGameStatsForGamesMoreRecentThanGameId(gameId) } throws RuntimeException("Service error")
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate/all/more_recent_than")
+            post("/api/v1/arceus/game-stats/generate/all/more_recent_than")
                 .param("gameId", gameId.toString())
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -205,7 +205,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateAllGameStats() } returns Unit
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate/all")
+            post("/api/v1/arceus/game-stats/generate/all")
                 .contentType(MediaType.APPLICATION_JSON),
         )
             .andExpect(status().isOk)
@@ -218,7 +218,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateAllGameStats() } throws RuntimeException("Service error")
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate/all")
+            post("/api/v1/arceus/game-stats/generate/all")
                 .contentType(MediaType.APPLICATION_JSON),
         )
             .andExpect(status().isInternalServerError)
@@ -232,7 +232,7 @@ class GameStatsControllerTest {
         every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } returns mockGameStats
 
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .param("gameId", gameId.toString())
                 .param("team", team)
                 .contentType(MediaType.APPLICATION_JSON),
@@ -250,7 +250,7 @@ class GameStatsControllerTest {
         every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } returns mockGameStats
 
         mockMvc.perform(
-            get("/api/v1/arceus/game_stats")
+            get("/api/v1/arceus/game-stats")
                 .param("gameId", gameId.toString())
                 .param("team", team)
                 .contentType(MediaType.APPLICATION_JSON),
@@ -266,7 +266,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateGameStats(gameId) } returns Unit
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate")
+            post("/api/v1/arceus/game-stats/generate")
                 .param("gameId", gameId.toString())
                 .contentType(MediaType.APPLICATION_JSON),
         )
@@ -281,7 +281,7 @@ class GameStatsControllerTest {
         every { gameStatsService.generateGameStats(gameId) } returns Unit
 
         mockMvc.perform(
-            post("/api/v1/arceus/game_stats/generate")
+            post("/api/v1/arceus/game-stats/generate")
                 .param("gameId", gameId.toString())
                 .contentType(MediaType.APPLICATION_JSON),
         )

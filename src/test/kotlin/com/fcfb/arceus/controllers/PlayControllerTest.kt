@@ -149,6 +149,7 @@ class PlayControllerTest {
             post("/api/v1/arceus/play/submit_defense")
                 .param("gameId", "1")
                 .param("defensiveSubmitter", "coachB")
+                .param("defensiveSubmitterId", "coachB_id")
                 .param("defensiveNumber", "22")
                 .param("timeoutCalled", "false"),
         )
@@ -175,6 +176,7 @@ class PlayControllerTest {
             put("/api/v1/arceus/play/submit_offense")
                 .param("gameId", "1")
                 .param("offensiveSubmitter", "coachA")
+                .param("offensiveSubmitterId", "coachA_id")
                 .param("offensiveNumber", "10")
                 .param("playCall", "RUN")
                 .param("runoffType", "NONE")

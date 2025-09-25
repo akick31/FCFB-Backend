@@ -60,7 +60,7 @@ class DiscordOAuthControllerTest {
 
         assertEquals(HttpStatus.FOUND, response.statusCode)
         assertEquals(
-            "http://localhost/finish-registration?discordId=$discordId&discordTag=$discordTag",
+            "http://localhost/register/complete?discordId=$discordId&discordTag=$discordTag",
             response.headers["Location"]?.first(),
         )
     }
