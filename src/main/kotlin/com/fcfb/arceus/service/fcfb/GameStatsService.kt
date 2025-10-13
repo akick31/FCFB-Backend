@@ -266,17 +266,10 @@ class GameStatsService(
             calculateFieldGoalMade(
                 play, stats.fieldGoalMade,
             )
-        if (play.playCall == PlayCall.FIELD_GOAL && (play.result == Scenario.NO_GOOD || play.result == Scenario.BLOCKED_FIELD_GOAL)) {
-            opponentStats.fieldGoalAttempts =
-                calculateFieldGoalAttempts(
-                    play, opponentStats.fieldGoalAttempts,
-                )
-        } else {
-            stats.fieldGoalAttempts =
-                calculateFieldGoalAttempts(
-                    play, stats.fieldGoalAttempts,
-                )
-        }
+        stats.fieldGoalAttempts =
+            calculateFieldGoalAttempts(
+                play, stats.fieldGoalAttempts,
+            )
         stats.fieldGoalPercentage =
             calculatePercentage(
                 stats.fieldGoalMade, stats.fieldGoalAttempts,
@@ -293,13 +286,13 @@ class GameStatsService(
             calculateFieldGoalTouchdown(
                 play, stats.fieldGoalTouchdown,
             )
-        opponentStats.puntsAttempted =
+        stats.puntsAttempted =
             calculatePuntsAttempted(
-                play, opponentStats.puntsAttempted,
+                play, stats.puntsAttempted,
             )
-        opponentStats.longestPunt =
+        stats.longestPunt =
             calculateLongestPunt(
-                play, opponentStats.longestPunt,
+                play, stats.longestPunt,
             )
         stats.averagePuntLength =
             calculateAveragePuntLength(
@@ -321,29 +314,29 @@ class GameStatsService(
             calculateNumberOfKickoffs(
                 play, opponentStats.numberOfKickoffs,
             )
-        opponentStats.onsideAttempts =
+        stats.onsideAttempts =
             calculateOnsideAttempts(
-                play, opponentStats.onsideAttempts,
+                play, stats.onsideAttempts,
             )
-        opponentStats.onsideSuccess =
+        stats.onsideSuccess =
             calculateOnsideSuccess(
-                play, opponentStats.onsideSuccess,
+                play, stats.onsideSuccess,
             )
-        opponentStats.onsideSuccessPercentage =
+        stats.onsideSuccessPercentage =
             calculatePercentage(
-                opponentStats.onsideSuccess, opponentStats.onsideAttempts,
+                stats.onsideSuccess, stats.onsideAttempts,
             )
-        opponentStats.normalKickoffAttempts =
+        stats.normalKickoffAttempts =
             calculateNormalKickoffAttempts(
-                play, opponentStats.normalKickoffAttempts,
+                play, stats.normalKickoffAttempts,
             )
-        opponentStats.touchbacks =
+        stats.touchbacks =
             calculateTouchbacks(
-                play, opponentStats.touchbacks,
+                play, stats.touchbacks,
             )
-        opponentStats.touchbackPercentage =
+        stats.touchbackPercentage =
             calculatePercentage(
-                opponentStats.touchbacks, opponentStats.normalKickoffAttempts,
+                opponentStats.touchbacks, stats.normalKickoffAttempts,
             )
         opponentStats.kickReturnTd =
             calculateKickReturnTd(
