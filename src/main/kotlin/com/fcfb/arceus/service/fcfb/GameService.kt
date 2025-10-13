@@ -900,8 +900,10 @@ class GameService(
                 }
             if (game.gameStatus == GameStatus.PREGAME) {
                 game.coinTossWinner = coinTossWinner
+                game.waitingOn = coinTossWinner
             } else if (game.gameStatus == GameStatus.END_OF_REGULATION) {
                 game.overtimeCoinTossWinner = coinTossWinner
+                game.waitingOn = coinTossWinner
             }
             game.gameTimer = calculateDelayOfGameTimer()
             Logger.info(
