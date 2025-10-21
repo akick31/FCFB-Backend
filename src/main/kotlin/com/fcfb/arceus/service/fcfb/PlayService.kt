@@ -1542,7 +1542,6 @@ class PlayService(
         gameStatsService.updateGameStats(
             game,
             allPlays,
-            gamePlay,
         )
 
         return gamePlay
