@@ -85,10 +85,7 @@ class GameController(
     fun chewGame(
         @RequestParam("channelId") channelId: ULong,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(channelId))
-
-    @PostMapping("/chew-all")
-    fun chewAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.chewAllGames())
-
+    
     @PutMapping("/{gameId}/coin-toss")
     fun runCoinToss(
         @PathVariable("gameId") gameId: String,
