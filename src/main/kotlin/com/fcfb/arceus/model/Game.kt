@@ -336,6 +336,16 @@ class Game {
     @JsonProperty("upset_alert_pinged")
     var upsetAlertPinged: Boolean = false
 
+    @Basic
+    @Column(name = "home_vegas_spread")
+    @JsonProperty("home_vegas_spread")
+    var homeVegasSpread: Double? = null
+
+    @Basic
+    @Column(name = "away_vegas_spread")
+    @JsonProperty("away_vegas_spread")
+    var awayVegasSpread: Double? = null
+
     constructor(
         homeTeam: String,
         awayTeam: String,
@@ -394,6 +404,8 @@ class Game {
         closeGamePinged: Boolean,
         upsetAlert: Boolean,
         upsetAlertPinged: Boolean,
+        homeVegasSpread: Double? = null,
+        awayVegasSpread: Double? = null,
     ) {
         this.homeTeam = homeTeam
         this.awayTeam = awayTeam
@@ -452,6 +464,8 @@ class Game {
         this.closeGamePinged = closeGamePinged
         this.upsetAlert = upsetAlert
         this.upsetAlertPinged = upsetAlertPinged
+        this.homeVegasSpread = homeVegasSpread
+        this.awayVegasSpread = awayVegasSpread
     }
 
     constructor()

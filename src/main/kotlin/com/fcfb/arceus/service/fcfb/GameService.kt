@@ -20,11 +20,13 @@ import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.GameRepository
+import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameCategory
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameFilter
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.specification.GameSpecificationService
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.InvalidCoinTossChoiceException
 import com.fcfb.arceus.util.InvalidHalfTimePossessionChangeException
@@ -63,6 +65,11 @@ class GameService(
     private val seasonService: SeasonService,
     private val scheduleService: ScheduleService,
     private val gameSpecificationService: GameSpecificationService,
+    private val recordService: RecordService,
+    private val seasonStatsService: SeasonStatsService,
+    private val winProbabilityService: WinProbabilityService,
+    private val vegasOddsService: VegasOddsService,
+    private val gameStatsRepository: GameStatsRepository,
 ) {
     /**
      * Save a game state
@@ -124,6 +131,9 @@ class GameService(
 
             val (season, currentWeek) = getCurrentSeasonAndWeek(startRequest, week)
             val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
+
+            // Calculate Vegas odds for the game
+            val vegasOdds = vegasOddsService.calculateVegasOdds(homeTeamData, awayTeamData)
 
             // Create and save the Game object and Stats object
             val newGame =
@@ -187,6 +197,8 @@ class GameService(
                             closeGamePinged = false,
                             upsetAlert = false,
                             upsetAlertPinged = false,
+                            homeVegasSpread = vegasOdds.homeSpread,
+                            awayVegasSpread = vegasOdds.awaySpread,
                         ),
                     )
                 }
@@ -417,6 +429,26 @@ class GameService(
             updateStartOfOvertimeValues(game, quarter)
         } else {
             updateNormalPlayValues(game, clock, possession, quarter, ballLocation, down, yardsToGo, waitingOn)
+        }
+
+        // Calculate Win Probability
+        try {
+            val homeTeam = teamService.getTeamByName(game.homeTeam)
+            val awayTeam = teamService.getTeamByName(game.awayTeam)
+
+            // Get game stats to use team_elo instead of current_elo
+            val gameStats = gameStatsRepository.findByGameId(game.gameId)
+            val homeGameStats = gameStats.find { it.team == game.homeTeam }
+            val awayGameStats = gameStats.find { it.team == game.awayTeam }
+
+            // Use team_elo from game stats if available, otherwise fall back to current_elo
+            val homeElo = homeGameStats?.teamElo ?: homeTeam.currentElo
+            val awayElo = awayGameStats?.teamElo ?: awayTeam.currentElo
+            winProbabilityService.calculateWinProbability(game, play, homeElo, awayElo)
+        } catch (e: Exception) {
+            Logger.error("Error calculating win probability: ${e.message}")
+            play.winProbability = 0.5
+            play.winProbabilityAdded = 0.0
         }
 
         // Update everything else
@@ -682,12 +714,22 @@ class GameService(
     }
 
     /**
-     * End a single game
+     * End a single game by channel id
      * @param channelId
      * @return
      */
-    fun endSingleGame(channelId: ULong): Game {
+    fun endSingleGameByChannelId(channelId: ULong): Game {
         val game = getGameByPlatformId(channelId)
+        return endGame(game)
+    }
+
+    /**
+     * End a single game by game id
+     * @param gameId
+     * @return
+     */
+    fun endSingleGameByGameId(gameId: Int): Game {
+        val game = getGameById(gameId)
         return endGame(game)
     }
 
@@ -702,6 +744,17 @@ class GameService(
             if (game.gameType != GameType.SCRIMMAGE) {
                 teamService.updateTeamWinsAndLosses(game)
                 userService.updateUserWinsAndLosses(game)
+
+                // Update ELO ratings
+                try {
+                    val homeTeam = teamService.getTeamByName(game.homeTeam)
+                    val awayTeam = teamService.getTeamByName(game.awayTeam)
+                    winProbabilityService.updateEloRatings(game, homeTeam, awayTeam)
+                    teamService.updateTeam(homeTeam)
+                    teamService.updateTeam(awayTeam)
+                } catch (e: Exception) {
+                    Logger.error("Error updating ELO ratings: ${e.message}")
+                }
 
                 val homeUsers =
                     try {
@@ -726,7 +779,11 @@ class GameService(
                 for (user in homeUsers + awayUsers) {
                     val responseTime =
                         playRepository.getUserAverageResponseTime(
-                            user.discordTag,
+                            user.discordId
+                                ?: throw Exception(
+                                    "User does not have a discord id, " +
+                                        "could not get average response time for user ${user.username}",
+                                ),
                             seasonService.getCurrentSeason().seasonNumber,
                         ) ?: throw Exception("Could not get average response time for user ${user.username}")
                     userService.updateUserAverageResponseTime(user.id, responseTime)
@@ -745,6 +802,16 @@ class GameService(
             awayStats.gameStatus = GameStatus.FINAL
             gameStatsService.saveGameStats(homeStats)
             gameStatsService.saveGameStats(awayStats)
+
+            // Check if any records were broken
+            recordService.checkAndUpdateRecordsForGame(game)
+
+            // Update season stats for non-scrimmage games
+            if (game.gameType != GameType.SCRIMMAGE) {
+                seasonStatsService.updateSeasonStatsForGame(homeStats)
+                seasonStatsService.updateSeasonStatsForGame(awayStats)
+            }
+
             Logger.info(
                 "Game ended.\n" +
                     "Game ID: ${game.gameId}\n" +
@@ -785,30 +852,11 @@ class GameService(
     }
 
     /**
-     * Chew all ongoing games
-     */
-    fun chewAllGames(): List<Game> {
-        val gamesToChew = getAllOngoingGames()
-        val chewedGames = mutableListOf<Game>()
-        for (game in gamesToChew) {
-            chewedGames.add(
-                chewGame(
-                    game.homePlatformId?.toULong() ?: game.awayPlatformId?.toULong()
-                        ?: throw GameNotFoundException("Game not found for Platform ID: ${game.homePlatformId}"),
-                ),
-            )
-        }
-        return chewedGames
-    }
-
-    /**
      * Chew a game
      * @param channelId
      * @return
      */
-    fun chewGame(channelId: ULong): Game {
-        val game = getGameByPlatformId(channelId)
-
+    fun chewGame(game: Game): Game {
         try {
             game.gameMode = GameMode.CHEW
             saveGame(game)
@@ -852,8 +900,10 @@ class GameService(
                 }
             if (game.gameStatus == GameStatus.PREGAME) {
                 game.coinTossWinner = coinTossWinner
+                game.waitingOn = coinTossWinner
             } else if (game.gameStatus == GameStatus.END_OF_REGULATION) {
                 game.overtimeCoinTossWinner = coinTossWinner
+                game.waitingOn = coinTossWinner
             }
             game.gameTimer = calculateDelayOfGameTimer()
             Logger.info(
@@ -1056,6 +1106,77 @@ class GameService(
         game.lastMessageTimestamp = timestamp
         saveGame(game)
         return game
+    }
+
+    /**
+     * Update a game
+     * @param game
+     */
+    fun updateGame(game: Game): Game {
+        val existingGame = getGameById(game.gameId)
+
+        existingGame.apply {
+            this.gameId = game.gameId
+            this.homeTeam = game.homeTeam
+            this.awayTeam = game.awayTeam
+            this.homeCoaches = game.homeCoaches
+            this.awayCoaches = game.awayCoaches
+            this.homeCoachDiscordIds = game.homeCoachDiscordIds
+            this.awayCoachDiscordIds = game.awayCoachDiscordIds
+            this.homeOffensivePlaybook = game.homeOffensivePlaybook
+            this.awayOffensivePlaybook = game.awayOffensivePlaybook
+            this.homeDefensivePlaybook = game.homeDefensivePlaybook
+            this.awayDefensivePlaybook = game.awayDefensivePlaybook
+            this.homeScore = game.homeScore
+            this.awayScore = game.awayScore
+            this.possession = game.possession
+            this.quarter = game.quarter
+            this.clock = game.clock
+            this.ballLocation = game.ballLocation
+            this.down = game.down
+            this.yardsToGo = game.yardsToGo
+            this.tvChannel = game.tvChannel
+            this.homeTeamRank = game.homeTeamRank
+            this.homeWins = game.homeWins
+            this.homeLosses = game.homeLosses
+            this.awayTeamRank = game.awayTeamRank
+            this.awayWins = game.awayWins
+            this.awayLosses = game.awayLosses
+            this.subdivision = game.subdivision
+            this.timestamp = game.timestamp
+            this.winProbability = game.winProbability
+            this.season = game.season
+            this.week = game.week
+            this.waitingOn = game.waitingOn
+            this.numPlays = game.numPlays
+            this.homeTimeouts = game.homeTimeouts
+            this.awayTimeouts = game.awayTimeouts
+            this.coinTossWinner = game.coinTossWinner
+            this.coinTossChoice = game.coinTossChoice
+            this.overtimeCoinTossWinner = game.overtimeCoinTossWinner
+            this.overtimeCoinTossChoice = game.overtimeCoinTossChoice
+            this.homePlatform = game.homePlatform
+            this.homePlatformId = game.homePlatformId
+            this.awayPlatform = game.awayPlatform
+            this.awayPlatformId = game.awayPlatformId
+            this.lastMessageTimestamp = game.lastMessageTimestamp
+            this.gameTimer = game.gameTimer
+            this.gameWarning = game.gameWarning
+            this.currentPlayType = game.currentPlayType
+            this.currentPlayId = game.currentPlayId
+            this.clockStopped = game.clockStopped
+            this.requestMessageId = game.requestMessageId
+            this.gameStatus = game.gameStatus
+            this.gameType = game.gameType
+            this.gameMode = game.gameMode
+            this.overtimeHalf = game.overtimeHalf
+            this.closeGame = game.closeGame
+            this.closeGamePinged = game.closeGamePinged
+            this.upsetAlert = game.upsetAlert
+            this.upsetAlertPinged = game.upsetAlertPinged
+        }
+        saveGame(existingGame)
+        return existingGame
     }
 
     /**
@@ -1386,15 +1507,17 @@ class GameService(
      * @param id
      * @return
      */
-    fun getGameById(id: Int) = gameRepository.getGameById(id) ?: throw GameNotFoundException("No game found with ID: $id")
+    fun getGameById(id: Int): Game = gameRepository.getGameById(id) ?: throw GameNotFoundException("No game found with ID: $id")
 
     /**
      * Get filtered games
      * @param filters
-     * @param sort
+     * @param category
      * @param conference
      * @param season
      * @param week
+     * @param gameMode
+     * @param sort
      * @param pageable
      */
     fun getFilteredGames(
@@ -1403,10 +1526,11 @@ class GameService(
         conference: String?,
         season: Int?,
         week: Int?,
+        gameMode: GameMode?,
         sort: GameSort,
         pageable: Pageable,
     ): Page<Game> {
-        val filterSpec = gameSpecificationService.createSpecification(filters, category, conference, season, week)
+        val filterSpec = gameSpecificationService.createSpecification(filters, category, conference, season, week, gameMode)
         val sortOrders = gameSpecificationService.createSort(sort)
         val sortedPageable =
             PageRequest.of(
@@ -1422,7 +1546,8 @@ class GameService(
                     "category = $category, " +
                     "conference = $conference, " +
                     "season = $season, " +
-                    "week = $week",
+                    "week = $week, " +
+                    "gameMode = $gameMode",
             )
     }
 
@@ -1514,6 +1639,15 @@ class GameService(
         }
         return games
     }
+
+    /**
+     * Get games by season and matchup
+     */
+    fun getGameBySeasonAndMatchup(
+        season: Int,
+        firstTeam: String,
+        secondTeam: String,
+    ) = gameRepository.getGamesBySeasonAndMatchup(season, firstTeam, secondTeam)
 
     /**
      * Handle the halftime possession change

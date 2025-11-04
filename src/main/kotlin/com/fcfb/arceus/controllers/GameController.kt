@@ -1,14 +1,15 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.StartRequest
+import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.gameflow.CoinTossCall
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
 import com.fcfb.arceus.enums.gameflow.OvertimeCoinTossChoice
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameCategory
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameFilter
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -43,6 +44,7 @@ class GameController(
         @RequestParam(required = false) conference: String?,
         @RequestParam(required = false) season: Int?,
         @RequestParam(required = false) week: Int?,
+        @RequestParam(required = false) gameMode: GameMode?,
         @PageableDefault(size = 20) pageable: Pageable,
     ): ResponseEntity<Page<Game>> =
         ResponseEntity.ok(
@@ -52,6 +54,7 @@ class GameController(
                 conference = conference,
                 season = season,
                 week = week,
+                gameMode = gameMode,
                 sort = sort,
                 pageable = pageable,
             ),
@@ -74,20 +77,27 @@ class GameController(
     ): ResponseEntity<List<Game>> = ResponseEntity.status(201).body(gameService.startWeek(season, week))
 
     @PostMapping("/end")
-    fun endGame(
+    fun endGameByChannelId(
         @RequestParam("channelId") channelId: ULong,
-    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGame(channelId))
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGameByChannelId(channelId))
+
+    @PostMapping("{gameId}/end")
+    fun endGameByGameId(
+        @PathVariable("gameId") gameId: Int,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGameByGameId(gameId))
 
     @PostMapping("/end-all")
     fun endAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.endAllGames())
 
     @PostMapping("/chew")
-    fun chewGame(
+    fun chewGameByPlatformId(
         @RequestParam("channelId") channelId: ULong,
-    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(channelId))
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(gameService.getGameByPlatformId(channelId)))
 
-    @PostMapping("/chew-all")
-    fun chewAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.chewAllGames())
+    @PostMapping("{gameId}/chew")
+    fun chewGameByGameId(
+        @PathVariable("gameId") gameId: Int,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(gameService.getGameById(gameId)))
 
     @PutMapping("/{gameId}/coin-toss")
     fun runCoinToss(
@@ -155,6 +165,11 @@ class GameController(
         gameService.markUpsetAlertPinged(gameId)
         return ResponseEntity.noContent().build()
     }
+
+    @PutMapping("")
+    fun updateGame(
+        @RequestBody game: Game,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.updateGame(game))
 
     @DeleteMapping("")
     fun deleteOngoingGame(

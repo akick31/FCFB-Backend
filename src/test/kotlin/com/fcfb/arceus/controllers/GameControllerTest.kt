@@ -15,7 +15,7 @@ import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -57,7 +57,7 @@ class GameControllerTest {
     fun `getFilteredGames should return paginated games`() {
         val pageable = mockk<Pageable>()
         val mockPage = PageImpl(listOf(mockk<Game>()))
-        every { gameService.getFilteredGames(any(), any(), any(), any(), any(), any(), pageable) } returns mockPage
+        every { gameService.getFilteredGames(any(), any(), any(), any(), any(), any(), any(), pageable) } returns mockPage
 
         val response =
             gameController.getFilteredGames(
@@ -67,11 +67,12 @@ class GameControllerTest {
                 "Big 12",
                 1,
                 1,
+                null,
                 pageable,
             )
 
         assertEquals(ResponseEntity.ok(mockPage), response)
-        verify { gameService.getFilteredGames(any(), any(), any(), any(), any(), any(), pageable) }
+        verify { gameService.getFilteredGames(any(), any(), any(), any(), any(), any(), any(), pageable) }
     }
 
     @Test
@@ -118,12 +119,12 @@ class GameControllerTest {
     fun `endGame should return ended game`() {
         val channelId = 1234UL
         val mockGame = mockk<Game>()
-        every { gameService.endSingleGame(channelId) } returns mockGame
+        every { gameService.endSingleGameByChannelId(channelId) } returns mockGame
 
-        val response = gameController.endGame(channelId)
+        val response = gameController.endGameByChannelId(channelId)
 
         assertEquals(ResponseEntity.ok(mockGame), response)
-        verify { gameService.endSingleGame(channelId) }
+        verify { gameService.endSingleGameByChannelId(channelId) }
     }
 
     @Test
@@ -141,12 +142,14 @@ class GameControllerTest {
     fun `chewGame should return updated game`() {
         val channelId = 1234UL
         val mockGame = mockk<Game>()
-        every { gameService.chewGame(channelId) } returns mockGame
+        every { gameService.getGameByPlatformId(channelId) } returns mockGame
+        every { gameService.chewGame(mockGame) } returns mockGame
 
-        val response = gameController.chewGame(channelId)
+        val response = gameController.chewGameByPlatformId(channelId)
 
         assertEquals(ResponseEntity.ok(mockGame), response)
-        verify { gameService.chewGame(channelId) }
+        verify { gameService.getGameByPlatformId(channelId) }
+        verify { gameService.chewGame(mockGame) }
     }
 
     @Test
@@ -354,5 +357,16 @@ class GameControllerTest {
 
         assertEquals(ResponseEntity.ok(true), response)
         verify { gameService.deleteOngoingGame(channelId) }
+    }
+
+    @Test
+    fun `updateGame should return updated game`() {
+        val mockGame = mockk<Game>()
+        every { gameService.updateGame(mockGame) } returns mockGame
+
+        val response = gameController.updateGame(mockGame)
+
+        assertEquals(ResponseEntity.ok(mockGame), response)
+        verify { gameService.updateGame(mockGame) }
     }
 }

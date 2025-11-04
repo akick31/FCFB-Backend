@@ -10,8 +10,10 @@ import com.fcfb.arceus.service.fcfb.PlayService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -52,7 +54,9 @@ class PlayControllerTest {
             defensiveNumber = "B22",
             offensiveNumber = "A10",
             offensiveSubmitter = "coachA",
+            offensiveSubmitterId = "coachA_id",
             defensiveSubmitter = "coachB",
+            defensiveSubmitterId = "coachB_id",
             playCall = PlayCall.RUN,
             result = Scenario.NO_GAIN,
             actualResult = ActualResult.NO_GAIN,
@@ -139,12 +143,13 @@ class PlayControllerTest {
     @Test
     fun `should submit defense successfully`() {
         val play = createSamplePlay()
-        every { playService.defensiveNumberSubmitted(1, "coachB", 22, false) } returns play
+        every { playService.defensiveNumberSubmitted(1, "coachB", "coachB_id", 22, false) } returns play
 
         mockMvc.perform(
             post("/api/v1/arceus/play/submit_defense")
                 .param("gameId", "1")
                 .param("defensiveSubmitter", "coachB")
+                .param("defensiveSubmitterId", "coachB_id")
                 .param("defensiveNumber", "22")
                 .param("timeoutCalled", "false"),
         )
@@ -159,6 +164,7 @@ class PlayControllerTest {
             playService.offensiveNumberSubmitted(
                 gameId = 1,
                 offensiveSubmitter = "coachA",
+                offensiveSubmitterId = "coachA_id",
                 offensiveNumber = 10,
                 playCall = PlayCall.RUN,
                 runoffType = RunoffType.NONE,
@@ -170,6 +176,7 @@ class PlayControllerTest {
             put("/api/v1/arceus/play/submit_offense")
                 .param("gameId", "1")
                 .param("offensiveSubmitter", "coachA")
+                .param("offensiveSubmitterId", "coachA_id")
                 .param("offensiveNumber", "10")
                 .param("playCall", "RUN")
                 .param("runoffType", "NONE")
@@ -186,5 +193,60 @@ class PlayControllerTest {
         mockMvc.perform(get("/api/v1/arceus/play/1"))
             .andExpect(status().isInternalServerError)
             .andExpect(jsonPath("$.error").value("Play not found"))
+    }
+
+    @Test
+    fun `updatePlay should return updated play`() {
+        val mockPlay = createSamplePlay()
+        every { playService.updatePlay(any<Play>()) } returns mockPlay
+
+        val body =
+            """
+            {
+              "playId": 1,
+              "gameId": 1,
+              "playNumber": 1,
+              "homeScore": 7,
+              "awayScore": 0,
+              "quarter": 1,
+              "clock": 420,
+              "ballLocation": 25,
+              "possession": "HOME",
+              "down": 1,
+              "yardsToGo": 10,
+              "defensiveNumber": "22",
+              "offensiveNumber": "10",
+              "defensiveSubmitter": "coachB",
+              "offensiveSubmitter": "coachA",
+              "playCall": "RUN",
+              "result": "TOUCHDOWN",
+              "actualResult": "TOUCHDOWN",
+              "yards": 75,
+              "playTime": 15,
+              "runoffTime": 0,
+              "winProbability": 0.6,
+              "winProbabilityAdded": 0.1,
+              "homeTeam": "Team1",
+              "awayTeam": "Team2",
+              "difference": 12,
+              "timeoutUsed": false,
+              "offensiveTimeoutCalled": false,
+              "defensiveTimeoutCalled": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3,
+              "playFinished": true,
+              "offensiveResponseSpeed": 5000,
+              "defensiveResponseSpeed": 3000
+            }
+            """.trimIndent()
+
+        mockMvc.perform(
+            put("/api/v1/arceus/play")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body),
+        )
+            .andExpect(status().isOk)
+
+        verify { playService.updatePlay(any<Play>()) }
     }
 }

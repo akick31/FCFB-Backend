@@ -68,6 +68,12 @@ class UserService(
     ) = userRepository.updateAverageResponseTime(userId, responseTime)
 
     /**
+     * Reset all users' delay of game instances to 0
+     * Used when starting a new season
+     */
+    fun resetAllDelayOfGameInstances() = userRepository.resetAllDelayOfGameInstances()
+
+    /**
      * Update a user's record after a game
      * @param user
      * @param gameType

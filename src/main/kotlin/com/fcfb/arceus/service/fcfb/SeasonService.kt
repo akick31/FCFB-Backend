@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter
 class SeasonService(
     private val seasonRepository: SeasonRepository,
     private val teamService: TeamService,
+    private val userService: UserService,
 ) {
     /**
      * Start the current season
@@ -33,6 +34,7 @@ class SeasonService(
                 currentSeason = true,
             )
         teamService.resetWinsAndLosses()
+        userService.resetAllDelayOfGameInstances()
         seasonRepository.save(season)
         return season
     }

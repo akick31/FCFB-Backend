@@ -98,7 +98,15 @@ class DelayOfGameMonitor(
      */
     private fun applyPregameDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
-        if (game.waitingOn == TeamSide.HOME) {
+
+        val teamToPenalize =
+            if (game.coinTossWinner != null) {
+                game.coinTossWinner!!
+            } else {
+                game.waitingOn
+            }
+
+        if (teamToPenalize == TeamSide.HOME) {
             game.awayScore += 8
             if (game.gameType != GameType.SCRIMMAGE) {
                 for (coach in game.homeCoachDiscordIds!!) {
@@ -118,8 +126,9 @@ class DelayOfGameMonitor(
             }
         }
 
-        val savedPlay = saveDelayOfGameOnOffensePlay(game)
+        val savedPlay = saveDelayOfGameOnOffensePlay(game.gameId, teamToPenalize)
         game.currentPlayId = savedPlay.playId
+        game.gameWarning = NONE
         gameService.saveGame(game)
         scorebugService.generateScorebug(game)
         return game
@@ -131,7 +140,10 @@ class DelayOfGameMonitor(
      */
     private fun applyDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
-        if (game.waitingOn == TeamSide.HOME) {
+
+        val teamToPenalize = game.waitingOn
+
+        if (teamToPenalize == TeamSide.HOME) {
             game.currentPlayType = PlayType.KICKOFF
             game.possession = TeamSide.AWAY
             game.awayScore += 8
@@ -166,9 +178,9 @@ class DelayOfGameMonitor(
 
         val savedPlay =
             if (currentPlay != null) {
-                saveDelayOfGameOnDefensePlay(game, currentPlay)
+                saveDelayOfGameOnDefensePlay(teamToPenalize, currentPlay)
             } else {
-                saveDelayOfGameOnOffensePlay(game)
+                saveDelayOfGameOnOffensePlay(game.gameId, teamToPenalize)
             }
 
         game.currentPlayId = savedPlay.playId
@@ -183,14 +195,15 @@ class DelayOfGameMonitor(
      * Save a delay of game on defense play, as defense has called a number
      */
     private fun saveDelayOfGameOnDefensePlay(
-        game: Game,
+        teamToPenalize: TeamSide,
         play: Play,
     ): Play {
         play.playFinished = true
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
-        if (game.waitingOn == TeamSide.HOME) {
+
+        if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
             play.actualResult = ActualResult.DELAY_OF_GAME
         } else {
@@ -202,15 +215,20 @@ class DelayOfGameMonitor(
 
     /**
      * Save a delay of game on offense play, as defense hasn't called a number
-     * @param game
+     * @param gameId
+     * @param teamToPenalize
      */
-    private fun saveDelayOfGameOnOffensePlay(game: Game): Play {
-        val play = playService.defensiveNumberSubmitted(game.gameId, "NONE", 0, false)
+    private fun saveDelayOfGameOnOffensePlay(
+        gameId: Int,
+        teamToPenalize: TeamSide,
+    ): Play {
+        val play = playService.defensiveNumberSubmitted(gameId, "NONE", "NONE", 0, false)
         play.playFinished = true
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
-        if (game.waitingOn == TeamSide.HOME) {
+
+        if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
             play.actualResult = ActualResult.DELAY_OF_GAME
         } else {

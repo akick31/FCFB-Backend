@@ -118,6 +118,8 @@ class TeamTest {
                 nationalChampionshipLosses = 0,
                 isTaken = true,
                 active = true,
+                currentElo = 1500.0,
+                overallElo = 1500.0,
             )
 
         assertEquals("logo.png", team.logo)

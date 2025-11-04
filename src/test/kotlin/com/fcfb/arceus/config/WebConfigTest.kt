@@ -2,7 +2,6 @@ package com.fcfb.arceus.config
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -28,7 +27,10 @@ class WebConfigTest {
 
     @Test
     fun `WebConfig should extend WebSecurityConfigurerAdapter`() {
-        assertTrue(webConfig is WebSecurityConfigurerAdapter, "WebConfig should extend WebSecurityConfigurerAdapter")
+        assertTrue(
+            webConfig.javaClass.superclass.simpleName == "WebSecurityConfigurerAdapter",
+            "WebConfig should extend WebSecurityConfigurerAdapter",
+        )
     }
 
     @Test
@@ -51,7 +53,7 @@ class WebConfigTest {
 
         // Verify it's properly configured as a Spring Security configuration
         assertTrue(
-            webConfig is WebSecurityConfigurerAdapter,
+            webConfig.javaClass.superclass.simpleName == "WebSecurityConfigurerAdapter",
             "WebConfig should extend WebSecurityConfigurerAdapter for Spring Security configuration",
         )
     }

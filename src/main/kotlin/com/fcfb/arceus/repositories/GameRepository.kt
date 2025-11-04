@@ -55,6 +55,21 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
     @Query(
         value =
             "SELECT * FROM game " +
+                "WHERE season = :season " +
+                "AND game_type != 'SCRIMMAGE' " +
+                "AND ((home_team = :firstTeam AND away_team = :secondTeam) " +
+                "     OR (home_team = :secondTeam AND away_team = :firstTeam))",
+        nativeQuery = true,
+    )
+    fun getGamesBySeasonAndMatchup(
+        season: Int,
+        firstTeam: String,
+        secondTeam: String,
+    ): List<Game>
+
+    @Query(
+        value =
+            "SELECT * FROM game " +
                 "WHERE STR_TO_DATE(game_timer, '%m/%d/%Y %H:%i:%s') <= CONVERT_TZ(NOW(), 'UTC', 'America/New_York') " +
                 "AND game_status != 'FINAL' " +
                 "AND (game_warning = 'FIRST_WARNING' OR game_warning = 'SECOND_WARNING')",
@@ -119,4 +134,17 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
     fun findByCloseGamePinged(closeGamePinged: Boolean): List<Game>
 
     fun findByUpsetAlertPinged(upsetAlertPinged: Boolean): List<Game>
+
+    @Query(
+        value =
+            "SELECT * FROM game " +
+                "WHERE season = :season " +
+                "AND week = :week " +
+                "AND game_type != 'SCRIMMAGE'",
+        nativeQuery = true,
+    )
+    fun getGamesBySeasonAndWeek(
+        season: Int,
+        week: Int,
+    ): List<Game>
 }

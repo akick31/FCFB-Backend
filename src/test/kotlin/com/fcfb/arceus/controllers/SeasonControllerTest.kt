@@ -4,6 +4,7 @@ import com.fcfb.arceus.model.Season
 import com.fcfb.arceus.repositories.SeasonRepository
 import com.fcfb.arceus.service.fcfb.SeasonService
 import com.fcfb.arceus.service.fcfb.TeamService
+import com.fcfb.arceus.service.fcfb.UserService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
@@ -25,12 +26,13 @@ class SeasonControllerTest {
     private lateinit var mockMvc: MockMvc
     private val seasonRepository: SeasonRepository = mockk()
     private val teamService: TeamService = mockk()
+    private val userService: UserService = mockk()
     private lateinit var seasonService: SeasonService
     private lateinit var seasonController: SeasonController
 
     @BeforeEach
     fun setup() {
-        seasonService = SeasonService(seasonRepository, teamService)
+        seasonService = SeasonService(seasonRepository, teamService, userService)
         seasonController = SeasonController(seasonService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(seasonController)
@@ -69,6 +71,7 @@ class SeasonControllerTest {
         // Mock the repository and team service methods
         every { seasonRepository.getPreviousSeason() } returns previousSeason
         every { teamService.resetWinsAndLosses() } returns Unit
+        every { userService.resetAllDelayOfGameInstances() } returns Unit
         every { seasonRepository.save(any()) } returns newSeason
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
@@ -85,6 +88,8 @@ class SeasonControllerTest {
 
         // Verify that team wins and losses were reset
         verify { teamService.resetWinsAndLosses() }
+        // Verify that user delay of game instances were reset
+        verify { userService.resetAllDelayOfGameInstances() }
         verify { seasonRepository.save(any()) }
     }
 
