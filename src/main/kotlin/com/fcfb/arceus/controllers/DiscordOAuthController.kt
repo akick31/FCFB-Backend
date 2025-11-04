@@ -41,7 +41,7 @@ class DiscordOAuthController(
                 add("client_id", clientId)
                 add("client_secret", clientSecret)
                 add("code", code)
-                add("grant_type", "client_credentials")
+                add("grant_type", "authorization_code")
                 add("redirect_uri", redirectUri)
                 add("scope", "identify")
             }
