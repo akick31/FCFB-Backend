@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 class UserController(
     private var userService: UserService,
 ) {
-    @GetMapping("/{userId}")
+    @GetMapping("{userId}")
     fun getUserById(
         @PathVariable userId: Long,
     ) = userService.getUserById(userId)
