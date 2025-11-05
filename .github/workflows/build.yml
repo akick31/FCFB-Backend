@@ -37,34 +37,40 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Run ktlintFormat to auto-format code
+      # Auto-fix Kotlin formatting
       - name: Run ktlintFormat
         run: ./gradlew ktlintFormat
 
-      # Commit and push formatted changes
+      # Commit and push ktlint fixes (if any)
       - name: Commit and push ktlint changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
-          # Check if there are changes
           if [ -n "$(git status --porcelain)" ]; then
+            echo "Formatting issues found — committing fixes..."
             git add .
             git commit -m "chore: apply ktlint format via CI"
-            git push origin ${{ github.ref }}
+            git push origin HEAD:${{ github.ref_name }}
+            echo "✅ Formatting fixes pushed. Exiting early — new workflow will run with clean code."
+            exit 0
           else
-            echo "No formatting changes to commit."
+            echo "No formatting changes needed."
           fi
+
+      # Run lint check just to verify clean state
+      - name: Run ktlintCheck
+        run: ./gradlew ktlintCheck
 
       # Run Gradle build
       - name: Build with Gradle
         run: ./gradlew build
 
-      # Run tests (optional)
+      # Run tests
       - name: Run tests
         run: ./gradlew test
 
-      # Consolidated step to get the latest tag, calculate the next version, and create a new tag
+        # Tag and push new version
       - name: Tag and push new version
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main') # Only run tagging logic for `main`
         id: tag_logic
@@ -110,6 +116,8 @@ jobs:
           # Create and push the new tag
           git tag $NEW_TAG
           git push origin $NEW_TAG
+
+      # Jenkins Crumb
       - name: Get Jenkins crumb
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
         id: get_crumb
@@ -117,6 +125,7 @@ jobs:
           CRUMB=$(curl -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" -X GET "http://51.81.32.234:8080/crumbIssuer/api/json" | jq -r .crumb)
           echo "::set-output name=crumb::$CRUMB"
 
+      # Trigger Jenkins build
       - name: Trigger Jenkins build
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
         run: |
