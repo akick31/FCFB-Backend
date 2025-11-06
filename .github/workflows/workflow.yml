@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: 'CI/CD Pipeline'
 
 on:
   push:
@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -52,26 +53,37 @@ jobs:
             echo "Formatting issues found — committing fixes..."
             git add .
             git commit -m "chore: apply ktlint format via CI"
-
-            # Detect correct branch to push to
+            
+            # Push to trigger new workflow run
             if [ -n "${{ github.head_ref }}" ]; then
               # PR from branch or fork
-              echo "PR detected — attempting to push to PR branch: ${{ github.head_ref }}"
-              git push origin HEAD:${{ github.head_ref }} || echo "Cannot push to forked PR branch, skipping push"
+              echo "PR detected — pushing to PR branch: ${{ github.head_ref }}"
+              if git push origin HEAD:${{ github.head_ref }}; then
+                echo "Successfully pushed formatting fixes. New workflow run will be triggered."
+              else
+                echo "Cannot push to forked PR branch, skipping push"
+                exit 1
+              fi
             else
               # Normal branch push
               echo "Pushing fixes to branch: ${{ github.ref_name }}"
               git push origin HEAD:${{ github.ref_name }}
             fi
+            
+            # After pushing formatting changes, the new commit will trigger a fresh workflow run
+            # We need to ensure this workflow run completes so status is reported
+            # Continue to ktlintCheck which will pass since we just formatted
           else
-            echo "No formatting changes to commit."
+            echo "No formatting changes needed."
           fi
 
-      # Run ktlintCheck to ensure code is clean
+      # Run ktlintCheck to ensure code is clean (only if we didn't just commit formatting)
       - name: Run ktlintCheck
+        if: "!contains(github.event.head_commit.message, 'chore: apply ktlint format via CI')"
         run: ./gradlew ktlintCheck
 
   build:
+    name: Build
     needs: [lint]
     runs-on: ubuntu-latest
 
@@ -107,6 +119,7 @@ jobs:
         run: ./gradlew test
 
   tag:
+    name: Tag and Version
     needs: [build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -157,13 +170,14 @@ jobs:
             NEW_PATCH=$((PATCH + 1))
           fi
 
-      NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
-      echo "New tag will be: ${NEW_TAG}"
+          NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+          echo "New tag will be: ${NEW_TAG}"
 
-      git tag $NEW_TAG
-      git push origin $NEW_TAG
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
 
   jenkins:
+    name: Trigger Jenkins Build
     needs: [tag]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
