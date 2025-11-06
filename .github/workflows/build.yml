@@ -37,34 +37,55 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Run ktlintFormat to auto-format code
+      # Auto-fix Kotlin formatting
       - name: Run ktlintFormat
         run: ./gradlew ktlintFormat
 
-      # Commit and push formatted changes
+      # Commit and push ktlint fixes (if any)
       - name: Commit and push ktlint changes
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
 
-          # Check if there are changes
           if [ -n "$(git status --porcelain)" ]; then
+            echo "Formatting issues found — committing fixes..."
             git add .
             git commit -m "chore: apply ktlint format via CI"
-            git push origin ${{ github.ref }}
+
+            # Detect correct branch to push to
+            if [ -n "${{ github.head_ref }}" ]; then
+              # We're in a PR context (detached HEAD)
+              echo "Pushing formatting fixes to PR branch: ${{ github.head_ref }}"
+              git push origin HEAD:${{ github.head_ref }}
+            else
+              # We're on a normal branch push (e.g., main)
+              echo "Pushing formatting fixes to current branch: ${{ github.ref_name }}"
+              git push origin HEAD:${{ github.ref_name }}
+            fi
+
+            if [ -n "${{ github.head_ref }}" ]; then
+              echo "Formatting fixes pushed to PR branch. Not exiting early to keep PR check green."
+            else
+              echo "Formatting fixes pushed to main branch. Exiting early — new workflow will run automatically."
+              exit 0
+            fi
           else
             echo "No formatting changes to commit."
           fi
+
+      # Run lint check just to verify clean state
+      - name: Run ktlintCheck
+        run: ./gradlew ktlintCheck
 
       # Run Gradle build
       - name: Build with Gradle
         run: ./gradlew build
 
-      # Run tests (optional)
+      # Run tests
       - name: Run tests
         run: ./gradlew test
 
-      # Consolidated step to get the latest tag, calculate the next version, and create a new tag
+        # Tag and push new version
       - name: Tag and push new version
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main') # Only run tagging logic for `main`
         id: tag_logic
@@ -110,6 +131,8 @@ jobs:
           # Create and push the new tag
           git tag $NEW_TAG
           git push origin $NEW_TAG
+
+      # Jenkins Crumb
       - name: Get Jenkins crumb
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
         id: get_crumb
@@ -117,6 +140,7 @@ jobs:
           CRUMB=$(curl -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" -X GET "http://51.81.32.234:8080/crumbIssuer/api/json" | jq -r .crumb)
           echo "::set-output name=crumb::$CRUMB"
 
+      # Trigger Jenkins build
       - name: Trigger Jenkins build
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
         run: |
