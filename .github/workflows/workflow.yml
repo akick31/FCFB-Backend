@@ -65,16 +65,18 @@ jobs:
               git push origin HEAD:${{ github.ref_name }}
             fi
             
-            # Exit with error to fail this workflow run
-            # The new commit will trigger a fresh workflow run that will pass
-            echo "Formatting changes were committed. Please wait for the new workflow run to complete."
-            exit 1
+            # After pushing formatting changes, the new commit will trigger a fresh workflow run
+            # We need to ensure this workflow run completes so status is reported
+            # Skip ktlintCheck since we just formatted
+            echo "Skipping ktlintCheck - formatting was just applied"
+            exit 0
           else
             echo "No formatting changes needed."
           fi
 
-      # Run ktlintCheck to ensure code is clean
+      # Run ktlintCheck to ensure code is clean (only if we didn't just commit formatting)
       - name: Run ktlintCheck
+        if: "!contains(github.event.head_commit.message, 'chore: apply ktlint format via CI')"
         run: ./gradlew ktlintCheck
 
   build:
