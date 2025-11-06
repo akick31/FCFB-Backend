@@ -1,21 +1,21 @@
-name: Build and Tag
+name: Build
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - '**'
+  workflow_run:
+    workflows: ["Lint"]
+    types:
+      - completed
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -37,117 +37,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Auto-fix Kotlin formatting
-      - name: Run ktlintFormat
-        run: ./gradlew ktlintFormat
-
-      # Commit and push ktlint fixes (if any)
-      - name: Commit and push ktlint changes
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Formatting issues found — committing fixes..."
-            git add .
-            git commit -m "chore: apply ktlint format via CI"
-
-            # Detect correct branch to push to
-            if [ -n "${{ github.head_ref }}" ]; then
-              # We're in a PR context (detached HEAD)
-              echo "Pushing formatting fixes to PR branch: ${{ github.head_ref }}"
-              git push origin HEAD:${{ github.head_ref }}
-            else
-              # We're on a normal branch push (e.g., main)
-              echo "Pushing formatting fixes to current branch: ${{ github.ref_name }}"
-              git push origin HEAD:${{ github.ref_name }}
-            fi
-
-            if [ -n "${{ github.head_ref }}" ]; then
-              echo "Formatting fixes pushed to PR branch. Not exiting early to keep PR check green."
-            else
-              echo "Formatting fixes pushed to main branch. Exiting early — new workflow will run automatically."
-              exit 0
-            fi
-          else
-            echo "No formatting changes to commit."
-          fi
-
-      # Run lint check just to verify clean state
-      - name: Run ktlintCheck
-        run: ./gradlew ktlintCheck
-
-      # Run Gradle build
+      # Build project
       - name: Build with Gradle
         run: ./gradlew build
 
       # Run tests
       - name: Run tests
         run: ./gradlew test
-
-        # Tag and push new version
-      - name: Tag and push new version
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main') # Only run tagging logic for `main`
-        id: tag_logic
-        run: |
-          # Fetch all tags
-          git fetch --tags
-
-          # Get the latest tag
-          TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "1.0.0")
-          echo "Latest tag: ${TAG}"
-
-          # Split the tag into major, minor, and patch
-          VERSION_REGEX="^([0-9]+)\.([0-9]+)\.([0-9]+)$"
-          if [[ $TAG =~ $VERSION_REGEX ]]; then
-            MAJOR="${BASH_REMATCH[1]}"
-            MINOR="${BASH_REMATCH[2]}"
-            PATCH="${BASH_REMATCH[3]}"
-          else
-            echo "No valid version found, starting with 1.0.0"
-            MAJOR=1
-            MINOR=0
-            PATCH=0
-          fi
-
-          # Determine version increment based on commit messages
-          if git log -1 --pretty=%B | grep -q "MAJOR:"; then
-            NEW_MAJOR=$((MAJOR + 1))
-            NEW_MINOR=0
-            NEW_PATCH=0
-          elif git log -1 --pretty=%B | grep -q "MINOR:"; then
-            NEW_MAJOR=$MAJOR
-            NEW_MINOR=$((MINOR + 1))
-            NEW_PATCH=0
-          else
-            NEW_MAJOR=$MAJOR
-            NEW_MINOR=$MINOR
-            NEW_PATCH=$((PATCH + 1))
-          fi
-
-          NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
-          echo "New tag will be: ${NEW_TAG}"
-
-          # Create and push the new tag
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
-
-      # Jenkins Crumb
-      - name: Get Jenkins crumb
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
-        id: get_crumb
-        run: |
-          CRUMB=$(curl -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" -X GET "http://51.81.32.234:8080/crumbIssuer/api/json" | jq -r .crumb)
-          echo "::set-output name=crumb::$CRUMB"
-
-      # Trigger Jenkins build
-      - name: Trigger Jenkins build
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main')
-        run: |
-          curl -X POST "http://51.81.32.234:8080/job/FCFB-Arceus_PRD/build?token=${{ secrets.JENKINS_TOKEN }}" \
-            -u "${{ secrets.JENKINS_USER }}:${{ secrets.JENKINS_API_TOKEN }}" \
-            -H "Jenkins-Crumb: ${{ steps.get_crumb.outputs.crumb }}"
-        env:
-          JENKINS_USER: ${{ secrets.JENKINS_USER }}
-          JENKINS_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
-

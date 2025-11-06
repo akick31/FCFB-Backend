@@ -27,6 +27,7 @@ class AuthController(
     ): ResponseEntity<NewSignup> = ResponseEntity.ok(authService.createNewSignup(newSignup))
 
 
+    
     @PostMapping("/login")
     fun login(
         @RequestBody request: LoginRequest,
