@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: 'CI/CD Pipeline'
 
 on:
   push:
@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -72,6 +73,7 @@ jobs:
         run: ./gradlew ktlintCheck
 
   build:
+    name: Build
     needs: [lint]
     runs-on: ubuntu-latest
 
@@ -107,6 +109,7 @@ jobs:
         run: ./gradlew test
 
   tag:
+    name: Tag and Version
     needs: [build]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -157,13 +160,14 @@ jobs:
             NEW_PATCH=$((PATCH + 1))
           fi
 
-      NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
-      echo "New tag will be: ${NEW_TAG}"
+          NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+          echo "New tag will be: ${NEW_TAG}"
 
-      git tag $NEW_TAG
-      git push origin $NEW_TAG
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
 
   jenkins:
+    name: Trigger Jenkins Build
     needs: [tag]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
