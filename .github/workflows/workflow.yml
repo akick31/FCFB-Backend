@@ -58,7 +58,12 @@ jobs:
             if [ -n "${{ github.head_ref }}" ]; then
               # PR from branch or fork
               echo "PR detected — pushing to PR branch: ${{ github.head_ref }}"
-              git push origin HEAD:${{ github.head_ref }} || echo "Cannot push to forked PR branch, skipping push"
+              if git push origin HEAD:${{ github.head_ref }}; then
+                echo "Successfully pushed formatting fixes. New workflow run will be triggered."
+              else
+                echo "Cannot push to forked PR branch, skipping push"
+                exit 1
+              fi
             else
               # Normal branch push
               echo "Pushing fixes to branch: ${{ github.ref_name }}"
@@ -67,9 +72,7 @@ jobs:
             
             # After pushing formatting changes, the new commit will trigger a fresh workflow run
             # We need to ensure this workflow run completes so status is reported
-            # Skip ktlintCheck since we just formatted
-            echo "Skipping ktlintCheck - formatting was just applied"
-            exit 0
+            # Continue to ktlintCheck which will pass since we just formatted
           else
             echo "No formatting changes needed."
           fi
