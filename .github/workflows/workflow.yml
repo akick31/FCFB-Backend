@@ -53,19 +53,24 @@ jobs:
             echo "Formatting issues found — committing fixes..."
             git add .
             git commit -m "chore: apply ktlint format via CI"
-
-            # Detect correct branch to push to
+            
+            # Push to trigger new workflow run
             if [ -n "${{ github.head_ref }}" ]; then
               # PR from branch or fork
-              echo "PR detected — attempting to push to PR branch: ${{ github.head_ref }}"
+              echo "PR detected — pushing to PR branch: ${{ github.head_ref }}"
               git push origin HEAD:${{ github.head_ref }} || echo "Cannot push to forked PR branch, skipping push"
             else
               # Normal branch push
               echo "Pushing fixes to branch: ${{ github.ref_name }}"
               git push origin HEAD:${{ github.ref_name }}
             fi
+            
+            # Exit with error to fail this workflow run
+            # The new commit will trigger a fresh workflow run that will pass
+            echo "Formatting changes were committed. Please wait for the new workflow run to complete."
+            exit 1
           else
-            echo "No formatting changes to commit."
+            echo "No formatting changes needed."
           fi
 
       # Run ktlintCheck to ensure code is clean
