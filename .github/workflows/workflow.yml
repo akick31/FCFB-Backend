@@ -160,7 +160,8 @@ jobs:
       - name: Tag and push new version
         id: tag_logic
         run: |
-          git fetch --tags
+          # Fetch all tags to ensure we have the latest
+          git fetch --tags --force
 
           # Get latest tag
           TAG=$(git describe --tags $(git rev-list --tags --max-count=1) 2>/dev/null || echo "1.0.0")
@@ -193,11 +194,55 @@ jobs:
             NEW_PATCH=$((PATCH + 1))
           fi
 
-          NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
-          echo "New tag will be: ${NEW_TAG}"
+          # Find next available tag (handle race conditions)
+          MAX_ATTEMPTS=10
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+            
+            # Fetch tags again to ensure we have latest
+            git fetch --tags --force >/dev/null 2>&1
+            
+            # Check if tag exists locally or remotely
+            if git rev-parse "$NEW_TAG" >/dev/null 2>&1 || git ls-remote --tags origin "$NEW_TAG" | grep -q "$NEW_TAG"; then
+              echo "Tag $NEW_TAG already exists, incrementing PATCH version..."
+              NEW_PATCH=$((NEW_PATCH + 1))
+              ATTEMPT=$((ATTEMPT + 1))
+            else
+              # Tag doesn't exist, create it
+              echo "Creating tag: $NEW_TAG"
+              if git tag "$NEW_TAG" 2>/dev/null; then
+                # Try to push the tag
+                if git push origin "$NEW_TAG" 2>/dev/null; then
+                  echo "Tag $NEW_TAG created and pushed successfully."
+                  exit 0
+                else
+                  # Push failed, tag might have been created by another workflow
+                  echo "Push failed, tag may have been created by another workflow. Fetching and retrying..."
+                  git fetch --tags --force >/dev/null 2>&1
+                  if git rev-parse "$NEW_TAG" >/dev/null 2>&1 || git ls-remote --tags origin "$NEW_TAG" | grep -q "$NEW_TAG"; then
+                    # Tag exists now, increment and try next
+                    NEW_PATCH=$((NEW_PATCH + 1))
+                    ATTEMPT=$((ATTEMPT + 1))
+                    continue
+                  else
+                    echo "Error: Failed to push tag and it doesn't exist after fetch."
+                    exit 1
+                  fi
+                fi
+              else
+                # Tag creation failed - likely race condition
+                echo "Tag creation failed, likely created by another workflow. Fetching and retrying..."
+                git fetch --tags --force >/dev/null 2>&1
+                NEW_PATCH=$((NEW_PATCH + 1))
+                ATTEMPT=$((ATTEMPT + 1))
+                continue
+              fi
+            fi
+          done
 
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
+          echo "Error: Could not find available tag after $MAX_ATTEMPTS attempts."
+          exit 1
 
   jenkins:
     name: Trigger Jenkins Build
