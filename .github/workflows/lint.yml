@@ -65,6 +65,7 @@ jobs:
             fi
           else
             echo "No formatting changes to commit."
+          fi
 
       # Run ktlintCheck to ensure code is clean
       - name: Run ktlintCheck
