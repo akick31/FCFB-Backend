@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - '**'
   pull_request:
     branches:
       - '**'
@@ -53,6 +54,15 @@ jobs:
             echo "Formatting issues found — committing fixes..."
             git add .
             git commit -m "chore: apply ktlint format via CI"
+            
+            # Configure git to use PAT for pushing (this allows triggering new workflow runs)
+            # Note: GITHUB_TOKEN doesn't trigger workflows, so we need a PAT if one is available
+            # If PAT_SECRET is not set, fall back to GITHUB_TOKEN (won't trigger new runs)
+            if [ -n "${{ secrets.PAT_SECRET }}" ]; then
+              git remote set-url origin https://x-access-token:${{ secrets.PAT_SECRET }}@github.com/${{ github.repository }}.git
+            else
+              git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            fi
             
             # Push to trigger new workflow run
             if [ -n "${{ github.head_ref }}" ]; then
