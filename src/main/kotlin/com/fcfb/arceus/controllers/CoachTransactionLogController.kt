@@ -19,5 +19,5 @@ class CoachTransactionLogController(
         ResponseEntity.ok(
             coachTransactionLogService.getEntireCoachTransactionLog(),
         )
-    
+
 }
