@@ -13,6 +13,8 @@ class EmailService(
     private val mailSender: JavaMailSender,
     @Value("\${website.url}")
     private val websiteUrl: String,
+    @Value("\${spring.mail.username}")
+    private val fromEmail: String,
 ) {
     /**
      * Send a verification email
@@ -77,6 +79,7 @@ class EmailService(
     ) {
         try {
             val message = SimpleMailMessage()
+            message.setFrom(fromEmail)
             message.setTo(encryptionUtils.decrypt(to))
             message.setSubject(subject)
             message.setText(text)
