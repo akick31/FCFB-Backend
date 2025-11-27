@@ -102,6 +102,9 @@ pipeline {
                         spring.mail.password=${env.EMAIL_PASSWORD}
                         spring.mail.properties.mail.smtp.auth=true
                         spring.mail.properties.mail.smtp.starttls.enable=true
+                        spring.mail.properties.mail.smtp.starttls.required=true
+                        spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
+                        spring.mail.default-encoding=UTF-8
 
                         # Health check configuration
                         management.endpoints.web.exposure.include=*
