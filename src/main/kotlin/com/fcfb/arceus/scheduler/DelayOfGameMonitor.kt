@@ -186,6 +186,8 @@ class DelayOfGameMonitor(
         game.currentPlayId = savedPlay.playId
         game.gameWarning = NONE
         game.clockStopped = true
+        game.numPlays += 1
+        game.ballLocation = 35
         gameService.saveGame(game)
         scorebugService.generateScorebug(game)
         return game
@@ -202,6 +204,8 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
+        play.playNumber += 1
+        play.ballLocation = 35
 
         if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
@@ -227,6 +231,8 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
+        play.playNumber += 1
+        play.ballLocation = 35
 
         if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
