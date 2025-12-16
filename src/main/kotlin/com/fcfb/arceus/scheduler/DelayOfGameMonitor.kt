@@ -186,6 +186,10 @@ class DelayOfGameMonitor(
         game.currentPlayId = savedPlay.playId
         game.gameWarning = NONE
         game.clockStopped = true
+        // Set game.numPlays to match the play's playNumber to keep them in sync
+        // This ensures the next play will have the correct playNumber
+        game.numPlays = savedPlay.playNumber
+        game.ballLocation = 35
         gameService.saveGame(game)
         scorebugService.generateScorebug(game)
         return game
@@ -202,6 +206,9 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
+        // Increment playNumber to make this a new play (delay of game)
+        play.playNumber += 1
+        play.ballLocation = 35
 
         if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
@@ -222,11 +229,14 @@ class DelayOfGameMonitor(
         gameId: Int,
         teamToPenalize: TeamSide,
     ): Play {
+        // defensiveNumberSubmitted creates a play with playNumber = game.numPlays + 1
+        // This is already the next play number, so we don't need to increment it
         val play = playService.defensiveNumberSubmitted(gameId, "NONE", "NONE", 0, false)
         play.playFinished = true
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
+        play.ballLocation = 35
 
         if (teamToPenalize == TeamSide.HOME) {
             play.result = Scenario.DELAY_OF_GAME_HOME
