@@ -178,6 +178,7 @@ class DelayOfGameMonitor(
 
         val savedPlay =
             if (currentPlay != null) {
+                // Use the existing play as delay of game (keep its playNumber)
                 saveDelayOfGameOnDefensePlay(teamToPenalize, currentPlay)
             } else {
                 saveDelayOfGameOnOffensePlay(game.gameId, teamToPenalize)
@@ -197,6 +198,7 @@ class DelayOfGameMonitor(
 
     /**
      * Save a delay of game on defense play, as defense has called a number
+     * Uses the existing play and marks it as delay of game (keeps its playNumber)
      */
     private fun saveDelayOfGameOnDefensePlay(
         teamToPenalize: TeamSide,
@@ -206,8 +208,6 @@ class DelayOfGameMonitor(
         play.offensiveNumber = null
         play.defensiveNumber = null
         play.difference = null
-        // Increment playNumber to make this a new play (delay of game)
-        play.playNumber += 1
         play.ballLocation = 35
 
         if (teamToPenalize == TeamSide.HOME) {
