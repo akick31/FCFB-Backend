@@ -52,35 +52,35 @@ jobs:
 
           if [ -n "$(git status --porcelain)" ]; then
             echo "Formatting issues found — committing fixes..."
-          
+            
             # Determine the branch to work with
             BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
             echo "Working with branch: $BRANCH_NAME"
-          
+            
             # Fetch latest changes
             git fetch origin $BRANCH_NAME
-          
+            
             # Ensure we're on the correct branch and up to date
             git checkout -B $BRANCH_NAME origin/$BRANCH_NAME || git checkout -B $BRANCH_NAME
-          
+            
             # Pull with rebase to avoid merge conflicts
             git pull --rebase origin $BRANCH_NAME || echo "No rebase needed or already up to date"
-          
+            
             # Re-run ktlintFormat after ensuring we have latest code
             ./gradlew ktlintFormat
-          
+            
             # Check if there are still formatting changes after rebase
             if [ -n "$(git status --porcelain)" ]; then
               git add .
               git commit -m "chore: apply ktlint format via CI"
-          
+              
               # Configure git to use PAT for pushing (this allows triggering new workflow runs)
               if [ -n "${{ secrets.PAT_SECRET }}" ]; then
                 git remote set-url origin https://x-access-token:${{ secrets.PAT_SECRET }}@github.com/${{ github.repository }}.git
               else
                 git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
               fi
-          
+              
               # Push to trigger new workflow run
               echo "Pushing formatting fixes to branch: $BRANCH_NAME"
               if git push origin $BRANCH_NAME; then
@@ -92,7 +92,7 @@ jobs:
             else
               echo "No formatting changes after rebase - likely already formatted in newer commits"
             fi
-          
+            
             # After pushing formatting changes, the new commit will trigger a fresh workflow run
             # We need to ensure this workflow run completes so status is reported
             # Continue to ktlintCheck which will pass since we just formatted
@@ -199,10 +199,10 @@ jobs:
           ATTEMPT=0
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
-          
+            
             # Fetch tags again to ensure we have latest
             git fetch --tags --force >/dev/null 2>&1
-          
+            
             # Check if tag exists locally or remotely
             if git rev-parse "$NEW_TAG" >/dev/null 2>&1 || git ls-remote --tags origin "$NEW_TAG" | grep -q "$NEW_TAG"; then
               echo "Tag $NEW_TAG already exists, incrementing PATCH version..."
