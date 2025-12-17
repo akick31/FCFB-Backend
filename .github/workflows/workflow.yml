@@ -71,9 +71,9 @@ jobs:
             
             # Check if there are still formatting changes after rebase
             if [ -n "$(git status --porcelain)" ]; then
-              git add .
-              git commit -m "chore: apply ktlint format via CI"
-              
+            git add .
+            git commit -m "chore: apply ktlint format via CI"
+
               # Configure git to use PAT for pushing (this allows triggering new workflow runs)
               if [ -n "${{ secrets.PAT_SECRET }}" ]; then
                 git remote set-url origin https://x-access-token:${{ secrets.PAT_SECRET }}@github.com/${{ github.repository }}.git
@@ -198,7 +198,7 @@ jobs:
           MAX_ATTEMPTS=10
           ATTEMPT=0
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-            NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+      NEW_TAG="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
             
             # Fetch tags again to ensure we have latest
             git fetch --tags --force >/dev/null 2>&1
