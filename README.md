@@ -20,8 +20,7 @@ The service is responsible for processing game data, simulating plays, updating 
 
 ## Reporting Bugs or Issues
 To report bugs or submit feature requests:
-- **Preferred Method**: Use the Jira board at [https://fakecollegefootball.atlassian.net/jira/software/projects/FCFB/boards/1](https://fakecollegefootball.atlassian.net/jira/software/projects/FCFB/boards/1). You’ll need to sign up for access.
-- **Alternative Method**: If Jira isn’t your thing, feel free to submit an issue directly.
+- Feel free to submit an issue directly via Github.
 
 ---
 
