@@ -1,6 +1,5 @@
 package com.fcfb.arceus.scheduler
 
-import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.GameWarning.NONE
 import com.fcfb.arceus.enums.play.ActualResult
@@ -57,22 +56,22 @@ class DelayOfGameMonitor(
                     "Instance: 2\n",
             )
         }
-        val expiredGames = gameService.findExpiredTimers()
-        expiredGames.forEach { game ->
-            val updatedGame =
-                if (game.gameStatus == GameStatus.PREGAME) {
-                    applyPregameDelayOfGame(game)
-                } else {
-                    applyDelayOfGame(game)
-                }
-            val delayOfGameInstances = getDelayOfGameInstances(updatedGame)
-            val isDelayOfGameOut = delayOfGameInstances.first >= 3 || delayOfGameInstances.second >= 3
-            if (isDelayOfGameOut) {
-                gameService.endDOGOutGame(updatedGame, delayOfGameInstances)
-            }
-            discordService.notifyDelayOfGame(updatedGame, isDelayOfGameOut)
-            Logger.info("A delay of game for game ${game.gameId} has been processed")
-        }
+//        val expiredGames = gameService.findExpiredTimers()
+//        expiredGames.forEach { game ->
+//            val updatedGame =
+//                if (game.gameStatus == GameStatus.PREGAME) {
+//                    applyPregameDelayOfGame(game)
+//                } else {
+//                    applyDelayOfGame(game)
+//                }
+//            val delayOfGameInstances = getDelayOfGameInstances(updatedGame)
+//            val isDelayOfGameOut = delayOfGameInstances.first >= 3 || delayOfGameInstances.second >= 3
+//            if (isDelayOfGameOut) {
+//                gameService.endDOGOutGame(updatedGame, delayOfGameInstances)
+//            }
+//            discordService.notifyDelayOfGame(updatedGame, isDelayOfGameOut)
+//            Logger.info("A delay of game for game ${game.gameId} has been processed")
+//        }
     }
 
     /**
