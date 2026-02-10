@@ -1,4 +1,5 @@
 import com.fcfb.arceus.controllers.GameController
+import com.fcfb.arceus.dto.GameWeekJobResponse
 import com.fcfb.arceus.dto.StartRequest
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameStatus
@@ -102,18 +103,17 @@ class GameControllerTest {
         }
 
     @Test
-    fun `startWeek should return list of games`() =
-        runBlocking {
-            val season = 2023
-            val week = 1
-            val mockGames = listOf(mockk<Game>())
-            coEvery { gameService.startWeek(season, week) } returns mockGames
+    fun `startWeek should return job response`() {
+        val season = 2023
+        val week = 1
+        val mockResponse = GameWeekJobResponse("job-123", "Started processing games")
+        every { gameService.startWeekAsync(season, week) } returns mockResponse
 
-            val response = gameController.startWeek(season, week)
+        val response = gameController.startWeek(season, week)
 
-            assertEquals(ResponseEntity.status(201).body(mockGames), response)
-            coVerify { gameService.startWeek(season, week) }
-        }
+        assertEquals(ResponseEntity.status(202).body(mockResponse), response)
+        verify { gameService.startWeekAsync(season, week) }
+    }
 
     @Test
     fun `endGame should return ended game`() {

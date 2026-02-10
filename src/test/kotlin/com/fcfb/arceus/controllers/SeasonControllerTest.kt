@@ -1,6 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.model.Season
+import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.SeasonRepository
 import com.fcfb.arceus.service.fcfb.SeasonService
 import com.fcfb.arceus.service.fcfb.TeamService
@@ -27,12 +28,13 @@ class SeasonControllerTest {
     private val seasonRepository: SeasonRepository = mockk()
     private val teamService: TeamService = mockk()
     private val userService: UserService = mockk()
+    private val scheduleRepository: ScheduleRepository = mockk()
     private lateinit var seasonService: SeasonService
     private lateinit var seasonController: SeasonController
 
     @BeforeEach
     fun setup() {
-        seasonService = SeasonService(seasonRepository, teamService, userService)
+        seasonService = SeasonService(seasonRepository, teamService, userService, scheduleRepository)
         seasonController = SeasonController(seasonService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(seasonController)
