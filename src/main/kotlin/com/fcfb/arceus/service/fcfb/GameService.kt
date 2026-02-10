@@ -247,7 +247,7 @@ class GameService(
         } catch (e: Exception) {
             Logger.error(
                 "Error starting game.\n" +
-                    "Error Message: ${e.message!!}\n" +
+                    "Error Message: ${e.message ?: "Unknown error"}\n" +
                     "Game Type: ${startRequest.gameType}\n" +
                     "Home team: ${startRequest.homeTeam}\n" +
                     "Away team: ${startRequest.awayTeam}",
@@ -387,7 +387,7 @@ class GameService(
         } catch (e: Exception) {
             Logger.error(
                 "Error starting overtime game.\n" +
-                    "Error Message: ${e.message!!}\n" +
+                    "Error Message: ${e.message ?: "Unknown error"}\n" +
                     "Game Type: ${startRequest.gameType}\n" +
                     "Home team: ${startRequest.homeTeam}\n" +
                     "Away team: ${startRequest.awayTeam}",
@@ -640,7 +640,7 @@ class GameService(
             Logger.error(
                 "Error rolling back play.\n" +
                     "Game ID: ${game.gameId}\n" +
-                    "Error Message: ${e.message!!}",
+                    "Error Message: ${e.message ?: "Unknown error"}",
             )
             throw e
         }
@@ -773,6 +773,7 @@ class GameService(
                         subdivision = game.subdivision,
                         tvChannel = game.tvChannel,
                         gameType = game.gameType,
+                        postseasonGameLogo = game.postseasonGameLogo,
                         error = errorMsg,
                     ),
                 )
@@ -796,7 +797,7 @@ class GameService(
 
         val completedAt = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
         job.completedAt = completedAt
-        job.status = if (job.failedGames > 0) GameWeekJobStatus.COMPLETED else GameWeekJobStatus.COMPLETED
+        job.status = if (job.failedGames > 0) GameWeekJobStatus.FAILED else GameWeekJobStatus.COMPLETED
 
         Logger.info("=== GAME WEEK START COMPLETE ===")
         Logger.info("Job: $jobId — Total: ${job.totalGames}, Started: ${job.startedGames}, Failed: ${job.failedGames}")
@@ -887,6 +888,7 @@ class GameService(
                             failed.awayTeam,
                             failed.tvChannel,
                             failed.gameType,
+                            failed.postseasonGameLogo,
                         ),
                         week,
                     )
@@ -928,6 +930,7 @@ class GameService(
                         subdivision = failed.subdivision,
                         tvChannel = failed.tvChannel,
                         gameType = failed.gameType,
+                        postseasonGameLogo = failed.postseasonGameLogo,
                         error = errorMsg,
                     ),
                 )
@@ -946,7 +949,7 @@ class GameService(
 
         val completedAt = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
         job.completedAt = completedAt
-        job.status = GameWeekJobStatus.COMPLETED
+        job.status = if (job.failedGames > 0) GameWeekJobStatus.FAILED else GameWeekJobStatus.COMPLETED
 
         Logger.info("=== RETRY COMPLETE ===")
         Logger.info("Job: $jobId — Retried: ${failedGames.size}, Started: ${job.startedGames}, Still Failed: ${job.failedGames}")
@@ -1095,7 +1098,7 @@ class GameService(
             Logger.error(
                 "Error ending game.\n" +
                     "Game ID: ${game.gameId}\n" +
-                    "Error Message: ${e.message!!}",
+                    "Error Message: ${e.message ?: "Unknown error"}",
             )
             throw e
         }
@@ -1141,7 +1144,7 @@ class GameService(
             )
             return game
         } catch (e: Exception) {
-            Logger.error("Error in ${game.gameId}: " + e.message!!)
+            Logger.error("Error in ${game.gameId}: ${e.message ?: "Unknown error"}")
             throw e
         }
     }
@@ -1188,7 +1191,7 @@ class GameService(
             Logger.error(
                 "Coin toss error.\n" +
                     "Game ID: ${game.gameId}\n" +
-                    "Error Message: ${e.message!!}",
+                    "Error Message: ${e.message ?: "Unknown error"}",
             )
             throw e
         }
@@ -1231,7 +1234,7 @@ class GameService(
             )
             return saveGame(game)
         } catch (e: Exception) {
-            Logger.error("Error in ${game.gameId}: " + e.message!!)
+            Logger.error("Error in ${game.gameId}: ${e.message ?: "Unknown error"}")
             if (e is IllegalArgumentException) {
                 throw InvalidCoinTossChoiceException("Invalid coin toss choice: $coinTossChoice")
             }
@@ -1278,7 +1281,7 @@ class GameService(
             Logger.error(
                 "Overtime coin toss choice error.\n" +
                     "Game ID: ${game.gameId}\n" +
-                    "Error Message: ${e.message!!}",
+                    "Error Message: ${e.message ?: "Unknown error"}",
             )
             if (e is IllegalArgumentException) {
                 throw InvalidCoinTossChoiceException("Invalid coin toss choice $coinTossChoice")

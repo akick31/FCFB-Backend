@@ -1074,44 +1074,4 @@ class ScheduleService(
      * Get the status of a schedule generation job.
      */
     fun getScheduleGenJobStatus(jobId: String): ScheduleGenJob? = activeGenJobs[jobId]
-
-    /**
-     * Copy all bowl games from a source season to a target season.
-     * This preserves bowl game names and structure for the new season.
-     * @param sourceSeason The season to copy bowl games from
-     * @param targetSeason The season to copy bowl games to
-     */
-    fun copyBowlGamesToNewSeason(
-        sourceSeason: Int,
-        targetSeason: Int,
-    ): List<Schedule> {
-        val sourceBowlGames =
-            scheduleRepository.getScheduleBySeason(sourceSeason)
-                ?.filter { it.gameType == GameType.BOWL } ?: emptyList()
-
-        if (sourceBowlGames.isEmpty()) {
-            Logger.info("No bowl games found in Season $sourceSeason to copy")
-            return emptyList()
-        }
-
-        val newBowlGames =
-            sourceBowlGames.map { sourceGame ->
-                val newGame = Schedule()
-                newGame.season = targetSeason
-                newGame.week = sourceGame.week // Bowl games are always Week 14
-                newGame.subdivision = sourceGame.subdivision
-                newGame.homeTeam = "TBD" // Teams will be filled in later
-                newGame.awayTeam = "TBD"
-                newGame.tvChannel = sourceGame.tvChannel
-                newGame.gameType = GameType.BOWL
-                newGame.bowlGameName = sourceGame.bowlGameName // Preserve bowl game name
-                newGame.started = false
-                newGame.finished = false
-                newGame
-            }
-
-        val saved = scheduleRepository.saveAll(newBowlGames).toList()
-        Logger.info("Copied ${saved.size} bowl games from Season $sourceSeason to Season $targetSeason")
-        return saved
-    }
 }

@@ -182,6 +182,7 @@ class SeasonService(
                         newGame.tvChannel = sourceGame.tvChannel
                         newGame.gameType = GameType.BOWL
                         newGame.bowlGameName = sourceGame.bowlGameName // Preserve bowl game name
+                        newGame.postseasonGameLogo = sourceGame.postseasonGameLogo // Preserve postseason logo
                         newGame.started = false
                         newGame.finished = false
                         newGame
