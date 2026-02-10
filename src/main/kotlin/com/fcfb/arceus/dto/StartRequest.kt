@@ -13,4 +13,5 @@ data class StartRequest(
     @JsonProperty("awayTeam") val awayTeam: String,
     @JsonProperty("tvChannel") val tvChannel: TVChannel?,
     @JsonProperty("gameType") val gameType: GameType,
+    @JsonProperty("postseasonGameLogo") val postseasonGameLogo: String? = null,
 )

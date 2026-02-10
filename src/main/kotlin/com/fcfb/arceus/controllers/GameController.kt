@@ -1,5 +1,7 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.dto.GameWeekJob
+import com.fcfb.arceus.dto.GameWeekJobResponse
 import com.fcfb.arceus.dto.StartRequest
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.gameflow.CoinTossCall
@@ -71,10 +73,28 @@ class GameController(
     ): ResponseEntity<Game> = ResponseEntity.status(201).body(gameService.startOvertimeGame(startRequest))
 
     @PostMapping("/week")
-    suspend fun startWeek(
+    fun startWeek(
         @RequestParam("season") season: Int,
         @RequestParam("week") week: Int,
-    ): ResponseEntity<List<Game>> = ResponseEntity.status(201).body(gameService.startWeek(season, week))
+    ): ResponseEntity<GameWeekJobResponse> = ResponseEntity.status(202).body(gameService.startWeekAsync(season, week))
+
+    @GetMapping("/week/status/{jobId}")
+    fun getGameWeekJobStatus(
+        @PathVariable("jobId") jobId: String,
+    ): ResponseEntity<GameWeekJob> {
+        val job =
+            gameService.getGameWeekJobStatus(jobId)
+                ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(job)
+    }
+
+    @GetMapping("/week/jobs")
+    fun getAllGameWeekJobs(): ResponseEntity<List<GameWeekJob>> = ResponseEntity.ok(gameService.getAllGameWeekJobs())
+
+    @PostMapping("/week/retry/{jobId}")
+    fun retryFailedGames(
+        @PathVariable("jobId") jobId: String,
+    ): ResponseEntity<GameWeekJobResponse> = ResponseEntity.status(202).body(gameService.retryFailedGames(jobId))
 
     @PostMapping("/end")
     fun endGameByChannelId(
