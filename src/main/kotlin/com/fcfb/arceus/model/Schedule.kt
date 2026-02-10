@@ -53,10 +53,42 @@ class Schedule {
     lateinit var gameType: GameType
 
     @Basic
+    @Column(name = "home_score")
+    var homeScore: Int? = null
+
+    @Basic
+    @Column(name = "away_score")
+    var awayScore: Int? = null
+
+    @Basic
     @Column(name = "started")
     var started: Boolean? = false
 
     @Basic
     @Column(name = "finished")
     var finished: Boolean? = false
+
+    @Basic
+    @Column(name = "playoff_round")
+    var playoffRound: Int? = null
+
+    @Basic
+    @Column(name = "playoff_home_seed")
+    var playoffHomeSeed: Int? = null
+
+    @Basic
+    @Column(name = "playoff_away_seed")
+    var playoffAwaySeed: Int? = null
+
+    @Basic
+    @Column(name = "game_id")
+    var gameId: Int? = null
+
+    @Basic
+    @Column(name = "bowl_game_name")
+    var bowlGameName: String? = null
+
+    @Basic
+    @Column(name = "postseason_game_logo")
+    var postseasonGameLogo: String? = null
 }

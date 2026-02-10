@@ -16,4 +16,10 @@ interface SeasonRepository : CrudRepository<Season, Int> {
     fun findBySeasonNumber(seasonNumber: Int): Season?
 
     fun findByCurrentSeason(currentSeason: Boolean): List<Season>
+
+    @Query(value = "SELECT * FROM season ORDER BY season_number DESC", nativeQuery = true)
+    fun getAllSeasons(): List<Season>
+
+    @Query(value = "SELECT schedule_locked FROM season WHERE season_number = :seasonNumber", nativeQuery = true)
+    fun isScheduleLocked(seasonNumber: Int): Boolean?
 }

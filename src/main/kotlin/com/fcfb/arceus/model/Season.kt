@@ -45,6 +45,10 @@ class Season {
     @Column(name = "current_season")
     var currentSeason: Boolean = false
 
+    @Basic
+    @Column(name = "schedule_locked")
+    var scheduleLocked: Boolean = false
+
     constructor(
         seasonNumber: Int,
         startDate: String?,
@@ -55,6 +59,7 @@ class Season {
         nationalChampionshipLosingCoach: String?,
         currentWeek: Int,
         currentSeason: Boolean,
+        scheduleLocked: Boolean = false,
     ) {
         this.seasonNumber = seasonNumber
         this.startDate = startDate
@@ -65,6 +70,7 @@ class Season {
         this.nationalChampionshipLosingCoach = nationalChampionshipLosingCoach
         this.currentWeek = currentWeek
         this.currentSeason = currentSeason
+        this.scheduleLocked = scheduleLocked
     }
 
     constructor()
