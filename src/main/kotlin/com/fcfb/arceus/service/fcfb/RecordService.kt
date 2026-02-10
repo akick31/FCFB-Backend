@@ -48,17 +48,24 @@ class RecordService(
     }
 
     /**
+     * Stats that should ONLY track lowest values (lower is better)
+     */
+    private val lowestOnlyStats =
+        setOf(
+            Stats.AVERAGE_OFFENSIVE_DIFF,
+            Stats.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
+            Stats.AVERAGE_RESPONSE_SPEED,
+        )
+
+    /**
      * Stats that should track both highest and lowest values
      */
     private val dualRecordStats =
         setOf(
-            // Performance metrics (already had these)
-            Stats.AVERAGE_OFFENSIVE_DIFF,
+            // Performance metrics (defensive diff and average diff can be both highest and lowest)
             Stats.AVERAGE_DEFENSIVE_DIFF,
-            Stats.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
             Stats.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF,
             Stats.AVERAGE_DIFF,
-            Stats.AVERAGE_RESPONSE_SPEED,
             // Game flow stats
             Stats.TIME_OF_POSSESSION,
             // Total offense stats
@@ -163,7 +170,10 @@ class RecordService(
         for (stat in Stats.values()) {
             if (generalRecordStats.contains(stat)) {
                 // General records - just check highest/lowest ever
-                if (dualRecordStats.contains(stat)) {
+                if (lowestOnlyStats.contains(stat)) {
+                    // Only track lowest for these stats
+                    checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
+                } else if (dualRecordStats.contains(stat)) {
                     checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL)
                     checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
                 } else {
@@ -171,7 +181,10 @@ class RecordService(
                 }
             } else if (gameOnlyStats.contains(stat)) {
                 // Game-only records - only check game records
-                if (dualRecordStats.contains(stat)) {
+                if (lowestOnlyStats.contains(stat)) {
+                    // Only track lowest for these stats
+                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
+                } else if (dualRecordStats.contains(stat)) {
                     checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
                     checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
                 } else {
@@ -179,7 +192,11 @@ class RecordService(
                 }
             } else {
                 // Regular stats - check both game and season records
-                if (dualRecordStats.contains(stat)) {
+                if (lowestOnlyStats.contains(stat)) {
+                    // Only track lowest for these stats
+                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
+                    checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON_LOWEST)
+                } else if (dualRecordStats.contains(stat)) {
                     // Check both highest and lowest records for dual-record stats
                     checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
                     checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
@@ -207,7 +224,10 @@ class RecordService(
         for (stat in Stats.values()) {
             if (generalRecordStats.contains(stat)) {
                 // General records - just track highest/lowest ever
-                if (dualRecordStats.contains(stat)) {
+                if (lowestOnlyStats.contains(stat)) {
+                    // Only track lowest for these stats
+                    generateGeneralRecord(stat, seasonGameStats, RecordType.GENERAL_LOWEST)
+                } else if (dualRecordStats.contains(stat)) {
                     generateGeneralRecord(stat, seasonGameStats, RecordType.GENERAL)
                     generateGeneralRecord(stat, seasonGameStats, RecordType.GENERAL_LOWEST)
                 } else {
@@ -215,7 +235,10 @@ class RecordService(
                 }
             } else if (gameOnlyStats.contains(stat)) {
                 // Game-only records - only track game records
-                if (dualRecordStats.contains(stat)) {
+                if (lowestOnlyStats.contains(stat)) {
+                    // Only track lowest for these stats
+                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                } else if (dualRecordStats.contains(stat)) {
                     generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME)
                     generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
                 } else {
@@ -223,7 +246,11 @@ class RecordService(
                 }
             } else {
                 // Regular stats - track both game and season records
-                if (dualRecordStats.contains(stat)) {
+                if (lowestOnlyStats.contains(stat)) {
+                    // Only track lowest for these stats
+                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                    generateSeasonRecord(stat, seasonGameStats, RecordType.SINGLE_SEASON_LOWEST)
+                } else if (dualRecordStats.contains(stat)) {
                     // Generate both highest and lowest records for dual-record stats
                     generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME)
                     generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
@@ -294,7 +321,7 @@ class RecordService(
                 .groupBy { "${it.team}_${it.season}" }
                 .mapValues { (_, stats) ->
                     when {
-                        dualRecordStats.contains(statName) -> {
+                        lowestOnlyStats.contains(statName) || dualRecordStats.contains(statName) -> {
                             // For diff stats, calculate average instead of sum
                             calculateAverageForStat(statName, stats)
                         }
@@ -570,14 +597,17 @@ class RecordService(
                 // Passing Stats
                 Stats.PASS_ATTEMPTS -> "passAttempts"
                 Stats.PASS_COMPLETIONS -> "passCompletions"
+                Stats.PASS_COMPLETION_PERCENTAGE -> "passCompletionPercentage"
                 Stats.PASS_YARDS -> "passYards"
                 Stats.LONGEST_PASS -> "longestPass"
                 Stats.PASS_TOUCHDOWNS -> "passTouchdowns"
                 Stats.PASS_SUCCESSES -> "passSuccesses"
+                Stats.PASS_SUCCESS_PERCENTAGE -> "passSuccessPercentage"
 
                 // Rushing Stats
                 Stats.RUSH_ATTEMPTS -> "rushAttempts"
                 Stats.RUSH_SUCCESSES -> "rushSuccesses"
+                Stats.RUSH_SUCCESS_PERCENTAGE -> "rushSuccessPercentage"
                 Stats.RUSH_YARDS -> "rushYards"
                 Stats.LONGEST_RUN -> "longestRun"
                 Stats.RUSH_TOUCHDOWNS -> "rushTouchdowns"
@@ -609,6 +639,7 @@ class RecordService(
                 // Field Goals
                 Stats.FIELD_GOAL_MADE -> "fieldGoalMade"
                 Stats.FIELD_GOAL_ATTEMPTS -> "fieldGoalAttempts"
+                Stats.FIELD_GOAL_PERCENTAGE -> "fieldGoalPercentage"
                 Stats.LONGEST_FIELD_GOAL -> "longestFieldGoal"
                 Stats.BLOCKED_OPPONENT_FIELD_GOALS -> "blockedOpponentFieldGoals"
                 Stats.FIELD_GOAL_TOUCHDOWN -> "fieldGoalTouchdown"
@@ -619,14 +650,18 @@ class RecordService(
                 Stats.AVERAGE_PUNT_LENGTH -> "averagePuntLength"
                 Stats.BLOCKED_OPPONENT_PUNT -> "blockedOpponentPunt"
                 Stats.PUNT_RETURN_TD -> "puntReturnTd"
+                Stats.PUNT_RETURN_TD_PERCENTAGE -> "puntReturnTdPercentage"
 
                 // Kickoffs
                 Stats.NUMBER_OF_KICKOFFS -> "numberOfKickoffs"
                 Stats.ONSIDE_ATTEMPTS -> "onsideAttempts"
                 Stats.ONSIDE_SUCCESS -> "onsideSuccess"
+                Stats.ONSIDE_SUCCESS_PERCENTAGE -> "onsideSuccessPercentage"
                 Stats.NORMAL_KICKOFF_ATTEMPTS -> "normalKickoffAttempts"
                 Stats.TOUCHBACKS -> "touchbacks"
+                Stats.TOUCHBACK_PERCENTAGE -> "touchbackPercentage"
                 Stats.KICK_RETURN_TD -> "kickReturnTd"
+                Stats.KICK_RETURN_TD_PERCENTAGE -> "kickReturnTdPercentage"
 
                 // Game Flow
                 Stats.NUMBER_OF_DRIVES -> "numberOfDrives"
@@ -645,8 +680,10 @@ class RecordService(
                 // Down Conversions
                 Stats.THIRD_DOWN_CONVERSION_SUCCESS -> "thirdDownConversionSuccess"
                 Stats.THIRD_DOWN_CONVERSION_ATTEMPTS -> "thirdDownConversionAttempts"
+                Stats.THIRD_DOWN_CONVERSION_PERCENTAGE -> "thirdDownConversionPercentage"
                 Stats.FOURTH_DOWN_CONVERSION_SUCCESS -> "fourthDownConversionSuccess"
                 Stats.FOURTH_DOWN_CONVERSION_ATTEMPTS -> "fourthDownConversionAttempts"
+                Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE -> "fourthDownConversionPercentage"
 
                 // Game Control
                 Stats.LARGEST_LEAD -> "largestLead"
@@ -655,6 +692,8 @@ class RecordService(
                 // Red Zone
                 Stats.RED_ZONE_ATTEMPTS -> "redZoneAttempts"
                 Stats.RED_ZONE_SUCCESSES -> "redZoneSuccesses"
+                Stats.RED_ZONE_SUCCESS_PERCENTAGE -> "redZoneSuccessPercentage"
+                Stats.RED_ZONE_PERCENTAGE -> "redZonePercentage"
 
                 // Special Teams
                 Stats.SAFETIES_FORCED -> "safetiesForced"

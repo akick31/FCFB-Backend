@@ -1,11 +1,14 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.BulkScheduleRequest
+import com.fcfb.arceus.dto.ConferenceRulesRequest
+import com.fcfb.arceus.dto.ConferenceRulesResponse
 import com.fcfb.arceus.dto.ConferenceScheduleRequest
 import com.fcfb.arceus.dto.MoveGameRequest
 import com.fcfb.arceus.dto.ScheduleEntry
 import com.fcfb.arceus.dto.ScheduleGenJob
 import com.fcfb.arceus.dto.ScheduleGenJobResponse
+import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.service.fcfb.ScheduleService
 import com.fcfb.arceus.service.fcfb.SeasonService
@@ -26,9 +29,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/schedule")
 class ScheduleController(
-    private var scheduleService: ScheduleService,
-    private var seasonService: SeasonService,
-    private var teamService: TeamService,
+    private val scheduleService: ScheduleService,
+    private val seasonService: SeasonService,
+    private val teamService: TeamService,
 ) {
     /**
      * Get an opponent for a given week and team
@@ -222,5 +225,33 @@ class ScheduleController(
     ): ResponseEntity<Void> {
         scheduleService.deleteScheduleBySeason(season)
         return ResponseEntity.noContent().build()
+    }
+
+    /**
+     * Save or update conference rules
+     * @param request
+     * @return
+     */
+    @PostMapping("/conference-rules")
+    fun saveConferenceRules(
+        @RequestBody request: ConferenceRulesRequest,
+    ): ResponseEntity<ConferenceRulesResponse> {
+        return ResponseEntity.ok(scheduleService.saveConferenceRules(request))
+    }
+
+    /**
+     * Get conference rules for a conference
+     * @param conference
+     * @return
+     */
+    @GetMapping("/conference-rules")
+    fun getConferenceRules(
+        @RequestParam("conference") conference: String,
+    ): ResponseEntity<ConferenceRulesResponse> {
+        val conferenceEnum = Conference.valueOf(conference)
+        val rules =
+            scheduleService.getConferenceRules(conferenceEnum)
+                ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(rules)
     }
 }

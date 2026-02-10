@@ -34,6 +34,18 @@ interface GameStatsRepository : CrudRepository<GameStats, Int> {
     fun findBySeasonOrderByGameIdAsc(season: Int): List<GameStats>
 
     @Query(
+        value = "SELECT * FROM game_stats WHERE season >= :minSeason ORDER BY season DESC, game_id ASC",
+        nativeQuery = true,
+    )
+    fun findBySeasonGreaterThanEqualOrderBySeasonDescGameIdAsc(minSeason: Int): List<GameStats>
+
+    @Query(
+        value = "SELECT MAX(season) FROM game_stats",
+        nativeQuery = true,
+    )
+    fun findMaxSeason(): Int?
+
+    @Query(
         value =
             "SELECT gs.* FROM game_stats gs " +
                 "JOIN game g ON gs.game_id = g.game_id " +
