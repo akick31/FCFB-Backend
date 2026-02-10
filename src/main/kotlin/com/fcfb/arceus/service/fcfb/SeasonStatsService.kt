@@ -592,7 +592,10 @@ class SeasonStatsService(
                         conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
                 }
 
-            return when (statName.lowercase()) {
+            // Normalize stat name: remove underscores and convert to lowercase
+            val normalizedStatName = statName.lowercase().replace("_", "")
+
+            return when (normalizedStatName) {
                 "wins" -> filteredStats.sortedByDescending { it.wins }
                 "losses" -> filteredStats.sortedByDescending { it.losses }
                 "passattempts" -> filteredStats.sortedByDescending { it.passAttempts }
@@ -665,16 +668,32 @@ class SeasonStatsService(
                 "redzonepercentage" -> filteredStats.sortedByDescending { it.redZonePercentage ?: 0.0 }
                 "safetiesforced" -> filteredStats.sortedByDescending { it.safetiesForced }
                 "safetiescommitted" -> filteredStats.sortedByDescending { it.safetiesCommitted }
-                "averageoffensivediff" -> filteredStats.sortedByDescending { it.averageOffensiveDiff ?: 0.0 }
+                "averageoffensivediff" -> {
+                    // Lower is better for offense, so sort ascending (best/lowest first)
+                    // When ascending=false (default), show best first (ascending order)
+                    // When ascending=true, show worst first (descending order)
+                    val sorted = filteredStats.sortedBy { it.averageOffensiveDiff ?: Double.MAX_VALUE }
+                    if (ascending) sorted.reversed() else sorted
+                }
                 "averagedefensivediff" -> filteredStats.sortedByDescending { it.averageDefensiveDiff ?: 0.0 }
                 "averageoffensivespecialteamsdiff" -> filteredStats.sortedByDescending { it.averageOffensiveSpecialTeamsDiff ?: 0.0 }
                 "averagedefensivespecialteamsdiff" -> filteredStats.sortedByDescending { it.averageDefensiveSpecialTeamsDiff ?: 0.0 }
                 "averagediff" -> filteredStats.sortedByDescending { it.averageDiff ?: 0.0 }
                 "averageresponsespeed" -> filteredStats.sortedByDescending { it.averageResponseSpeed ?: 0.0 }
-                else -> filteredStats
+                else -> {
+                    // If stat not found, log warning and sort by team name (alphabetical)
+                    Logger.warn("Unknown stat name in leaderboard: $statName (normalized: $normalizedStatName)")
+                    filteredStats.sortedBy { it.team }
+                }
             }.let { sortedStats ->
-                if (ascending) {
-                    sortedStats.reversed()
+                // For offensive diff and point differential, we already handled ascending/descending above, so skip reversal
+                val normalizedName = normalizedStatName
+                if ("averageoffensivediff" != normalizedName && "pointdifferential" != normalizedName) {
+                    if (ascending) {
+                        sortedStats.reversed()
+                    } else {
+                        sortedStats
+                    }
                 } else {
                     sortedStats
                 }

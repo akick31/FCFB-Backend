@@ -982,4 +982,107 @@ class GameStatsService(
     ): List<GameStats> {
         return gameStatsRepository.findByTeamAndSeason(team, season)
     }
+
+    /**
+     * Get ELO history for a team
+     * @param team Team name (or "all" for all teams)
+     * @param season Season number (optional, null for all-time)
+     * @return List of ELO history entries
+     */
+    fun getEloHistory(
+        team: String,
+        season: Int?,
+    ): List<com.fcfb.arceus.dto.EloHistoryEntry> {
+        val gameStatsList =
+            if (team.lowercase() == "all") {
+                // Get all teams' ELO history - use optimized query
+                // For "all teams", limit to most recent data to avoid timeout
+                if (season != null) {
+                    gameStatsRepository.findBySeasonOrderByGameIdAsc(season)
+                } else {
+                    // For all-time, get only the most recent seasons (last 10 seasons) to avoid timeout
+                    // This is a reasonable limit for visualization while still showing meaningful history
+                    // Get the latest season directly from database
+                    val latestSeason = gameStatsRepository.findMaxSeason() ?: 0
+                    if (latestSeason == 0) {
+                        emptyList()
+                    } else {
+                        val minSeason = (latestSeason - 9).coerceAtLeast(1)
+                        // Use optimized query that filters at database level
+                        gameStatsRepository.findBySeasonGreaterThanEqualOrderBySeasonDescGameIdAsc(minSeason)
+                    }
+                }
+            } else {
+                // Get single team's ELO history
+                if (season != null) {
+                    gameStatsRepository.findByTeamAndSeason(team, season)
+                } else {
+                    gameStatsRepository.findByTeam(team)
+                }
+            }
+
+        if (gameStatsList.isEmpty()) {
+            return emptyList()
+        }
+
+        // Batch fetch all games to avoid N+1 query problem
+        // Limit to 10,000 games max to avoid memory issues
+        val gameIds = gameStatsList.mapNotNull { it.gameId }.distinct().take(10000)
+        val gamesMap =
+            if (gameIds.isNotEmpty()) {
+                gameRepository.findAllById(gameIds).associateBy { it.gameId }
+            } else {
+                emptyMap()
+            }
+
+        // Sort by team, then season, then week, then game ID
+        val sortedStats =
+            gameStatsList.sortedWith(
+                compareBy<GameStats> { it.team ?: "" }
+                    .thenBy { it.season ?: 0 }
+                    .thenBy { it.week ?: 0 }
+                    .thenBy { it.gameId },
+            )
+
+        return sortedStats.map { stats ->
+            val teamName = stats.team ?: ""
+            val game = stats.gameId?.let { gamesMap[it] }
+            val opponent =
+                if (game != null) {
+                    if (game.homeTeam == teamName) game.awayTeam else game.homeTeam
+                } else {
+                    null
+                }
+
+            val result =
+                if (game != null && game.gameStatus?.name == "FINAL") {
+                    val teamScore = if (game.homeTeam == teamName) game.homeScore else game.awayScore
+                    val oppScore = if (game.homeTeam == teamName) game.awayScore else game.homeScore
+                    when {
+                        teamScore != null && oppScore != null -> {
+                            if (teamScore > oppScore) {
+                                "W"
+                            } else if (teamScore < oppScore) {
+                                "L"
+                            } else {
+                                null
+                            }
+                        }
+                        else -> null
+                    }
+                } else {
+                    null
+                }
+
+            com.fcfb.arceus.dto.EloHistoryEntry(
+                team = teamName,
+                season = stats.season ?: 0,
+                week = stats.week,
+                elo = stats.teamElo,
+                gameId = stats.gameId,
+                opponent = opponent,
+                result = result,
+            )
+        }
+    }
 }

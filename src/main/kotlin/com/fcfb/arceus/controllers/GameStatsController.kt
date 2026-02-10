@@ -66,4 +66,16 @@ class GameStatsController(
      */
     @PostMapping("/generate/all")
     fun generateAllGameStats() = gameStatsService.generateAllGameStats()
+
+    /**
+     * Get ELO history for a team
+     * @param team Team name
+     * @param season Season number (optional, null for all-time)
+     * @return List of ELO history entries
+     */
+    @GetMapping("/elo-history")
+    fun getEloHistory(
+        @RequestParam team: String,
+        @RequestParam(required = false) season: Int?,
+    ) = gameStatsService.getEloHistory(team, season)
 }

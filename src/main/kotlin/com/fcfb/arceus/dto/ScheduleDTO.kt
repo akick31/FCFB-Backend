@@ -45,6 +45,18 @@ data class ProtectedRivalry(
     @JsonProperty("week") val week: Int? = null,
 )
 
+data class ConferenceRulesRequest(
+    @JsonProperty("conference") val conference: String,
+    @JsonProperty("numConferenceGames") val numConferenceGames: Int,
+    @JsonProperty("protectedRivalries") val protectedRivalries: List<ProtectedRivalry> = emptyList(),
+)
+
+data class ConferenceRulesResponse(
+    @JsonProperty("conference") val conference: String,
+    @JsonProperty("numConferenceGames") val numConferenceGames: Int,
+    @JsonProperty("protectedRivalries") val protectedRivalries: List<ProtectedRivalry> = emptyList(),
+)
+
 // ===== Game Week Job DTOs =====
 
 enum class GameWeekJobStatus {

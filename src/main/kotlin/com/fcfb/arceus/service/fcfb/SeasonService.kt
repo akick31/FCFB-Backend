@@ -9,12 +9,12 @@ import com.fcfb.arceus.repositories.SeasonRepository
 import com.fcfb.arceus.util.CurrentSeasonNotFoundException
 import com.fcfb.arceus.util.CurrentWeekNotFoundException
 import com.fcfb.arceus.util.Logger
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
-@Component
+@Service
 class SeasonService(
     private val seasonRepository: SeasonRepository,
     private val teamService: TeamService,

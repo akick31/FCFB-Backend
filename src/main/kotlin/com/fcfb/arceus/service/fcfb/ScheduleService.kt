@@ -1,7 +1,11 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fcfb.arceus.dto.ConferenceRulesRequest
+import com.fcfb.arceus.dto.ConferenceRulesResponse
 import com.fcfb.arceus.dto.ConferenceScheduleRequest
 import com.fcfb.arceus.dto.MoveGameRequest
+import com.fcfb.arceus.dto.ProtectedRivalry
 import com.fcfb.arceus.dto.ScheduleEntry
 import com.fcfb.arceus.dto.ScheduleGenJob
 import com.fcfb.arceus.dto.ScheduleGenJobResponse
@@ -10,9 +14,11 @@ import com.fcfb.arceus.dto.ScheduleGenLog
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
+import com.fcfb.arceus.model.ConferenceRules
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.repositories.ConferenceRulesRepository
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.util.Logger
@@ -33,6 +39,8 @@ class ScheduleService(
     private val scheduleRepository: ScheduleRepository,
     private val gameRepository: GameRepository,
     private val teamService: TeamService,
+    private val conferenceRulesRepository: ConferenceRulesRepository,
+    private val objectMapper: ObjectMapper,
 ) {
     companion object {
         private val activeGenJobs = ConcurrentHashMap<String, ScheduleGenJob>()
@@ -1074,4 +1082,72 @@ class ScheduleService(
      * Get the status of a schedule generation job.
      */
     fun getScheduleGenJobStatus(jobId: String): ScheduleGenJob? = activeGenJobs[jobId]
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  Conference Rules Management
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Save or update conference rules
+     * @param request
+     * @return
+     */
+    fun saveConferenceRules(request: ConferenceRulesRequest): ConferenceRulesResponse {
+        val conference = Conference.valueOf(request.conference)
+        val existing = conferenceRulesRepository.findByConference(conference)
+
+        val rules = existing ?: ConferenceRules()
+        rules.conference = conference
+        rules.numConferenceGames = request.numConferenceGames
+
+        // Serialize protected rivalries to JSON
+        val rivalriesJson =
+            if (request.protectedRivalries.isNotEmpty()) {
+                objectMapper.writeValueAsString(request.protectedRivalries)
+            } else {
+                null
+            }
+        rules.protectedRivalries = rivalriesJson
+
+        conferenceRulesRepository.save(rules)
+        Logger.info(
+            "Saved conference rules for ${conference.name}: " +
+                "${request.numConferenceGames} games, ${request.protectedRivalries.size} rivalries",
+        )
+
+        return ConferenceRulesResponse(
+            conference = request.conference,
+            numConferenceGames = rules.numConferenceGames,
+            protectedRivalries = request.protectedRivalries,
+        )
+    }
+
+    /**
+     * Get conference rules for a conference
+     * @param conference
+     * @return
+     */
+    fun getConferenceRules(conference: Conference): ConferenceRulesResponse? {
+        val rules = conferenceRulesRepository.findByConference(conference) ?: return null
+
+        // Deserialize protected rivalries from JSON
+        val protectedRivalriesJson = rules.protectedRivalries
+        val rivalries =
+            if (protectedRivalriesJson != null && protectedRivalriesJson.isNotBlank()) {
+                try {
+                    objectMapper.readValue(protectedRivalriesJson, Array<ProtectedRivalry>::class.java).toList()
+                } catch (e: Exception) {
+                    Logger.error("Error deserializing protected rivalries for ${conference.name}: ${e.message}", e)
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+
+        return ConferenceRulesResponse(
+            conference = rules.conference.name,
+            numConferenceGames = rules.numConferenceGames,
+            protectedRivalries = rivalries,
+        )
+    }
 }
