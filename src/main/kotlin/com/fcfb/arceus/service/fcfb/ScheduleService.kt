@@ -1131,10 +1131,11 @@ class ScheduleService(
         val rules = conferenceRulesRepository.findByConference(conference) ?: return null
 
         // Deserialize protected rivalries from JSON
+        val protectedRivalriesJson = rules.protectedRivalries
         val rivalries =
-            if (rules.protectedRivalries != null && rules.protectedRivalries.isNotBlank()) {
+            if (protectedRivalriesJson != null && protectedRivalriesJson.isNotBlank()) {
                 try {
-                    objectMapper.readValue(rules.protectedRivalries, Array<ProtectedRivalry>::class.java).toList()
+                    objectMapper.readValue(protectedRivalriesJson, Array<ProtectedRivalry>::class.java).toList()
                 } catch (e: Exception) {
                     Logger.error("Error deserializing protected rivalries for ${conference.name}: ${e.message}", e)
                     emptyList()
