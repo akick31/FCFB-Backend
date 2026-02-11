@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ConferenceRulesRepository : CrudRepository<ConferenceRules, Int> {
-    @Query(value = "SELECT * FROM conference_rules WHERE conference = ?", nativeQuery = true)
     fun findByConference(conference: Conference): ConferenceRules?
 
     fun existsByConference(conference: Conference): Boolean
