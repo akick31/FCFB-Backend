@@ -2170,4 +2170,24 @@ class GameService(
         }
         return season to currentWeek
     }
+
+    /**
+     * Get rankings history for teams
+     * Returns games with rankings (home_team_rank or away_team_rank between 1-25)
+     * @param team Team name or null for all teams
+     * @param season Season number or null for all seasons
+     * @return List of games with rankings
+     */
+    fun getRankingsHistory(
+        team: String?,
+        season: Int?,
+    ): List<Game> {
+        val allRankedGames = gameRepository.getRankedGames()
+
+        return allRankedGames.filter { game ->
+            val matchesTeam = team == null || team == "all" || game.homeTeam == team || game.awayTeam == team
+            val matchesSeason = season == null || game.season == season
+            matchesTeam && matchesSeason
+        }.sortedWith(compareBy<Game> { it.season }.thenBy { it.week })
+    }
 }
