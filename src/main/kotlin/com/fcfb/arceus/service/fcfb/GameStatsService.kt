@@ -1085,4 +1085,21 @@ class GameStatsService(
             )
         }
     }
+
+    /**
+     * Get game stats by season and week with opponent stats included
+     * @param season Season number
+     * @param week Week number (optional, null for entire season)
+     * @return List of game stats (frontend will pair with opponents by game_id)
+     */
+    fun getGameStatsBySeasonAndWeek(
+        season: Int,
+        week: Int?,
+    ): List<GameStats> {
+        return if (week != null) {
+            gameStatsRepository.getGameStatsBySeasonAndWeek(season, week)
+        } else {
+            gameStatsRepository.findBySeasonOrderByGameIdAsc(season)
+        }
+    }
 }

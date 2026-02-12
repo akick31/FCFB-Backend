@@ -91,6 +91,15 @@ class GameController(
     @GetMapping("/week/jobs")
     fun getAllGameWeekJobs(): ResponseEntity<List<GameWeekJob>> = ResponseEntity.ok(gameService.getAllGameWeekJobs())
 
+    @GetMapping("/rankings-history")
+    fun getRankingsHistory(
+        @RequestParam(required = false) team: String?,
+        @RequestParam(required = false) season: Int?,
+    ): ResponseEntity<List<Game>> {
+        val games = gameService.getRankingsHistory(team, season)
+        return ResponseEntity.ok(games)
+    }
+
     @PostMapping("/week/retry/{jobId}")
     fun retryFailedGames(
         @PathVariable("jobId") jobId: String,
