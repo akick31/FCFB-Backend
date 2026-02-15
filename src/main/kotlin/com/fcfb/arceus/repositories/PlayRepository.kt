@@ -50,16 +50,25 @@ interface PlayRepository : CrudRepository<Play, Int> {
 
     @Query(
         value =
-            "SELECT AVG(" +
+            "SELECT COALESCE(" +
+                "(SELECT AVG(" +
                 "CASE " +
                 "WHEN p.offensive_submitter_id = :discordId THEN p.offensive_response_speed " +
                 "WHEN p.defensive_submitter_id = :discordId THEN p.defensive_response_speed " +
                 "END " +
-                ") AS avg_response_time " +
+                ") " +
                 "FROM play p " +
                 "JOIN game g ON p.game_id = g.game_id " +
                 "WHERE (p.offensive_submitter_id = :discordId OR p.defensive_submitter_id = :discordId) " +
-                "AND g.season = :season",
+                "AND g.season = :season " +
+                "AND (" +
+                "  (p.offensive_submitter_id = :discordId AND p.offensive_response_speed IS NOT NULL) " +
+                "  OR " +
+                "  (p.defensive_submitter_id = :discordId AND p.defensive_response_speed IS NOT NULL) " +
+                ")" +
+                "), " +
+                "999999.0" +
+                ") AS avg_response_time",
         nativeQuery = true,
     )
     fun getUserAverageResponseTime(
