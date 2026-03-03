@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 class UserController(
     private var userService: UserService,
 ) {
-    @GetMapping("{userId}")
+    @GetMapping("{userId:[0-9]+}")
     fun getUserById(
         @PathVariable userId: Long,
     ) = userService.getUserById(userId)
@@ -59,13 +59,13 @@ class UserController(
 
     @PostMapping("/hash_emails")
     fun encryptEmails() = userService.hashEmails()
-
+    
     @PostMapping("/validate")
     fun validateUser(
         @RequestBody userValidationRequest: UserValidationRequest,
     ) = userService.validateUser(userValidationRequest)
 
-    @DeleteMapping("{teamId}")
+    @DeleteMapping("{teamId:[0-9]+}")
     fun deleteTeam(
         @PathVariable teamId: Long,
     ) = userService.deleteUser(teamId)
