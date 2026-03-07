@@ -43,3 +43,6 @@ build/
 ### VS Code ###
 .vscode/
 /src/main/resources/application.properties
+
+### Claude Code ###
+.claude/
