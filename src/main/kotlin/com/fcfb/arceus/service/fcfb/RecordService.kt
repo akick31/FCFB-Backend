@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.Game
@@ -139,20 +140,31 @@ class RecordService(
         // Clear existing records
         recordRepository.deleteAll()
 
+        // Pre-compute completed game IDs once for the entire generation
+        val completedGameIds = getCompletedGameIds()
+
         // Get all available seasons (10 and above, since data unavailable for seasons 1-9)
         val availableSeasons = getAvailableSeasons()
 
         for (season in availableSeasons) {
-            generateRecordsForSeason(season)
+            generateRecordsForSeason(season, completedGameIds)
         }
 
         Logger.info("Completed generation of all records")
     }
 
     /**
-     * Check if a game broke any records and update them
+     * Check if a game broke any records and update them.
+     * Only considers games that completed at least 4 quarters.
      */
     fun checkAndUpdateRecordsForGame(game: Game) {
+        val isComplete = isCompleteGame(game)
+        if (!isComplete) {
+            Logger.info(
+                "Game ${game.gameId} did not fully complete (quarter: ${game.quarter}, clock: ${game.clock}) " +
+                    "- skipping single game/general records, still checking season records",
+            )
+        }
         Logger.info("Checking records for game ${game.gameId}")
 
         val homeStats = gameStatsRepository.getGameStatsByIdAndTeam(game.gameId, game.homeTeam)
@@ -164,47 +176,53 @@ class RecordService(
         val currentSeason = game.season ?: return
         val homeSeasonStats = getCurrentSeasonStatsForTeam(game.homeTeam, currentSeason)
         val awaySeasonStats = getCurrentSeasonStatsForTeam(game.awayTeam, currentSeason)
-        val currentSeasonStats = listOfNotNull(homeSeasonStats, awaySeasonStats)
 
         // Check each stat type
         for (stat in Stats.values()) {
             if (generalRecordStats.contains(stat)) {
-                // General records - just check highest/lowest ever
-                if (lowestOnlyStats.contains(stat)) {
-                    // Only track lowest for these stats
-                    checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
-                } else if (dualRecordStats.contains(stat)) {
-                    checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL)
-                    checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
-                } else {
-                    checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL)
+                // General records - only check for complete games
+                if (isComplete) {
+                    if (lowestOnlyStats.contains(stat)) {
+                        checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
+                    } else if (dualRecordStats.contains(stat)) {
+                        checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL)
+                        checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
+                    } else {
+                        checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL)
+                    }
                 }
             } else if (gameOnlyStats.contains(stat)) {
-                // Game-only records - only check game records
-                if (lowestOnlyStats.contains(stat)) {
-                    // Only track lowest for these stats
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
-                } else if (dualRecordStats.contains(stat)) {
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
-                } else {
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
+                // Game-only records - only check for complete games
+                if (isComplete) {
+                    if (lowestOnlyStats.contains(stat)) {
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
+                    } else if (dualRecordStats.contains(stat)) {
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
+                    } else {
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
+                    }
                 }
             } else {
-                // Regular stats - check both game and season records
+                // Regular stats - game records only for complete games, season records always
+                if (isComplete) {
+                    if (lowestOnlyStats.contains(stat)) {
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
+                    } else if (dualRecordStats.contains(stat)) {
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
+                    } else {
+                        checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
+                    }
+                }
+
+                // Season records always checked regardless of game completion
                 if (lowestOnlyStats.contains(stat)) {
-                    // Only track lowest for these stats
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
                     checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON_LOWEST)
                 } else if (dualRecordStats.contains(stat)) {
-                    // Check both highest and lowest records for dual-record stats
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
                     checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON)
                     checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON_LOWEST)
                 } else {
-                    // Check only highest records for regular stats
-                    checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
                     checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON)
                 }
             }
@@ -216,50 +234,53 @@ class RecordService(
     /**
      * Generate records for a specific season
      */
-    private fun generateRecordsForSeason(seasonNumber: Int) {
+    private fun generateRecordsForSeason(
+        seasonNumber: Int,
+        completedGameIds: Set<Int>,
+    ) {
         Logger.info("Generating records for season $seasonNumber")
 
-        val seasonGameStats = gameStatsRepository.findAll().filter { it.season == seasonNumber }
+        val allSeasonGameStats =
+            gameStatsRepository.findAll()
+                .filter { it.season == seasonNumber }
+
+        // Only complete games for single game and general records
+        val completeSeasonGameStats = allSeasonGameStats.filter { it.gameId in completedGameIds }
 
         for (stat in Stats.values()) {
             if (generalRecordStats.contains(stat)) {
-                // General records - just track highest/lowest ever
+                // General records - only complete games
                 if (lowestOnlyStats.contains(stat)) {
-                    // Only track lowest for these stats
-                    generateGeneralRecord(stat, seasonGameStats, RecordType.GENERAL_LOWEST)
+                    generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL_LOWEST, completedGameIds)
                 } else if (dualRecordStats.contains(stat)) {
-                    generateGeneralRecord(stat, seasonGameStats, RecordType.GENERAL)
-                    generateGeneralRecord(stat, seasonGameStats, RecordType.GENERAL_LOWEST)
+                    generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL, completedGameIds)
+                    generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL_LOWEST, completedGameIds)
                 } else {
-                    generateGeneralRecord(stat, seasonGameStats, RecordType.GENERAL)
+                    generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL, completedGameIds)
                 }
             } else if (gameOnlyStats.contains(stat)) {
-                // Game-only records - only track game records
+                // Game-only records - only complete games
                 if (lowestOnlyStats.contains(stat)) {
-                    // Only track lowest for these stats
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
                 } else if (dualRecordStats.contains(stat)) {
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME)
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
                 } else {
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
                 }
             } else {
-                // Regular stats - track both game and season records
+                // Regular stats - game records use complete games only, season records use all games
                 if (lowestOnlyStats.contains(stat)) {
-                    // Only track lowest for these stats
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
-                    generateSeasonRecord(stat, seasonGameStats, RecordType.SINGLE_SEASON_LOWEST)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                    generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON_LOWEST)
                 } else if (dualRecordStats.contains(stat)) {
-                    // Generate both highest and lowest records for dual-record stats
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME)
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME_LOWEST)
-                    generateSeasonRecord(stat, seasonGameStats, RecordType.SINGLE_SEASON)
-                    generateSeasonRecord(stat, seasonGameStats, RecordType.SINGLE_SEASON_LOWEST)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                    generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON)
+                    generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON_LOWEST)
                 } else {
-                    // Generate only highest records for regular stats
-                    generateGameRecord(stat, seasonGameStats, RecordType.SINGLE_GAME)
-                    generateSeasonRecord(stat, seasonGameStats, RecordType.SINGLE_SEASON)
+                    generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
+                    generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON)
                 }
             }
         }
@@ -373,11 +394,12 @@ class RecordService(
         statName: Stats,
         gameStatsList: List<GameStats>,
         recordType: RecordType,
+        completedGameIds: Set<Int>,
     ) {
         // Get game stats only for seasons 10 and 11 (data unavailable for seasons 1-9)
         val allGameStats =
             gameStatsRepository.findAll().toList()
-                .filter { it.season == 10 || it.season == 11 }
+                .filter { (it.season == 10 || it.season == 11) && it.gameId in completedGameIds }
 
         val isLowest = recordType == RecordType.GENERAL_LOWEST
         val bestGameStats =
@@ -779,6 +801,24 @@ class RecordService(
      */
     private fun getCoachForGameRecord(gameStats: GameStats): String? {
         return gameStats.coaches?.joinToString(", ") ?: null
+    }
+
+    /**
+     * Check if a game fully completed (Q4 clock expired or went to OT)
+     */
+    private fun isCompleteGame(game: Game): Boolean {
+        return game.gameStatus == GameStatus.FINAL &&
+            (game.quarter > 4 || (game.quarter == 4 && game.clock == "0:00"))
+    }
+
+    /**
+     * Get the set of game IDs for games that fully completed
+     */
+    private fun getCompletedGameIds(): Set<Int> {
+        return gameRepository.findAll()
+            .filter { it.gameStatus == GameStatus.FINAL && (it.quarter > 4 || (it.quarter == 4 && it.clock == "0:00")) }
+            .map { it.gameId }
+            .toSet()
     }
 
     /**
