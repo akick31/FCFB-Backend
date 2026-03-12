@@ -124,6 +124,18 @@ class PlayController(
     ) = playService.getAllPlaysByDiscordTag(discordTag)
 
     /**
+     * Get delay of game counts per team for a given season and week
+     * @param season
+     * @param week
+     * @return
+     */
+    @GetMapping("/delay-of-game")
+    fun getDelayOfGameCountsByWeek(
+        @RequestParam("season") season: Int,
+        @RequestParam("week") week: Int,
+    ) = playService.getDelayOfGameCountsByWeek(season, week)
+
+    /**
      * Update a play
      * @param play
      * @return
