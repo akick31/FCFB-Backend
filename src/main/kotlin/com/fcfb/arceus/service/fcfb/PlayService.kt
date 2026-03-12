@@ -352,6 +352,21 @@ class PlayService(
             ?: throw PlayNotFoundException("No delay of game instances found for game $gameId")
 
     /**
+     * Get the number of delay of game instances per team for a given season and week
+     */
+    fun getDelayOfGameCountsByWeek(
+        season: Int,
+        week: Int,
+    ): Map<String, Int> {
+        val results = playRepository.getDelayOfGameCountsByWeek(season, week)
+        return results.associate { row ->
+            val team = row[0] as String
+            val count = (row[1] as Number).toInt()
+            team to count
+        }
+    }
+
+    /**
      * Get the average response time for a user
      * @param discordTag
      * @param season
