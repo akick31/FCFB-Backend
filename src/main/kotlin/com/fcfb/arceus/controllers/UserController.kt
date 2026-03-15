@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/user")
 class UserController(
     private var userService: UserService,
-    private var encryptionUtils: EncryptionUtils
+    private var encryptionUtils: EncryptionUtils,
 ) {
     @GetMapping("{userId:[0-9]+}")
     fun getUserById(
