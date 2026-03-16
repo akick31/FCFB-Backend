@@ -97,6 +97,7 @@ data class FailedGameDetail(
     @JsonProperty("tvChannel") val tvChannel: TVChannel? = null,
     @JsonProperty("gameType") val gameType: GameType,
     @JsonProperty("postseasonGameLogo") val postseasonGameLogo: String? = null,
+    @JsonProperty("postseasonGameName") val postseasonGameName: String? = null,
     @JsonProperty("error") val error: String,
 )
 

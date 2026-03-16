@@ -3,6 +3,8 @@ package com.fcfb.arceus.service.fcfb
 import com.fcfb.arceus.dto.ScorebugResponse
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameStatus
+import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.TeamSide
@@ -202,11 +204,41 @@ class ScorebugService(
         }
     }
 
+    private val postseasonGameTypes =
+        setOf(GameType.BOWL, GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP, GameType.CONFERENCE_CHAMPIONSHIP)
+    private val foxChannels = setOf(TVChannel.FOX, TVChannel.FS1, TVChannel.FS2)
+
     /**
-     * Generates a scorebug image for the game
+     * Generates a scorebug image for the game, dispatching to the appropriate renderer
      * @param game
      */
     fun generateScorebug(game: Game): BufferedImage {
+        val image =
+            when {
+                game.gameType in postseasonGameTypes -> generatePostseasonScorebug(game)
+                game.tvChannel in foxChannels -> generateFoxScorebug(game)
+                else -> generateEspnScorebug(game)
+            }
+
+        // Save image to file
+        val directory = File("$imagePath/scorebugs")
+        if (!directory.exists()) {
+            if (directory.mkdirs()) {
+                Logger.info("Directory created: ${directory.absolutePath}")
+            } else {
+                Logger.error("Failed to create directory: ${directory.absolutePath}")
+            }
+        }
+
+        val outputfile = File("$imagePath/scorebugs/${game.gameId}_scorebug.png")
+        ImageIO.write(image, "png", outputfile)
+        return image
+    }
+
+    /**
+     * Generates the ESPN-style scorebug (default, vertical layout)
+     */
+    private fun generateEspnScorebug(game: Game): BufferedImage {
         val homeTeam = teamService.getTeamByName(game.homeTeam)
         val awayTeam = teamService.getTeamByName(game.awayTeam)
 
@@ -216,29 +248,20 @@ class ScorebugService(
         val image = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
         val g: Graphics2D = image.createGraphics()
 
-        // Line stroke width
         g.stroke = BasicStroke(2f)
-
-        // Enable anti-aliasing for smoother text
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
-        // Transparent background
         g.composite = AlphaComposite.Clear
         g.fillRect(0, 0, width, height)
         g.composite = AlphaComposite.Src
 
-        // Adjusted row height for team name section (5 pixels shorter) and team score section (5 pixels taller)
         val adjustedRowHeightForTeamName = rowHeight - 5
         val adjustedRowHeightForTeamScore = rowHeight + 5
 
-        // Draw the away team score section with adjusted height
         drawTeamScoreSection(g, game, awayTeam, 65, adjustedRowHeightForTeamScore)
-        // Draw the home team score section with adjusted height
         drawTeamScoreSection(g, game, homeTeam, 205, adjustedRowHeightForTeamScore)
 
-        // Draw the away team name section with adjusted height
         drawTeamNameSection(g, game, awayTeam, width, 0, adjustedRowHeightForTeamName)
-        // Draw the home team name section with adjusted height
         drawTeamNameSection(g, game, homeTeam, width, 140, adjustedRowHeightForTeamName)
 
         if (game.gameStatus != GameStatus.FINAL) {
@@ -248,31 +271,10 @@ class ScorebugService(
             drawFinalSection(g, (rowHeight - 10) * 2, game)
         }
 
-        // Draw a border around the entire scorebug
         drawBorder(g, width, height)
-
-        // Dispose graphics context
         g.dispose()
 
-        // Scale and draw the image
-        val scaledImage = scaleImage(image, width, height)
-
-        // Save image to file
-        val outputfile = File("$imagePath/scorebugs/${game.gameId}_scorebug.png")
-
-        // Create directory if it does not exist
-        val directory = File("$imagePath/scorebugs")
-        if (!directory.exists()) {
-            // Create the directory and any necessary parent directories
-            if (directory.mkdirs()) {
-                Logger.info("Directory created: ${directory.absolutePath}")
-            } else {
-                Logger.error("Failed to create directory: ${directory.absolutePath}")
-            }
-        }
-
-        ImageIO.write(scaledImage, "png", outputfile)
-        return image
+        return scaleImage(image, width, height)
     }
 
     /**
@@ -869,6 +871,615 @@ class ScorebugService(
             else -> "Unknown Location"
         }
     }
+
+    // ==================== FOX SCOREBUG ====================
+
+    /**
+     * Generates a Fox-style horizontal scorebug
+     */
+    private fun generateFoxScorebug(game: Game): BufferedImage {
+        val homeTeam = teamService.getTeamByName(game.homeTeam)
+        val awayTeam = teamService.getTeamByName(game.awayTeam)
+
+        val width = 700
+        val height = 170
+        val image = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+        val g: Graphics2D = image.createGraphics()
+
+        g.stroke = BasicStroke(2f)
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+        g.composite = AlphaComposite.Clear
+        g.fillRect(0, 0, width, height)
+        g.composite = AlphaComposite.Src
+
+        val teamBarY = 14
+        val teamBarHeight = 90
+        val halfWidth = width / 2
+        val infoBarY = teamBarY + teamBarHeight + 4
+        val infoBarHeight = 50
+
+        // Draw timeout dots above team bars
+        drawFoxTimeoutDots(g, game, awayTeam, 0, teamBarY, halfWidth - 2, isHome = false)
+        drawFoxTimeoutDots(g, game, homeTeam, halfWidth + 2, teamBarY, halfWidth - 2, isHome = true)
+
+        // Draw away team section (left half)
+        drawFoxTeamSection(g, game, awayTeam, 0, teamBarY, halfWidth - 2, teamBarHeight, isHome = false)
+        // Draw home team section (right half)
+        drawFoxTeamSection(g, game, homeTeam, halfWidth + 2, teamBarY, halfWidth - 2, teamBarHeight, isHome = true)
+
+        // Draw possession indicator between the two score sections
+        if (game.gameStatus != GameStatus.FINAL) {
+            val dotSize = 10
+            val dotX = halfWidth - dotSize / 2
+            val dotY = teamBarY + teamBarHeight / 2 - dotSize / 2 - 5
+            g.color = Color(255, 165, 0) // Orange
+            g.fillOval(dotX, dotY, dotSize, dotSize)
+        }
+
+        // Draw info bar
+        if (game.gameStatus != GameStatus.FINAL) {
+            drawFoxInfoBar(g, infoBarY, infoBarHeight, width, game, homeTeam, awayTeam)
+        } else {
+            drawFoxFinalBar(g, infoBarY, infoBarHeight, width, game)
+        }
+
+        g.dispose()
+        return scaleImage(image, width, height)
+    }
+
+    /**
+     * Draws a Fox-style team section (one half of the team bar)
+     */
+    private fun drawFoxTeamSection(
+        g: Graphics2D,
+        game: Game,
+        team: Team,
+        xPos: Int,
+        yPos: Int,
+        sectionWidth: Int,
+        sectionHeight: Int,
+        isHome: Boolean,
+    ) {
+        val teamColor = Color.decode(team.primaryColor)
+        val darkerColor = teamColor.darker()
+
+        // Draw gradient background
+        val gradient =
+            LinearGradientPaint(
+                Point2D.Float(xPos.toFloat(), yPos.toFloat()),
+                Point2D.Float(xPos.toFloat(), (yPos + sectionHeight).toFloat()),
+                floatArrayOf(0f, 1f),
+                arrayOf(teamColor, darkerColor),
+            )
+        g.paint = gradient
+        g.fillRect(xPos, yPos, sectionWidth, sectionHeight)
+
+        val score = if (isHome) game.homeScore.toString() else game.awayScore.toString()
+        val ranking = if (isHome) game.homeTeamRank else game.awayTeamRank
+        val record =
+            if (isHome) {
+                if (game.gameStatus == GameStatus.FINAL) {
+                    if (game.homeScore > game.awayScore) "${game.homeWins?.plus(1)}-${game.homeLosses}"
+                    else "${game.homeWins}-${game.homeLosses?.plus(1)}"
+                } else {
+                    "${game.homeWins}-${game.homeLosses}"
+                }
+            } else {
+                if (game.gameStatus == GameStatus.FINAL) {
+                    if (game.awayScore > game.homeScore) "${game.awayWins?.plus(1)}-${game.awayLosses}"
+                    else "${game.awayWins}-${game.awayLosses?.plus(1)}"
+                } else {
+                    "${game.awayWins}-${game.awayLosses}"
+                }
+            }
+
+        // Load and draw team logo
+        val logoSize = 65
+        val logoUrl = team.scorebugLogo
+        if (logoUrl != null) {
+            try {
+                val logoImage = ImageIO.read(URI(logoUrl).toURL())
+                val logoX = if (isHome) xPos + sectionWidth - logoSize - 8 else xPos + 8
+                val logoY = yPos + (sectionHeight - logoSize) / 2
+                g.drawImage(logoImage, logoX, logoY, logoSize, logoSize, null)
+            } catch (e: IOException) {
+                Logger.error("Error loading logo for ${team.name}: ${e.message}")
+            }
+        }
+
+        g.color = Color.WHITE
+
+        if (!isHome) {
+            // Away team: [LOGO | NAME rank | SCORE]
+            val textStartX = xPos + logoSize + 20
+
+            // Team abbreviation
+            var teamName = team.abbreviation ?: team.name
+            g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 38f)
+            if (g.fontMetrics.stringWidth(teamName) > sectionWidth - logoSize - 120) {
+                teamName = team.abbreviation ?: teamName
+            }
+            g.drawString(teamName, textStartX, yPos + 40)
+
+            // Ranking (smaller, to the right of name)
+            if (ranking != null && ranking > 0) {
+                val nameWidth = g.fontMetrics.stringWidth(teamName)
+                g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 26f)
+                g.drawString("#$ranking", textStartX + nameWidth + 8, yPos + 40)
+            }
+
+            // Record below name
+            g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 24f)
+            g.color = Color(255, 255, 255, 200)
+            g.drawString(record, textStartX, yPos + 68)
+
+            // Score (right-aligned, large)
+            g.color = Color.WHITE
+            g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 60f)
+            val scoreWidth = g.fontMetrics.stringWidth(score)
+            g.drawString(score, xPos + sectionWidth - scoreWidth - 12, yPos + sectionHeight / 2 + 20)
+        } else {
+            // Home team: [SCORE | rank NAME | LOGO]
+            val textEndX = xPos + sectionWidth - logoSize - 20
+
+            // Score (left-aligned, large)
+            g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 60f)
+            g.drawString(score, xPos + 12, yPos + sectionHeight / 2 + 20)
+            val scoreWidth = g.fontMetrics.stringWidth(score)
+
+            // Team abbreviation (right-aligned before logo)
+            var teamName = team.abbreviation ?: team.name
+            g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 38f)
+            if (g.fontMetrics.stringWidth(teamName) > sectionWidth - logoSize - 120) {
+                teamName = team.abbreviation ?: teamName
+            }
+            val nameWidth = g.fontMetrics.stringWidth(teamName)
+            g.drawString(teamName, textEndX - nameWidth, yPos + 40)
+
+            // Ranking (smaller, to the left of name)
+            if (ranking != null && ranking > 0) {
+                g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 26f)
+                val rankText = "#$ranking"
+                val rankWidth = g.fontMetrics.stringWidth(rankText)
+                g.drawString(rankText, textEndX - nameWidth - rankWidth - 8, yPos + 40)
+            }
+
+            // Record below name (right-aligned)
+            g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 24f)
+            g.color = Color(255, 255, 255, 200)
+            val recordWidth = g.fontMetrics.stringWidth(record)
+            g.drawString(record, textEndX - recordWidth, yPos + 68)
+        }
+    }
+
+    /**
+     * Draws timeout dots above a Fox team section
+     */
+    private fun drawFoxTimeoutDots(
+        g: Graphics2D,
+        game: Game,
+        team: Team,
+        xPos: Int,
+        teamBarY: Int,
+        sectionWidth: Int,
+        isHome: Boolean,
+    ) {
+        val timeouts = if (isHome) game.homeTimeouts else game.awayTimeouts
+        val dotSize = 8
+        val dotSpacing = 12
+        val dotY = teamBarY - dotSize - 3
+
+        for (i in 0 until 3) {
+            val dotX =
+                if (!isHome) {
+                    xPos + 10 + i * dotSpacing
+                } else {
+                    xPos + sectionWidth - 10 - (3 - i) * dotSpacing
+                }
+
+            if (i < timeouts) {
+                g.color = Color.decode(team.primaryColor)
+            } else {
+                g.color = Color(150, 150, 150, 100)
+            }
+            g.fillOval(dotX, dotY, dotSize, dotSize)
+        }
+    }
+
+    /**
+     * Draws the Fox info bar (quarter, clock, down & distance, ball location)
+     */
+    private fun drawFoxInfoBar(
+        g: Graphics2D,
+        yPos: Int,
+        height: Int,
+        width: Int,
+        game: Game,
+        homeTeam: Team,
+        awayTeam: Team,
+    ) {
+        // Dark background
+        g.color = Color(30, 30, 30)
+        g.fillRect(0, yPos, width, height)
+
+        g.color = Color.WHITE
+
+        // Quarter
+        val quarterText = getQuarterText(game.quarter)
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 32f)
+        val ascent = g.fontMetrics.ascent
+        val centerY = yPos + height / 2 + ascent / 2
+        g.drawString(quarterText, 20, centerY)
+        val quarterWidth = g.fontMetrics.stringWidth(quarterText)
+
+        // Separator
+        g.color = Color(100, 100, 100)
+        g.drawLine(quarterWidth + 40, yPos + 10, quarterWidth + 40, yPos + height - 10)
+
+        // Clock
+        g.color = Color.WHITE
+        val clockText = getClockText(game.quarter, game.clock)
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 32f)
+        g.drawString(clockText, quarterWidth + 60, centerY)
+        val clockWidth = g.fontMetrics.stringWidth(clockText)
+
+        // Separator
+        g.color = Color(100, 100, 100)
+        val sep2X = quarterWidth + clockWidth + 80
+        g.drawLine(sep2X, yPos + 10, sep2X, yPos + height - 10)
+
+        // Down & Distance
+        g.color = Color.WHITE
+        val downText = getDownDistanceText(game)
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 32f)
+        g.drawString(downText, sep2X + 20, centerY)
+        val downWidth = g.fontMetrics.stringWidth(downText)
+
+        // Separator
+        g.color = Color(100, 100, 100)
+        val sep3X = sep2X + downWidth + 40
+        g.drawLine(sep3X, yPos + 10, sep3X, yPos + height - 10)
+
+        // Ball Location
+        g.color = Color.WHITE
+        val ballLocationText =
+            getBallLocationText(
+                homeTeam.name ?: "",
+                awayTeam.name ?: "",
+                homeTeam.abbreviation,
+                awayTeam.abbreviation,
+                game.ballLocation,
+                game.possession,
+            )
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 28f)
+        g.drawString(ballLocationText, sep3X + 20, centerY)
+    }
+
+    /**
+     * Draws the Fox final bar
+     */
+    private fun drawFoxFinalBar(
+        g: Graphics2D,
+        yPos: Int,
+        height: Int,
+        width: Int,
+        game: Game,
+    ) {
+        g.color = Color(30, 30, 30)
+        g.fillRect(0, yPos, width, height)
+
+        var finalText = "FINAL"
+        if (game.quarter >= 6) {
+            finalText += "/${game.quarter - 4} OT"
+        } else if (game.quarter == 5) {
+            finalText += "/OT"
+        }
+
+        g.color = Color.WHITE
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 34f)
+        val ascent = g.fontMetrics.ascent
+        val textWidth = g.fontMetrics.stringWidth(finalText)
+        g.drawString(finalText, (width - textWidth) / 2, yPos + height / 2 + ascent / 2)
+    }
+
+    // ==================== POSTSEASON SCOREBUG ====================
+
+    /**
+     * Generates a postseason-style scorebug with game logo and gold accents for playoffs
+     */
+    private fun generatePostseasonScorebug(game: Game): BufferedImage {
+        val homeTeam = teamService.getTeamByName(game.homeTeam)
+        val awayTeam = teamService.getTeamByName(game.awayTeam)
+
+        val isPlayoff =
+            game.gameType == GameType.PLAYOFFS || game.gameType == GameType.NATIONAL_CHAMPIONSHIP
+
+        val width = 360
+        val headerHeight = 60
+        val height = 400 + headerHeight
+        val rowHeight = 70
+        val image = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
+        val g: Graphics2D = image.createGraphics()
+
+        g.stroke = BasicStroke(2f)
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+        g.composite = AlphaComposite.Clear
+        g.fillRect(0, 0, width, height)
+        g.composite = AlphaComposite.Src
+
+        // Draw header with game logo
+        drawPostseasonHeader(g, game, homeTeam, awayTeam, width, headerHeight, isPlayoff)
+
+        // Offset all existing sections by headerHeight
+        val adjustedRowHeightForTeamName = rowHeight - 5
+        val adjustedRowHeightForTeamScore = rowHeight + 5
+
+        drawTeamScoreSection(g, game, awayTeam, 65 + headerHeight, adjustedRowHeightForTeamScore)
+        drawTeamScoreSection(g, game, homeTeam, 205 + headerHeight, adjustedRowHeightForTeamScore)
+
+        drawTeamNameSection(g, game, awayTeam, width, 0 + headerHeight, adjustedRowHeightForTeamName)
+        drawTeamNameSection(g, game, homeTeam, width, 140 + headerHeight, adjustedRowHeightForTeamName)
+
+        if (game.gameStatus != GameStatus.FINAL) {
+            drawPostseasonClockSection(g, rowHeight - 10, game, homeTeam, awayTeam, headerHeight)
+            drawPostseasonDownSection(g, rowHeight - 10, game, headerHeight)
+        } else {
+            drawPostseasonFinalSection(g, (rowHeight - 10) * 2, game, headerHeight)
+        }
+
+        // Draw border - gold for playoffs, white otherwise
+        if (isPlayoff) {
+            drawPostseasonBorder(g, width, height, Color(212, 175, 55))
+        } else {
+            drawBorder(g, width, height)
+        }
+
+        g.dispose()
+        return scaleImage(image, width, height)
+    }
+
+    /**
+     * Draws the postseason header with game logo or conference logos
+     */
+    private fun drawPostseasonHeader(
+        g: Graphics2D,
+        game: Game,
+        homeTeam: Team,
+        awayTeam: Team,
+        width: Int,
+        headerHeight: Int,
+        isPlayoff: Boolean,
+    ) {
+        // Header background
+        val bgColor = if (isPlayoff) Color(25, 25, 25) else Color(40, 40, 40)
+        g.color = bgColor
+        g.fillRect(0, 0, width, headerHeight)
+
+        val textColor = if (isPlayoff) Color(212, 175, 55) else Color.WHITE
+        val gameName = game.postseasonGameName ?: game.gameType?.description ?: "Postseason"
+        val logoSize = headerHeight - 10
+
+        // Try to load the postseason game logo (left-aligned)
+        var logoLoaded = false
+        val gameLogoUrl = game.postseasonGameLogo
+        if (gameLogoUrl != null) {
+            try {
+                val gameLogo = ImageIO.read(URI(gameLogoUrl).toURL())
+                val logoWidth = (gameLogo.width.toDouble() / gameLogo.height * logoSize).toInt()
+                g.drawImage(gameLogo, 8, 5, logoWidth, logoSize, null)
+                logoLoaded = true
+
+                // Game name to the right of the logo
+                g.color = textColor
+                g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 22f)
+                val ascent = g.fontMetrics.ascent
+                g.drawString(gameName, logoWidth + 18, headerHeight / 2 + ascent / 2)
+                return
+            } catch (e: IOException) {
+                Logger.error("Error loading postseason game logo: ${e.message}")
+            }
+        }
+
+        // Fallback for conference championship: conference logo left, game name right
+        if (!logoLoaded && game.gameType == GameType.CONFERENCE_CHAMPIONSHIP) {
+            val confLogoSize = logoSize
+            val conf = homeTeam.conference ?: awayTeam.conference
+            if (conf?.logoUrl != null) {
+                drawConferenceLogo(g, conf, 8, 5, confLogoSize, confLogoSize)
+                g.color = textColor
+                g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 22f)
+                val ascent = g.fontMetrics.ascent
+                g.drawString(gameName, confLogoSize + 18, headerHeight / 2 + ascent / 2)
+                return
+            }
+        }
+
+        // Fallback: game name centered
+        g.color = textColor
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 24f)
+        val ascent = g.fontMetrics.ascent
+        val textWidth = g.fontMetrics.stringWidth(gameName)
+        g.drawString(gameName, (width - textWidth) / 2, headerHeight / 2 + ascent / 2)
+    }
+
+    /**
+     * Draws a conference logo at the given position
+     */
+    private fun drawConferenceLogo(
+        g: Graphics2D,
+        conference: Conference?,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+    ) {
+        val logoUrl = conference?.logoUrl ?: return
+        try {
+            val logo = ImageIO.read(URI(logoUrl).toURL())
+            g.drawImage(logo, x, y, width, height, null)
+        } catch (e: IOException) {
+            Logger.error("Error loading conference logo for ${conference.name}: ${e.message}")
+        }
+    }
+
+    /**
+     * Draws a gold/colored border for postseason scorebugs
+     */
+    private fun drawPostseasonBorder(
+        g: Graphics2D,
+        width: Int,
+        height: Int,
+        borderColor: Color,
+    ) {
+        g.color = borderColor
+        g.stroke = BasicStroke(4f)
+        g.drawLine(0, 0, width, 0)
+        g.drawLine(0, 0, 0, height)
+        g.drawLine(width - 1, 0, width - 3, height)
+        g.drawLine(0, height - 1, width, height - 3)
+    }
+
+    /**
+     * Draws the clock section for the postseason scorebug (offset by header)
+     */
+    private fun drawPostseasonClockSection(
+        g: Graphics2D,
+        rowHeight: Int,
+        game: Game,
+        homeTeam: Team,
+        awayTeam: Team,
+        headerOffset: Int,
+    ) {
+        val rowY = 280 + headerOffset
+
+        var xPos = 0
+        g.color = Color(255, 255, 255)
+        g.fillRect(xPos, rowY, 126, rowHeight)
+
+        val quarterText = getQuarterText(game.quarter)
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 40f)
+        val quarterTextAscent = g.fontMetrics.ascent
+        g.color = Color.BLACK
+        g.drawString(
+            quarterText,
+            xPos + (100 - g.fontMetrics.stringWidth(quarterText)) / 2,
+            rowY + rowHeight / 2 + quarterTextAscent / 2,
+        )
+
+        xPos = 100
+        g.color = Color(255, 255, 255)
+        g.fillRect(xPos, rowY, 160, rowHeight)
+
+        val clockText = getClockText(game.quarter, game.clock)
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 40f)
+        val clockTextAscent = g.fontMetrics.ascent
+        g.color = Color.BLACK
+        g.drawString(
+            clockText,
+            xPos + (160 - g.fontMetrics.stringWidth(clockText)) / 2,
+            rowY + rowHeight / 2 + clockTextAscent / 2,
+        )
+
+        xPos = 260
+        g.color = Color(255, 255, 255)
+        g.fillRect(xPos, rowY, 100, rowHeight)
+
+        val ballLocationText =
+            getBallLocationText(
+                homeTeam.name ?: "",
+                awayTeam.name ?: "",
+                homeTeam.abbreviation,
+                awayTeam.abbreviation,
+                game.ballLocation,
+                game.possession,
+            )
+        var fontSize = 29
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, fontSize.toFloat())
+        var textWidth = g.fontMetrics.stringWidth(ballLocationText)
+        val ballLocationTextAscent = g.fontMetrics.ascent
+
+        while (textWidth > 85 && fontSize > 10) {
+            fontSize -= 2
+            g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, fontSize.toFloat())
+            textWidth = g.fontMetrics.stringWidth(ballLocationText)
+        }
+
+        g.color = Color.BLACK
+        g.drawString(ballLocationText, xPos + (100 - textWidth) / 2, rowY + (rowHeight) / 2 + ballLocationTextAscent / 2)
+
+        val verticalLineX = 100
+        g.color = Color.LIGHT_GRAY
+        g.stroke = BasicStroke(3f)
+        g.drawLine(verticalLineX, rowY + rowHeight, verticalLineX, rowY + (rowHeight / 2))
+
+        val verticalLineX2 = 260
+        g.color = Color.LIGHT_GRAY
+        g.stroke = BasicStroke(3f)
+        g.drawLine(verticalLineX2, rowY + rowHeight, verticalLineX2, rowY + (rowHeight / 2))
+
+        g.color = Color.LIGHT_GRAY
+        g.stroke = BasicStroke(3f)
+        g.drawLine(0, rowY, 360, rowY)
+
+        g.color = Color.LIGHT_GRAY
+        g.stroke = BasicStroke(3f)
+        g.drawLine(0, rowY + rowHeight, 360, rowY + rowHeight)
+    }
+
+    /**
+     * Draws the down & distance section for the postseason scorebug (offset by header)
+     */
+    private fun drawPostseasonDownSection(
+        g: Graphics2D,
+        rowHeight: Int,
+        game: Game,
+        headerOffset: Int,
+    ) {
+        val rowY = 340 + headerOffset
+        g.color = Color(255, 255, 255)
+        g.fillRect(0, rowY, 360, rowHeight)
+        g.color = Color.LIGHT_GRAY
+        g.stroke = BasicStroke(3f)
+        g.drawRect(0, rowY, 360, rowHeight)
+
+        val downDistanceText = getDownDistanceText(game)
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 43f)
+        val ascent = g.fontMetrics.ascent
+        g.color = Color.BLACK
+        g.drawString(downDistanceText, 10, rowY + rowHeight / 2 + ascent / 2)
+    }
+
+    /**
+     * Draws the final section for the postseason scorebug (offset by header)
+     */
+    private fun drawPostseasonFinalSection(
+        g: Graphics2D,
+        rowHeight: Int,
+        game: Game,
+        headerOffset: Int,
+    ) {
+        val rowY = 280 + headerOffset
+        g.color = Color(255, 255, 255)
+        g.fillRect(0, rowY, 360, rowHeight)
+        g.color = Color.LIGHT_GRAY
+        g.stroke = BasicStroke(3f)
+        g.drawRect(0, rowY, 360, rowHeight)
+
+        var finalText = "FINAL"
+        if (game.quarter >= 6) {
+            finalText += "/${game.quarter - 4} OT"
+        } else if (game.quarter == 5) {
+            finalText += "/OT"
+        }
+        g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.BOLD, 43f)
+        val ascent = g.fontMetrics.ascent
+        g.color = Color.BLACK
+        g.drawString(finalText, 10, rowY + rowHeight / 2 + ascent / 2)
+    }
+
+    // ==================== SHARED HELPERS ====================
 
     private fun getSansFont(g: Graphics2D): InputStream? {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
