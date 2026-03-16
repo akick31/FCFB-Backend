@@ -49,11 +49,7 @@ class UserService(
             val isWin = if (isHomeUser) game.homeScore > game.awayScore else game.awayScore > game.homeScore
             val gameType = game.gameType
 
-            if (isHomeUser) {
-                updateUserRecord(user, gameType ?: GameType.SCRIMMAGE, isWin)
-            } else {
-                updateUserRecord(user, gameType ?: GameType.SCRIMMAGE, !isWin)
-            }
+            updateUserRecord(user, gameType ?: GameType.SCRIMMAGE, isWin)
         }
     }
 

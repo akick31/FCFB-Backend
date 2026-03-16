@@ -3,7 +3,6 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.dto.UserDTO
 import com.fcfb.arceus.dto.UserValidationRequest
 import com.fcfb.arceus.service.fcfb.UserService
-import com.fcfb.arceus.util.EncryptionUtils
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/user")
 class UserController(
     private var userService: UserService,
-    private var encryptionUtils: EncryptionUtils,
 ) {
     @GetMapping("{userId:[0-9]+}")
     fun getUserById(
@@ -61,11 +59,6 @@ class UserController(
 
     @PostMapping("/hash_emails")
     fun encryptEmails() = userService.hashEmails()
-
-    @GetMapping(value = ["/decrypt-emails", "/decrypt_emails"])
-    fun decryptEmails(
-        @RequestParam email: String,
-    ) = encryptionUtils.decrypt(email)
 
     @PostMapping("/validate")
     fun validateUser(
