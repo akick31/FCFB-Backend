@@ -392,10 +392,12 @@ class ScorebugService(
         g.color = Color(255, 255, 255)
         g.drawString(record, width - 10 - g.fontMetrics.stringWidth(record), yPos + rowHeight / 2 + 10)
 
-        // Horizontal line to span the entire width between teams
-        g.color = Color(255, 255, 255)
-        g.stroke = BasicStroke(3f)
-        g.drawLine(0, 140, width, 140)
+        // Horizontal line to span the entire width between teams (drawn at home team's yPos)
+        if (team.name == game.homeTeam) {
+            g.color = Color(255, 255, 255)
+            g.stroke = BasicStroke(3f)
+            g.drawLine(0, yPos, width, yPos)
+        }
     }
 
     private fun drawTimeoutBoxes(
