@@ -1257,7 +1257,7 @@ class ScorebugService(
         g.color = bgColor
         g.fillRect(0, 0, width, headerHeight)
 
-        val textColor = if (isPlayoff) Color(212, 175, 55) else Color.WHITE
+        val textColor = Color.WHITE
         val gameName = game.postseasonGameName ?: game.gameType?.description ?: "Postseason"
         val logoSize = headerHeight - 10
 

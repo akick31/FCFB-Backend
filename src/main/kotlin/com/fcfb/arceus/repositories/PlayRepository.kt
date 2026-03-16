@@ -94,4 +94,26 @@ interface PlayRepository : CrudRepository<Play, Int> {
     fun findByResult(result: Scenario): List<Play>
 
     fun findByPlayFinished(playFinished: Boolean): List<Play>
+
+    @Query(
+        value =
+            "SELECT " +
+                "CASE " +
+                "WHEN p.result = 'DELAY OF GAME ON HOME TEAM' THEN p.home_team " +
+                "WHEN p.result = 'DELAY OF GAME ON AWAY TEAM' THEN p.away_team " +
+                "END AS team, " +
+                "COUNT(*) AS dog_count " +
+                "FROM play p " +
+                "JOIN game g ON p.game_id = g.game_id " +
+                "WHERE g.season = :season " +
+                "AND g.week = :week " +
+                "AND p.result IN ('DELAY OF GAME ON HOME TEAM', 'DELAY OF GAME ON AWAY TEAM') " +
+                "GROUP BY team " +
+                "ORDER BY dog_count DESC",
+        nativeQuery = true,
+    )
+    fun getDelayOfGameCountsByWeek(
+        season: Int,
+        week: Int,
+    ): List<Array<Any>>
 }
