@@ -1226,11 +1226,12 @@ class ScorebugService(
         drawTeamNameSection(g, game, awayTeam, width, 0 + headerHeight, adjustedRowHeightForTeamName, dividerColor)
         drawTeamNameSection(g, game, homeTeam, width, 140 + headerHeight, adjustedRowHeightForTeamName, dividerColor)
 
+        val accentColor = if (isPlayoff) Color(212, 175, 55) else Color.LIGHT_GRAY
         if (game.gameStatus != GameStatus.FINAL) {
-            drawPostseasonClockSection(g, rowHeight - 10, game, homeTeam, awayTeam, headerHeight)
-            drawPostseasonDownSection(g, rowHeight - 10, game, headerHeight)
+            drawPostseasonClockSection(g, rowHeight - 10, game, homeTeam, awayTeam, headerHeight, accentColor)
+            drawPostseasonDownSection(g, rowHeight - 10, game, headerHeight, accentColor)
         } else {
-            drawPostseasonFinalSection(g, (rowHeight - 10) * 2, game, headerHeight)
+            drawPostseasonFinalSection(g, (rowHeight - 10) * 2, game, headerHeight, accentColor)
         }
 
         // Draw border - gold for playoffs, white otherwise
@@ -1355,6 +1356,7 @@ class ScorebugService(
         homeTeam: Team,
         awayTeam: Team,
         headerOffset: Int,
+        accentColor: Color = Color.LIGHT_GRAY,
     ) {
         val rowY = 280 + headerOffset
 
@@ -1414,20 +1416,20 @@ class ScorebugService(
         g.drawString(ballLocationText, xPos + (100 - textWidth) / 2, rowY + (rowHeight) / 2 + ballLocationTextAscent / 2)
 
         val verticalLineX = 100
-        g.color = Color.LIGHT_GRAY
+        g.color = accentColor
         g.stroke = BasicStroke(3f)
         g.drawLine(verticalLineX, rowY + rowHeight, verticalLineX, rowY + (rowHeight / 2))
 
         val verticalLineX2 = 260
-        g.color = Color.LIGHT_GRAY
+        g.color = accentColor
         g.stroke = BasicStroke(3f)
         g.drawLine(verticalLineX2, rowY + rowHeight, verticalLineX2, rowY + (rowHeight / 2))
 
-        g.color = Color.LIGHT_GRAY
+        g.color = accentColor
         g.stroke = BasicStroke(3f)
         g.drawLine(0, rowY, 360, rowY)
 
-        g.color = Color.LIGHT_GRAY
+        g.color = accentColor
         g.stroke = BasicStroke(3f)
         g.drawLine(0, rowY + rowHeight, 360, rowY + rowHeight)
     }
@@ -1440,11 +1442,12 @@ class ScorebugService(
         rowHeight: Int,
         game: Game,
         headerOffset: Int,
+        accentColor: Color = Color.LIGHT_GRAY,
     ) {
         val rowY = 340 + headerOffset
         g.color = Color(255, 255, 255)
         g.fillRect(0, rowY, 360, rowHeight)
-        g.color = Color.LIGHT_GRAY
+        g.color = accentColor
         g.stroke = BasicStroke(3f)
         g.drawRect(0, rowY, 360, rowHeight)
 
@@ -1463,11 +1466,12 @@ class ScorebugService(
         rowHeight: Int,
         game: Game,
         headerOffset: Int,
+        accentColor: Color = Color.LIGHT_GRAY,
     ) {
         val rowY = 280 + headerOffset
         g.color = Color(255, 255, 255)
         g.fillRect(0, rowY, 360, rowHeight)
-        g.color = Color.LIGHT_GRAY
+        g.color = accentColor
         g.stroke = BasicStroke(3f)
         g.drawRect(0, rowY, 360, rowHeight)
 
