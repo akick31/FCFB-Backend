@@ -320,6 +320,7 @@ class ScorebugService(
         width: Int,
         yPos: Int,
         rowHeight: Int,
+        dividerColor: Color = Color.WHITE,
     ) {
         drawTeamSection(g, Color.decode(team.primaryColor), yPos, rowHeight)
         val teamRanking = if (team.name == game.homeTeam) game.homeTeamRank else game.awayTeamRank
@@ -394,7 +395,7 @@ class ScorebugService(
 
         // Horizontal line to span the entire width between teams (drawn at home team's yPos)
         if (team.name == game.homeTeam) {
-            g.color = Color(255, 255, 255)
+            g.color = dividerColor
             g.stroke = BasicStroke(3f)
             g.drawLine(0, yPos, width, yPos)
         }
@@ -1221,8 +1222,9 @@ class ScorebugService(
         drawTeamScoreSection(g, game, awayTeam, 65 + headerHeight, adjustedRowHeightForTeamScore)
         drawTeamScoreSection(g, game, homeTeam, 205 + headerHeight, adjustedRowHeightForTeamScore)
 
-        drawTeamNameSection(g, game, awayTeam, width, 0 + headerHeight, adjustedRowHeightForTeamName)
-        drawTeamNameSection(g, game, homeTeam, width, 140 + headerHeight, adjustedRowHeightForTeamName)
+        val dividerColor = if (isPlayoff) Color(212, 175, 55) else Color.WHITE
+        drawTeamNameSection(g, game, awayTeam, width, 0 + headerHeight, adjustedRowHeightForTeamName, dividerColor)
+        drawTeamNameSection(g, game, homeTeam, width, 140 + headerHeight, adjustedRowHeightForTeamName, dividerColor)
 
         if (game.gameStatus != GameStatus.FINAL) {
             drawPostseasonClockSection(g, rowHeight - 10, game, homeTeam, awayTeam, headerHeight)
