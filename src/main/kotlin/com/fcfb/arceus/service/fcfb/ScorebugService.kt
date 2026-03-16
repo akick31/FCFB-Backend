@@ -1273,6 +1273,7 @@ class ScorebugService(
             try {
                 val gameLogo = ImageIO.read(URI(gameLogoUrl).toURL())
                 val logoWidth = (gameLogo.width.toDouble() / gameLogo.height * logoSize).toInt()
+                g.composite = AlphaComposite.SrcOver
                 g.drawImage(gameLogo, 8, 5, logoWidth, logoSize, null)
                 logoLoaded = true
 
@@ -1323,6 +1324,7 @@ class ScorebugService(
         val logoUrl = conference?.logoUrl ?: return
         try {
             val logo = ImageIO.read(URI(logoUrl).toURL())
+            g.composite = AlphaComposite.SrcOver
             g.drawImage(logo, x, y, width, height, null)
         } catch (e: IOException) {
             Logger.error("Error loading conference logo for ${conference.name}: ${e.message}")
