@@ -219,6 +219,7 @@ class GameService(
                             homeVegasSpread = vegasOdds.homeSpread,
                             awayVegasSpread = vegasOdds.awaySpread,
                             postseasonGameLogo = startRequest.postseasonGameLogo,
+                            postseasonGameName = startRequest.postseasonGameName,
                         ),
                     )
                 }
@@ -729,6 +730,7 @@ class GameService(
                             game.tvChannel,
                             game.gameType,
                             game.postseasonGameLogo,
+                            game.bowlGameName,
                         ),
                         week,
                     )
@@ -774,6 +776,7 @@ class GameService(
                         tvChannel = game.tvChannel,
                         gameType = game.gameType,
                         postseasonGameLogo = game.postseasonGameLogo,
+                        postseasonGameName = game.bowlGameName,
                         error = errorMsg,
                     ),
                 )
@@ -889,6 +892,7 @@ class GameService(
                             failed.tvChannel,
                             failed.gameType,
                             failed.postseasonGameLogo,
+                            failed.postseasonGameName,
                         ),
                         week,
                     )
@@ -931,6 +935,7 @@ class GameService(
                         tvChannel = failed.tvChannel,
                         gameType = failed.gameType,
                         postseasonGameLogo = failed.postseasonGameLogo,
+                        postseasonGameName = failed.postseasonGameName,
                         error = errorMsg,
                     ),
                 )

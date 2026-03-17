@@ -147,11 +147,11 @@ class GameStatsService(
         allPlays: List<Play>,
     ): List<GameStats> {
         var homeStats = getGameStatsByIdAndTeam(game.gameId, game.homeTeam)
-        updateScoreStats(allPlays, homeStats)
+        updateScoreStats(allPlays, homeStats, TeamSide.HOME)
         homeStats = updateStats(allPlays, TeamSide.HOME, game, homeStats)
 
         var awayStats = getGameStatsByIdAndTeam(game.gameId, game.awayTeam)
-        updateScoreStats(allPlays, awayStats)
+        updateScoreStats(allPlays, awayStats, TeamSide.AWAY)
         awayStats = updateStats(allPlays, TeamSide.AWAY, game, awayStats)
         return listOf(homeStats, awayStats)
     }
@@ -290,22 +290,30 @@ class GameStatsService(
     private fun updateScoreStats(
         allPlays: List<Play>,
         stats: GameStats,
+        teamSide: TeamSide,
     ) {
+        // Reset quarter scores before recalculating from all plays
+        stats.q1Score = 0
+        stats.q2Score = 0
+        stats.q3Score = 0
+        stats.q4Score = 0
+        stats.otScore = 0
+
         for (play in allPlays) {
             if (play.quarter == 1) {
-                stats.q1Score = calculateQuarterScore(play, stats.q1Score, play.possession)
+                stats.q1Score = calculateQuarterScore(play, stats.q1Score, teamSide)
             }
             if (play.quarter == 2) {
-                stats.q2Score = calculateQuarterScore(play, stats.q2Score, play.possession)
+                stats.q2Score = calculateQuarterScore(play, stats.q2Score, teamSide)
             }
             if (play.quarter == 3) {
-                stats.q3Score = calculateQuarterScore(play, stats.q3Score, play.possession)
+                stats.q3Score = calculateQuarterScore(play, stats.q3Score, teamSide)
             }
             if (play.quarter == 4) {
-                stats.q4Score = calculateQuarterScore(play, stats.q4Score, play.possession)
+                stats.q4Score = calculateQuarterScore(play, stats.q4Score, teamSide)
             }
             if (play.quarter == 5) {
-                stats.otScore = calculateQuarterScore(play, stats.otScore, play.possession)
+                stats.otScore = calculateQuarterScore(play, stats.otScore, teamSide)
             }
         }
     }
