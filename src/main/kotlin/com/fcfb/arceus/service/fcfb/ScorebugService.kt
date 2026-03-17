@@ -210,12 +210,12 @@ class ScorebugService(
         val renderer: ScorebugRenderer =
             when {
                 game.gameType in postseasonGameTypes -> postseasonRenderer
-                game.tvChannel in foxChannels -> foxRenderer
-                game.tvChannel in cbsChannels -> cbsRenderer
-                game.tvChannel in tntChannels -> tntRenderer
-                game.tvChannel in nbcChannels -> nbcRenderer
-                game.tvChannel in cwChannels -> cwRenderer
-                game.tvChannel in pacTwelveChannels -> pacTwelveRenderer
+                game.tvChannel in foxChannels -> espnRenderer
+                game.tvChannel in cbsChannels -> espnRenderer
+                game.tvChannel in tntChannels -> espnRenderer
+                game.tvChannel in nbcChannels -> espnRenderer
+                game.tvChannel in cwChannels -> espnRenderer
+                game.tvChannel in pacTwelveChannels -> espnRenderer
                 else -> espnRenderer
             }
 
