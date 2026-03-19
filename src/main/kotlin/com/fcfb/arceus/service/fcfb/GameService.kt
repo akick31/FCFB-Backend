@@ -1020,6 +1020,13 @@ class GameService(
     private fun endGame(game: Game): Game {
         try {
             game.gameStatus = GameStatus.FINAL
+
+            // Set final win probability to 100% for the winning team
+            val homeWon = (game.homeScore ?: 0) > (game.awayScore ?: 0)
+            val possessionIsHome = game.possession == TeamSide.HOME
+            game.winProbability =
+                if (homeWon == possessionIsHome) 1.0 else 0.0
+
             if (game.gameType != GameType.SCRIMMAGE) {
                 teamService.updateTeamWinsAndLosses(game)
                 userService.updateUserWinsAndLosses(game)
