@@ -12,6 +12,7 @@ import com.fcfb.arceus.dto.ScheduleGenJobResponse
 import com.fcfb.arceus.dto.ScheduleGenJobStatus
 import com.fcfb.arceus.dto.ScheduleGenLog
 import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.model.ConferenceRules
@@ -229,14 +230,26 @@ class ScheduleService(
         schedule.subdivision = entry.subdivision
         schedule.homeTeam = entry.homeTeam
         schedule.awayTeam = entry.awayTeam
-        schedule.tvChannel = entry.tvChannel
+        schedule.tvChannel =
+            if (
+                entry.gameType in
+                listOf(
+                    GameType.BOWL,
+                    GameType.PLAYOFFS,
+                    GameType.NATIONAL_CHAMPIONSHIP,
+                )
+            ) {
+                TVChannel.ESPN
+            } else {
+                entry.tvChannel
+            }
         schedule.gameType = entry.gameType
         schedule.started = false
         schedule.finished = false
         schedule.playoffRound = entry.playoffRound
         schedule.playoffHomeSeed = entry.playoffHomeSeed
         schedule.playoffAwaySeed = entry.playoffAwaySeed
-        schedule.bowlGameName = entry.bowlGameName
+        schedule.postseasonGameName = entry.postseasonGameName
         schedule.postseasonGameLogo = entry.postseasonGameLogo
         val saved = scheduleRepository.save(schedule)
         Logger.info("Created schedule entry: ${entry.homeTeam} vs ${entry.awayTeam} (Season ${entry.season}, Week ${entry.week})")
@@ -295,14 +308,21 @@ class ScheduleService(
                 schedule.subdivision = entry.subdivision
                 schedule.homeTeam = entry.homeTeam
                 schedule.awayTeam = entry.awayTeam
-                schedule.tvChannel = entry.tvChannel
+                schedule.tvChannel =
+                    if (
+                        entry.gameType in listOf(GameType.BOWL, GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP)
+                    ) {
+                        TVChannel.ESPN
+                    } else {
+                        entry.tvChannel
+                    }
                 schedule.gameType = entry.gameType
                 schedule.started = false
                 schedule.finished = false
                 schedule.playoffRound = entry.playoffRound
                 schedule.playoffHomeSeed = entry.playoffHomeSeed
                 schedule.playoffAwaySeed = entry.playoffAwaySeed
-                schedule.bowlGameName = entry.bowlGameName
+                schedule.postseasonGameName = entry.postseasonGameName
                 schedule.postseasonGameLogo = entry.postseasonGameLogo
                 schedule
             }
@@ -341,12 +361,22 @@ class ScheduleService(
         schedule.subdivision = entry.subdivision
         schedule.homeTeam = entry.homeTeam
         schedule.awayTeam = entry.awayTeam
-        schedule.tvChannel = entry.tvChannel
+        schedule.tvChannel =
+            if (entry.gameType in
+                listOf(
+                    GameType.BOWL, GameType.PLAYOFFS,
+                    GameType.NATIONAL_CHAMPIONSHIP,
+                )
+            ) {
+                TVChannel.ESPN
+            } else {
+                entry.tvChannel
+            }
         schedule.gameType = entry.gameType
         schedule.playoffRound = entry.playoffRound
         schedule.playoffHomeSeed = entry.playoffHomeSeed
         schedule.playoffAwaySeed = entry.playoffAwaySeed
-        schedule.bowlGameName = entry.bowlGameName
+        schedule.postseasonGameName = entry.postseasonGameName
         schedule.postseasonGameLogo = entry.postseasonGameLogo
         val saved = scheduleRepository.save(schedule)
         Logger.info("Updated schedule entry $id: ${entry.homeTeam} vs ${entry.awayTeam}")

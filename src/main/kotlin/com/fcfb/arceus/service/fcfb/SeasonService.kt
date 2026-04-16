@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Season
@@ -179,9 +180,9 @@ class SeasonService(
                         newGame.subdivision = sourceGame.subdivision
                         newGame.homeTeam = "TBD" // Teams will be filled in later
                         newGame.awayTeam = "TBD"
-                        newGame.tvChannel = sourceGame.tvChannel
+                        newGame.tvChannel = TVChannel.ESPN
                         newGame.gameType = GameType.BOWL
-                        newGame.bowlGameName = sourceGame.bowlGameName // Preserve bowl game name
+                        newGame.postseasonGameName = sourceGame.postseasonGameName // Preserve postseason game name
                         newGame.postseasonGameLogo = sourceGame.postseasonGameLogo // Preserve postseason logo
                         newGame.started = false
                         newGame.finished = false
