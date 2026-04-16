@@ -12,6 +12,7 @@ import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.GameService
+import com.fcfb.arceus.service.fcfb.GameStatsService
 import com.fcfb.arceus.service.fcfb.PlayService
 import com.fcfb.arceus.service.fcfb.ScorebugService
 import com.fcfb.arceus.service.fcfb.UserService
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service
 @Service
 class DelayOfGameMonitor(
     private val gameService: GameService,
+    private val gameStatsService: GameStatsService,
     private val userService: UserService,
     private val playService: PlayService,
     private val discordService: DiscordService,
@@ -70,6 +72,8 @@ class DelayOfGameMonitor(
             if (isDelayOfGameOut) {
                 gameService.endDOGOutGame(updatedGame, delayOfGameInstances)
             }
+            val allPlays = playRepository.getAllPlaysByGameId(updatedGame.gameId)
+            gameStatsService.updateGameStats(updatedGame, allPlays)
             discordService.notifyDelayOfGame(updatedGame, isDelayOfGameOut)
             Logger.info("A delay of game for game ${game.gameId} has been processed")
         }

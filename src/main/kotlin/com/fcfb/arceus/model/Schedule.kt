@@ -85,8 +85,8 @@ class Schedule {
     var gameId: Int? = null
 
     @Basic
-    @Column(name = "bowl_game_name")
-    var bowlGameName: String? = null
+    @Column(name = "postseason_game_name")
+    var postseasonGameName: String? = null
 
     @Basic
     @Column(name = "postseason_game_logo")

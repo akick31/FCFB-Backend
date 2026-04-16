@@ -17,7 +17,7 @@ data class ScheduleEntry(
     @JsonProperty("playoffRound") val playoffRound: Int? = null,
     @JsonProperty("playoffHomeSeed") val playoffHomeSeed: Int? = null,
     @JsonProperty("playoffAwaySeed") val playoffAwaySeed: Int? = null,
-    @JsonProperty("bowlGameName") val bowlGameName: String? = null,
+    @JsonProperty("postseasonGameName") val postseasonGameName: String? = null,
     @JsonProperty("postseasonGameLogo") val postseasonGameLogo: String? = null,
 )
 

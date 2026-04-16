@@ -933,6 +933,15 @@ class GameStatsService(
         currentQuarterScore: Int,
         possession: TeamSide,
     ): Int {
+        if (play.actualResult == ActualResult.DELAY_OF_GAME) {
+            if (play.result == Scenario.DELAY_OF_GAME_HOME && possession == TeamSide.AWAY) {
+                return currentQuarterScore + 8
+            }
+            if (play.result == Scenario.DELAY_OF_GAME_AWAY && possession == TeamSide.HOME) {
+                return currentQuarterScore + 8
+            }
+            return currentQuarterScore
+        }
         if (play.possession == possession) {
             if (play.actualResult == ActualResult.TOUCHDOWN || play.actualResult == ActualResult.KICKING_TEAM_TOUCHDOWN ||
                 play.actualResult == ActualResult.PUNT_RETURN_TOUCHDOWN

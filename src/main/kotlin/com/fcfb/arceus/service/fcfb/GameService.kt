@@ -730,7 +730,7 @@ class GameService(
                             game.tvChannel,
                             game.gameType,
                             game.postseasonGameLogo,
-                            game.bowlGameName,
+                            game.postseasonGameName,
                         ),
                         week,
                     )
@@ -776,7 +776,7 @@ class GameService(
                         tvChannel = game.tvChannel,
                         gameType = game.gameType,
                         postseasonGameLogo = game.postseasonGameLogo,
-                        postseasonGameName = game.bowlGameName,
+                        postseasonGameName = game.postseasonGameName,
                         error = errorMsg,
                     ),
                 )
