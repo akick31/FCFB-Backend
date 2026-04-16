@@ -230,7 +230,19 @@ class ScheduleService(
         schedule.subdivision = entry.subdivision
         schedule.homeTeam = entry.homeTeam
         schedule.awayTeam = entry.awayTeam
-        schedule.tvChannel = if (entry.gameType in listOf(GameType.BOWL, GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP)) TVChannel.ESPN else entry.tvChannel
+        schedule.tvChannel =
+            if (
+                entry.gameType in
+                listOf(
+                    GameType.BOWL,
+                    GameType.PLAYOFFS,
+                    GameType.NATIONAL_CHAMPIONSHIP,
+                )
+            ) {
+                TVChannel.ESPN
+            } else {
+                entry.tvChannel
+            }
         schedule.gameType = entry.gameType
         schedule.started = false
         schedule.finished = false
@@ -296,7 +308,14 @@ class ScheduleService(
                 schedule.subdivision = entry.subdivision
                 schedule.homeTeam = entry.homeTeam
                 schedule.awayTeam = entry.awayTeam
-                schedule.tvChannel = if (entry.gameType in listOf(GameType.BOWL, GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP)) TVChannel.ESPN else entry.tvChannel
+                schedule.tvChannel =
+                    if (
+                        entry.gameType in listOf(GameType.BOWL, GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP)
+                    ) {
+                        TVChannel.ESPN
+                    } else {
+                        entry.tvChannel
+                    }
                 schedule.gameType = entry.gameType
                 schedule.started = false
                 schedule.finished = false
@@ -342,7 +361,17 @@ class ScheduleService(
         schedule.subdivision = entry.subdivision
         schedule.homeTeam = entry.homeTeam
         schedule.awayTeam = entry.awayTeam
-        schedule.tvChannel = if (entry.gameType in listOf(GameType.BOWL, GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP)) TVChannel.ESPN else entry.tvChannel
+        schedule.tvChannel =
+            if (entry.gameType in
+                listOf(
+                    GameType.BOWL, GameType.PLAYOFFS,
+                    GameType.NATIONAL_CHAMPIONSHIP,
+                )
+            ) {
+                TVChannel.ESPN
+            } else {
+                entry.tvChannel
+            }
         schedule.gameType = entry.gameType
         schedule.playoffRound = entry.playoffRound
         schedule.playoffHomeSeed = entry.playoffHomeSeed
