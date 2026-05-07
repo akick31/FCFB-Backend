@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = 'fcfb-arceus-prd'
         CONTAINER_NAME = 'FCFB-Arceus-PRD'
+        CONTAINER_NAME_BLUE = 'FCFB-Arceus-PRD-BLUE'
         DOCKERFILE = 'Dockerfile_PRD'
         APP_PROPERTIES = './src/main/resources/application.properties'
         DB_URL = credentials('DB_URL')
@@ -52,18 +53,7 @@ pipeline {
                 }
             }
         }
-        stage('Stop and Remove Existing Bot') {
-            steps {
-                script {
-                    echo 'Stopping and removing the existing Arceus instance...'
-                    sh """
-                        docker stop ${CONTAINER_NAME} || echo "Arceus is not running."
-                        docker rm ${CONTAINER_NAME} || echo "No old Arceus instance to remove."
-                    """
-                }
-            }
-        }
-        
+
         stage('Build') {
             steps {
                 echo 'Creating the production properties file...'
@@ -148,17 +138,66 @@ pipeline {
             }
         }
 
-        stage('Run New Arceus Container') {
+        stage('Start Blue Container') {
+            steps {
+                sh "docker rm -f ${CONTAINER_NAME_BLUE} || true"
+                sh """
+                    docker run -d --name ${CONTAINER_NAME_BLUE} \\
+                        -p 11412:1212 \\
+                        -v /var/images:/app/images \\
+                        --env-file ${APP_PROPERTIES} \\
+                        ${IMAGE_NAME}:${DOCKERFILE}
+                """
+            }
+        }
+
+        stage('Health Check') {
             steps {
                 script {
-                    echo 'Starting the new Arceus container...'
-                    sh """
-                        docker run --network="host" -d --restart=always --name ${CONTAINER_NAME} \\
-                            -v /var/images:/app/images \\
-                            --env-file ${APP_PROPERTIES} \\
-                            ${IMAGE_NAME}:${DOCKERFILE}
-                    """
+                    sleep(time: 40, unit: 'SECONDS')
+                    def healthy = false
+                    def attempts = 0
+                    def maxAttempts = 30
+                    while (!healthy && attempts < maxAttempts) {
+                        attempts++
+                        try {
+                            def status = sh(
+                                script: "docker exec ${env.CONTAINER_NAME_BLUE} curl -sf --max-time 15 http://127.0.0.1:1212/actuator/health -o /dev/null && echo OK || echo FAIL",
+                                returnStdout: true
+                            ).trim()
+                            if (status == 'OK') {
+                                healthy = true
+                                echo "Blue container is healthy (attempt ${attempts})"
+                            }
+                        } catch (e) {
+                            // not ready yet
+                        }
+                        if (!healthy) {
+                            echo "Waiting for health check... attempt ${attempts}/${maxAttempts}"
+                            sleep(time: 5, unit: 'SECONDS')
+                        }
+                    }
+                    if (!healthy) {
+                        sh "docker logs ${CONTAINER_NAME_BLUE} --tail=50"
+                        sh "docker rm -f ${CONTAINER_NAME_BLUE} || true"
+                        error("Blue container failed to become healthy after ${maxAttempts * 5}s - rolled back")
+                    }
                 }
+            }
+        }
+
+        stage('Swap Containers') {
+            steps {
+                sh """
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
+                    docker stop ${CONTAINER_NAME_BLUE} || true
+                    docker rm ${CONTAINER_NAME_BLUE} || true
+                    docker run --network="host" -d --restart=always --name ${CONTAINER_NAME} \\
+                        -v /var/images:/app/images \\
+                        --env-file ${APP_PROPERTIES} \\
+                        ${IMAGE_NAME}:${DOCKERFILE}
+                """
             }
         }
 
@@ -178,6 +217,7 @@ pipeline {
         }
         failure {
             echo 'An error occurred during the Arceus deployment.'
+            sh "docker rm -f ${CONTAINER_NAME_BLUE} || true"
         }
     }
 }
