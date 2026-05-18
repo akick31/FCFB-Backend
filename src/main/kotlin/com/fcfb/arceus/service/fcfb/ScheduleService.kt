@@ -45,6 +45,21 @@ class ScheduleService(
 ) {
     companion object {
         private val activeGenJobs = ConcurrentHashMap<String, ScheduleGenJob>()
+
+        private const val CFP_LOGO_URL =
+            "https://cfbuniform.com/wp-content/uploads/2025/03/Logo_of_college_football_playoff.svg.png"
+
+        private val QF_SEED_GROUPS = listOf(
+            listOf(1, 16, 17, 8, 9, 24),
+            listOf(4, 13, 20, 5, 12, 21),
+            listOf(3, 14, 19, 6, 11, 22),
+            listOf(2, 15, 18, 7, 10, 23),
+        )
+
+        private val SF_SEED_GROUPS = listOf(
+            listOf(1, 16, 17, 8, 9, 24, 4, 13, 20, 5, 12, 21),
+            listOf(3, 14, 19, 6, 11, 22, 2, 15, 18, 7, 10, 23),
+        )
     }
 
     /**
@@ -103,6 +118,119 @@ class ScheduleService(
             }
         } catch (e: Exception) {
             Logger.error("Unable to mark game as finished", e)
+        }
+    }
+
+    fun advancePlayoffBracket(game: Game) {
+        try {
+            val finishedEntry = findGameInSchedule(game)
+            val currentRound = finishedEntry.playoffRound ?: return
+            if (currentRound !in 1..4) return
+
+            val season = game.season ?: return
+            val homeScore = game.homeScore ?: return
+            val awayScore = game.awayScore ?: return
+            if (homeScore == awayScore) return
+
+            val winner = if (homeScore > awayScore) game.homeTeam else game.awayTeam
+            val winnerSeed = if (winner == game.homeTeam) finishedEntry.playoffHomeSeed else finishedEntry.playoffAwaySeed
+
+            val nextRound = currentRound + 1
+            val nextWeek = 13 + nextRound
+            val nextGameType = if (nextRound >= 5) GameType.NATIONAL_CHAMPIONSHIP else GameType.PLAYOFFS
+            val nextRoundLabel = when (nextRound) {
+                2 -> "Second Round"
+                3 -> "Quarterfinal"
+                4 -> "Semifinal"
+                5 -> "National Championship"
+                else -> "Round $nextRound"
+            }
+
+            val allPlayoffGames = (scheduleRepository.getPostseasonSchedule(season) ?: emptyList())
+                .filter { it.gameType == GameType.PLAYOFFS || it.gameType == GameType.NATIONAL_CHAMPIONSHIP }
+
+            when (currentRound) {
+                1 -> {
+                    val byeSeed = 17 - (finishedEntry.playoffHomeSeed ?: return)
+                    val r2Entry = allPlayoffGames.find { it.playoffRound == 2 && it.playoffHomeSeed == byeSeed }
+                    if (r2Entry == null) {
+                        Logger.error("Auto-advance: no R2 placeholder found for bye seed $byeSeed in season $season")
+                        return
+                    }
+                    r2Entry.awayTeam = winner
+                    r2Entry.playoffAwaySeed = winnerSeed
+                    scheduleRepository.save(r2Entry)
+                }
+                2 -> {
+                    val groupSeeds = QF_SEED_GROUPS.find { it.contains(winnerSeed) } ?: return
+                    val existing = allPlayoffGames.find { g ->
+                        g.playoffRound == nextRound &&
+                        (isPlaceholder(g.homeTeam) || isPlaceholder(g.awayTeam)) &&
+                        (groupSeeds.contains(g.playoffHomeSeed) || groupSeeds.contains(g.playoffAwaySeed))
+                    }
+                    placeTeamInNextRound(existing, winner, winnerSeed, nextRound, nextWeek, nextGameType, nextRoundLabel, season)
+                }
+                3 -> {
+                    val groupSeeds = SF_SEED_GROUPS.find { it.contains(winnerSeed) } ?: return
+                    val existing = allPlayoffGames.find { g ->
+                        g.playoffRound == nextRound &&
+                        (isPlaceholder(g.homeTeam) || isPlaceholder(g.awayTeam)) &&
+                        (groupSeeds.contains(g.playoffHomeSeed) || groupSeeds.contains(g.playoffAwaySeed))
+                    }
+                    placeTeamInNextRound(existing, winner, winnerSeed, nextRound, nextWeek, nextGameType, nextRoundLabel, season)
+                }
+                4 -> {
+                    val existing = allPlayoffGames.find { g ->
+                        g.playoffRound == nextRound &&
+                        (isPlaceholder(g.homeTeam) || isPlaceholder(g.awayTeam))
+                    }
+                    placeTeamInNextRound(existing, winner, winnerSeed, nextRound, nextWeek, nextGameType, nextRoundLabel, season)
+                }
+            }
+
+            Logger.info("Auto-advanced $winner (#$winnerSeed) to $nextRoundLabel (Week $nextWeek, Season $season)")
+        } catch (e: Exception) {
+            Logger.error("Failed to auto-advance playoff bracket for game ${game.gameId}: ${e.message}")
+        }
+    }
+
+    private fun isPlaceholder(name: String) = name == "OPEN" || name == "TBD" || name.isBlank()
+
+    private fun placeTeamInNextRound(
+        existing: Schedule?,
+        winner: String,
+        winnerSeed: Int?,
+        nextRound: Int,
+        nextWeek: Int,
+        nextGameType: GameType,
+        nextRoundLabel: String,
+        season: Int,
+    ) {
+        if (existing != null) {
+            if (isPlaceholder(existing.homeTeam)) {
+                existing.homeTeam = winner
+                existing.playoffHomeSeed = winnerSeed
+            } else {
+                existing.awayTeam = winner
+                existing.playoffAwaySeed = winnerSeed
+            }
+            scheduleRepository.save(existing)
+        } else {
+            val newEntry = Schedule()
+            newEntry.season = season
+            newEntry.week = nextWeek
+            newEntry.subdivision = Subdivision.FBS
+            newEntry.homeTeam = winner
+            newEntry.awayTeam = "OPEN"
+            newEntry.gameType = nextGameType
+            newEntry.playoffRound = nextRound
+            newEntry.playoffHomeSeed = winnerSeed
+            newEntry.playoffAwaySeed = null
+            newEntry.postseasonGameLogo = CFP_LOGO_URL
+            newEntry.postseasonGameName = nextRoundLabel
+            newEntry.started = false
+            newEntry.finished = false
+            scheduleRepository.save(newEntry)
         }
     }
 

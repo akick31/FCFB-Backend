@@ -1069,6 +1069,9 @@ class GameService(
                 }
 
                 scheduleService.markGameAsFinished(game)
+                if (game.gameType == GameType.PLAYOFFS) {
+                    scheduleService.advancePlayoffBracket(game)
+                }
             }
             if (game.gameType == GameType.NATIONAL_CHAMPIONSHIP) {
                 seasonService.endSeason(game)
