@@ -142,7 +142,7 @@ pipeline {
             steps {
                 sh "docker rm -f ${CONTAINER_NAME_BLUE} || true"
                 sh """
-                    docker run -d --name ${CONTAINER_NAME_BLUE} \\
+                    docker run -d --memory=1536m --name ${CONTAINER_NAME_BLUE} \\
                         -p 11412:1212 \\
                         -v /var/images:/app/images \\
                         --env-file ${APP_PROPERTIES} \\
@@ -193,7 +193,7 @@ pipeline {
                     docker rm ${CONTAINER_NAME} || true
                     docker stop ${CONTAINER_NAME_BLUE} || true
                     docker rm ${CONTAINER_NAME_BLUE} || true
-                    docker run --network="host" -d --restart=always --name ${CONTAINER_NAME} \\
+                    docker run --network="host" -d --memory=1536m --restart=always --name ${CONTAINER_NAME} \\
                         -v /var/images:/app/images \\
                         --env-file ${APP_PROPERTIES} \\
                         ${IMAGE_NAME}:${DOCKERFILE}

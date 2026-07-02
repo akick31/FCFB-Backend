@@ -19,4 +19,4 @@ COPY ./build/libs/*.jar app.jar
 EXPOSE 1212
 
 # Set the entrypoint script
-ENTRYPOINT ["java", "-Djava.awt.headless=true", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx1024m", "-Djava.awt.headless=true", "-jar", "app.jar"]
