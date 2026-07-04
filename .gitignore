@@ -14,6 +14,7 @@ lib/
 
 ### Image ###
 *.png
+!src/main/resources/images/email/*.png
 
 ### STS ###
 .apt_generated
