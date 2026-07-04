@@ -299,19 +299,25 @@ class AuthControllerTest {
         val newPassword = "newPassword"
         val userId = 1L
 
+        val userEmail = "email@example.com"
+        val userUsername = "username"
         val user =
             mockk<User> {
                 every { id } returns userId
+                every { email } returns userEmail
+                every { username } returns userUsername
                 every { resetToken } returns token
                 every { resetTokenExpiration } returns LocalDateTime.now().plusDays(1).toString()
             }
 
         every { userService.getUserByResetToken(token) } returns user
         every { userService.updateUserPassword(userId, newPassword) } returns mockk<UserDTO>()
+        every { emailService.sendPasswordResetConfirmation(userEmail, userUsername) } just Runs
 
         val result = authService.resetPassword(token, newPassword)
 
         assertEquals(ResponseEntity.ok("Password updated successfully"), result)
+        verify { emailService.sendPasswordResetConfirmation(userEmail, userUsername) }
     }
 
     @Test
