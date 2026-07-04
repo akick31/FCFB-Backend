@@ -135,6 +135,7 @@ class AuthService(
         }
 
         userService.updateUserPassword(user.id, newPassword)
+        emailService.sendPasswordResetConfirmation(user.email, user.username)
         return ResponseEntity.ok("Password updated successfully")
     }
 }
