@@ -57,7 +57,7 @@ data class ConferenceRulesResponse(
     @JsonProperty("protectedRivalries") val protectedRivalries: List<ProtectedRivalry> = emptyList(),
 )
 
-// ===== Game Week Job DTOs =====
+// Game Week Job DTOs
 
 enum class GameWeekJobStatus {
     PENDING,
@@ -106,7 +106,7 @@ data class GameWeekJobResponse(
     @JsonProperty("message") val message: String,
 )
 
-// ===== Schedule Generation Job DTOs =====
+// Schedule Generation Job DTOs
 
 enum class ScheduleGenJobStatus {
     PENDING,

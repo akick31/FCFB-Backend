@@ -677,9 +677,7 @@ class ScheduleService(
         return result
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Matchup Selection Helpers
-    // ═══════════════════════════════════════════════════════════════════════
+    // Matchup Selection Helpers
 
     /**
      * Circle method: guaranteed to select exactly [numGames] matchups per team
@@ -836,9 +834,7 @@ class ScheduleService(
         return rounds
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Week Assignment (MRV + Backtracking)
-    // ═══════════════════════════════════════════════════════════════════════
+    // Week Assignment (MRV + Backtracking)
 
     /**
      * Assign each matchup to a week using **dynamic MRV + backtracking**.
@@ -932,9 +928,7 @@ class ScheduleService(
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Previous-Season Home/Away Lookup
-    // ═══════════════════════════════════════════════════════════════════════
+    // Previous-Season Home/Away Lookup
 
     /**
      * Build a map of sorted matchup key ("TeamA|TeamB") -> which team was home
@@ -986,9 +980,7 @@ class ScheduleService(
         return prevHomeTeam
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Async Generate-All-Conferences (fire-and-forget)
-    // ═══════════════════════════════════════════════════════════════════════
+    // Async Generate-All-Conferences (fire-and-forget)
 
     /**
      * Start generating all conference schedules asynchronously.
@@ -1113,9 +1105,7 @@ class ScheduleService(
      */
     fun getScheduleGenJobStatus(jobId: String): ScheduleGenJob? = activeGenJobs[jobId]
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Conference Rules Management
-    // ═══════════════════════════════════════════════════════════════════════
+    // Conference Rules Management
 
     /**
      * Save or update conference rules

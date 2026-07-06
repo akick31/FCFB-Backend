@@ -39,6 +39,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.session:spring-session-core")
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-mysql")
     implementation("org.projectlombok:lombok")
     implementation("org.mariadb.jdbc:mariadb-java-client")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
