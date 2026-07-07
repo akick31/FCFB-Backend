@@ -23,9 +23,6 @@ class EmailService(
         "data:image/png;base64,${Base64.getEncoder().encodeToString(bytes)}"
     }
 
-    /**
-     * Send a verification email
-     */
     fun sendVerificationEmail(
         email: String,
         userId: Long,
@@ -80,9 +77,6 @@ class EmailService(
         return text
     }
 
-    /**
-     * Send an email
-     */
     private fun sendEmail(
         to: String,
         subject: String,

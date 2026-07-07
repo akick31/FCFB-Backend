@@ -61,15 +61,6 @@ class GameSpecificationService(
         MOST_TIME_REMAINING,
     }
 
-    /**
-     * Create the spec for a game
-     * @param filters
-     * @param category
-     * @param conference
-     * @param season
-     * @param week
-     * @param gameMode
-     */
     fun createSpecification(
         filters: List<GameFilter>,
         category: GameCategory?,

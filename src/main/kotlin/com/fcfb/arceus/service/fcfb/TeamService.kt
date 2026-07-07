@@ -28,10 +28,6 @@ class TeamService(
     private val coachTransactionLogService: CoachTransactionLogService,
     private val newSignupService: NewSignupService,
 ) {
-    /**
-     * After a game ends, update the team's wins and losses
-     * @param game
-     */
     fun updateTeamWinsAndLosses(game: Game) {
         val homeTeam = getTeamByName(game.homeTeam)
         val awayTeam = getTeamByName(game.awayTeam)
@@ -99,88 +95,63 @@ class TeamService(
         updateTeam(awayTeam)
     }
 
-    /**
-     * Get a team by its ID
-     * @param id
-     */
     fun getTeamById(id: Int) =
         teamRepository.findById(id).orElse(null)
             ?: throw TeamNotFoundException("Team not found with ID: $id")
 
-    /**
-     * Get all teams
-     */
     fun getAllTeams() =
         teamRepository.getAllActiveTeams().ifEmpty {
             throw TeamNotFoundException("No active teams found")
         }
 
-    /**
-     * Get a team by its name
-     * @param name
-     */
     fun getTeamByName(name: String?) =
         teamRepository.getTeamByName(name)
             ?: throw TeamNotFoundException("Team not found with name: $name")
 
-    /**
-     * Create a new team
-     * @param team
-     */
     fun createTeam(team: Team): Team {
-        try {
-            val newTeam =
-                teamRepository.save(
-                    Team(
-                        team.logo,
-                        team.scorebugLogo,
-                        team.coachUsernames ?: mutableListOf(),
-                        team.coachNames ?: mutableListOf(),
-                        team.coachDiscordTags ?: mutableListOf(),
-                        team.coachDiscordIds ?: mutableListOf(),
-                        team.name,
-                        team.shortName,
-                        team.abbreviation,
-                        team.primaryColor,
-                        team.secondaryColor,
-                        0,
-                        0,
-                        team.subdivision,
-                        team.offensivePlaybook,
-                        team.defensivePlaybook,
-                        team.conference,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        0,
-                        false,
-                        true,
-                        1500.0,
-                        1500.0,
-                    ),
-                )
-            return newTeam
-        } catch (e: Exception) {
-            throw e
-        }
+        return teamRepository.save(
+            Team(
+                team.logo,
+                team.scorebugLogo,
+                team.coachUsernames ?: mutableListOf(),
+                team.coachNames ?: mutableListOf(),
+                team.coachDiscordTags ?: mutableListOf(),
+                team.coachDiscordIds ?: mutableListOf(),
+                team.name,
+                team.shortName,
+                team.abbreviation,
+                team.primaryColor,
+                team.secondaryColor,
+                0,
+                0,
+                team.subdivision,
+                team.offensivePlaybook,
+                team.defensivePlaybook,
+                team.conference,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                false,
+                true,
+                1500.0,
+                1500.0,
+            ),
+        )
     }
 
-    /**
-     * Update a team
-     * @param team
-     */
     fun updateTeam(team: Team): Team {
         val existingTeam = getTeamByName(team.name)
 
@@ -219,9 +190,6 @@ class TeamService(
         return existingTeam
     }
 
-    /**
-     * Update team color
-     */
     fun updateTeamColor(
         team: String,
         color: String,
@@ -239,12 +207,6 @@ class TeamService(
         return existingTeam
     }
 
-    /**
-     * Hire a coach for a team
-     * @param team
-     * @param discordId
-     * @param coachPosition
-     */
     suspend fun hireCoach(
         team: String?,
         discordId: String,
@@ -360,12 +322,6 @@ class TeamService(
         return existingTeam
     }
 
-    /**
-     * Hire an interim coach for a team
-     * @param team
-     * @param discordId
-     * @param processedBy
-     */
     suspend fun hireInterimCoach(
         team: String?,
         discordId: String,
@@ -401,10 +357,6 @@ class TeamService(
         return existingTeam
     }
 
-    /**
-     * Fire all coaches for a team
-     * @param name
-     */
     fun fireCoach(
         name: String?,
         processedBy: String,
@@ -440,19 +392,10 @@ class TeamService(
         return existingTeam
     }
 
-    /**
-     * Get open teams
-     */
     fun getOpenTeams() = teamRepository.getOpenTeams()
 
-    /**
-     * Get all teams in a conference
-     */
     fun getTeamsInConference(conference: String) = teamRepository.getTeamsInConference(conference)
 
-    /**
-     * Get team ranks for a game
-     */
     fun getTeamRanks(
         homeTeamId: Int,
         awayTeamId: Int,
@@ -478,36 +421,14 @@ class TeamService(
 
     fun resetWinsAndLosses() = teamRepository.resetWinsAndLosses()
 
-    /**
-     * Check if playoff ranking is used
-     * @return
-     */
     private fun usePlayoffRanking() = teamRepository.usePlayoffRanking() == 1
 
-    /**
-     * Get playoff ranking by team ID
-     * @param id
-     * @return
-     */
     private fun getPlayoffRankingById(id: Int) = teamRepository.getPlayoffRankingById(id)
 
-    /**
-     * Get coaches poll ranking by team ID
-     * @param id
-     * @return
-     */
     private fun getCoachesPollRankingById(id: Int) = teamRepository.getCoachesPollRankingById(id)
 
-    /**
-     * Save a team
-     * @param team
-     */
     private fun saveTeam(team: Team) = teamRepository.save(team)
 
-    /**
-     * Delete a team
-     * @param id
-     */
     fun deleteTeam(id: Int): HttpStatus {
         teamRepository.findById(id) ?: return HttpStatus.NOT_FOUND
         if (!teamRepository.findById(id).isPresent) {

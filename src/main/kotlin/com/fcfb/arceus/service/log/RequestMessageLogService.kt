@@ -11,11 +11,6 @@ import java.time.format.DateTimeFormatter
 class RequestMessageLogService(
     private val requestMessageLogRepository: RequestMessageLogRepository,
 ) {
-    /**
-     * Log the request message
-     * @param requestMessageLog
-     * @return
-     */
     fun logRequestMessage(requestMessageLog: RequestMessageLog): RequestMessageLog {
         if (requestMessageLog.playId == 0) {
             requestMessageLog.playId = null

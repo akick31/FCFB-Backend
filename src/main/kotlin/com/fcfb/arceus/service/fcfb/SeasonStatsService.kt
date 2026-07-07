@@ -25,9 +25,6 @@ class SeasonStatsService(
     private val conferenceStatsService: ConferenceStatsService,
     private val seasonStatsSpecificationService: SeasonStatsSpecificationService,
 ) {
-    /**
-     * Get filtered season stats with pagination
-     */
     fun getFilteredSeasonStats(
         team: String?,
         season: Int?,
@@ -51,16 +48,10 @@ class SeasonStatsService(
         return seasonStatsRepository.findAll(spec, sortedPageable)
     }
 
-    /**
-     * Filter out scrimmage games from game stats
-     */
     private fun filterOutScrimmageGames(gameStatsList: List<GameStats>): List<GameStats> {
         return gameStatsList.filter { it.gameType != GameType.SCRIMMAGE }
     }
 
-    /**
-     * Generate season stats for all seasons
-     */
     fun generateAllSeasonStats() {
         Logger.info("Starting generation of all season stats")
 
@@ -83,9 +74,6 @@ class SeasonStatsService(
         Logger.info("Completed generation of all season stats")
     }
 
-    /**
-     * Generate season stats for a specific team and season
-     */
     fun generateSeasonStatsForTeam(
         team: String,
         seasonNumber: Int,
@@ -114,9 +102,6 @@ class SeasonStatsService(
         Logger.info("Completed generating season stats for $team in season $seasonNumber")
     }
 
-    /**
-     * Update season stats when a game ends
-     */
     fun updateSeasonStatsForGame(gameStats: GameStats) {
         val team = gameStats.team ?: return
         val season = gameStats.season ?: return
@@ -131,9 +116,6 @@ class SeasonStatsService(
         )
     }
 
-    /**
-     * Aggregate game stats into season stats
-     */
     private fun aggregateGameStatsToSeasonStats(
         gameStatsList: List<GameStats>,
         team: String,
@@ -552,9 +534,6 @@ class SeasonStatsService(
         }
     }
 
-    /**
-     * Get opponent GameStats for a given game using pre-fetched data
-     */
     private fun getOpponentGameStatsByGameId(
         gameId: Int,
         gameStatsByGameId: Map<Int, List<GameStats>>,
@@ -564,9 +543,6 @@ class SeasonStatsService(
             ?.firstOrNull { it.team != team }
     }
 
-    /**
-     * Get leaderboard for a specific stat
-     */
     fun getLeaderboard(
         statName: String,
         season: Int? = null,
@@ -704,9 +680,6 @@ class SeasonStatsService(
         }
     }
 
-    /**
-     * Calculate percentage from totals (successes/attempts * 100)
-     */
     private fun calculatePercentage(
         successes: Int,
         attempts: Int,

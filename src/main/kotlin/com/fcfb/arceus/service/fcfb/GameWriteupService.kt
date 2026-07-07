@@ -7,11 +7,6 @@ import org.springframework.stereotype.Service
 class GameWriteupService(
     private val gameWriteupRepository: GameWriteupRepository,
 ) {
-    /**
-     * Get a game message by scenario
-     * @param scenario
-     * @param playCall
-     */
     fun getGameMessageByScenario(
         scenario: String,
         playCall: String?,

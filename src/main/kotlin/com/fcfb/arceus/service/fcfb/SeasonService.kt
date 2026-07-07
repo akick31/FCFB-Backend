@@ -22,9 +22,6 @@ class SeasonService(
     private val userService: UserService,
     private val scheduleRepository: ScheduleRepository,
 ) {
-    /**
-     * Start the current season
-     */
     fun startSeason(): Season {
         val previousSeason = seasonRepository.getPreviousSeason()
         val season =
@@ -72,19 +69,10 @@ class SeasonService(
         seasonRepository.save(season)
     }
 
-    /**
-     * Get the current season
-     */
     fun getCurrentSeason() = seasonRepository.getCurrentSeason() ?: throw CurrentSeasonNotFoundException()
 
-    /**
-     * Get the current week
-     */
     fun getCurrentWeek() = seasonRepository.getCurrentSeason()?.currentWeek ?: throw CurrentWeekNotFoundException()
 
-    /**
-     * Increment the current week
-     */
     fun incrementWeek() {
         val season = getCurrentSeason()
         season.currentWeek = season.currentWeek.plus(1)
@@ -96,17 +84,10 @@ class SeasonService(
      */
     fun getAllSeasons(): List<Season> = seasonRepository.getAllSeasons()
 
-    /**
-     * Get a specific season by number
-     */
     fun getSeasonByNumber(seasonNumber: Int): Season =
         seasonRepository.findBySeasonNumber(seasonNumber)
             ?: throw CurrentSeasonNotFoundException()
 
-    /**
-     * Lock the schedule for a given season
-     * @param seasonNumber
-     */
     fun lockSchedule(seasonNumber: Int): Season {
         val season =
             seasonRepository.findBySeasonNumber(seasonNumber)
@@ -116,10 +97,6 @@ class SeasonService(
         return season
     }
 
-    /**
-     * Unlock the schedule for a given season
-     * @param seasonNumber
-     */
     fun unlockSchedule(seasonNumber: Int): Season {
         val season =
             seasonRepository.findBySeasonNumber(seasonNumber)
@@ -129,10 +106,6 @@ class SeasonService(
         return season
     }
 
-    /**
-     * Check if the schedule is locked for a given season
-     * @param seasonNumber
-     */
     fun isScheduleLocked(seasonNumber: Int): Boolean {
         val season =
             seasonRepository.findBySeasonNumber(seasonNumber)

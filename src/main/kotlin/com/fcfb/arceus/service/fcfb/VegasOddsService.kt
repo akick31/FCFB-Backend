@@ -18,12 +18,6 @@ class VegasOddsService(
 ) {
     private val logger = LoggerFactory.getLogger(VegasOddsService::class.java)
 
-    /**
-     * Calculate Vegas odds for a matchup based on team ELO ratings
-     * @param homeTeam Home team
-     * @param awayTeam Away team
-     * @return VegasOddsResponse with home and away spreads
-     */
     fun calculateVegasOdds(
         homeTeam: Team,
         awayTeam: Team,
@@ -46,14 +40,6 @@ class VegasOddsService(
         )
     }
 
-    /**
-     * Calculate Vegas odds for a matchup based on custom ELO ratings
-     * @param homeElo Home team ELO rating
-     * @param awayElo Away team ELO rating
-     * @param homeTeamName Optional home team name for response
-     * @param awayTeamName Optional away team name for response
-     * @return VegasOddsResponse with home and away spreads
-     */
     private fun calculateVegasOdds(
         homeElo: Double,
         awayElo: Double,
@@ -73,9 +59,6 @@ class VegasOddsService(
         )
     }
 
-    /**
-     * Get Vegas odds for a matchup based on team names
-     */
     fun getVegasOddsByTeams(
         homeTeamName: String,
         awayTeamName: String,
@@ -94,9 +77,6 @@ class VegasOddsService(
             ResponseEntity.badRequest().build()
         }
 
-    /**
-     * Get Vegas odds for a matchup based on custom ELO ratings
-     */
     fun getVegasOddsByElo(
         homeElo: Double,
         awayElo: Double,

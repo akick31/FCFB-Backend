@@ -31,7 +31,7 @@ class DefensivePlaybookConverter : AttributeConverter<DefensivePlaybook, String>
             try {
                 DefensivePlaybook.fromString(it)
             } catch (e: IllegalArgumentException) {
-                println("Error converting DefensivePlaybook: $it")
+                Logger.error("Error converting DefensivePlaybook: $it", e)
                 null
             }
         }

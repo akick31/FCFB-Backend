@@ -23,9 +23,6 @@ class ConferenceStatsService(
     private val seasonStatsRepository: SeasonStatsRepository,
     private val conferenceStatsSpecificationService: ConferenceStatsSpecificationService,
 ) {
-    /**
-     * Get filtered conference stats with pagination
-     */
     fun getFilteredConferenceStats(
         conference: Conference?,
         season: Int?,
@@ -43,13 +40,9 @@ class ConferenceStatsService(
         return conferenceStatsRepository.findAll(spec, sortedPageable)
     }
 
-    /**
-     * Generate all conference stats (recalculate all conference stats)
-     */
     fun generateAllConferenceStats() {
         Logger.info("Starting generation of all conference stats")
 
-        // Get all season stats
         val allSeasonStats = seasonStatsRepository.findAllByOrderBySeasonNumberDescTeamAsc()
         Logger.info("Found ${allSeasonStats.size} total season stats records")
 
@@ -74,9 +67,6 @@ class ConferenceStatsService(
         Logger.info("Completed generation of all conference stats")
     }
 
-    /**
-     * Generate conference stats for a specific subdivision, conference, and season
-     */
     private fun generateConferenceStatsForSubdivisionAndConferenceAndSeason(
         subdivision: Subdivision,
         conference: Conference,
@@ -101,16 +91,12 @@ class ConferenceStatsService(
             conferenceStatsRepository.delete(it)
         }
 
-        // Create new conference stats
         val conferenceStats = aggregateSeasonStatsToConferenceStats(seasonStatsList, subdivision, conference, seasonNumber)
 
         conferenceStatsRepository.save(conferenceStats)
         Logger.info("Completed generating conference stats for $subdivision/$conference in season $seasonNumber")
     }
 
-    /**
-     * Update conference stats when season stats are updated
-     */
     fun updateConferenceStatsForSeasonStats(seasonStats: SeasonStats) {
         val subdivision = seasonStats.subdivision ?: return
         val conference = seasonStats.conference ?: return
@@ -120,9 +106,6 @@ class ConferenceStatsService(
         generateConferenceStatsForSubdivisionAndConferenceAndSeason(subdivision, conference, season)
     }
 
-    /**
-     * Aggregate season stats into conference stats
-     */
     private fun aggregateSeasonStatsToConferenceStats(
         seasonStatsList: List<SeasonStats>,
         subdivision: Subdivision,
@@ -366,17 +349,11 @@ class ConferenceStatsService(
         )
     }
 
-    /**
-     * Calculate average of a list of doubles
-     */
     private fun calculateAverage(values: List<Double>): Double? {
         if (values.isEmpty()) return null
         return values.average()
     }
 
-    /**
-     * Calculate percentage from totals (successes/attempts * 100)
-     */
     private fun calculatePercentage(
         successes: Int,
         attempts: Int,

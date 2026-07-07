@@ -24,11 +24,6 @@ class AuthService(
     private val sessionService: SessionService,
     private val passwordEncoder: PasswordEncoder,
 ) {
-    /**
-     * Create a new user
-     * @param newSignup
-     * @return
-     */
     fun createNewSignup(newSignup: NewSignup): NewSignup {
         try {
             val signup = newSignupService.createNewSignup(newSignup)
@@ -50,12 +45,6 @@ class AuthService(
         }
     }
 
-    /**
-     * Login a user
-     * @param usernameOrEmail
-     * @param password
-     * @return
-     */
     fun login(
         usernameOrEmail: String,
         password: String,
@@ -68,31 +57,16 @@ class AuthService(
         return LoginResponse(token, user.id, user.role)
     }
 
-    /**
-     * Logout a user
-     * @param token
-     * @return
-     */
     fun logout(token: String): String {
         sessionService.blacklistUserSession(token)
         return "User logged out successfully"
     }
 
-    /**
-     * Verify user email
-     * @param token
-     * @return
-     */
     fun verifyEmail(token: String): Boolean {
         val newSignup = newSignupService.getByVerificationToken(token)
         return newSignup?.let { newSignupService.approveNewSignup(it) } ?: false
     }
 
-    /**
-     * Reset verification token
-     * @param id
-     * @return
-     */
     fun resetVerificationToken(id: Long): NewSignup {
         val newSignup =
             newSignupService.getNewSignupById(id)
@@ -104,11 +78,6 @@ class AuthService(
         return newSignup
     }
 
-    /**
-     * Send password reset email
-     * @param email
-     * @return
-     */
     fun forgotPassword(email: String): ResponseEntity<String> {
         val user = userService.updateResetToken(email)
 
@@ -116,12 +85,6 @@ class AuthService(
         return ResponseEntity.ok("Reset email sent")
     }
 
-    /**
-     * Reset user password
-     * @param token
-     * @param newPassword
-     * @return
-     */
     fun resetPassword(
         token: String,
         newPassword: String,
@@ -130,7 +93,7 @@ class AuthService(
             userService.getUserByResetToken(token)
                 ?: return ResponseEntity.badRequest().body("Invalid or expired token")
 
-        if (user.resetTokenExpiration?.let { LocalDateTime.parse(it).isBefore(LocalDateTime.now()) } == true) {
+        if (user.resetTokenExpiration?.let { LocalDateTime.parse(it).isBefore(LocalDateTime.now()) } ?: false) {
             return ResponseEntity.badRequest().body("Invalid or expired token")
         }
 

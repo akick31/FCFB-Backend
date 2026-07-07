@@ -22,9 +22,6 @@ class LeagueStatsService(
     private val seasonStatsRepository: SeasonStatsRepository,
     private val leagueStatsSpecificationService: LeagueStatsSpecificationService,
 ) {
-    /**
-     * Get filtered league stats with pagination
-     */
     fun getFilteredLeagueStats(
         subdivision: Subdivision?,
         season: Int?,
@@ -41,9 +38,6 @@ class LeagueStatsService(
         return leagueStatsRepository.findAll(spec, sortedPageable)
     }
 
-    /**
-     * Generate all league stats (recalculate all league stats)
-     */
     fun generateAllLeagueStats() {
         Logger.info("Starting generation of all league stats")
 
@@ -68,9 +62,6 @@ class LeagueStatsService(
         Logger.info("Completed generation of all league stats")
     }
 
-    /**
-     * Generate league stats for a specific subdivision and season
-     */
     private fun generateLeagueStatsForSubdivisionAndSeason(
         subdivision: Subdivision,
         seasonNumber: Int,
@@ -99,9 +90,6 @@ class LeagueStatsService(
         Logger.info("Completed generating league stats for $subdivision in season $seasonNumber")
     }
 
-    /**
-     * Aggregate season stats into league stats
-     */
     private fun aggregateSeasonStatsToLeagueStats(
         seasonStatsList: List<SeasonStats>,
         subdivision: Subdivision,
@@ -175,9 +163,6 @@ class LeagueStatsService(
         )
     }
 
-    /**
-     * Calculate percentage from numerator and denominator
-     */
     private fun calculatePercentage(
         numerator: Int,
         denominator: Int,
@@ -189,9 +174,6 @@ class LeagueStatsService(
         }
     }
 
-    /**
-     * Calculate average from a list of values
-     */
     private fun calculateAverage(values: List<Double>): Double? {
         if (values.isEmpty()) return null
         return values.average()

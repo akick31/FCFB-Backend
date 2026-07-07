@@ -14,13 +14,6 @@ import org.springframework.stereotype.Service
 class RangesService(
     private val rangesRepository: RangesRepository,
 ) {
-    /**
-     * Get the result of a normal play
-     * @param playCall
-     * @param offensivePlaybook
-     * @param defensivePlaybook
-     * @param difference
-     */
     fun getNormalResult(
         playCall: PlayCall,
         offensivePlaybook: OffensivePlaybook,
@@ -67,11 +60,6 @@ class RangesService(
         }
     }
 
-    /**
-     * Get the result of a normal play that does not require playbooks
-     * @param playCall
-     * @param difference
-     */
     fun getNonNormalResult(
         playCall: PlayCall,
         difference: Int,
@@ -80,12 +68,6 @@ class RangesService(
         difference.toString(),
     ) ?: throw ResultNotFoundException()
 
-    /**
-     * Get the result of a field goal play
-     * @param playCall
-     * @param distance
-     * @param difference
-     */
     fun getFieldGoalResult(
         playCall: PlayCall,
         distance: Int,
@@ -96,12 +78,6 @@ class RangesService(
         difference.toString(),
     ) ?: throw ResultNotFoundException()
 
-    /**
-     * Get the result of a punt play
-     * @param playCall
-     * @param ballLocation
-     * @param difference
-     */
     fun getPuntResult(
         playCall: PlayCall,
         ballLocation: Int,
@@ -112,10 +88,6 @@ class RangesService(
         difference.toString(),
     ) ?: throw ResultNotFoundException()
 
-    /**
-     * Get the play time for a given number of yards
-     * @param yards
-     */
     fun getPlayTime(
         playCall: PlayCall,
         yards: Int,
