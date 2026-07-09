@@ -23,19 +23,27 @@ class SeasonService(
     private val scheduleRepository: ScheduleRepository,
 ) {
     fun startSeason(): Season {
-        val previousSeason = seasonRepository.getPreviousSeason()
+        val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
+        val pendingSeason = seasonRepository.getPendingSeason()
         val season =
-            Season(
-                seasonNumber = previousSeason?.seasonNumber?.plus(1) ?: 1,
-                startDate = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
-                endDate = null,
-                nationalChampionshipWinningTeam = null,
-                nationalChampionshipLosingTeam = null,
-                nationalChampionshipWinningCoach = null,
-                nationalChampionshipLosingCoach = null,
-                currentWeek = 1,
-                currentSeason = true,
-            )
+            if (pendingSeason != null) {
+                pendingSeason.startDate = now
+                pendingSeason.currentSeason = true
+                pendingSeason
+            } else {
+                val previousSeason = seasonRepository.getPreviousSeason()
+                Season(
+                    seasonNumber = previousSeason?.seasonNumber?.plus(1) ?: 1,
+                    startDate = now,
+                    endDate = null,
+                    nationalChampionshipWinningTeam = null,
+                    nationalChampionshipLosingTeam = null,
+                    nationalChampionshipWinningCoach = null,
+                    nationalChampionshipLosingCoach = null,
+                    currentWeek = 1,
+                    currentSeason = true,
+                )
+            }
         teamService.resetWinsAndLosses()
         userService.resetAllDelayOfGameInstances()
         seasonRepository.save(season)

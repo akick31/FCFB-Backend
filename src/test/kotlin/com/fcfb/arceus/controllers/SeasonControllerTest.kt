@@ -71,6 +71,7 @@ class SeasonControllerTest {
             )
 
         // Mock the repository and team service methods
+        every { seasonRepository.getPendingSeason() } returns null
         every { seasonRepository.getPreviousSeason() } returns previousSeason
         every { teamService.resetWinsAndLosses() } returns Unit
         every { userService.resetAllDelayOfGameInstances() } returns Unit
@@ -93,6 +94,36 @@ class SeasonControllerTest {
         // Verify that user delay of game instances were reset
         verify { userService.resetAllDelayOfGameInstances() }
         verify { seasonRepository.save(any()) }
+    }
+
+    @Test
+    fun `should activate a pending season created via createSeasonForScheduling instead of skipping ahead`() {
+        val pendingSeason =
+            Season(
+                seasonNumber = 12,
+                startDate = null,
+                endDate = null,
+                nationalChampionshipWinningTeam = null,
+                nationalChampionshipLosingTeam = null,
+                nationalChampionshipWinningCoach = null,
+                nationalChampionshipLosingCoach = null,
+                currentWeek = 1,
+                currentSeason = false,
+            )
+
+        every { seasonRepository.getPendingSeason() } returns pendingSeason
+        every { teamService.resetWinsAndLosses() } returns Unit
+        every { userService.resetAllDelayOfGameInstances() } returns Unit
+        every { seasonRepository.save(any()) } returns pendingSeason
+
+        mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.seasonNumber").value(12))
+            .andExpect(jsonPath("$.currentSeason").value(true))
+            .andExpect(jsonPath("$.startDate").isNotEmpty)
+
+        verify(exactly = 0) { seasonRepository.getPreviousSeason() }
+        verify { seasonRepository.save(pendingSeason) }
     }
 
     @Test
@@ -148,6 +179,7 @@ class SeasonControllerTest {
 
     @Test
     fun `should handle error when starting season`() {
+        every { seasonRepository.getPendingSeason() } returns null
         every { seasonRepository.getPreviousSeason() } throws RuntimeException("Failed to start season")
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))

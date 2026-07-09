@@ -13,6 +13,9 @@ interface SeasonRepository : CrudRepository<Season, Int> {
     @Query(value = "SELECT * FROM season WHERE current_season = false ORDER BY season_number DESC LIMIT 1", nativeQuery = true)
     fun getPreviousSeason(): Season?
 
+    @Query(value = "SELECT * FROM season WHERE start_date IS NULL ORDER BY season_number DESC LIMIT 1", nativeQuery = true)
+    fun getPendingSeason(): Season?
+
     fun findBySeasonNumber(seasonNumber: Int): Season?
 
     fun findByCurrentSeason(currentSeason: Boolean): List<Season>
