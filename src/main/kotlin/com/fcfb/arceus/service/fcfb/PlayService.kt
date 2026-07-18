@@ -6,11 +6,11 @@ import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.repositories.PlayRepository
-import com.fcfb.arceus.service.fcfb.play.FieldGoalPlaySimulator
-import com.fcfb.arceus.service.fcfb.play.KickoffPlaySimulator
-import com.fcfb.arceus.service.fcfb.play.NormalPlaySimulator
-import com.fcfb.arceus.service.fcfb.play.PointAfterPlaySimulator
-import com.fcfb.arceus.service.fcfb.play.PuntPlaySimulator
+import com.fcfb.arceus.service.fcfb.play.FieldGoalPlayProcessor
+import com.fcfb.arceus.service.fcfb.play.KickoffPlayProcessor
+import com.fcfb.arceus.service.fcfb.play.NormalPlayProcessor
+import com.fcfb.arceus.service.fcfb.play.PointAfterPlayProcessor
+import com.fcfb.arceus.service.fcfb.play.PuntPlayProcessor
 import com.fcfb.arceus.util.DefensiveNumberNotFound
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.Logger
@@ -25,11 +25,11 @@ class PlayService(
     private val playRepository: PlayRepository,
     private val encryptionUtils: EncryptionUtils,
     private val gameService: GameService,
-    private val normalPlaySimulator: NormalPlaySimulator,
-    private val fieldGoalPlaySimulator: FieldGoalPlaySimulator,
-    private val puntPlaySimulator: PuntPlaySimulator,
-    private val kickoffPlaySimulator: KickoffPlaySimulator,
-    private val pointAfterPlaySimulator: PointAfterPlaySimulator,
+    private val normalPlayProcessor: NormalPlayProcessor,
+    private val fieldGoalPlayProcessor: FieldGoalPlayProcessor,
+    private val puntPlayProcessor: PuntPlayProcessor,
+    private val kickoffPlayProcessor: KickoffPlayProcessor,
+    private val pointAfterPlayProcessor: PointAfterPlayProcessor,
 ) {
     /**
      * Start a new play, the defensive number was submitted. The defensive number is encrypted
@@ -129,7 +129,7 @@ class PlayService(
             when (playCall) {
                 PlayCall.PASS, PlayCall.RUN, PlayCall.SPIKE, PlayCall.KNEEL ->
                     gamePlay =
-                        normalPlaySimulator.runNormalPlay(
+                        normalPlayProcessor.runNormalPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -141,7 +141,7 @@ class PlayService(
 
                 PlayCall.PAT, PlayCall.TWO_POINT ->
                     gamePlay =
-                        pointAfterPlaySimulator.runPointAfterPlay(
+                        pointAfterPlayProcessor.runPointAfterPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -151,7 +151,7 @@ class PlayService(
 
                 PlayCall.KICKOFF_NORMAL, PlayCall.KICKOFF_ONSIDE, PlayCall.KICKOFF_SQUIB ->
                     gamePlay =
-                        kickoffPlaySimulator.runKickoffPlay(
+                        kickoffPlayProcessor.runKickoffPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -161,7 +161,7 @@ class PlayService(
 
                 PlayCall.FIELD_GOAL ->
                     gamePlay =
-                        fieldGoalPlaySimulator.runFieldGoalPlay(
+                        fieldGoalPlayProcessor.runFieldGoalPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -173,7 +173,7 @@ class PlayService(
 
                 PlayCall.PUNT ->
                     gamePlay =
-                        puntPlaySimulator.runPuntPlay(
+                        puntPlayProcessor.runPuntPlay(
                             gamePlay,
                             game,
                             playCall,

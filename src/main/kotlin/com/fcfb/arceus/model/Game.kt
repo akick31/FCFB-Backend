@@ -57,12 +57,12 @@ class Game {
     var awayCoaches: List<String>? = listOf()
 
     @Type(type = "json")
-    @Column(name = "home_coach_discord_ids")
+    @Column(name = "home_coach_discord_ids", columnDefinition = "json")
     @JsonProperty("home_coach_discord_ids")
     var homeCoachDiscordIds: List<String>? = listOf()
 
     @Type(type = "json")
-    @Column(name = "away_coach_discord_ids")
+    @Column(name = "away_coach_discord_ids", columnDefinition = "json")
     @JsonProperty("away_coach_discord_ids")
     var awayCoachDiscordIds: List<String>? = listOf()
 

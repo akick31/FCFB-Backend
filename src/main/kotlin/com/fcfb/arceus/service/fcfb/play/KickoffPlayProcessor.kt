@@ -17,13 +17,13 @@ import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
 /**
- * Simulates a kickoff play.
+ * Processes a kickoff play.
  */
 @Component
-class KickoffPlaySimulator(
+class KickoffPlayProcessor(
     private val gameService: GameService,
     private val rangesService: RangesService,
-    private val playSimulationUtils: PlaySimulationUtils,
+    private val playProcessingUtils: PlayProcessingUtils,
 ) {
     fun runKickoffPlay(
         gamePlay: Play,
@@ -117,7 +117,7 @@ class KickoffPlaySimulator(
             else -> throw InvalidActualResultException()
         }
 
-        return playSimulationUtils.updatePlayValues(
+        return playProcessingUtils.updatePlayValues(
             game,
             gamePlay,
             playCall,

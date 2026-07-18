@@ -17,13 +17,13 @@ import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
 /**
- * Simulates a point-after (PAT / two-point) play.
+ * Processes a point-after (PAT / two-point) play.
  */
 @Component
-class PointAfterPlaySimulator(
+class PointAfterPlayProcessor(
     private val gameService: GameService,
     private val rangesService: RangesService,
-    private val playSimulationUtils: PlaySimulationUtils,
+    private val playProcessingUtils: PlayProcessingUtils,
 ) {
     fun runPointAfterPlay(
         gamePlay: Play,
@@ -86,7 +86,7 @@ class PointAfterPlaySimulator(
             }
         }
 
-        return playSimulationUtils.updatePlayValues(
+        return playProcessingUtils.updatePlayValues(
             game,
             gamePlay,
             playCall,
