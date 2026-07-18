@@ -36,7 +36,7 @@ class GameStats(
     @Column(name = "tv_channel")
     var tvChannel: TVChannel? = null,
     @Type(type = "json")
-    @Column(name = "coaches", columnDefinition = "json")
+    @Column(name = "coaches", columnDefinition = "longtext")
     @JsonProperty("coaches")
     var coaches: List<String>? = listOf(),
     @Basic

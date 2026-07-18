@@ -33,6 +33,6 @@ class ConferenceRules {
     var numConferenceGames: Int = 9
 
     @Type(type = "json")
-    @Column(name = "protected_rivalries", columnDefinition = "JSON")
+    @Column(name = "protected_rivalries", columnDefinition = "longtext")
     var protectedRivalries: String? = null
 }
