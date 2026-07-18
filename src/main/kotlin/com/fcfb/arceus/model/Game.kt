@@ -47,22 +47,22 @@ class Game {
     lateinit var awayTeam: String
 
     @Type(type = "json")
-    @Column(name = "home_coaches", columnDefinition = "json")
+    @Column(name = "home_coaches", columnDefinition = "longtext")
     @JsonProperty("home_coaches")
     var homeCoaches: List<String>? = listOf()
 
     @Type(type = "json")
-    @Column(name = "away_coaches", columnDefinition = "json")
+    @Column(name = "away_coaches", columnDefinition = "longtext")
     @JsonProperty("away_coaches")
     var awayCoaches: List<String>? = listOf()
 
     @Type(type = "json")
-    @Column(name = "home_coach_discord_ids", columnDefinition = "json")
+    @Column(name = "home_coach_discord_ids", columnDefinition = "longtext")
     @JsonProperty("home_coach_discord_ids")
     var homeCoachDiscordIds: List<String>? = listOf()
 
     @Type(type = "json")
-    @Column(name = "away_coach_discord_ids", columnDefinition = "json")
+    @Column(name = "away_coach_discord_ids", columnDefinition = "longtext")
     @JsonProperty("away_coach_discord_ids")
     var awayCoachDiscordIds: List<String>? = listOf()
 
@@ -289,7 +289,7 @@ class Game {
     var clockStopped: Boolean = false
 
     @Type(type = "json")
-    @Column(name = "request_message_id", columnDefinition = "json")
+    @Column(name = "request_message_id", columnDefinition = "longtext")
     @JsonProperty("request_message_id")
     var requestMessageId: List<String>? = listOf()
 
