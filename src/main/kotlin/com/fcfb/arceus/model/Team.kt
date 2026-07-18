@@ -48,19 +48,19 @@ class Team {
     var scorebugLogo: String? = null
 
     @Type(type = "json")
-    @Column(name = "coach_usernames")
+    @Column(name = "coach_usernames", columnDefinition = "json")
     var coachUsernames: MutableList<String>? = mutableListOf()
 
     @Type(type = "json")
-    @Column(name = "coach_names")
+    @Column(name = "coach_names", columnDefinition = "json")
     var coachNames: MutableList<String>? = mutableListOf()
 
     @Type(type = "json")
-    @Column(name = "coach_discord_tags")
+    @Column(name = "coach_discord_tags", columnDefinition = "json")
     var coachDiscordTags: MutableList<String>? = mutableListOf()
 
     @Type(type = "json")
-    @Column(name = "coach_discord_ids")
+    @Column(name = "coach_discord_ids", columnDefinition = "json")
     var coachDiscordIds: MutableList<String>? = mutableListOf()
 
     @Basic

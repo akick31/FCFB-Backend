@@ -34,7 +34,7 @@ class CoachTransactionLog {
     var position: CoachPosition? = null
 
     @Type(type = "json")
-    @Column(name = "coach", nullable = false)
+    @Column(name = "coach", nullable = false, columnDefinition = "json")
     var coach: MutableList<String>? = mutableListOf()
 
     @Enumerated(EnumType.STRING)
