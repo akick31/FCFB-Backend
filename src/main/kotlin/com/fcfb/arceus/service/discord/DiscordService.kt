@@ -27,11 +27,6 @@ class DiscordService(
     @Value("\${discord.bot.token}")
     private val botToken: String,
 ) {
-    /**
-     * Start a game thread in Discord
-     * @param game
-     * @return List<String>?
-     */
     suspend fun createGameThread(game: Game): List<String>? {
         val discordBotUrl = "$discordBotUrl/start_game"
         val headers = HttpHeaders()
@@ -50,11 +45,6 @@ class DiscordService(
         }
     }
 
-    /**
-     * Notify game of a delay of game
-     * @param game
-     * @return Boolean
-     */
     fun notifyDelayOfGame(
         game: Game,
         isDelayofGameOut: Boolean,
@@ -70,11 +60,6 @@ class DiscordService(
         }
     }
 
-    /**
-     * Notify game of a warning for a delay of game
-     * @param game
-     * @return Boolean
-     */
     fun notifyWarning(
         game: Game,
         instance: Int,
@@ -90,9 +75,6 @@ class DiscordService(
         }
     }
 
-    /**
-     * Notify commissioners of a new signup
-     */
     fun sendRegistrationNotice(signupInfo: SignupInfo) {
         val discordBotUrl = "$discordBotUrl/new_signup"
         val headers = HttpHeaders()
@@ -105,11 +87,6 @@ class DiscordService(
         }
     }
 
-    /**
-     * Get a user by their Discord Tag
-     * @param tag
-     * @return User
-     */
     suspend fun getUserByDiscordTag(tag: String): User {
         try {
             val client = Kord(botToken!!)

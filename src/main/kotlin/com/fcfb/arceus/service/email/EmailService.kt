@@ -23,15 +23,12 @@ class EmailService(
         "data:image/png;base64,${Base64.getEncoder().encodeToString(bytes)}"
     }
 
-    /**
-     * Send a verification email
-     */
     fun sendVerificationEmail(
         email: String,
         userId: Long,
         verificationToken: String,
     ) {
-        val subject = "Welcome to Fake College Football! Please verify your email and join Discord."
+        val subject = "Welcome to Fake College Football! Please verify your email and join the Discord."
         val link = "$websiteUrl/verify?id=$userId&token=$verificationToken"
         val html = loadTemplate("verification.html", mapOf("link" to link, "logo" to logoDataUri))
 
@@ -80,9 +77,6 @@ class EmailService(
         return text
     }
 
-    /**
-     * Send an email
-     */
     private fun sendEmail(
         to: String,
         subject: String,

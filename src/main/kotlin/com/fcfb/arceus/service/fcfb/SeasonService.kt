@@ -22,23 +22,28 @@ class SeasonService(
     private val userService: UserService,
     private val scheduleRepository: ScheduleRepository,
 ) {
-    /**
-     * Start the current season
-     */
     fun startSeason(): Season {
-        val previousSeason = seasonRepository.getPreviousSeason()
+        val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
+        val pendingSeason = seasonRepository.getPendingSeason()
         val season =
-            Season(
-                seasonNumber = previousSeason?.seasonNumber?.plus(1) ?: 1,
-                startDate = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
-                endDate = null,
-                nationalChampionshipWinningTeam = null,
-                nationalChampionshipLosingTeam = null,
-                nationalChampionshipWinningCoach = null,
-                nationalChampionshipLosingCoach = null,
-                currentWeek = 1,
-                currentSeason = true,
-            )
+            if (pendingSeason != null) {
+                pendingSeason.startDate = now
+                pendingSeason.currentSeason = true
+                pendingSeason
+            } else {
+                val previousSeason = seasonRepository.getPreviousSeason()
+                Season(
+                    seasonNumber = previousSeason?.seasonNumber?.plus(1) ?: 1,
+                    startDate = now,
+                    endDate = null,
+                    nationalChampionshipWinningTeam = null,
+                    nationalChampionshipLosingTeam = null,
+                    nationalChampionshipWinningCoach = null,
+                    nationalChampionshipLosingCoach = null,
+                    currentWeek = 1,
+                    currentSeason = true,
+                )
+            }
         teamService.resetWinsAndLosses()
         userService.resetAllDelayOfGameInstances()
         seasonRepository.save(season)
@@ -72,19 +77,10 @@ class SeasonService(
         seasonRepository.save(season)
     }
 
-    /**
-     * Get the current season
-     */
     fun getCurrentSeason() = seasonRepository.getCurrentSeason() ?: throw CurrentSeasonNotFoundException()
 
-    /**
-     * Get the current week
-     */
     fun getCurrentWeek() = seasonRepository.getCurrentSeason()?.currentWeek ?: throw CurrentWeekNotFoundException()
 
-    /**
-     * Increment the current week
-     */
     fun incrementWeek() {
         val season = getCurrentSeason()
         season.currentWeek = season.currentWeek.plus(1)
@@ -96,17 +92,10 @@ class SeasonService(
      */
     fun getAllSeasons(): List<Season> = seasonRepository.getAllSeasons()
 
-    /**
-     * Get a specific season by number
-     */
     fun getSeasonByNumber(seasonNumber: Int): Season =
         seasonRepository.findBySeasonNumber(seasonNumber)
             ?: throw CurrentSeasonNotFoundException()
 
-    /**
-     * Lock the schedule for a given season
-     * @param seasonNumber
-     */
     fun lockSchedule(seasonNumber: Int): Season {
         val season =
             seasonRepository.findBySeasonNumber(seasonNumber)
@@ -116,10 +105,6 @@ class SeasonService(
         return season
     }
 
-    /**
-     * Unlock the schedule for a given season
-     * @param seasonNumber
-     */
     fun unlockSchedule(seasonNumber: Int): Season {
         val season =
             seasonRepository.findBySeasonNumber(seasonNumber)
@@ -129,10 +114,6 @@ class SeasonService(
         return season
     }
 
-    /**
-     * Check if the schedule is locked for a given season
-     * @param seasonNumber
-     */
     fun isScheduleLocked(seasonNumber: Int): Boolean {
         val season =
             seasonRepository.findBySeasonNumber(seasonNumber)

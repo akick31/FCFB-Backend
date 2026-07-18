@@ -1,7 +1,3 @@
--- Populate Conference Rules Table with Default Values
--- This script inserts default conference rules (9 conference games) for all conferences
--- Run this after creating the conference_rules table
-
 INSERT INTO conference_rules (conference, num_conference_games, protected_rivalries)
 VALUES
     ('ACC', 9, NULL),

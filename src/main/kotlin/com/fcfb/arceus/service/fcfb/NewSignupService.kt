@@ -7,6 +7,7 @@ import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.NewSignupRepository
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.EncryptionUtils
+import com.fcfb.arceus.util.Logger
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -18,10 +19,6 @@ class NewSignupService(
     private val userService: UserService,
     private val newSignupRepository: NewSignupRepository,
 ) {
-    /**
-     * Create a new signup
-     * @param newSignup
-     */
     fun createNewSignup(newSignup: NewSignup): NewSignup {
         val passwordEncoder = BCryptPasswordEncoder()
         val salt = passwordEncoder.encode(newSignup.password)
@@ -51,11 +48,6 @@ class NewSignupService(
         return newSignup
     }
 
-    /**
-     * Approve a new signup
-     * @param newSignup
-     * @return Boolean
-     */
     fun approveNewSignup(newSignup: NewSignup): Boolean {
         try {
             newSignup.apply {
@@ -99,44 +91,23 @@ class NewSignupService(
             )
             return true
         } catch (e: Exception) {
+            Logger.error("Error approving new signup ${newSignup.id}: ${e.message}", e)
             return false
         }
     }
 
-    /**
-     * Get a new signup by its id
-     * @param id
-     */
     fun getNewSignupById(id: Long) = newSignupRepository.getById(id)
 
-    /**
-     * Get a new signup by its Discord id
-     */
     fun getNewSignupByDiscordId(discordId: String) = newSignupRepository.getByDiscordId(discordId)
 
-    /**
-     * Get a new signup by its verification token
-     * @param token
-     */
     fun getByVerificationToken(token: String) = newSignupRepository.getByVerificationToken(token)
 
-    /**
-     * Get all new signups
-     */
     fun getNewSignups(): List<NewSignupDTO> {
         val userData = newSignupRepository.getNewSignups()
         return userData.map { dtoConverter.convertToNewSignupDTO(it) }
     }
 
-    /**
-     * Save a new signup
-     * @param newSignup
-     */
     fun saveNewSignup(newSignup: NewSignup) = newSignupRepository.save(newSignup)
 
-    /**
-     * Delete a new signup
-     * @param id
-     */
     fun deleteNewSignup(newSignup: NewSignup) = newSignupRepository.delete(newSignup)
 }

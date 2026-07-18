@@ -12,9 +12,6 @@ import javax.persistence.criteria.Root
 
 @Service
 class ConferenceStatsSpecificationService {
-    /**
-     * Create specification for filtering conference stats
-     */
     fun createSpecification(
         conference: Conference?,
         season: Int?,
@@ -31,9 +28,6 @@ class ConferenceStatsSpecificationService {
         }
     }
 
-    /**
-     * Create sort orders for conference stats
-     */
     fun createSort(): List<org.springframework.data.domain.Sort.Order> {
         return listOf(
             org.springframework.data.domain.Sort.Order.desc("seasonNumber"),

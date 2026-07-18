@@ -57,9 +57,6 @@ class ScorebugService(
     private val cwChannels = setOf(TVChannel.THE_CW)
     private val pacTwelveChannels = setOf(TVChannel.PAC_12_NETWORK)
 
-    /**
-     * Get the scorebug for a game filtered
-     */
     fun getFilteredScorebugs(
         filters: List<GameFilter>?,
         category: GameCategory?,
@@ -108,9 +105,6 @@ class ScorebugService(
         return ResponseEntity.ok(pageResponse)
     }
 
-    /**
-     * Generate all scorebugs
-     */
     fun generateAllScorebugs() {
         val games = gameService.getAllGames()
         for (game in games) {
@@ -118,9 +112,6 @@ class ScorebugService(
         }
     }
 
-    /**
-     * Get the scorebug byte array for a game
-     */
     private fun getScorebugBytes(gameId: Int): ByteArray? {
         return try {
             File("$imagePath/scorebugs/${gameId}_scorebug.png").readBytes()
@@ -129,9 +120,6 @@ class ScorebugService(
         }
     }
 
-    /**
-     * Get the scorebug image for a game
-     */
     fun getScorebugByGameId(gameId: Int): ResponseEntity<ByteArray> {
         val game = gameService.getGameById(gameId)
         generateScorebug(game)
@@ -163,9 +151,6 @@ class ScorebugService(
             .body(bytes)
     }
 
-    /**
-     * Get the scorebug images for a conference
-     */
     fun getScorebugsForConference(
         season: Int,
         week: Int,

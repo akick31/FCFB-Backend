@@ -22,10 +22,6 @@ class UserService(
     private val encryptionUtils: EncryptionUtils,
     private val dtoConverter: DTOConverter,
 ) {
-    /**
-     * After a game ends, update the user's wins and losses
-     * @param game
-     */
     fun updateUserWinsAndLosses(game: Game) {
         val homeUsers =
             try {
@@ -53,11 +49,6 @@ class UserService(
         }
     }
 
-    /**
-     * After a game ends, update the user's average response time
-     * @param userId
-     * @param responseTime
-     */
     fun updateUserAverageResponseTime(
         userId: Long,
         responseTime: Double,
@@ -69,12 +60,6 @@ class UserService(
      */
     fun resetAllDelayOfGameInstances() = userRepository.resetAllDelayOfGameInstances()
 
-    /**
-     * Update a user's record after a game
-     * @param user
-     * @param gameType
-     * @param isWin
-     */
     private fun updateUserRecord(
         user: UserDTO,
         gameType: GameType,
@@ -118,42 +103,22 @@ class UserService(
         updateUser(user)
     }
 
-    /**
-     * Get a user DTO by its ID
-     * @param id
-     */
     private fun getUserDTOById(id: Long) = dtoConverter.convertToUserDTO(getUserById(id))
 
-    /**
-     * Get a user by its ID
-     * @param id
-     */
     fun getUserById(id: Long) = userRepository.getById(id) ?: throw UserNotFoundException("User not found with id $id")
 
-    /**
-     * Get a user by its Discord ID
-     * @param discordId
-     */
     fun getUserDTOByDiscordId(discordId: String) =
         dtoConverter.convertToUserDTO(
             userRepository.getByDiscordId(discordId)
                 ?: throw UserNotFoundException("User not found with Discord ID $discordId"),
         )
 
-    /**
-     * Get a user by its team
-     * @param team
-     */
     fun getUserByTeam(team: String) =
         dtoConverter.convertToUserDTO(
             userRepository.getByTeam(team)
                 ?: throw UserNotFoundException("User not found with team $team"),
         )
 
-    /**
-     * Get a list of users coaching team
-     * @param team
-     */
     fun getUsersByTeam(team: String): List<UserDTO> {
         val users =
             userRepository.getUsersByTeam(team).ifEmpty {
@@ -162,9 +127,6 @@ class UserService(
         return users.map { dtoConverter.convertToUserDTO(it) }
     }
 
-    /**
-     * Get a user by its username or email
-     */
     fun getUserByUsernameOrEmail(usernameOrEmail: String) =
         try {
             getUserByEmail(usernameOrEmail)
@@ -172,24 +134,14 @@ class UserService(
             getUserByUsername(usernameOrEmail)
         }
 
-    /**
-     * Get a user by its username
-     */
     private fun getUserByUsername(username: String) =
         userRepository.getByUsername(username)
             ?: throw UserNotFoundException("User not found with username $username")
 
-    /**
-     * Get a user by its email
-     */
     private fun getUserByEmail(email: String) =
         userRepository.getUserByEmail(encryptionUtils.hash(email))
             ?: throw UserNotFoundException("User not found with email $email")
 
-    /**
-     * Get all users
-     * @return List<UserDTO>
-     */
     fun getAllUsers(): List<UserDTO> {
         val userData =
             userRepository.findAll().filterNotNull().ifEmpty {
@@ -206,25 +158,12 @@ class UserService(
         return userData.map { dtoConverter.convertToUserDTO(it) }
     }
 
-    /**
-     * Get a user by its name
-     * @param name
-     */
     fun getUserByCoachName(name: String) =
         userRepository.getByCoachName(name)
             ?: throw UserNotFoundException("User not found with coach name $name")
 
-    /**
-     * Get a user DTO by its name
-     * @param name
-     */
     fun getUserDTOByName(name: String) = dtoConverter.convertToUserDTO(getUserByCoachName(name))
 
-    /**
-     * Update a user's password
-     * @param id
-     * @param newPassword
-     */
     fun updateUserPassword(
         id: Long,
         newPassword: String,
@@ -241,12 +180,6 @@ class UserService(
         return dtoConverter.convertToUserDTO(user)
     }
 
-    /**
-     * Update a user's email
-     * @param id
-     * @param email
-     * @return Boolean
-     */
     fun updateEmail(
         id: Long,
         email: String,
@@ -259,10 +192,6 @@ class UserService(
         return dtoConverter.convertToUserDTO(user)
     }
 
-    /**
-     * Update a user's reset token
-     * @param email
-     */
     fun updateResetToken(email: String): User {
         val user = getUserByEmail(email)
         val resetToken = UUID.randomUUID().toString()
@@ -274,10 +203,6 @@ class UserService(
         return user
     }
 
-    /**
-     * Validate a user
-     * @param userValidationRequest
-     */
     fun validateUser(userValidationRequest: UserValidationRequest): UserValidationResponse {
         val discordIdExists = userRepository.existsByDiscordId(userValidationRequest.discordId)
         val discordTagExists = userRepository.existsByDiscordTag(userValidationRequest.discordTag)
@@ -292,9 +217,6 @@ class UserService(
         )
     }
 
-    /**
-     * Encrypt all user emails
-     */
     fun hashEmails() {
         val users = userRepository.findAll().filterNotNull()
         users.forEach {
@@ -303,11 +225,6 @@ class UserService(
         }
     }
 
-    /**
-     * Update a user
-     * @param user
-     * @return UserDTO
-     */
     fun updateUser(user: UserDTO): UserDTO {
         val existingUser = getUserDTOById(user.id)
 
@@ -339,11 +256,6 @@ class UserService(
         return saveUserDTOToUser(user.id, existingUser)
     }
 
-    /**
-     * Save a user DTO into a User object in the db
-     * @param id
-     * @param user
-     */
     private fun saveUserDTOToUser(
         id: Long,
         user: UserDTO,
@@ -379,27 +291,13 @@ class UserService(
         return user
     }
 
-    /**
-     * Get a user by their Discord id
-     */
     fun getUserByDiscordId(id: String) =
         userRepository.getByDiscordId(id) ?: throw UserNotFoundException("User not found with Discord ID $id")
 
-    /**
-     * Get a user by their reset token
-     */
     fun getUserByResetToken(token: String) = userRepository.getUserByResetToken(token)
 
-    /**
-     * Save a user
-     * @param user
-     */
     fun saveUser(user: User): User = userRepository.save(user)
 
-    /**
-     * Delete a user
-     * @param id
-     */
     fun deleteUser(id: Long): HttpStatus {
         userRepository.getById(id)
 

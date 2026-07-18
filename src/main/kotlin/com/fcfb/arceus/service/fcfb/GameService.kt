@@ -28,6 +28,7 @@ import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
+import com.fcfb.arceus.service.fcfb.game.GameRules
 import com.fcfb.arceus.service.specification.GameSpecificationService
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
@@ -80,7 +81,7 @@ class GameService(
     private val vegasOddsService: VegasOddsService,
     private val gameStatsRepository: GameStatsRepository,
 ) {
-    // ===== Game Week Job Tracking =====
+    // Game Week Job Tracking
     companion object {
         private val activeJobs = ConcurrentHashMap<String, GameWeekJob>()
 
@@ -90,9 +91,6 @@ class GameService(
         const val BATCH_COOLDOWN_MS = 60000L // 60 seconds cooldown between batches
     }
 
-    /**
-     * Save a game state
-     */
     fun saveGame(game: Game): Game = gameRepository.save(game)
 
     suspend fun startSingleGame(
@@ -106,11 +104,6 @@ class GameService(
         return game
     }
 
-    /**
-     * Start a game
-     * @param startRequest
-     * @return
-     */
     private suspend fun startNormalGame(
         startRequest: StartRequest,
         week: Int?,
@@ -257,11 +250,6 @@ class GameService(
         }
     }
 
-    /**
-     * Start an overtime game
-     * @param startRequest
-     * @return
-     */
     suspend fun startOvertimeGame(startRequest: StartRequest): Game {
         try {
             val homeTeamData = teamService.getTeamByName(startRequest.homeTeam)
@@ -397,22 +385,6 @@ class GameService(
         }
     }
 
-    /**
-     * Update game information based on the result of a play
-     * @param game
-     * @param play
-     * @param homeScore
-     * @param awayScore
-     * @param possession
-     * @param quarter
-     * @param clock
-     * @param ballLocation
-     * @param down
-     * @param yardsToGo
-     * @param homeTimeoutCalled
-     * @param awayTimeoutCalled
-     * @param timeoutUsed
-     */
     fun updateGameInformation(
         game: Game,
         play: Play,
@@ -489,11 +461,6 @@ class GameService(
         return game
     }
 
-    /**
-     * Update the game information based on a defensive number submission
-     * @param game
-     * @param gamePlay
-     */
     fun updateWithDefensiveNumberSubmission(
         game: Game,
         gamePlay: Play,
@@ -504,12 +471,6 @@ class GameService(
         gameRepository.save(game)
     }
 
-    /**
-     * Rollback the play to the previous play
-     * @param game
-     * @param previousPlay
-     * @param gamePlay
-     */
     fun rollbackPlay(
         game: Game,
         previousPlay: Play,
@@ -544,7 +505,7 @@ class GameService(
                     }
                 }
             }
-            if (isOffensiveTouchdownPlay(gamePlay.actualResult)) {
+            if (GameRules.isOffensiveTouchdownPlay(gamePlay.actualResult)) {
                 if (gamePlay.possession == TeamSide.HOME) {
                     game.homeScore -= 6
                 } else {
@@ -552,7 +513,7 @@ class GameService(
                 }
                 game.currentPlayType = PlayType.NORMAL
             }
-            if (isDefensiveTouchdownPlay(gamePlay.actualResult)) {
+            if (GameRules.isDefensiveTouchdownPlay(gamePlay.actualResult)) {
                 if (gamePlay.possession == TeamSide.AWAY) {
                     game.homeScore -= 6
                 } else {
@@ -629,7 +590,7 @@ class GameService(
             game.currentPlayId = newCurrentPlay.playId
             game.possession = previousPlay.possession
             game.quarter = previousPlay.quarter
-            game.clock = convertClockToString(previousPlay.clock)
+            game.clock = GameRules.convertClockToString(previousPlay.clock)
             game.ballLocation = previousPlay.ballLocation
             game.down = previousPlay.down
             game.yardsToGo = previousPlay.yardsToGo
@@ -812,9 +773,6 @@ class GameService(
      */
     fun getGameWeekJobStatus(jobId: String): GameWeekJob? = activeJobs[jobId]
 
-    /**
-     * Get all active/recent job IDs for listing.
-     */
     fun getAllGameWeekJobs(): List<GameWeekJob> = activeJobs.values.sortedByDescending { it.startedAt }
 
     /**
@@ -862,9 +820,6 @@ class GameService(
         )
     }
 
-    /**
-     * Background processor for retrying failed games.
-     */
     private suspend fun retryFailedGamesProcess(
         jobId: String,
         week: Int,
@@ -960,9 +915,6 @@ class GameService(
         Logger.info("Job: $jobId — Retried: ${failedGames.size}, Started: ${job.startedGames}, Still Failed: ${job.failedGames}")
     }
 
-    /**
-     * End all ongoing games
-     */
     fun endAllGames(): List<Game> {
         val gamesToEnd = getAllOngoingGames()
         val endedGames = mutableListOf<Game>()
@@ -992,31 +944,16 @@ class GameService(
         return game
     }
 
-    /**
-     * End a single game by channel id
-     * @param channelId
-     * @return
-     */
     fun endSingleGameByChannelId(channelId: ULong): Game {
         val game = getGameByPlatformId(channelId)
         return endGame(game)
     }
 
-    /**
-     * End a single game by game id
-     * @param gameId
-     * @return
-     */
     fun endSingleGameByGameId(gameId: Int): Game {
         val game = getGameById(gameId)
         return endGame(game)
     }
 
-    /**
-     * End a game
-     * @param game
-     * @return
-     */
     private fun endGame(game: Game): Game {
         try {
             game.gameStatus = GameStatus.FINAL
@@ -1109,10 +1046,6 @@ class GameService(
         }
     }
 
-    /**
-     * End the overtime period and advance to the next one
-     * @param game
-     */
     private fun endOvertimePeriod(game: Game) {
         game.overtimeHalf = 1
         game.possession =
@@ -1130,11 +1063,6 @@ class GameService(
         game.waitingOn = if (game.possession == TeamSide.HOME) TeamSide.AWAY else TeamSide.HOME
     }
 
-    /**
-     * Chew a game
-     * @param channelId
-     * @return
-     */
     fun chewGame(game: Game): Game {
         try {
             game.gameMode = GameMode.CHEW
@@ -1154,12 +1082,6 @@ class GameService(
         }
     }
 
-    /**
-     * Run a coin toss
-     * @param gameId
-     * @param coinTossCall
-     * @return
-     */
     fun runCoinToss(
         gameId: String,
         coinTossCall: CoinTossCall,
@@ -1167,11 +1089,11 @@ class GameService(
         val game = getGameById(gameId.toInt())
 
         try {
-            val result = Random().nextInt(2)
+            val coinFlip = Random().nextInt(2)
             val coinTossWinner =
                 if (
-                    (result == 1 && coinTossCall == CoinTossCall.HEADS) ||
-                    (result == 0 && coinTossCall == CoinTossCall.TAILS)
+                    (coinFlip == 1 && coinTossCall == CoinTossCall.HEADS) ||
+                    (coinFlip == 0 && coinTossCall == CoinTossCall.TAILS)
                 ) {
                     TeamSide.AWAY
                 } else {
@@ -1202,12 +1124,6 @@ class GameService(
         }
     }
 
-    /**
-     * Make a coin toss choice
-     * @param gameId
-     * @param coinTossChoice
-     * @return
-     */
     fun makeCoinTossChoice(
         gameId: String,
         coinTossChoice: CoinTossChoice,
@@ -1247,12 +1163,6 @@ class GameService(
         }
     }
 
-    /**
-     * Make an overtime coin toss choice
-     * @param gameId
-     * @param coinTossChoice
-     * @return
-     */
     fun makeOvertimeCoinTossChoice(
         gameId: String,
         coinTossChoice: OvertimeCoinTossChoice,
@@ -1295,11 +1205,6 @@ class GameService(
         }
     }
 
-    /**
-     * Restart a game
-     * @param channelId
-     * @return
-     */
     suspend fun restartGame(channelId: ULong): Game {
         val game = getGameByPlatformId(channelId)
         deleteOngoingGame(channelId)
@@ -1316,11 +1221,6 @@ class GameService(
         return startNormalGame(startRequest, game.week)
     }
 
-    /**
-     * Deletes an ongoing game
-     * @param channelId
-     * @return
-     */
     fun deleteOngoingGame(channelId: ULong): Boolean {
         val game = getGameByPlatformId(channelId)
         val id = game.gameId
@@ -1335,29 +1235,13 @@ class GameService(
         return true
     }
 
-    /**
-     * Calculate the delay of game timer
-     */
     fun calculateDelayOfGameTimer(): String? {
-        // Set the DOG timer
-        // Get the current date and time
         val now = ZonedDateTime.now(ZoneId.of("America/New_York"))
-
-        // Add 18 hours to the current date and time
         val futureTime = now.plusHours(18)
-
-        // Define the desired date and time format
         val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")
-
-        // Format the result and set it on the game
         return futureTime.format(formatter)
     }
 
-    /**
-     * Update the request message id
-     * @param gameId
-     * @param requestMessageId
-     */
     fun updateRequestMessageId(
         gameId: Int,
         requestMessageId: String,
@@ -1375,10 +1259,6 @@ class GameService(
         return game
     }
 
-    /**
-     * Update the last message timestamp
-     * @param gameId
-     */
     fun updateLastMessageTimestamp(gameId: Int): Game {
         val game = getGameById(gameId)
         val timestamp = Timestamp.from(Instant.now()).toString()
@@ -1387,10 +1267,6 @@ class GameService(
         return game
     }
 
-    /**
-     * Update a game
-     * @param game
-     */
     fun updateGame(game: Game): Game {
         val existingGame = getGameById(game.gameId)
 
@@ -1458,9 +1334,6 @@ class GameService(
         return existingGame
     }
 
-    /**
-     * Update the timeouts for a game
-     */
     private fun updateTimeouts(
         game: Game,
         homeTimeoutCalled: Boolean,
@@ -1473,9 +1346,6 @@ class GameService(
         }
     }
 
-    /**
-     * Update the team the game is waiting on
-     */
     private fun updateWaitingOn(possession: TeamSide): TeamSide {
         return if (possession == TeamSide.HOME) {
             TeamSide.AWAY
@@ -1484,14 +1354,11 @@ class GameService(
         }
     }
 
-    /**
-     * Update the play type for a game
-     */
     private fun updatePlayType(
         game: Game,
         play: Play,
     ) {
-        if (isTouchdownPlay(play.actualResult)) {
+        if (GameRules.isTouchdownPlay(play.actualResult)) {
             game.currentPlayType = PlayType.PAT
         } else if (play.actualResult == ActualResult.SAFETY ||
             (play.playCall == PlayCall.FIELD_GOAL && play.result == Scenario.GOOD) ||
@@ -1508,17 +1375,6 @@ class GameService(
         }
     }
 
-    /**
-     * Update the values to start a game
-     * @param game
-     * @param clock
-     * @param possession
-     * @param quarter
-     * @param ballLocation
-     * @param down
-     * @param yardsToGo
-     * @param waitingOn
-     */
     private fun updateStartGameValues(
         game: Game,
         clock: Int,
@@ -1530,7 +1386,7 @@ class GameService(
         waitingOn: TeamSide,
     ) {
         game.gameStatus = GameStatus.IN_PROGRESS
-        game.clock = convertClockToString(clock)
+        game.clock = GameRules.convertClockToString(clock)
         game.possession = possession
         game.quarter = quarter
         game.ballLocation = ballLocation
@@ -1539,13 +1395,6 @@ class GameService(
         game.waitingOn = waitingOn
     }
 
-    /**
-     * Update the values for when a game is going into halftime
-     * @param game
-     * @param possession
-     * @param waitingOn
-     * @param clock
-     */
     private fun updateHalftimeValues(
         game: Game,
         possession: TeamSide,
@@ -1557,7 +1406,7 @@ class GameService(
         game.gameStatus = GameStatus.HALFTIME
         game.currentPlayType = PlayType.KICKOFF
         game.ballLocation = 35
-        game.clock = convertClockToString(clock)
+        game.clock = GameRules.convertClockToString(clock)
         game.possession = possession
         game.quarter = 3
         game.down = 1
@@ -1565,17 +1414,6 @@ class GameService(
         game.waitingOn = waitingOn
     }
 
-    /**
-     * Update the values for the start of a half
-     * @param game
-     * @param clock
-     * @param possession
-     * @param quarter
-     * @param ballLocation
-     * @param down
-     * @param yardsToGo
-     * @param waitingOn
-     */
     private fun updateStartOfHalfValues(
         game: Game,
         clock: Int,
@@ -1587,7 +1425,7 @@ class GameService(
         waitingOn: TeamSide,
     ) {
         game.gameStatus = GameStatus.IN_PROGRESS
-        game.clock = convertClockToString(clock)
+        game.clock = GameRules.convertClockToString(clock)
         game.possession = possession
         game.quarter = quarter
         game.ballLocation = ballLocation
@@ -1596,10 +1434,6 @@ class GameService(
         game.waitingOn = waitingOn
     }
 
-    /**
-     * Update the end of game values for regulation games
-     * @param game
-     */
     private fun updateEndOfRegulationGameValues(game: Game) {
         game.quarter = 4
         game.clock = "0:00"
@@ -1607,17 +1441,6 @@ class GameService(
         game.gameStatus = GameStatus.FINAL
     }
 
-    /**
-     * Update the values for a normal play
-     * @param game
-     * @param clock
-     * @param possession
-     * @param quarter
-     * @param ballLocation
-     * @param down
-     * @param yardsToGo
-     * @param waitingOn
-     */
     private fun updateNormalPlayValues(
         game: Game,
         clock: Int,
@@ -1628,7 +1451,7 @@ class GameService(
         yardsToGo: Int,
         waitingOn: TeamSide,
     ) {
-        game.clock = convertClockToString(clock)
+        game.clock = GameRules.convertClockToString(clock)
         game.possession = possession
         game.quarter = quarter
         game.ballLocation = ballLocation
@@ -1637,11 +1460,6 @@ class GameService(
         game.waitingOn = waitingOn
     }
 
-    /**
-     * Update the values for the start of overtime
-     * @param game
-     * @param quarter
-     */
     private fun updateStartOfOvertimeValues(
         game: Game,
         quarter: Int,
@@ -1658,18 +1476,6 @@ class GameService(
         game.awayTimeouts = 1
     }
 
-    /**
-     * Update overtime values for a game
-     * @param game
-     * @param play
-     * @param possession
-     * @param waitingOn
-     * @param ballLocation
-     * @param down
-     * @param yardsToGo
-     * @param homeScore
-     * @param awayScore
-     */
     private fun updateOvertimeValues(
         game: Game,
         play: Play,
@@ -1682,7 +1488,7 @@ class GameService(
         awayScore: Int,
     ) {
         game.clock = "0:00"
-        if (isEndOfOvertimeHalf(play)) {
+        if (GameRules.isEndOfOvertimeHalf(play)) {
             // Handle the end of each half of overtime
             if (game.overtimeHalf == 1) {
                 if (play.actualResult == ActualResult.TOUCHDOWN) {
@@ -1713,7 +1519,7 @@ class GameService(
                 if (homeScore != awayScore || game.currentPlayType == PlayType.PAT) {
                     // End of game, one team has won
                     // If the game is within 2 points, kick the PAT
-                    if (isGameMathmaticallyOver(play, homeScore, awayScore)) {
+                    if (GameRules.isGameMathmaticallyOver(play, homeScore, awayScore)) {
                         game.possession = possession
                         game.waitingOn = waitingOn
                         game.ballLocation = ballLocation
@@ -1735,10 +1541,6 @@ class GameService(
         }
     }
 
-    /**
-     * Sub a coach in for a team
-     * @param gameId
-     */
     fun subCoachIntoGame(
         gameId: Int,
         team: String,
@@ -1765,40 +1567,16 @@ class GameService(
         return game
     }
 
-    /**
-     * Get the game by request message id
-     * @param requestMessageId
-     */
     fun getGameByRequestMessageId(requestMessageId: String) =
         gameRepository.getGameByRequestMessageId(requestMessageId)
             ?: throw GameNotFoundException("Game not found for Request Message ID: $requestMessageId")
 
-    /**
-     * Get the game by platform id
-     * @param platformId
-     */
     fun getGameByPlatformId(platformId: ULong) =
         gameRepository.getGameByPlatformId(platformId)
             ?: throw GameNotFoundException("Game not found for Platform ID: $platformId")
 
-    /**
-     * Get an ongoing game by id
-     * @param id
-     * @return
-     */
     fun getGameById(id: Int): Game = gameRepository.getGameById(id) ?: throw GameNotFoundException("No game found with ID: $id")
 
-    /**
-     * Get filtered games
-     * @param filters
-     * @param category
-     * @param conference
-     * @param season
-     * @param week
-     * @param gameMode
-     * @param sort
-     * @param pageable
-     */
     fun getFilteredGames(
         filters: List<GameFilter>,
         category: GameCategory?,
@@ -1830,35 +1608,22 @@ class GameService(
             )
     }
 
-    /**
-     * Find expired timers
-     */
     fun findExpiredTimers() =
         gameRepository.findExpiredTimers().ifEmpty {
             Logger.info("No games found with expired timers")
             emptyList()
         }
 
-    /**
-     * Find games to warn first instance
-     */
     fun findGamesToWarnFirstInstance() =
         gameRepository.findGamesToWarnFirstInstance().ifEmpty {
             emptyList()
         }
 
-    /**
-     * Find games to warn second instance
-     */
     fun findGamesToWarnSecondInstance() =
         gameRepository.findGamesToWarnSecondInstance().ifEmpty {
             emptyList()
         }
 
-    /**
-     * Update a game as warned
-     * @param gameId
-     */
     fun updateGameAsWarned(
         gameId: Int,
         instance: Int,
@@ -1868,40 +1633,20 @@ class GameService(
         gameRepository.updateGameAsSecondWarning(gameId)
     }
 
-    /**
-     * Mark a game as close game pinged
-     * @param gameId
-     */
     fun markCloseGamePinged(gameId: Int) = gameRepository.markCloseGamePinged(gameId)
 
-    /**
-     * Mark a game as upset alert pinged
-     * @param gameId
-     */
     fun markUpsetAlertPinged(gameId: Int) = gameRepository.markUpsetAlertPinged(gameId)
 
-    /**
-     * Get all games
-     */
     fun getAllGames() =
         gameRepository.getAllGames().ifEmpty {
             throw GameNotFoundException("No games found when getting all games")
         }
 
-    /**
-     * Get all ongoing games
-     */
     private fun getAllOngoingGames() =
         gameRepository.getAllOngoingGames().ifEmpty {
             throw GameNotFoundException("No ongoing games found")
         }
 
-    /**
-     * Get all games with the teams in it for the requested week
-     * @param teams
-     * @param season
-     * @param week
-     */
     fun getGamesWithTeams(
         teams: List<Team>,
         season: Int,
@@ -1919,20 +1664,12 @@ class GameService(
         return games
     }
 
-    /**
-     * Get games by season and matchup
-     */
     fun getGameBySeasonAndMatchup(
         season: Int,
         firstTeam: String,
         secondTeam: String,
     ) = gameRepository.getGamesBySeasonAndMatchup(season, firstTeam, secondTeam)
 
-    /**
-     * Handle the halftime possession change
-     * @param game
-     * @return
-     */
     fun handleHalfTimePossessionChange(game: Game): TeamSide {
         return if (game.coinTossWinner == TeamSide.HOME && game.coinTossChoice == CoinTossChoice.DEFER) {
             TeamSide.AWAY
@@ -1947,11 +1684,6 @@ class GameService(
         }
     }
 
-    /**
-     * Determines if the game is close
-     * @param game the game
-     * @param play the play
-     */
     private fun updateCloseGame(
         game: Game,
         play: Play,
@@ -1995,87 +1727,15 @@ class GameService(
         game.upsetAlert = false
     }
 
-    /**
-     * Returns the difference between the offensive and defensive numbers.
-     * @param offensiveNumber
-     * @param defesiveNumber
-     * @return
-     */
     fun getDifference(
         offensiveNumber: Int,
         defesiveNumber: Int,
-    ): Int {
-        var difference = abs(defesiveNumber - offensiveNumber)
-        if (difference > 750) {
-            difference = 1500 - difference
-        }
-        return difference
-    }
+    ): Int = GameRules.getDifference(offensiveNumber, defesiveNumber)
 
-    /**
-     * Returns the number of seconds from the clock.
-     * @param clock
-     * @return
-     */
-    fun convertClockToSeconds(clock: String): Int {
-        val clockArray = clock.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        val minutes = clockArray[0].toInt()
-        val seconds = clockArray[1].toInt()
-        return minutes * 60 + seconds
-    }
+    fun convertClockToSeconds(clock: String): Int = GameRules.convertClockToSeconds(clock)
 
-    /**
-     * Returns the clock from the number of seconds.
-     * @param seconds
-     * @return
-     */
-    private fun convertClockToString(seconds: Int): String {
-        val minutes = seconds / 60
-        val remainingSeconds = seconds % 60
-        return String.format("%d:%02d", minutes, remainingSeconds)
-    }
+    fun isTouchdownPlay(actualResult: ActualResult?): Boolean = GameRules.isTouchdownPlay(actualResult)
 
-    /**
-     * Check if a play is a touchdown play
-     * @param actualResult
-     * @return
-     */
-    fun isTouchdownPlay(actualResult: ActualResult?): Boolean {
-        return actualResult == ActualResult.TOUCHDOWN ||
-            actualResult == ActualResult.KICKING_TEAM_TOUCHDOWN ||
-            actualResult == ActualResult.PUNT_TEAM_TOUCHDOWN ||
-            actualResult == ActualResult.TURNOVER_TOUCHDOWN ||
-            actualResult == ActualResult.RETURN_TOUCHDOWN ||
-            actualResult == ActualResult.PUNT_RETURN_TOUCHDOWN ||
-            actualResult == ActualResult.KICK_SIX
-    }
-
-    /**
-     * Check if a play is an offensive scoring play
-     * @param actualResult
-     * @return
-     */
-    private fun isOffensiveTouchdownPlay(actualResult: ActualResult?): Boolean {
-        return actualResult == ActualResult.TOUCHDOWN ||
-            actualResult == ActualResult.KICKING_TEAM_TOUCHDOWN ||
-            actualResult == ActualResult.PUNT_TEAM_TOUCHDOWN
-    }
-
-    /**
-     * Check if a play is an defensive scoring play
-     * @param actualResult
-     * @return
-     */
-    private fun isDefensiveTouchdownPlay(actualResult: ActualResult?): Boolean {
-        return actualResult == ActualResult.TURNOVER_TOUCHDOWN ||
-            actualResult == ActualResult.RETURN_TOUCHDOWN ||
-            actualResult == ActualResult.PUNT_RETURN_TOUCHDOWN ||
-            actualResult == ActualResult.KICK_SIX
-    }
-
-    /**
-     * Determine if the clock is stopped
-     */
     private fun updateClockStopped(
         game: Game,
         play: Play,
@@ -2095,44 +1755,6 @@ class GameService(
         }
     }
 
-    private fun isEndOfOvertimeHalf(play: Play) =
-        play.actualResult == ActualResult.GOOD ||
-            play.actualResult == ActualResult.NO_GOOD ||
-            play.actualResult == ActualResult.BLOCKED ||
-            play.actualResult == ActualResult.SUCCESS ||
-            play.actualResult == ActualResult.FAILED ||
-            play.actualResult == ActualResult.DEFENSE_TWO_POINT ||
-            play.actualResult == ActualResult.TURNOVER_ON_DOWNS ||
-            play.actualResult == ActualResult.TURNOVER ||
-            play.actualResult == ActualResult.TOUCHDOWN ||
-            play.actualResult == ActualResult.TURNOVER_TOUCHDOWN ||
-            play.actualResult == ActualResult.KICK_SIX ||
-            play.actualResult == ActualResult.PUNT ||
-            play.actualResult == ActualResult.PUNT_RETURN_TOUCHDOWN ||
-            play.actualResult == ActualResult.PUNT_TEAM_TOUCHDOWN ||
-            play.actualResult == ActualResult.MUFFED_PUNT
-
-    /**
-     * Check if the game is mathematically over
-     * @param play
-     * @param homeScore
-     * @param awayScore
-     */
-    private fun isGameMathmaticallyOver(
-        play: Play,
-        homeScore: Int,
-        awayScore: Int,
-    ) = (
-        play.actualResult == ActualResult.TOUCHDOWN ||
-            play.actualResult == ActualResult.TURNOVER_TOUCHDOWN ||
-            play.actualResult == ActualResult.KICK_SIX
-    ) && (abs(homeScore - awayScore) <= 2 || abs(awayScore - homeScore) <= 2)
-
-    /**
-     * Create a Discord thread for the game and get the data from it
-     * @param game
-     * @return
-     */
     private suspend fun createDiscordThread(game: Game): List<String> {
         val discordData =
             discordService.createGameThread(game)
@@ -2154,11 +1776,6 @@ class GameService(
         return discordData
     }
 
-    /**
-     * Get the current season and week
-     * @param startRequest
-     * @param week
-     */
     private fun getCurrentSeasonAndWeek(
         startRequest: StartRequest,
         week: Int?,

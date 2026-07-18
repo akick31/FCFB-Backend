@@ -12,9 +12,6 @@ import javax.persistence.criteria.Root
 
 @Service
 class PlaybookStatsSpecificationService {
-    /**
-     * Create specification for filtering playbook stats
-     */
     fun createSpecification(
         offensivePlaybook: OffensivePlaybook?,
         defensivePlaybook: DefensivePlaybook?,
@@ -31,9 +28,6 @@ class PlaybookStatsSpecificationService {
         }
     }
 
-    /**
-     * Create sort orders for playbook stats
-     */
     fun createSort(): List<org.springframework.data.domain.Sort.Order> {
         return listOf(
             org.springframework.data.domain.Sort.Order.desc("seasonNumber"),

@@ -147,9 +147,6 @@ class WinProbabilityService(
         }
     }
 
-    /**
-     * Calculate win probability added for a play
-     */
     private fun calculateWinProbabilityAdded(
         game: Game,
         play: Play,
@@ -203,9 +200,6 @@ class WinProbabilityService(
         return winProbabilityAdded
     }
 
-    /**
-     * Update ELO ratings after a game
-     */
     fun updateEloRatings(
         game: Game,
         homeTeam: Team,
@@ -528,9 +522,6 @@ class WinProbabilityService(
         return rawWinProbability
     }
 
-    /**
-     * Calculate expected score for ELO
-     */
     private fun calculateExpectedScore(
         ratingA: Double,
         ratingB: Double,
@@ -554,9 +545,6 @@ class WinProbabilityService(
         return Pair(homeTeamWinProbability, awayTeamWinProbability)
     }
 
-    /**
-     * Get ELO ratings for all teams
-     */
     fun getEloRatings(teams: List<Team>): List<EloRatingResponse> =
         try {
             teams.map { team ->
@@ -572,9 +560,6 @@ class WinProbabilityService(
             throw e
         }
 
-    /**
-     * Get team ELO from game stats for a specific game
-     */
     private fun getTeamEloFromGameStats(
         gameId: Int,
         teamName: String,
@@ -589,9 +574,6 @@ class WinProbabilityService(
         }
     }
 
-    /**
-     * Calculate win probability for all plays in a specific game
-     */
     fun calculateWinProbabilitiesForSingleGame(
         gameId: Int,
         game: Game,
@@ -684,9 +666,6 @@ class WinProbabilityService(
         }
     }
 
-    /**
-     * Calculate win probability for ALL games in the database
-     */
     fun calculateWinProbabilitiesForAllGames(
         games: List<Game>,
         playService: PlayService,
@@ -745,9 +724,6 @@ class WinProbabilityService(
             throw e
         }
 
-    /**
-     * Get win probability for each team for all plays in a game
-     */
     fun getWinProbabilitiesForGame(
         gameId: Int,
         plays: List<Play>,

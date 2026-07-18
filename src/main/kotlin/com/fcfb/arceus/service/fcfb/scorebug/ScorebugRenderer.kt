@@ -30,7 +30,7 @@ interface ScorebugRenderer {
  * Base class with shared drawing helpers used across multiple scorebug styles
  */
 abstract class ScorebugRendererBase : ScorebugRenderer {
-    // ==================== SCALING ====================
+    // Scaling
 
     protected fun scaleImage(
         image: BufferedImage,
@@ -50,7 +50,7 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         return scaledImage
     }
 
-    // ==================== GRADIENT ====================
+    // Gradient
 
     protected fun paintGradient(
         g: Graphics2D,
@@ -71,7 +71,7 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         g.paint = gradient
     }
 
-    // ==================== TEAM SECTIONS (ESPN/Postseason shared) ====================
+    // Team sections (ESPN/Postseason shared)
 
     protected fun drawTeamSection(
         g: Graphics2D,
@@ -277,7 +277,7 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         g.drawLine(245, yPos, 245, yPos + rowHeight)
     }
 
-    // ==================== BORDER ====================
+    // Border
 
     protected fun drawBorder(
         g: Graphics2D,
@@ -292,7 +292,7 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         g.drawLine(0, height - 1, width, height - 3)
     }
 
-    // ==================== TEXT HELPERS ====================
+    // Text helpers
 
     protected fun getQuarterText(quarter: Int): String {
         var quarterText =
@@ -389,7 +389,7 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         }
     }
 
-    // ==================== FONTS ====================
+    // Fonts
 
     protected fun getSansFont(g: Graphics2D): InputStream? {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)

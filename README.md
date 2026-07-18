@@ -2,7 +2,7 @@
 
 **FCFB Arceus** is a Spring Boot service with a REST API created for the **Fake College Football** game. The service acts as the backend for the game, handling game logic, player actions, team management, and real-time updates. It integrates with the larger **FCFB ecosystem**, including the **FCFB Discord Bot** and **FCFB Website**.
 
-The service is responsible for processing game data, simulating plays, updating player stats, and managing the game state. It exposes endpoints that allow the **FCFB Discord Bot** to send requests and receive updates, enabling seamless communication between the game and Discord.
+The service is responsible for processing game data, simulating plays, updating player stats, and managing the game state. It exposes endpoints that allow the **FCFB Discord Bot** to send requests and receive updates.
 
 ---
 

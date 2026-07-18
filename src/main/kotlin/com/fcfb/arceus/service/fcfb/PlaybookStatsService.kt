@@ -23,9 +23,6 @@ class PlaybookStatsService(
     private val gameStatsRepository: GameStatsRepository,
     private val playbookStatsSpecificationService: PlaybookStatsSpecificationService,
 ) {
-    /**
-     * Get filtered playbook stats with pagination
-     */
     fun getFilteredPlaybookStats(
         offensivePlaybook: OffensivePlaybook?,
         defensivePlaybook: DefensivePlaybook?,
@@ -43,13 +40,9 @@ class PlaybookStatsService(
         return playbookStatsRepository.findAll(spec, sortedPageable)
     }
 
-    /**
-     * Generate all playbook stats (recalculate all playbook stats)
-     */
     fun generateAllPlaybookStats() {
         Logger.info("Starting generation of all playbook stats")
 
-        // Get all game stats
         val allGameStats = gameStatsRepository.findAllByOrderBySeasonDescGameIdAsc()
         Logger.info("Found ${allGameStats.size} total game stats records")
 
@@ -83,9 +76,6 @@ class PlaybookStatsService(
         Logger.info("Completed generation of all playbook stats")
     }
 
-    /**
-     * Generate playbook stats for a specific offensive playbook, defensive playbook, and season
-     */
     private fun generateByPlaybooksAndSeason(
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,
@@ -114,16 +104,12 @@ class PlaybookStatsService(
             playbookStatsRepository.delete(it)
         }
 
-        // Create new playbook stats
         val playbookStats = aggregateGameStatsToPlaybookStats(gameStatsList, offensivePlaybook, defensivePlaybook, seasonNumber)
 
         playbookStatsRepository.save(playbookStats)
         Logger.info("Completed generating playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber")
     }
 
-    /**
-     * Aggregate game stats into playbook stats
-     */
     private fun aggregateGameStatsToPlaybookStats(
         gameStatsList: List<GameStats>,
         offensivePlaybook: OffensivePlaybook,
@@ -199,9 +185,6 @@ class PlaybookStatsService(
         )
     }
 
-    /**
-     * Calculate percentage from numerator and denominator
-     */
     private fun calculatePercentage(
         numerator: Int,
         denominator: Int,
@@ -213,9 +196,6 @@ class PlaybookStatsService(
         }
     }
 
-    /**
-     * Calculate average from a list of values
-     */
     private fun calculateAverage(values: List<Double>): Double? {
         if (values.isEmpty()) return null
         return values.average()

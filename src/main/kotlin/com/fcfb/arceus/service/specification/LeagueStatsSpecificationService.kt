@@ -11,9 +11,6 @@ import javax.persistence.criteria.Root
 
 @Service
 class LeagueStatsSpecificationService {
-    /**
-     * Create specification for filtering league stats
-     */
     fun createSpecification(
         subdivision: Subdivision?,
         season: Int?,
@@ -28,9 +25,6 @@ class LeagueStatsSpecificationService {
         }
     }
 
-    /**
-     * Create sort orders for league stats
-     */
     fun createSort(): List<org.springframework.data.domain.Sort.Order> {
         return listOf(
             org.springframework.data.domain.Sort.Order.desc("seasonNumber"),
