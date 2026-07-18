@@ -1,8 +1,8 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.UserDTO
-import com.fcfb.arceus.dto.UserValidationRequest
-import com.fcfb.arceus.dto.UserValidationResponse
+import com.fcfb.arceus.dto.request.UserValidationRequest
+import com.fcfb.arceus.dto.response.UserDTO
+import com.fcfb.arceus.dto.response.UserValidationResponse
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.User

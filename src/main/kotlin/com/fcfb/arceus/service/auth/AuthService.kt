@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.auth
 
-import com.fcfb.arceus.dto.LoginResponse
-import com.fcfb.arceus.dto.SignupInfo
+import com.fcfb.arceus.dto.response.LoginResponse
+import com.fcfb.arceus.dto.standard.SignupInfo
 import com.fcfb.arceus.model.NewSignup
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.email.EmailService

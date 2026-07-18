@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.UserDTO
-import com.fcfb.arceus.dto.UserValidationRequest
+import com.fcfb.arceus.dto.request.UpdateUserRequest
+import com.fcfb.arceus.dto.request.UserValidationRequest
 import com.fcfb.arceus.service.fcfb.UserService
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -54,8 +54,8 @@ class UserController(
 
     @PutMapping("/update")
     fun updateUserRole(
-        @RequestBody user: UserDTO,
-    ) = userService.updateUser(user)
+        @RequestBody request: UpdateUserRequest,
+    ) = userService.updateUser(request.toUserDTO())
 
     @PostMapping("/hash_emails")
     fun encryptEmails() = userService.hashEmails()

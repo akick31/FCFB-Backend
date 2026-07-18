@@ -1,7 +1,7 @@
 package com.fcfb.arceus.util
 
-import com.fcfb.arceus.dto.NewSignupDTO
-import com.fcfb.arceus.dto.UserDTO
+import com.fcfb.arceus.dto.response.NewSignupDTO
+import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.model.NewSignup
 import com.fcfb.arceus.model.User
 import org.springframework.stereotype.Component

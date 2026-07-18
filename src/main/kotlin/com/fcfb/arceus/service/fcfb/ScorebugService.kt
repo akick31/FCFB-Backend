@@ -1,6 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.ScorebugResponse
+import com.fcfb.arceus.dto.response.ScorebugResponse
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel

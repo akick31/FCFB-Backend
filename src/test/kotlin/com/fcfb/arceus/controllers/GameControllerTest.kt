@@ -1,6 +1,6 @@
 import com.fcfb.arceus.controllers.GameController
-import com.fcfb.arceus.dto.GameWeekJobResponse
-import com.fcfb.arceus.dto.StartRequest
+import com.fcfb.arceus.dto.request.StartRequest
+import com.fcfb.arceus.dto.response.GameWeekJobResponse
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType

@@ -1,8 +1,8 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.UserDTO
-import com.fcfb.arceus.dto.UserValidationRequest
-import com.fcfb.arceus.dto.UserValidationResponse
+import com.fcfb.arceus.dto.request.UserValidationRequest
+import com.fcfb.arceus.dto.response.UserDTO
+import com.fcfb.arceus.dto.response.UserValidationResponse
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
@@ -189,7 +189,7 @@ class UserControllerTest {
 
     @Test
     fun `updateUserRole updates user`() {
-        every { userService.updateUser(sampleUser) } returns sampleUser
+        every { userService.updateUser(any()) } returns sampleUser
 
         val jsonBody =
             """
@@ -202,10 +202,8 @@ class UserControllerTest {
               "position": "HEAD_COACH",
               "role": "USER",
               "team": "Test Team",
-              "delayOfGameInstances": 2,
               "wins": 10,
               "losses": 5,
-              "winPercentage": 0.67,
               "conferenceWins": 6,
               "conferenceLosses": 2,
               "conferenceChampionshipWins": 1,
@@ -217,9 +215,7 @@ class UserControllerTest {
               "nationalChampionshipWins": 0,
               "nationalChampionshipLosses": 1,
               "offensivePlaybook": "AIR_RAID",
-              "defensivePlaybook": "FOUR_THREE",
-              "averageResponseTime": 15.5,
-              "delayOfGameWarningOptOut": false
+              "defensivePlaybook": "FOUR_THREE"
             }
             """.trimIndent()
 

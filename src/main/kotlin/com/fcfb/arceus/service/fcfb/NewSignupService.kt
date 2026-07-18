@@ -1,6 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.NewSignupDTO
+import com.fcfb.arceus.dto.response.NewSignupDTO
 import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.model.NewSignup
 import com.fcfb.arceus.model.User

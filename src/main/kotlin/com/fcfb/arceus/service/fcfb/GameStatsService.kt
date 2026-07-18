@@ -299,7 +299,7 @@ class GameStatsService(
     fun getEloHistory(
         team: String,
         season: Int?,
-    ): List<com.fcfb.arceus.dto.EloHistoryEntry> {
+    ): List<com.fcfb.arceus.dto.response.EloHistoryEntry> {
         val gameStatsList =
             if (team.lowercase() == "all") {
                 // Get all teams' ELO history - use optimized query
@@ -381,7 +381,7 @@ class GameStatsService(
                     null
                 }
 
-            com.fcfb.arceus.dto.EloHistoryEntry(
+            com.fcfb.arceus.dto.response.EloHistoryEntry(
                 team = teamName,
                 season = stats.season ?: 0,
                 week = stats.week,

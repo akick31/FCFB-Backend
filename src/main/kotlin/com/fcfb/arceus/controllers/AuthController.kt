@@ -1,8 +1,8 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.ForgotPasswordRequest
-import com.fcfb.arceus.dto.LoginRequest
-import com.fcfb.arceus.dto.ResetPasswordRequest
+import com.fcfb.arceus.dto.request.ForgotPasswordRequest
+import com.fcfb.arceus.dto.request.LoginRequest
+import com.fcfb.arceus.dto.request.ResetPasswordRequest
 import com.fcfb.arceus.model.NewSignup
 import com.fcfb.arceus.service.auth.AuthService
 import org.springframework.http.ResponseEntity

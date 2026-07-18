@@ -1,9 +1,9 @@
 package com.fcfb.arceus.service.fcfb.schedule
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fcfb.arceus.dto.ConferenceRulesRequest
-import com.fcfb.arceus.dto.ConferenceRulesResponse
-import com.fcfb.arceus.dto.ProtectedRivalry
+import com.fcfb.arceus.dto.request.ConferenceRulesRequest
+import com.fcfb.arceus.dto.response.ConferenceRulesResponse
+import com.fcfb.arceus.dto.standard.ProtectedRivalry
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.ConferenceRules
 import com.fcfb.arceus.repositories.ConferenceRulesRepository

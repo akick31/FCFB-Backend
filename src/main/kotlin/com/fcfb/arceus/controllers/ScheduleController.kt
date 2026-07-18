@@ -1,13 +1,13 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.BulkScheduleRequest
-import com.fcfb.arceus.dto.ConferenceRulesRequest
-import com.fcfb.arceus.dto.ConferenceRulesResponse
-import com.fcfb.arceus.dto.ConferenceScheduleRequest
-import com.fcfb.arceus.dto.MoveGameRequest
-import com.fcfb.arceus.dto.ScheduleEntry
-import com.fcfb.arceus.dto.ScheduleGenJob
-import com.fcfb.arceus.dto.ScheduleGenJobResponse
+import com.fcfb.arceus.dto.request.BulkScheduleRequest
+import com.fcfb.arceus.dto.request.ConferenceRulesRequest
+import com.fcfb.arceus.dto.request.ConferenceScheduleRequest
+import com.fcfb.arceus.dto.request.MoveGameRequest
+import com.fcfb.arceus.dto.request.ScheduleEntry
+import com.fcfb.arceus.dto.response.ConferenceRulesResponse
+import com.fcfb.arceus.dto.response.ScheduleGenJob
+import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.service.fcfb.ScheduleService

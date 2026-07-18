@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.LoginResponse
-import com.fcfb.arceus.dto.UserDTO
+import com.fcfb.arceus.dto.response.LoginResponse
+import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition

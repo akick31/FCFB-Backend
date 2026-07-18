@@ -1,12 +1,12 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.EloRatingResponse
-import com.fcfb.arceus.dto.GameWinProbabilitiesResponse
-import com.fcfb.arceus.dto.PlayWinProbabilityResponse
-import com.fcfb.arceus.dto.ProcessedGameResult
-import com.fcfb.arceus.dto.SingleGameWinProbabilitiesResponse
-import com.fcfb.arceus.dto.SinglePlayWinProbabilityResponse
-import com.fcfb.arceus.dto.WinProbabilitiesForAllGamesResponse
+import com.fcfb.arceus.dto.response.EloRatingResponse
+import com.fcfb.arceus.dto.response.GameWinProbabilitiesResponse
+import com.fcfb.arceus.dto.response.PlayWinProbabilityResponse
+import com.fcfb.arceus.dto.response.ProcessedGameResult
+import com.fcfb.arceus.dto.response.SingleGameWinProbabilitiesResponse
+import com.fcfb.arceus.dto.response.SinglePlayWinProbabilityResponse
+import com.fcfb.arceus.dto.response.WinProbabilitiesForAllGamesResponse
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
