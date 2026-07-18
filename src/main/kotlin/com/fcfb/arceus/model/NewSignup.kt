@@ -18,7 +18,7 @@ import javax.persistence.Table
 class NewSignup {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "id")
+    @Column(name = "id", columnDefinition = "int(11)")
     var id: Long = 0
 
     @Basic
