@@ -18,15 +18,15 @@ import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
 /**
- * Simulates a punt play.
+ * Processes a field goal play.
  */
 @Component
-class PuntPlaySimulator(
+class FieldGoalPlayProcessor(
     private val gameService: GameService,
     private val rangesService: RangesService,
-    private val playSimulationUtils: PlaySimulationUtils,
+    private val playProcessingUtils: PlayProcessingUtils,
 ) {
-    fun runPuntPlay(
+    fun runFieldGoalPlay(
         gamePlay: Play,
         game: Game,
         playCall: PlayCall,
@@ -45,19 +45,20 @@ class PuntPlaySimulator(
 
         val difference = gameService.getDifference(offensiveNumber, decryptedDefensiveNumber.toInt())
         var possession = gamePlay.possession
-        var ballLocation = game.ballLocation
-        val (offensivePlaybook, _) = playSimulationUtils.getPlaybooks(game, possession)
+        var ballLocation = 100 - game.ballLocation
+        val (offensivePlaybook, _) = playProcessingUtils.getPlaybooks(game, possession)
         val (timeoutUsed, homeTimeoutCalled, awayTimeoutCalled) =
-            playSimulationUtils.getTimeoutUsage(game, gamePlay, offensiveTimeoutCalled)
+            playProcessingUtils.getTimeoutUsage(game, gamePlay, offensiveTimeoutCalled)
 
-        val resultInformation = rangesService.getPuntResult(playCall, ballLocation, difference)
+        val resultInformation = rangesService.getFieldGoalResult(playCall, ballLocation + 17, difference)
         var result = resultInformation.result ?: throw ResultNotFoundException()
         val playTime = resultInformation.playTime
+        ballLocation = game.ballLocation
 
         // Determine runoff time between plays
         val clockStopped = game.clockStopped
         val runoffTime =
-            playSimulationUtils.getRunoffTime(
+            playProcessingUtils.getRunoffTime(
                 game,
                 clockStopped,
                 gamePlay.clock,
@@ -72,40 +73,25 @@ class PuntPlaySimulator(
 
         var homeScore = game.homeScore
         var awayScore = game.awayScore
-        var down = game.down
-        var yardsToGo = game.yardsToGo
+        val down = 1
+        val yardsToGo = 10
         val actualResult: ActualResult
         when (result) {
-            Scenario.PUNT_RETURN_TOUCHDOWN -> {
-                actualResult = ActualResult.PUNT_RETURN_TOUCHDOWN
+            Scenario.KICK_SIX -> {
+                actualResult = ActualResult.KICK_SIX
                 ballLocation = 97
             }
-            Scenario.BLOCKED_PUNT -> {
+            Scenario.BLOCKED_FIELD_GOAL -> {
                 actualResult = ActualResult.BLOCKED
                 ballLocation = 100 - ballLocation
             }
-            Scenario.TOUCHBACK -> {
-                actualResult = ActualResult.PUNT
-                ballLocation = 20
+            Scenario.NO_GOOD -> {
+                actualResult = ActualResult.NO_GOOD
+                ballLocation = 100 - ballLocation
             }
-            Scenario.FIVE_YARD_PUNT, Scenario.TEN_YARD_PUNT, Scenario.FIFTEEN_YARD_PUNT, Scenario.TWENTY_YARD_PUNT,
-            Scenario.TWENTY_FIVE_YARD_PUNT, Scenario.THIRTY_YARD_PUNT, Scenario.THIRTY_FIVE_YARD_PUNT,
-            Scenario.FORTY_YARD_PUNT, Scenario.FORTY_FIVE_YARD_PUNT, Scenario.FIFTY_YARD_PUNT, Scenario.FIFTY_FIVE_YARD_PUNT,
-            Scenario.SIXTY_YARD_PUNT, Scenario.SIXTY_FIVE_YARD_PUNT, Scenario.SEVENTY_YARD_PUNT,
-            -> {
-                actualResult = ActualResult.PUNT
-                ballLocation = 100 - (ballLocation + result.description.substringBefore(" YARD PUNT").toInt())
-            }
-            Scenario.FUMBLE -> {
-                actualResult = ActualResult.MUFFED_PUNT
-                ballLocation += 40
-                if (ballLocation >= 100) {
-                    ballLocation = 99
-                }
-            }
-            Scenario.TOUCHDOWN -> {
-                actualResult = ActualResult.PUNT_TEAM_TOUCHDOWN
-                ballLocation = 97
+            Scenario.GOOD -> {
+                actualResult = ActualResult.GOOD
+                ballLocation = 35
             }
             Scenario.END_OF_HALF -> {
                 actualResult = ActualResult.END_OF_HALF
@@ -113,7 +99,7 @@ class PuntPlaySimulator(
             else -> throw InvalidScenarioException()
         }
         when (actualResult) {
-            ActualResult.PUNT_RETURN_TOUCHDOWN -> {
+            ActualResult.KICK_SIX -> {
                 if (possession == TeamSide.HOME) {
                     possession = TeamSide.AWAY
                     awayScore += 6
@@ -121,8 +107,6 @@ class PuntPlaySimulator(
                     possession = TeamSide.HOME
                     homeScore += 6
                 }
-                down = 1
-                yardsToGo = 10
             }
             ActualResult.BLOCKED -> {
                 possession =
@@ -131,43 +115,27 @@ class PuntPlaySimulator(
                     } else {
                         TeamSide.HOME
                     }
-                down = 1
-                yardsToGo = 10
             }
-            ActualResult.PUNT -> {
+            ActualResult.NO_GOOD -> {
                 possession =
                     if (possession == TeamSide.HOME) {
                         TeamSide.AWAY
                     } else {
                         TeamSide.HOME
                     }
-                down = 1
-                yardsToGo = 10
             }
-            ActualResult.MUFFED_PUNT -> {
-                possession =
-                    if (possession == TeamSide.HOME) {
-                        TeamSide.HOME
-                    } else {
-                        TeamSide.AWAY
-                    }
-                down = 1
-                yardsToGo = 10
-            }
-            ActualResult.PUNT_TEAM_TOUCHDOWN -> {
+            ActualResult.GOOD -> {
                 if (possession == TeamSide.HOME) {
-                    homeScore += 6
-                    possession = TeamSide.HOME
+                    homeScore += 3
                 } else {
-                    awayScore += 6
-                    possession = TeamSide.AWAY
+                    awayScore += 3
                 }
             }
             ActualResult.END_OF_HALF -> {}
             else -> throw InvalidActualResultException()
         }
 
-        return playSimulationUtils.updatePlayValues(
+        return playProcessingUtils.updatePlayValues(
             game,
             gamePlay,
             playCall,

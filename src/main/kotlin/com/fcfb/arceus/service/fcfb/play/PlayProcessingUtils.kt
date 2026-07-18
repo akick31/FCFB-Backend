@@ -17,11 +17,11 @@ import com.fcfb.arceus.service.fcfb.ScorebugService
 import org.springframework.stereotype.Component
 
 /**
- * Shared helper functions used across multiple play simulators (runoff time calculation,
+ * Shared helper functions used across multiple play processors (runoff time calculation,
  * playbook lookup, timeout usage resolution, and persisting the finished play).
  */
 @Component
-class PlaySimulationUtils(
+class PlayProcessingUtils(
     private val playRepository: PlayRepository,
     private val gameService: GameService,
     private val gameStatsService: GameStatsService,

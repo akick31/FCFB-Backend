@@ -18,13 +18,13 @@ import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
 /**
- * Simulates a normal (run/pass/spike/kneel) play.
+ * Processes a normal (run/pass/spike/kneel) play.
  */
 @Component
-class NormalPlaySimulator(
+class NormalPlayProcessor(
     private val gameService: GameService,
     private val rangesService: RangesService,
-    private val playSimulationUtils: PlaySimulationUtils,
+    private val playProcessingUtils: PlayProcessingUtils,
 ) {
     fun runNormalPlay(
         gamePlay: Play,
@@ -46,9 +46,9 @@ class NormalPlaySimulator(
                 null
             }
         var possession = gamePlay.possession
-        val (offensivePlaybook, defensivePlaybook) = playSimulationUtils.getPlaybooks(game, possession)
+        val (offensivePlaybook, defensivePlaybook) = playProcessingUtils.getPlaybooks(game, possession)
         val (timeoutUsed, homeTimeoutCalled, awayTimeoutCalled) =
-            playSimulationUtils.getTimeoutUsage(game, gamePlay, offensiveTimeoutCalled)
+            playProcessingUtils.getTimeoutUsage(game, gamePlay, offensiveTimeoutCalled)
 
         val resultInformation =
             if (difference != null) {
@@ -94,7 +94,7 @@ class NormalPlaySimulator(
         // Determine runoff time between plays
         val clockStopped = game.clockStopped
         val runoffTime =
-            playSimulationUtils.getRunoffTime(
+            playProcessingUtils.getRunoffTime(
                 game,
                 clockStopped,
                 gamePlay.clock,
@@ -295,7 +295,7 @@ class NormalPlaySimulator(
             else -> throw InvalidActualResultException()
         }
 
-        return playSimulationUtils.updatePlayValues(
+        return playProcessingUtils.updatePlayValues(
             game,
             gamePlay,
             playCall,
