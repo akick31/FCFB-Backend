@@ -26,7 +26,7 @@ class GameStats(
     @Column(name = "id")
     var id: Int = 0,
     @Basic
-    @Column(name = "game_id")
+    @Column(name = "game_id", columnDefinition = "varchar(255)")
     var gameId: Int = 0,
     @Basic
     @Column(name = "team")

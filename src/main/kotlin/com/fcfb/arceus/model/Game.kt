@@ -170,7 +170,7 @@ class Game {
     var subdivision: Subdivision? = null
 
     @Basic
-    @Column(name = "timestamp")
+    @Column(name = "timestamp", columnDefinition = "datetime")
     @JsonProperty("timestamp")
     var timestamp: String? = null
 
@@ -257,7 +257,7 @@ class Game {
     var awayPlatformId: String? = null
 
     @Basic
-    @Column(name = "last_message_timestamp")
+    @Column(name = "last_message_timestamp", columnDefinition = "datetime")
     @JsonProperty("last_message_timestamp")
     var lastMessageTimestamp: String? = null
 

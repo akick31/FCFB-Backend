@@ -36,7 +36,7 @@ class RequestMessageLog {
     var playId: Int? = null
 
     @Basic
-    @Column(name = "message_id", nullable = false)
+    @Column(name = "message_id", nullable = false, columnDefinition = "mediumtext")
     var messageId: Long? = null
 
     @Basic
