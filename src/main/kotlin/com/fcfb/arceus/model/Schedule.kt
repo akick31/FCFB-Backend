@@ -61,11 +61,11 @@ class Schedule {
     var awayScore: Int? = null
 
     @Basic
-    @Column(name = "started")
+    @Column(name = "started", columnDefinition = "tinyint(1)")
     var started: Boolean? = false
 
     @Basic
-    @Column(name = "finished")
+    @Column(name = "finished", columnDefinition = "tinyint(1)")
     var finished: Boolean? = false
 
     @Basic

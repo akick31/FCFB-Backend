@@ -42,11 +42,11 @@ class Season {
     var currentWeek: Int = 1
 
     @Basic
-    @Column(name = "current_season")
+    @Column(name = "current_season", columnDefinition = "tinyint(1)")
     var currentSeason: Boolean = false
 
     @Basic
-    @Column(name = "schedule_locked")
+    @Column(name = "schedule_locked", columnDefinition = "tinyint(1)")
     var scheduleLocked: Boolean = false
 
     constructor(
