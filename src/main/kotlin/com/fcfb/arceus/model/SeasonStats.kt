@@ -299,7 +299,7 @@ class SeasonStats(
     @Column(name = "opponent_pass_completions")
     var opponentPassCompletions: Int = 0,
     @Basic
-    @Column(name = "opponent_pass_completion_percentage")
+    @Column(name = "opponent_pass_completion_percentage", columnDefinition = "decimal(5,2)")
     var opponentPassCompletionPercentage: Double? = null,
     @Basic
     @Column(name = "opponent_pass_yards")
@@ -314,7 +314,7 @@ class SeasonStats(
     @Column(name = "opponent_pass_successes")
     var opponentPassSuccesses: Int = 0,
     @Basic
-    @Column(name = "opponent_pass_success_percentage")
+    @Column(name = "opponent_pass_success_percentage", columnDefinition = "decimal(5,2)")
     var opponentPassSuccessPercentage: Double? = null,
     // Opponent Rushing Stats (Season Totals)
     @Basic
@@ -324,7 +324,7 @@ class SeasonStats(
     @Column(name = "opponent_rush_successes")
     var opponentRushSuccesses: Int = 0,
     @Basic
-    @Column(name = "opponent_rush_success_percentage")
+    @Column(name = "opponent_rush_success_percentage", columnDefinition = "decimal(5,2)")
     var opponentRushSuccessPercentage: Double? = null,
     @Basic
     @Column(name = "opponent_rush_yards")
@@ -340,7 +340,7 @@ class SeasonStats(
     @Column(name = "opponent_total_yards")
     var opponentTotalYards: Int = 0,
     @Basic
-    @Column(name = "opponent_average_yards_per_play")
+    @Column(name = "opponent_average_yards_per_play", columnDefinition = "decimal(5,2)")
     var opponentAverageYardsPerPlay: Double? = null,
     @Basic
     @Column(name = "opponent_first_downs")
@@ -353,7 +353,7 @@ class SeasonStats(
     @Column(name = "opponent_field_goal_attempts")
     var opponentFieldGoalAttempts: Int = 0,
     @Basic
-    @Column(name = "opponent_field_goal_percentage")
+    @Column(name = "opponent_field_goal_percentage", columnDefinition = "decimal(5,2)")
     var opponentFieldGoalPercentage: Double? = null,
     @Basic
     @Column(name = "opponent_longest_field_goal")
@@ -369,13 +369,13 @@ class SeasonStats(
     @Column(name = "opponent_longest_punt")
     var opponentLongestPunt: Int = 0,
     @Basic
-    @Column(name = "opponent_average_punt_length")
+    @Column(name = "opponent_average_punt_length", columnDefinition = "decimal(5,2)")
     var opponentAveragePuntLength: Double? = null,
     @Basic
     @Column(name = "opponent_punt_return_td")
     var opponentPuntReturnTd: Int = 0,
     @Basic
-    @Column(name = "opponent_punt_return_td_percentage")
+    @Column(name = "opponent_punt_return_td_percentage", columnDefinition = "decimal(5,2)")
     var opponentPuntReturnTdPercentage: Double? = null,
     // Opponent Kickoffs (Season Totals)
     @Basic
@@ -388,7 +388,7 @@ class SeasonStats(
     @Column(name = "opponent_onside_success")
     var opponentOnsideSuccess: Int = 0,
     @Basic
-    @Column(name = "opponent_onside_success_percentage")
+    @Column(name = "opponent_onside_success_percentage", columnDefinition = "decimal(5,2)")
     var opponentOnsideSuccessPercentage: Double? = null,
     @Basic
     @Column(name = "opponent_normal_kickoff_attempts")
@@ -397,13 +397,13 @@ class SeasonStats(
     @Column(name = "opponent_touchbacks")
     var opponentTouchbacks: Int = 0,
     @Basic
-    @Column(name = "opponent_touchback_percentage")
+    @Column(name = "opponent_touchback_percentage", columnDefinition = "decimal(5,2)")
     var opponentTouchbackPercentage: Double? = null,
     @Basic
     @Column(name = "opponent_kick_return_td")
     var opponentKickReturnTd: Int = 0,
     @Basic
-    @Column(name = "opponent_kick_return_td_percentage")
+    @Column(name = "opponent_kick_return_td_percentage", columnDefinition = "decimal(5,2)")
     var opponentKickReturnTdPercentage: Double? = null,
     // Opponent Game Flow (Season Totals)
     @Basic
@@ -424,7 +424,7 @@ class SeasonStats(
     @Column(name = "opponent_third_down_conversion_attempts")
     var opponentThirdDownConversionAttempts: Int = 0,
     @Basic
-    @Column(name = "opponent_third_down_conversion_percentage")
+    @Column(name = "opponent_third_down_conversion_percentage", columnDefinition = "decimal(5,2)")
     var opponentThirdDownConversionPercentage: Double? = null,
     @Basic
     @Column(name = "opponent_fourth_down_conversion_success")
@@ -433,7 +433,7 @@ class SeasonStats(
     @Column(name = "opponent_fourth_down_conversion_attempts")
     var opponentFourthDownConversionAttempts: Int = 0,
     @Basic
-    @Column(name = "opponent_fourth_down_conversion_percentage")
+    @Column(name = "opponent_fourth_down_conversion_percentage", columnDefinition = "decimal(5,2)")
     var opponentFourthDownConversionPercentage: Double? = null,
     // Opponent Red Zone (Season Totals)
     @Basic
@@ -443,10 +443,10 @@ class SeasonStats(
     @Column(name = "opponent_red_zone_successes")
     var opponentRedZoneSuccesses: Int = 0,
     @Basic
-    @Column(name = "opponent_red_zone_success_percentage")
+    @Column(name = "opponent_red_zone_success_percentage", columnDefinition = "decimal(5,2)")
     var opponentRedZoneSuccessPercentage: Double? = null,
     @Basic
-    @Column(name = "opponent_red_zone_percentage")
+    @Column(name = "opponent_red_zone_percentage", columnDefinition = "decimal(5,2)")
     var opponentRedZonePercentage: Double? = null,
     // Additional Season Info
     @Basic
