@@ -134,15 +134,15 @@ class Play {
     lateinit var awayTeam: String
 
     @Basic
-    @Column(name = "timeout_used")
+    @Column(name = "timeout_used", columnDefinition = "tinyint(4)")
     var timeoutUsed: Boolean = false
 
     @Basic
-    @Column(name = "offensive_timeout_called")
+    @Column(name = "offensive_timeout_called", columnDefinition = "tinyint(1)")
     var offensiveTimeoutCalled: Boolean = false
 
     @Basic
-    @Column(name = "defensive_timeout_called")
+    @Column(name = "defensive_timeout_called", columnDefinition = "tinyint(1)")
     var defensiveTimeoutCalled: Boolean = false
 
     @Basic
@@ -154,7 +154,7 @@ class Play {
     var awayTimeouts: Int = 3
 
     @Basic
-    @Column(name = "play_finished")
+    @Column(name = "play_finished", columnDefinition = "tinyint(1)")
     var playFinished: Boolean = false
 
     @Basic

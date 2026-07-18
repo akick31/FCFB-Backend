@@ -161,11 +161,11 @@ class Team {
     var nationalChampionshipLosses: Int = 0
 
     @Basic
-    @Column(name = "is_taken")
+    @Column(name = "is_taken", columnDefinition = "tinyint(1)")
     var isTaken: Boolean = false
 
     @Basic
-    @Column(name = "active")
+    @Column(name = "active", columnDefinition = "tinyint(1)")
     var active: Boolean = true
 
     @Basic

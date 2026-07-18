@@ -81,7 +81,7 @@ class NewSignup {
     lateinit var defensivePlaybook: DefensivePlaybook
 
     @Basic
-    @Column(name = "approved")
+    @Column(name = "approved", columnDefinition = "tinyint(1)")
     var approved: Boolean = false
 
     @Basic

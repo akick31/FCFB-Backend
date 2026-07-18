@@ -133,7 +133,7 @@ class User {
     lateinit var defensivePlaybook: DefensivePlaybook
 
     @Basic
-    @Column(name = "delay_of_game_warning_opt_out")
+    @Column(name = "delay_of_game_warning_opt_out", columnDefinition = "tinyint(1)")
     var delayOfGameWarningOptOut: Boolean = false
 
     @Basic

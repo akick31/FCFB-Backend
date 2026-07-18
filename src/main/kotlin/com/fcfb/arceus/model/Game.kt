@@ -284,7 +284,7 @@ class Game {
     var currentPlayId: Int? = null
 
     @Basic
-    @Column(name = "clock_stopped")
+    @Column(name = "clock_stopped", columnDefinition = "tinyint(1)")
     @JsonProperty("clock_stopped")
     var clockStopped: Boolean = false
 
@@ -317,22 +317,22 @@ class Game {
     var overtimeHalf: Int? = 0
 
     @Basic
-    @Column(name = "close_game")
+    @Column(name = "close_game", columnDefinition = "tinyint(1)")
     @JsonProperty("close_game")
     var closeGame: Boolean = false
 
     @Basic
-    @Column(name = "close_game_pinged")
+    @Column(name = "close_game_pinged", columnDefinition = "tinyint(1)")
     @JsonProperty("close_game_pinged")
     var closeGamePinged: Boolean = false
 
     @Basic
-    @Column(name = "upset_alert")
+    @Column(name = "upset_alert", columnDefinition = "tinyint(1)")
     @JsonProperty("upset_alert")
     var upsetAlert: Boolean = false
 
     @Basic
-    @Column(name = "upset_alert_pinged")
+    @Column(name = "upset_alert_pinged", columnDefinition = "tinyint(1)")
     @JsonProperty("upset_alert_pinged")
     var upsetAlertPinged: Boolean = false
 

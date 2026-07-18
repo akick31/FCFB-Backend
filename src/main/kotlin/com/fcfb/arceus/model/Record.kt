@@ -62,7 +62,7 @@ class Record(
     @Column(name = "previous_record_game_id")
     var previousRecordGameId: Int? = null,
     @Basic
-    @Column(name = "is_tied")
+    @Column(name = "is_tied", columnDefinition = "tinyint(1)")
     var isTied: Boolean = false,
     @Basic
     @Column(name = "tied_teams")
