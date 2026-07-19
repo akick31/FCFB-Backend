@@ -3,6 +3,7 @@ package com.fcfb.arceus.model
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
+import java.time.LocalDateTime
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -88,6 +89,10 @@ class NewSignup {
     @Column(name = "verification_token")
     lateinit var verificationToken: String
 
+    @Basic
+    @Column(name = "verification_token_expiration")
+    var verificationTokenExpiration: LocalDateTime? = null
+
     constructor(
         username: String,
         coachName: String,
@@ -105,6 +110,7 @@ class NewSignup {
         defensivePlaybook: DefensivePlaybook,
         approved: Boolean,
         verificationToken: String,
+        verificationTokenExpiration: LocalDateTime,
     ) {
         this.username = username
         this.coachName = coachName
@@ -122,6 +128,7 @@ class NewSignup {
         this.defensivePlaybook = defensivePlaybook
         this.approved = approved
         this.verificationToken = verificationToken
+        this.verificationTokenExpiration = verificationTokenExpiration
     }
 
     constructor()

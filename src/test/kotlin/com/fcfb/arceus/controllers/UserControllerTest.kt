@@ -7,15 +7,18 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.UserRole
-import com.fcfb.arceus.model.User
 import com.fcfb.arceus.service.fcfb.UserService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus.OK
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -69,50 +72,28 @@ class UserControllerTest {
                 .build()
     }
 
+    @AfterEach
+    fun tearDown() {
+        SecurityContextHolder.clearContext()
+    }
+
+    private fun authenticateAs(
+        userId: Long,
+        role: String = "USER",
+    ) {
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken(userId.toString(), null, listOf(SimpleGrantedAuthority("ROLE_$role")))
+    }
+
     @Test
     fun `getUserById returns user`() {
-        val fullUser =
-            User(
-                username = "testuser",
-                coachName = "Test Coach",
-                discordTag = "test#1234",
-                discordId = "123456789",
-                email = "test@example.com",
-                hashedEmail = "hashedemail123",
-                password = "encryptedPassword",
-                position = CoachPosition.HEAD_COACH,
-                role = UserRole.USER,
-                salt = "randomSalt",
-                team = "Test Team",
-                delayOfGameInstances = 2,
-                wins = 10,
-                losses = 5,
-                winPercentage = 0.67,
-                conferenceWins = 6,
-                conferenceLosses = 2,
-                conferenceChampionshipWins = 1,
-                conferenceChampionshipLosses = 0,
-                bowlWins = 1,
-                bowlLosses = 0,
-                playoffWins = 2,
-                playoffLosses = 1,
-                nationalChampionshipWins = 0,
-                nationalChampionshipLosses = 1,
-                offensivePlaybook = OffensivePlaybook.AIR_RAID,
-                defensivePlaybook = DefensivePlaybook.FOUR_THREE,
-                averageResponseTime = 15.5,
-                delayOfGameWarningOptOut = false,
-                resetToken = null,
-                resetTokenExpiration = null,
-            )
-
-        every { userService.getUserById(1L) } returns fullUser
+        every { userService.getUserDTOById(1L) } returns sampleUser
 
         mockMvc.perform(get("/api/v1/arceus/user/1"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.id").value(fullUser.id))
-            .andExpect(jsonPath("$.username").value(fullUser.username))
-            .andExpect(jsonPath("$.discordId").value(fullUser.discordId))
+            .andExpect(jsonPath("$.id").value(sampleUser.id))
+            .andExpect(jsonPath("$.username").value(sampleUser.username))
+            .andExpect(jsonPath("$.discordId").value(sampleUser.discordId))
     }
 
     @Test
@@ -175,7 +156,8 @@ class UserControllerTest {
     }
 
     @Test
-    fun `updateUserEmail updates email`() {
+    fun `updateUserEmail updates own email`() {
+        authenticateAs(1L)
         every { userService.updateEmail(1L, "newemail@example.com") } returns sampleUser
 
         mockMvc.perform(
@@ -185,6 +167,31 @@ class UserControllerTest {
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(1))
+    }
+
+    @Test
+    fun `updateUserEmail allows admin to update another user's email`() {
+        authenticateAs(999L, role = "ADMIN")
+        every { userService.updateEmail(1L, "newemail@example.com") } returns sampleUser
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update/email")
+                .param("id", "1")
+                .param("newEmail", "newemail@example.com"),
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `updateUserEmail rejects a non-owner, non-admin caller`() {
+        authenticateAs(2L)
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update/email")
+                .param("id", "1")
+                .param("newEmail", "newemail@example.com"),
+        )
+            .andExpect(status().isInternalServerError)
     }
 
     @Test
@@ -282,7 +289,7 @@ class UserControllerTest {
 
     @Test
     fun `getUserById handles error`() {
-        every { userService.getUserById(1L) } throws RuntimeException("User not found")
+        every { userService.getUserDTOById(1L) } throws RuntimeException("User not found")
 
         mockMvc.perform(get("/api/v1/arceus/user/1"))
             .andExpect(status().isInternalServerError)

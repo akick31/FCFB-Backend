@@ -103,7 +103,7 @@ class UserService(
         updateUser(user)
     }
 
-    private fun getUserDTOById(id: Long) = dtoConverter.convertToUserDTO(getUserById(id))
+    fun getUserDTOById(id: Long) = dtoConverter.convertToUserDTO(getUserById(id))
 
     fun getUserById(id: Long) = userRepository.getById(id) ?: throw UserNotFoundException("User not found with id $id")
 

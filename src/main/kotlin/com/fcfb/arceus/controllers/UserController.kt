@@ -2,7 +2,10 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.UpdateUserRequest
 import com.fcfb.arceus.dto.request.UserValidationRequest
+import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.util.AuthContext
+import com.fcfb.arceus.util.UserUnauthorizedException
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,7 +26,7 @@ class UserController(
     @GetMapping("{userId:[0-9]+}")
     fun getUserById(
         @PathVariable userId: Long,
-    ) = userService.getUserById(userId)
+    ) = userService.getUserDTOById(userId)
 
     @GetMapping("/discord")
     fun getUserDTOByDiscordId(
@@ -50,7 +53,12 @@ class UserController(
     fun updateUserEmail(
         @RequestParam id: Long,
         @RequestParam newEmail: String,
-    ) = userService.updateEmail(id, newEmail)
+    ): UserDTO {
+        if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
+            throw UserUnauthorizedException()
+        }
+        return userService.updateEmail(id, newEmail)
+    }
 
     @PutMapping("/update")
     fun updateUserRole(

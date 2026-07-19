@@ -10,6 +10,7 @@ import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.Logger
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -42,6 +43,7 @@ class NewSignupService(
                 newSignup.defensivePlaybook,
                 false,
                 verificationToken,
+                LocalDateTime.now().plusHours(24),
             )
 
         saveNewSignup(newSignup)

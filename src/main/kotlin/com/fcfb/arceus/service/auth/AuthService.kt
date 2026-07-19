@@ -53,7 +53,7 @@ class AuthService(
         if (!passwordEncoder.matches(password, user.password)) {
             throw UserUnauthorizedException()
         }
-        val token = sessionService.generateToken(user.id)
+        val token = sessionService.generateToken(user.id, user.role)
         return LoginResponse(token, user.id, user.role)
     }
 
@@ -63,8 +63,11 @@ class AuthService(
     }
 
     fun verifyEmail(token: String): Boolean {
-        val newSignup = newSignupService.getByVerificationToken(token)
-        return newSignup?.let { newSignupService.approveNewSignup(it) } ?: false
+        val newSignup = newSignupService.getByVerificationToken(token) ?: return false
+        if (newSignup.verificationTokenExpiration?.isBefore(LocalDateTime.now()) == true) {
+            return false
+        }
+        return newSignupService.approveNewSignup(newSignup)
     }
 
     fun resetVerificationToken(id: Long): NewSignup {
@@ -73,6 +76,7 @@ class AuthService(
                 ?: throw IllegalArgumentException("NewSignup with id $id not found")
         val verificationToken = UUID.randomUUID().toString()
         newSignup.verificationToken = verificationToken
+        newSignup.verificationTokenExpiration = LocalDateTime.now().plusHours(24)
         newSignupService.saveNewSignup(newSignup)
         emailService.sendVerificationEmail(newSignup.email, newSignup.id, verificationToken)
         return newSignup
