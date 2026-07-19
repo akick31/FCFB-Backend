@@ -60,6 +60,30 @@ class UserController(
         return userService.updateEmail(id, newEmail)
     }
 
+    @PutMapping("/update/username")
+    fun updateUsername(
+        @RequestParam id: Long,
+        @RequestParam newUsername: String,
+    ): UserDTO {
+        if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
+            throw UserUnauthorizedException()
+        }
+        return userService.updateUsername(id, newUsername)
+    }
+
+    @PutMapping("/update/password")
+    fun updateUserPassword(
+        @RequestParam id: Long,
+        @RequestParam(required = false) currentPassword: String?,
+        @RequestParam newPassword: String,
+    ): UserDTO {
+        val isAdmin = AuthContext.isAdmin()
+        if (AuthContext.currentUserId() != id && !isAdmin) {
+            throw UserUnauthorizedException()
+        }
+        return userService.changePassword(id, currentPassword, newPassword, skipCurrentPasswordCheck = isAdmin)
+    }
+
     @PutMapping("/update")
     fun updateUserRole(
         @RequestBody request: UpdateUserRequest,

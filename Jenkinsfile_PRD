@@ -21,6 +21,7 @@ pipeline {
         DISCORD_FORUM_CHANNEL_ID = credentials('DISCORD_FORUM_CHANNEL_ID')
         DISCORD_CLIENT_ID = credentials('DISCORD_CLIENT_ID')
         DISCORD_CLIENT_SECRET = credentials('DISCORD_CLIENT_SECRET')
+        BOT_SERVICE_KEY = credentials('BOT_SERVICE_KEY')
     }
 
     stages {
@@ -119,6 +120,9 @@ pipeline {
                         discord.client.id=${env.DISCORD_CLIENT_ID}
                         discord.client.secret=${env.DISCORD_CLIENT_SECRET}
                         discord.oauth.redirect=https://api.fakecollegefootball.com/api/v1/arceus/discord/redirect
+
+                        # Bot service authentication (must match bot.service.key on FCFB-Discord-Ref-Bot PRD)
+                        bot.service.key=${env.BOT_SERVICE_KEY}
 
                         # Logging configuration
                         logging.level.org.hibernate=warn

@@ -95,7 +95,6 @@ private val ADMIN_ONLY_PUT_PATHS =
         "$FULL_PATH/team",
         "$FULL_PATH/user/update",
         "$FULL_PATH/play",
-        "$FULL_PATH/play/rollback",
     )
 
 private val ADMIN_ONLY_DELETE_PATHS =
@@ -138,6 +137,7 @@ private val PRIVILEGED_POST_PATHS =
 private val PRIVILEGED_PUT_PATHS =
     arrayOf(
         "$FULL_PATH/play/submit_offense",
+        "$FULL_PATH/play/rollback",
         "$FULL_PATH/game/*/coin-toss",
         "$FULL_PATH/game/*/coin-toss-choice",
         "$FULL_PATH/game/*/overtime-coin-toss-choice",

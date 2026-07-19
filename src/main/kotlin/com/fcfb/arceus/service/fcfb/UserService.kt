@@ -10,8 +10,10 @@ import com.fcfb.arceus.repositories.UserRepository
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.UserNotFoundException
+import com.fcfb.arceus.util.UserUnauthorizedException
 import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.util.UUID
@@ -21,6 +23,7 @@ class UserService(
     private val userRepository: UserRepository,
     private val encryptionUtils: EncryptionUtils,
     private val dtoConverter: DTOConverter,
+    private val passwordEncoder: PasswordEncoder,
 ) {
     fun updateUserWinsAndLosses(game: Game) {
         val homeUsers =
@@ -170,13 +173,40 @@ class UserService(
     ): UserDTO {
         val user = getUserById(id)
 
-        val passwordEncoder = BCryptPasswordEncoder()
-        user.password = passwordEncoder.encode(newPassword)
-        user.salt = passwordEncoder.encode(newPassword)
+        val encoder = BCryptPasswordEncoder()
+        user.password = encoder.encode(newPassword)
+        user.salt = encoder.encode(newPassword)
         user.resetToken = null
         user.resetTokenExpiration = null
 
         userRepository.save(user)
+        return dtoConverter.convertToUserDTO(user)
+    }
+
+    fun changePassword(
+        id: Long,
+        currentPassword: String?,
+        newPassword: String,
+        skipCurrentPasswordCheck: Boolean,
+    ): UserDTO {
+        val user = getUserById(id)
+        if (!skipCurrentPasswordCheck) {
+            if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.password)) {
+                throw UserUnauthorizedException()
+            }
+        }
+        return updateUserPassword(id, newPassword)
+    }
+
+    fun updateUsername(
+        id: Long,
+        username: String,
+    ): UserDTO {
+        val user = getUserById(id)
+        user.apply {
+            this.username = username
+        }
+        saveUser(user)
         return dtoConverter.convertToUserDTO(user)
     }
 

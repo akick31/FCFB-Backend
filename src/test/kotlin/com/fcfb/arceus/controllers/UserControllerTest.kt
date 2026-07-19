@@ -195,6 +195,74 @@ class UserControllerTest {
     }
 
     @Test
+    fun `updateUsername updates own username`() {
+        authenticateAs(1L)
+        every { userService.updateUsername(1L, "newusername") } returns sampleUser
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update/username")
+                .param("id", "1")
+                .param("newUsername", "newusername"),
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `updateUsername rejects a non-owner, non-admin caller`() {
+        authenticateAs(2L)
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update/username")
+                .param("id", "1")
+                .param("newUsername", "newusername"),
+        )
+            .andExpect(status().isInternalServerError)
+    }
+
+    @Test
+    fun `updateUserPassword changes own password with current password`() {
+        authenticateAs(1L)
+        every {
+            userService.changePassword(1L, "oldpass", "newpass", skipCurrentPasswordCheck = false)
+        } returns sampleUser
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update/password")
+                .param("id", "1")
+                .param("currentPassword", "oldpass")
+                .param("newPassword", "newpass"),
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `updateUserPassword allows admin to reset another user's password without current password`() {
+        authenticateAs(999L, role = "ADMIN")
+        every {
+            userService.changePassword(1L, null, "newpass", skipCurrentPasswordCheck = true)
+        } returns sampleUser
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update/password")
+                .param("id", "1")
+                .param("newPassword", "newpass"),
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `updateUserPassword rejects a non-owner, non-admin caller`() {
+        authenticateAs(2L)
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update/password")
+                .param("id", "1")
+                .param("newPassword", "newpass"),
+        )
+            .andExpect(status().isInternalServerError)
+    }
+
+    @Test
     fun `updateUserRole updates user`() {
         every { userService.updateUser(any()) } returns sampleUser
 
