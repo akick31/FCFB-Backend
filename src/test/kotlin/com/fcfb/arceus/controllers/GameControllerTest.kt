@@ -153,6 +153,17 @@ class GameControllerTest {
     }
 
     @Test
+    fun `chewAllGames should return list of chewed games`() {
+        val mockGames = listOf(mockk<Game>())
+        every { gameService.chewAllGames() } returns mockGames
+
+        val response = gameController.chewAllGames()
+
+        assertEquals(ResponseEntity.ok(mockGames), response)
+        verify { gameService.chewAllGames() }
+    }
+
+    @Test
     fun `runCoinToss should return updated game`() {
         val gameId = "1"
         val coinTossCall = CoinTossCall.HEADS

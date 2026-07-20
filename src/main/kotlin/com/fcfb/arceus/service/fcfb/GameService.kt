@@ -1082,6 +1082,15 @@ class GameService(
         }
     }
 
+    fun chewAllGames(): List<Game> {
+        val gamesToChew = getAllOngoingGames()
+        val chewedGames = mutableListOf<Game>()
+        for (game in gamesToChew) {
+            chewedGames.add(chewGame(game))
+        }
+        return chewedGames
+    }
+
     fun runCoinToss(
         gameId: String,
         coinTossCall: CoinTossCall,
