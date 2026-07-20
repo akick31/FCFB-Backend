@@ -128,6 +128,9 @@ class GameController(
         @PathVariable("gameId") gameId: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(gameService.getGameById(gameId)))
 
+    @PostMapping("/chew-all")
+    fun chewAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.chewAllGames())
+
     @PutMapping("/{gameId}/coin-toss")
     fun runCoinToss(
         @PathVariable("gameId") gameId: String,

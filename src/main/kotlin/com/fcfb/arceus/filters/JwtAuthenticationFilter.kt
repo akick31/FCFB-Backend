@@ -13,11 +13,6 @@ import javax.servlet.http.HttpServletResponse
 private const val SERVICE_KEY_HEADER = "X-Service-Key"
 private const val SERVICE_PRINCIPAL = "discord-bot"
 
-/**
- * Not a Spring-managed [org.springframework.stereotype.Component]: WebConfig constructs and wires this
- * directly into the Spring Security filter chain so it runs exactly once, rather than also being
- * picked up by Spring Boot's generic Filter auto-registration.
- */
 class JwtAuthenticationFilter(
     private val sessionService: SessionService,
     private val botServiceKey: String,

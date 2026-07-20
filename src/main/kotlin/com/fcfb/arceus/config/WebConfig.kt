@@ -4,12 +4,15 @@ import com.fcfb.arceus.controllers.ApiConstants.FULL_PATH
 import com.fcfb.arceus.filters.JwtAuthenticationFilter
 import com.fcfb.arceus.service.auth.SessionService
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -37,7 +40,9 @@ private val PRE_AUTH_GET_PATHS =
         "$FULL_PATH/health",
     )
 
-/** Must be registered before PUBLIC_READ_GET_PATHS's game-wildcard entry, which would otherwise match these same paths first. */
+private const val ACTUATOR_HEALTH_PATH = "/actuator/health"
+private const val ACTUATOR_WILDCARD_PATH = "/actuator/**"
+
 private val PRIVILEGED_GAME_STATUS_GET_PATHS =
     arrayOf(
         "$FULL_PATH/game/request-message",
@@ -103,11 +108,6 @@ private val ADMIN_ONLY_DELETE_PATHS =
         "$FULL_PATH/user/*",
     )
 
-/**
- * Game-flow, season-automation, and league-management mutations: only the Discord bot's service
- * credential or a human admin/commissioner may call these, since they bypass the bot's own
- * Discord-side permission checks.
- */
 private val PRIVILEGED_POST_PATHS =
     arrayOf(
         "$FULL_PATH/play/submit_defense",
@@ -120,6 +120,7 @@ private val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/game/end-all",
         "$FULL_PATH/game/chew",
         "$FULL_PATH/game/*/chew",
+        "$FULL_PATH/game/chew-all",
         "$FULL_PATH/game/restart",
         "$FULL_PATH/team/hire",
         "$FULL_PATH/team/hire/interim",
@@ -172,6 +173,9 @@ open class WebConfig(
         }
     }
 
+    @Bean
+    open fun noopUserDetailsService(): UserDetailsService = InMemoryUserDetailsManager()
+
     @Throws(Exception::class)
     override fun configure(http: HttpSecurity) {
         http
@@ -196,6 +200,8 @@ open class WebConfig(
             .antMatchers(HttpMethod.OPTIONS).permitAll()
             .antMatchers(HttpMethod.POST, *PRE_AUTH_POST_PATHS).permitAll()
             .antMatchers(HttpMethod.GET, *PRE_AUTH_GET_PATHS).permitAll()
+            .antMatchers(HttpMethod.GET, ACTUATOR_HEALTH_PATH).permitAll()
+            .antMatchers(ACTUATOR_WILDCARD_PATH).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.GET, *PRIVILEGED_GAME_STATUS_GET_PATHS).hasAnyRole(*PRIVILEGED_ROLES)
             .antMatchers(HttpMethod.GET, *PUBLIC_READ_GET_PATHS).permitAll()
             .antMatchers(HttpMethod.GET, "$FULL_PATH/play/**").permitAll()
