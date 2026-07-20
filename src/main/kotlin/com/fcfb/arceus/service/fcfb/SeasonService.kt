@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter
 @Service
 class SeasonService(
     private val seasonRepository: SeasonRepository,
+    private val offseasonService: OffseasonService,
     private val teamService: TeamService,
     private val userService: UserService,
     private val scheduleRepository: ScheduleRepository,
@@ -47,13 +48,10 @@ class SeasonService(
         teamService.resetWinsAndLosses()
         userService.resetAllDelayOfGameInstances()
         seasonRepository.save(season)
+        offseasonService.endOffseason(now)
         return season
     }
 
-    /**
-     * End the current season
-     * @param game the national championship game
-     */
     fun endSeason(game: Game) {
         val season = getCurrentSeason()
         season.currentSeason = false
@@ -72,14 +70,20 @@ class SeasonService(
 
         val now = ZonedDateTime.now(ZoneId.of("America/New_York"))
         val formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")
-        season.endDate = now.format(formatter)
+        val nowFormatted = now.format(formatter)
+        season.endDate = nowFormatted
 
         seasonRepository.save(season)
+        offseasonService.startOffseason(nowFormatted)
     }
 
     fun getCurrentSeason() = seasonRepository.getCurrentSeason() ?: throw CurrentSeasonNotFoundException()
 
     fun getCurrentWeek() = seasonRepository.getCurrentSeason()?.currentWeek ?: throw CurrentWeekNotFoundException()
+
+    fun getUpcomingSeason(): Season? = seasonRepository.getPendingSeason()
+
+    fun getLatestCompletedSeason(): Season? = seasonRepository.getMostRecentlyCompletedSeason()
 
     fun incrementWeek() {
         val season = getCurrentSeason()
@@ -87,9 +91,6 @@ class SeasonService(
         seasonRepository.save(season)
     }
 
-    /**
-     * Get all seasons ordered by season number descending
-     */
     fun getAllSeasons(): List<Season> = seasonRepository.getAllSeasons()
 
     fun getSeasonByNumber(seasonNumber: Int): Season =
@@ -121,11 +122,6 @@ class SeasonService(
         return season.scheduleLocked
     }
 
-    /**
-     * Create a season entry for scheduling purposes (does not start the season)
-     * Automatically copies bowl games from the previous season if it exists.
-     * @param seasonNumber
-     */
     fun createSeasonForScheduling(seasonNumber: Int): Season {
         val existing = seasonRepository.findBySeasonNumber(seasonNumber)
         if (existing != null) {
@@ -145,7 +141,6 @@ class SeasonService(
             )
         seasonRepository.save(season)
 
-        // Copy bowl games from the previous season (if it exists)
         val previousSeason = seasonNumber - 1
         try {
             val sourceBowlGames =
@@ -157,14 +152,14 @@ class SeasonService(
                     sourceBowlGames.map { sourceGame ->
                         val newGame = Schedule()
                         newGame.season = seasonNumber
-                        newGame.week = sourceGame.week // Bowl games are always Week 14
+                        newGame.week = sourceGame.week
                         newGame.subdivision = sourceGame.subdivision
-                        newGame.homeTeam = "TBD" // Teams will be filled in later
+                        newGame.homeTeam = "TBD"
                         newGame.awayTeam = "TBD"
                         newGame.tvChannel = TVChannel.ESPN
                         newGame.gameType = GameType.BOWL
-                        newGame.postseasonGameName = sourceGame.postseasonGameName // Preserve postseason game name
-                        newGame.postseasonGameLogo = sourceGame.postseasonGameLogo // Preserve postseason logo
+                        newGame.postseasonGameName = sourceGame.postseasonGameName
+                        newGame.postseasonGameLogo = sourceGame.postseasonGameLogo
                         newGame.started = false
                         newGame.finished = false
                         newGame
@@ -173,7 +168,6 @@ class SeasonService(
                 Logger.info("Copied ${newBowlGames.size} bowl games from Season $previousSeason to Season $seasonNumber")
             }
         } catch (e: Exception) {
-            // Log but don't fail - it's okay if there are no bowl games to copy
             Logger.warn("Could not copy bowl games from Season $previousSeason: ${e.message}")
         }
 

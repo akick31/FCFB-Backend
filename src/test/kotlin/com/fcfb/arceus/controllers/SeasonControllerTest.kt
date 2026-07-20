@@ -3,6 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.model.Season
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.SeasonRepository
+import com.fcfb.arceus.service.fcfb.OffseasonService
 import com.fcfb.arceus.service.fcfb.SeasonService
 import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.service.fcfb.UserService
@@ -26,6 +27,7 @@ import java.time.format.DateTimeFormatter
 class SeasonControllerTest {
     private lateinit var mockMvc: MockMvc
     private val seasonRepository: SeasonRepository = mockk()
+    private val offseasonService: OffseasonService = mockk()
     private val teamService: TeamService = mockk()
     private val userService: UserService = mockk()
     private val scheduleRepository: ScheduleRepository = mockk()
@@ -34,11 +36,11 @@ class SeasonControllerTest {
 
     @BeforeEach
     fun setup() {
-        seasonService = SeasonService(seasonRepository, teamService, userService, scheduleRepository)
+        seasonService = SeasonService(seasonRepository, offseasonService, teamService, userService, scheduleRepository)
         seasonController = SeasonController(seasonService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(seasonController)
-                .setControllerAdvice(GlobalExceptionHandler()) // Register the exception handler
+                .setControllerAdvice(GlobalExceptionHandler())
                 .build()
     }
 
@@ -70,12 +72,12 @@ class SeasonControllerTest {
                 currentSeason = true,
             )
 
-        // Mock the repository and team service methods
         every { seasonRepository.getPendingSeason() } returns null
         every { seasonRepository.getPreviousSeason() } returns previousSeason
         every { teamService.resetWinsAndLosses() } returns Unit
         every { userService.resetAllDelayOfGameInstances() } returns Unit
         every { seasonRepository.save(any()) } returns newSeason
+        every { offseasonService.endOffseason(any()) } returns Unit
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
@@ -89,11 +91,10 @@ class SeasonControllerTest {
             .andExpect(jsonPath("$.currentWeek").value(newSeason.currentWeek))
             .andExpect(jsonPath("$.currentSeason").value(newSeason.currentSeason))
 
-        // Verify that team wins and losses were reset
         verify { teamService.resetWinsAndLosses() }
-        // Verify that user delay of game instances were reset
         verify { userService.resetAllDelayOfGameInstances() }
         verify { seasonRepository.save(any()) }
+        verify { offseasonService.endOffseason(newSeason.startDate!!) }
     }
 
     @Test
@@ -115,6 +116,7 @@ class SeasonControllerTest {
         every { teamService.resetWinsAndLosses() } returns Unit
         every { userService.resetAllDelayOfGameInstances() } returns Unit
         every { seasonRepository.save(any()) } returns pendingSeason
+        every { offseasonService.endOffseason(any()) } returns Unit
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
@@ -153,6 +155,50 @@ class SeasonControllerTest {
             .andExpect(jsonPath("$.nationalChampionshipLosingCoach").isEmpty)
             .andExpect(jsonPath("$.currentWeek").value(season.currentWeek))
             .andExpect(jsonPath("$.currentSeason").value(season.currentSeason))
+    }
+
+    @Test
+    fun `should get upcoming season successfully`() {
+        val upcomingSeason =
+            Season(
+                seasonNumber = 12,
+                startDate = null,
+                endDate = null,
+                nationalChampionshipWinningTeam = null,
+                nationalChampionshipLosingTeam = null,
+                nationalChampionshipWinningCoach = null,
+                nationalChampionshipLosingCoach = null,
+                currentWeek = 1,
+                currentSeason = false,
+            )
+        every { seasonRepository.getPendingSeason() } returns upcomingSeason
+
+        mockMvc.perform(get("/api/v1/arceus/season/upcoming").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.seasonNumber").value(upcomingSeason.seasonNumber))
+            .andExpect(jsonPath("$.startDate").isEmpty)
+    }
+
+    @Test
+    fun `should get latest completed season successfully`() {
+        val latestCompletedSeason =
+            Season(
+                seasonNumber = 11,
+                startDate = "08/01/2025 00:29:12",
+                endDate = "07/08/2026 23:56:43",
+                nationalChampionshipWinningTeam = "Wyoming",
+                nationalChampionshipLosingTeam = "Duke",
+                nationalChampionshipWinningCoach = "flying_porygon",
+                nationalChampionshipLosingCoach = "Dan",
+                currentWeek = 20,
+                currentSeason = false,
+            )
+        every { seasonRepository.getMostRecentlyCompletedSeason() } returns latestCompletedSeason
+
+        mockMvc.perform(get("/api/v1/arceus/season/latest-completed").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.seasonNumber").value(latestCompletedSeason.seasonNumber))
+            .andExpect(jsonPath("$.endDate").value(latestCompletedSeason.endDate))
     }
 
     @Test
