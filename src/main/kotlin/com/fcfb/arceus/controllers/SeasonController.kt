@@ -26,6 +26,12 @@ class SeasonController(
     @GetMapping("/current/week")
     fun getCurrentWeek(): ResponseEntity<Int> = ResponseEntity.ok(seasonService.getCurrentWeek())
 
+    @GetMapping("/upcoming")
+    fun getUpcomingSeason(): ResponseEntity<Season?> = ResponseEntity.ok(seasonService.getUpcomingSeason())
+
+    @GetMapping("/latest-completed")
+    fun getLatestCompletedSeason(): ResponseEntity<Season?> = ResponseEntity.ok(seasonService.getLatestCompletedSeason())
+
     @GetMapping("/all")
     fun getAllSeasons(): ResponseEntity<List<Season>> = ResponseEntity.ok(seasonService.getAllSeasons())
 
