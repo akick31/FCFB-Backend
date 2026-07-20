@@ -1,6 +1,6 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.FrontendErrorRequest
+import com.fcfb.arceus.dto.request.FrontendErrorRequest
 import com.fcfb.arceus.util.InMemoryRateLimiter
 import com.fcfb.arceus.util.Logger
 import org.slf4j.MDC

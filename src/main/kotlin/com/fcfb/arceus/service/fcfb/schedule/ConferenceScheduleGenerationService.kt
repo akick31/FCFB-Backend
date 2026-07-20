@@ -1,11 +1,11 @@
 package com.fcfb.arceus.service.fcfb.schedule
 
-import com.fcfb.arceus.dto.ConferenceScheduleRequest
-import com.fcfb.arceus.dto.ScheduleEntry
-import com.fcfb.arceus.dto.ScheduleGenJob
-import com.fcfb.arceus.dto.ScheduleGenJobResponse
-import com.fcfb.arceus.dto.ScheduleGenJobStatus
-import com.fcfb.arceus.dto.ScheduleGenLog
+import com.fcfb.arceus.dto.request.ConferenceScheduleRequest
+import com.fcfb.arceus.dto.request.ScheduleEntry
+import com.fcfb.arceus.dto.response.ScheduleGenJob
+import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
+import com.fcfb.arceus.dto.response.ScheduleGenJobStatus
+import com.fcfb.arceus.dto.response.ScheduleGenLog
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
@@ -190,7 +190,7 @@ class ConferenceScheduleGenerationService(
     private fun selectMatchupsCircleMethod(
         teamNames: List<String>,
         numGames: Int,
-        protectedRivalries: List<com.fcfb.arceus.dto.ProtectedRivalry>,
+        protectedRivalries: List<com.fcfb.arceus.dto.standard.ProtectedRivalry>,
     ): List<Triple<String, String, Int?>> {
         val allRounds = generateCircleMethodRounds(teamNames)
 
@@ -242,7 +242,7 @@ class ConferenceScheduleGenerationService(
     private fun selectMatchupsGreedy(
         teamNames: List<String>,
         numGames: Int,
-        protectedRivalries: List<com.fcfb.arceus.dto.ProtectedRivalry>,
+        protectedRivalries: List<com.fcfb.arceus.dto.standard.ProtectedRivalry>,
     ): List<Triple<String, String, Int?>> {
         val numTeams = teamNames.size
         val expectedMatchups = numTeams * numGames / 2

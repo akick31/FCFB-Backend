@@ -1,11 +1,11 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.FailedGameDetail
-import com.fcfb.arceus.dto.GameStartLog
-import com.fcfb.arceus.dto.GameWeekJob
-import com.fcfb.arceus.dto.GameWeekJobResponse
-import com.fcfb.arceus.dto.GameWeekJobStatus
-import com.fcfb.arceus.dto.StartRequest
+import com.fcfb.arceus.dto.request.StartRequest
+import com.fcfb.arceus.dto.response.FailedGameDetail
+import com.fcfb.arceus.dto.response.GameStartLog
+import com.fcfb.arceus.dto.response.GameWeekJob
+import com.fcfb.arceus.dto.response.GameWeekJobResponse
+import com.fcfb.arceus.dto.response.GameWeekJobStatus
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType

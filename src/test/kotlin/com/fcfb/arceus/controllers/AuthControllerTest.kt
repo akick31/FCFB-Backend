@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.LoginResponse
-import com.fcfb.arceus.dto.UserDTO
+import com.fcfb.arceus.dto.response.LoginResponse
+import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
@@ -22,6 +22,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -73,6 +74,7 @@ class AuthControllerTest {
                 defensivePlaybook = DefensivePlaybook.FOUR_THREE,
                 approved = false,
                 verificationToken = UUID.randomUUID().toString(),
+                verificationTokenExpiration = LocalDateTime.now().plusHours(24),
             )
 
         every { newSignupService.createNewSignup(newSignup) } returns newSignup
@@ -108,6 +110,7 @@ class AuthControllerTest {
                 defensivePlaybook = DefensivePlaybook.FOUR_THREE,
                 approved = false,
                 verificationToken = "verificationToken",
+                verificationTokenExpiration = LocalDateTime.now().plusHours(24),
             )
 
         mockkStatic(UUID::class)
@@ -167,7 +170,7 @@ class AuthControllerTest {
 
         every { userService.getUserByUsernameOrEmail(usernameOrEmail) } returns user
         every { passwordEncoder.matches(rawPassword, encodedPassword) } returns true
-        every { sessionService.generateToken(1L) } returns token
+        every { sessionService.generateToken(1L, UserRole.USER) } returns token
 
         val result = authService.login(usernameOrEmail, rawPassword)
 
@@ -239,11 +242,25 @@ class AuthControllerTest {
         val newSignup = mockk<NewSignup>()
 
         every { newSignupService.getByVerificationToken(token) } returns newSignup
+        every { newSignup.verificationTokenExpiration } returns LocalDateTime.now().plusHours(1)
         every { newSignupService.approveNewSignup(newSignup) } returns true
 
         val result = authService.verifyEmail(token)
 
         assertTrue(result)
+    }
+
+    @Test
+    fun `should reject verification with an expired token`() {
+        val token = "verificationToken"
+        val newSignup = mockk<NewSignup>()
+
+        every { newSignupService.getByVerificationToken(token) } returns newSignup
+        every { newSignup.verificationTokenExpiration } returns LocalDateTime.now().minusHours(1)
+
+        val result = authService.verifyEmail(token)
+
+        assertFalse(result)
     }
 
     @Test

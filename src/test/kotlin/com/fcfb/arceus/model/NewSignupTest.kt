@@ -4,6 +4,7 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
 import org.junit.jupiter.api.Test
+import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -15,7 +16,6 @@ class NewSignupTest {
     fun `test NewSignup entity annotations`() {
         val newSignup = NewSignup()
 
-        // Test that the class has the correct JPA annotations
         val entityAnnotation = NewSignup::class.java.getAnnotation(javax.persistence.Entity::class.java)
         assertNotNull(entityAnnotation)
 
@@ -53,6 +53,7 @@ class NewSignupTest {
                 defensivePlaybook = DefensivePlaybook.FOUR_THREE,
                 approved = false,
                 verificationToken = "verification123",
+                verificationTokenExpiration = LocalDateTime.now().plusHours(24),
             )
 
         assertEquals("newcoach", newSignup.username)
@@ -77,7 +78,6 @@ class NewSignupTest {
     fun `test NewSignup property mutability`() {
         val newSignup = NewSignup()
 
-        // Test property mutability
         newSignup.id = 1L
         newSignup.username = "updatedcoach"
         newSignup.coachName = "Updated Coach"
@@ -127,7 +127,6 @@ class NewSignupTest {
     fun `test NewSignup with all CoachPosition values`() {
         val newSignup = NewSignup()
 
-        // Test all CoachPosition values
         CoachPosition.entries.forEach { position ->
             newSignup.position = position
             assertEquals(position, newSignup.position)
@@ -138,13 +137,11 @@ class NewSignupTest {
     fun `test NewSignup with different playbook combinations`() {
         val newSignup = NewSignup()
 
-        // Test different offensive playbook combinations
         OffensivePlaybook.entries.forEach { offensivePlaybook ->
             newSignup.offensivePlaybook = offensivePlaybook
             assertEquals(offensivePlaybook, newSignup.offensivePlaybook)
         }
 
-        // Test different defensive playbook combinations
         DefensivePlaybook.entries.forEach { defensivePlaybook ->
             newSignup.defensivePlaybook = defensivePlaybook
             assertEquals(defensivePlaybook, newSignup.defensivePlaybook)
@@ -169,7 +166,6 @@ class NewSignupTest {
     fun `test NewSignup team choices`() {
         val newSignup = NewSignup()
 
-        // Test team choice assignments
         newSignup.teamChoiceOne = "Alabama"
         newSignup.teamChoiceTwo = "Georgia"
         newSignup.teamChoiceThree = "Ohio State"
@@ -178,7 +174,6 @@ class NewSignupTest {
         assertEquals("Georgia", newSignup.teamChoiceTwo)
         assertEquals("Ohio State", newSignup.teamChoiceThree)
 
-        // Test updating team choices
         newSignup.teamChoiceOne = "Michigan"
         newSignup.teamChoiceTwo = "Penn State"
         newSignup.teamChoiceThree = "Wisconsin"
@@ -288,7 +283,6 @@ class NewSignupTest {
     fun `test NewSignup complete signup process`() {
         val newSignup = NewSignup()
 
-        // Initial signup
         newSignup.username = "newcoach"
         newSignup.coachName = "New Coach"
         newSignup.discordTag = "newcoach#1234"
@@ -306,7 +300,6 @@ class NewSignupTest {
         newSignup.approved = false
         newSignup.verificationToken = "verification123"
 
-        // Verify initial state
         assertEquals("newcoach", newSignup.username)
         assertEquals("New Coach", newSignup.coachName)
         assertEquals("newcoach#1234", newSignup.discordTag)
@@ -324,7 +317,6 @@ class NewSignupTest {
         assertFalse(newSignup.approved)
         assertEquals("verification123", newSignup.verificationToken)
 
-        // Approval process
         newSignup.approved = true
         assertTrue(newSignup.approved)
     }

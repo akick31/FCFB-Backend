@@ -1,6 +1,6 @@
 package com.fcfb.arceus.service.fcfb.chart
 
-import com.fcfb.arceus.dto.PlayWinProbabilityResponse
+import com.fcfb.arceus.dto.response.PlayWinProbabilityResponse
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play

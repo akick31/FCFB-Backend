@@ -1,5 +1,7 @@
 package com.fcfb.arceus.config
 
+import com.fcfb.arceus.service.auth.SessionService
+import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import kotlin.test.assertNotNull
@@ -7,10 +9,11 @@ import kotlin.test.assertTrue
 
 class WebConfigTest {
     private lateinit var webConfig: WebConfig
+    private val sessionService: SessionService = mockk()
 
     @BeforeEach
     fun setup() {
-        webConfig = WebConfig()
+        webConfig = WebConfig(sessionService, "test-service-key")
     }
 
     @Test
@@ -35,7 +38,7 @@ class WebConfigTest {
 
     @Test
     fun `WebConfig should be instantiable`() {
-        val config = WebConfig()
+        val config = WebConfig(sessionService, "test-service-key")
         assertNotNull(config, "WebConfig should be instantiable")
     }
 
@@ -47,11 +50,9 @@ class WebConfigTest {
 
     @Test
     fun `WebConfig should be a valid Spring configuration class`() {
-        // Test that the class can be instantiated and has proper annotations
-        val webConfig = WebConfig()
+        val webConfig = WebConfig(sessionService, "test-service-key")
         assertNotNull(webConfig, "WebConfig should be annotated with @Configuration")
 
-        // Verify it's properly configured as a Spring Security configuration
         assertTrue(
             webConfig.javaClass.superclass.simpleName == "WebSecurityConfigurerAdapter",
             "WebConfig should extend WebSecurityConfigurerAdapter for Spring Security configuration",

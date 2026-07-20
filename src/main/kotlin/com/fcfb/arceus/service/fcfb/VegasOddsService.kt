@@ -1,8 +1,8 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.GameSpreadResult
-import com.fcfb.arceus.dto.UpdateSpreadsResponse
-import com.fcfb.arceus.dto.VegasOddsResponse
+import com.fcfb.arceus.dto.response.GameSpreadResult
+import com.fcfb.arceus.dto.response.UpdateSpreadsResponse
+import com.fcfb.arceus.dto.response.VegasOddsResponse
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository

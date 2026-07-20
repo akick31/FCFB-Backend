@@ -1,8 +1,11 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.UserDTO
-import com.fcfb.arceus.dto.UserValidationRequest
+import com.fcfb.arceus.dto.request.UpdateUserRequest
+import com.fcfb.arceus.dto.request.UserValidationRequest
+import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.util.AuthContext
+import com.fcfb.arceus.util.UserUnauthorizedException
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,7 +26,7 @@ class UserController(
     @GetMapping("{userId:[0-9]+}")
     fun getUserById(
         @PathVariable userId: Long,
-    ) = userService.getUserById(userId)
+    ) = userService.getUserDTOById(userId)
 
     @GetMapping("/discord")
     fun getUserDTOByDiscordId(
@@ -50,12 +53,41 @@ class UserController(
     fun updateUserEmail(
         @RequestParam id: Long,
         @RequestParam newEmail: String,
-    ) = userService.updateEmail(id, newEmail)
+    ): UserDTO {
+        if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
+            throw UserUnauthorizedException()
+        }
+        return userService.updateEmail(id, newEmail)
+    }
+
+    @PutMapping("/update/username")
+    fun updateUsername(
+        @RequestParam id: Long,
+        @RequestParam newUsername: String,
+    ): UserDTO {
+        if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
+            throw UserUnauthorizedException()
+        }
+        return userService.updateUsername(id, newUsername)
+    }
+
+    @PutMapping("/update/password")
+    fun updateUserPassword(
+        @RequestParam id: Long,
+        @RequestParam(required = false) currentPassword: String?,
+        @RequestParam newPassword: String,
+    ): UserDTO {
+        val isAdmin = AuthContext.isAdmin()
+        if (AuthContext.currentUserId() != id && !isAdmin) {
+            throw UserUnauthorizedException()
+        }
+        return userService.changePassword(id, currentPassword, newPassword, skipCurrentPasswordCheck = isAdmin)
+    }
 
     @PutMapping("/update")
     fun updateUserRole(
-        @RequestBody user: UserDTO,
-    ) = userService.updateUser(user)
+        @RequestBody request: UpdateUserRequest,
+    ) = userService.updateUser(request.toUserDTO())
 
     @PostMapping("/hash_emails")
     fun encryptEmails() = userService.hashEmails()

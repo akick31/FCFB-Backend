@@ -1,6 +1,6 @@
 package com.fcfb.arceus.service.discord
 
-import com.fcfb.arceus.dto.SignupInfo
+import com.fcfb.arceus.dto.standard.SignupInfo
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.util.DiscordUserNotFoundException
 import com.fcfb.arceus.util.Logger

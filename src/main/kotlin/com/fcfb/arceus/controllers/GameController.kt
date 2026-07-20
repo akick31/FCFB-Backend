@@ -1,8 +1,8 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.dto.GameWeekJob
-import com.fcfb.arceus.dto.GameWeekJobResponse
-import com.fcfb.arceus.dto.StartRequest
+import com.fcfb.arceus.dto.request.StartRequest
+import com.fcfb.arceus.dto.response.GameWeekJob
+import com.fcfb.arceus.dto.response.GameWeekJobResponse
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.gameflow.CoinTossCall
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
