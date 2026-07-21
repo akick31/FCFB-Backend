@@ -21,7 +21,7 @@ class SessionService(
         sessionRepository.blacklistUserSession(token, claims.subject.toLong(), claims.expiration)
     }
 
-    fun isSessionBlacklisted(token: String) = sessionRepository.isSessionBlacklisted(token)
+    fun isSessionBlacklisted(token: String) = sessionRepository.isSessionBlacklisted(token) > 0
 
     fun clearExpiredTokens() = sessionRepository.clearExpiredTokens()
 

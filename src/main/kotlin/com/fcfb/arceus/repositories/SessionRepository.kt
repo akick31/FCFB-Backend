@@ -18,7 +18,7 @@ interface SessionRepository : JpaRepository<Session, Long> {
     )
 
     @Query("SELECT EXISTS(SELECT 1 FROM session WHERE token = ?)", nativeQuery = true)
-    fun isSessionBlacklisted(token: String): Boolean
+    fun isSessionBlacklisted(token: String): Int
 
     @Query("DELETE FROM session WHERE expiration_date < NOW()", nativeQuery = true)
     fun clearExpiredTokens()

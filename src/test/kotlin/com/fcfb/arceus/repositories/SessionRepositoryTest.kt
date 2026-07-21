@@ -66,12 +66,12 @@ class SessionRepositoryTest {
     }
 
     @Test
-    fun `test isSessionBlacklisted returns false for non-blacklisted token`() {
-        every { sessionRepository.isSessionBlacklisted("nonexistent_token") } returns false
+    fun `test isSessionBlacklisted returns 0 for non-blacklisted token`() {
+        every { sessionRepository.isSessionBlacklisted("nonexistent_token") } returns 0
 
         val isBlacklisted = sessionRepository.isSessionBlacklisted("nonexistent_token")
 
-        assertFalse(isBlacklisted)
+        assertEquals(0, isBlacklisted)
     }
 
     @Test
