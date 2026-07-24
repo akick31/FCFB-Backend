@@ -26,6 +26,8 @@ class RankingService(
                 rank = ranking.rank,
                 teamId = ranking.teamId,
                 teamName = teamRepository.findById(ranking.teamId).orElse(null)?.name,
+                wins = ranking.wins,
+                losses = ranking.losses,
             )
         }
 
@@ -64,7 +66,7 @@ class RankingService(
 
         rankingRepository.deleteBySeasonWeekAndPollType(season, week, pollType.name)
         teams.forEachIndexed { index, team ->
-            rankingRepository.save(Ranking(season, week, pollType, index + 1, team.id))
+            rankingRepository.save(Ranking(season, week, pollType, index + 1, team.id, team.currentWins, team.currentLosses))
         }
 
         when (pollType) {
