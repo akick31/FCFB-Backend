@@ -9,4 +9,6 @@ data class RankingResponse(
     @JsonProperty("rank") val rank: Int,
     @JsonProperty("teamId") val teamId: Int,
     @JsonProperty("teamName") val teamName: String?,
+    @JsonProperty("wins") val wins: Int?,
+    @JsonProperty("losses") val losses: Int?,
 )

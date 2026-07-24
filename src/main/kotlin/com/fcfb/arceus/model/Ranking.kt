@@ -39,18 +39,30 @@ class Ranking {
     @Column(name = "team_id")
     var teamId: Int = 0
 
+    @Basic
+    @Column(name = "wins")
+    var wins: Int? = null
+
+    @Basic
+    @Column(name = "losses")
+    var losses: Int? = null
+
     constructor(
         season: Int,
         week: Int,
         pollType: PollType,
         rank: Int,
         teamId: Int,
+        wins: Int?,
+        losses: Int?,
     ) {
         this.season = season
         this.week = week
         this.pollType = pollType
         this.rank = rank
         this.teamId = teamId
+        this.wins = wins
+        this.losses = losses
     }
 
     constructor()
