@@ -149,3 +149,18 @@ class InvalidCoinTossChoiceException(message: String) : Exception(message) {
         return "InvalidCoinTossChoiceException: ${super.message}"
     }
 }
+
+class InvalidRankingsException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidRankingsException: ${super.message}"
+    }
+}
+
+class RankingsNotUploadedException(season: Int, week: Int) : Exception(
+    "Rankings have not been uploaded for Season $season, Week $week. " +
+        "Upload the Coaches Poll rankings before starting the game week.",
+) {
+    override fun toString(): String {
+        return "RankingsNotUploadedException: ${super.message}"
+    }
+}
