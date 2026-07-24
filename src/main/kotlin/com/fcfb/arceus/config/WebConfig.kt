@@ -83,6 +83,7 @@ private val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/game-stats/generate/all",
         "$FULL_PATH/league-stats/generate/all",
         "$FULL_PATH/playbook-stats/generate/all",
+        "$FULL_PATH/ranking",
         "$FULL_PATH/records/generate/all",
         "$FULL_PATH/season-stats/generate/all",
         "$FULL_PATH/season-stats/generate/team-season",
@@ -209,6 +210,7 @@ open class WebConfig(
             .antMatchers(HttpMethod.GET, "$FULL_PATH/scorebug/**").permitAll()
             .antMatchers(HttpMethod.GET, "$FULL_PATH/season/**").permitAll()
             .antMatchers(HttpMethod.GET, "$FULL_PATH/offseason/**").permitAll()
+            .antMatchers(HttpMethod.GET, "$FULL_PATH/ranking", "$FULL_PATH/ranking/**").permitAll()
             .antMatchers(HttpMethod.GET, "$FULL_PATH/team/**").permitAll()
             .antMatchers(HttpMethod.GET, "$FULL_PATH/vegas-odds/**").permitAll()
             .antMatchers(HttpMethod.GET, "$FULL_PATH/win-probability/**").permitAll()
