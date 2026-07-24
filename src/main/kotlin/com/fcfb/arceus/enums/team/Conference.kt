@@ -13,7 +13,10 @@ enum class Conference(val description: String, val logoUrl: String? = null) {
     SEC("SEC", "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/8.png"),
     SUN_BELT("Sun Belt", "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/37.png"),
     MISSOURI_VALLEY("Missouri Valley", "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/21.png"),
-    COLONIAL("Colonial", "https://images.seeklogo.com/logo-png/49/2/colonial-athletic-association-logo-png_seeklogo-490062.png"),
+    COLONIAL("Colonial",
+        "https://images.seeklogo.com/logo-png/49/2/colonial-athletic-association-logo-png_seeklogo-490062.png",
+        ""
+    ),
     NEC("NEC", "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/25.png"),
     ;
 
