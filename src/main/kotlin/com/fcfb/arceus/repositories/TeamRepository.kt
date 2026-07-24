@@ -130,4 +130,30 @@ interface TeamRepository : CrudRepository<Team, Int> {
     fun findByCurrentConferenceWins(currentConferenceWins: Int): List<Team>
 
     fun findByCurrentConferenceLosses(currentConferenceLosses: Int): List<Team>
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE team SET coaches_poll_ranking = NULL", nativeQuery = true)
+    fun clearCoachesPollRankings()
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE team SET coaches_poll_ranking = :rank WHERE id = :id", nativeQuery = true)
+    fun setCoachesPollRankingById(
+        id: Int,
+        rank: Int,
+    )
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE team SET playoff_committee_ranking = NULL", nativeQuery = true)
+    fun clearPlayoffCommitteeRankings()
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE team SET playoff_committee_ranking = :rank WHERE id = :id", nativeQuery = true)
+    fun setPlayoffCommitteeRankingById(
+        id: Int,
+        rank: Int,
+    )
 }

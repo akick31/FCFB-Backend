@@ -17,6 +17,7 @@ import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.play.Scenario
+import com.fcfb.arceus.enums.ranking.PollType
 import com.fcfb.arceus.enums.system.Platform.DISCORD
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.enums.team.TeamSide
@@ -27,6 +28,7 @@ import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.repositories.RankingRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.game.GameRules
 import com.fcfb.arceus.service.specification.GameSpecificationService
@@ -40,6 +42,7 @@ import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.NoCoachDiscordIdsFoundException
 import com.fcfb.arceus.util.NoCoachesFoundException
 import com.fcfb.arceus.util.NoGameFoundException
+import com.fcfb.arceus.util.RankingsNotUploadedException
 import com.fcfb.arceus.util.TeamNotFoundException
 import com.fcfb.arceus.util.UnableToCreateGameThreadException
 import com.fcfb.arceus.util.UnableToDeleteGameException
@@ -80,6 +83,7 @@ class GameService(
     private val winProbabilityService: WinProbabilityService,
     private val vegasOddsService: VegasOddsService,
     private val gameStatsRepository: GameStatsRepository,
+    private val rankingRepository: RankingRepository,
 ) {
     // Game Week Job Tracking
     companion object {
@@ -621,6 +625,10 @@ class GameService(
         season: Int,
         week: Int,
     ): GameWeekJobResponse {
+        if (!rankingRepository.existsForWeek(season, week, PollType.COACHES_POLL.name).let { it > 0 }) {
+            throw RankingsNotUploadedException(season, week)
+        }
+
         val jobId = UUID.randomUUID().toString()
         val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
