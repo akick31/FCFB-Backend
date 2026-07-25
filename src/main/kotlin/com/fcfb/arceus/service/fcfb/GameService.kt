@@ -45,7 +45,6 @@ import com.fcfb.arceus.util.NoGameFoundException
 import com.fcfb.arceus.util.RankingsNotUploadedException
 import com.fcfb.arceus.util.TeamNotFoundException
 import com.fcfb.arceus.util.UnableToCreateGameThreadException
-import com.fcfb.arceus.util.UnableToDeleteGameException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -1240,15 +1239,15 @@ class GameService(
 
     fun deleteOngoingGame(channelId: ULong): Boolean {
         val game = getGameByPlatformId(channelId)
-        val id = game.gameId
-        gameRepository.deleteById(id)
-        gameStatsService.deleteByGameId(id)
-        playRepository.deleteAllPlaysByGameId(id)
-        Logger.info(
-            "Game deleted.\n" +
-                "Game ID: $id\n" +
-                "Channel ID: $channelId",
-        )
+        deleteGameById(game.gameId)
+        return true
+    }
+
+    fun deleteGameById(gameId: Int): Boolean {
+        gameRepository.deleteById(gameId)
+        gameStatsService.deleteByGameId(gameId)
+        playRepository.deleteAllPlaysByGameId(gameId)
+        Logger.info("Game deleted.\nGame ID: $gameId")
         return true
     }
 
@@ -1773,21 +1772,10 @@ class GameService(
     }
 
     private suspend fun createDiscordThread(game: Game): List<String> {
-        val discordData =
-            discordService.createGameThread(game)
-                ?: run {
-                    deleteOngoingGame(
-                        game.homePlatformId?.toULong() ?: game.awayPlatformId?.toULong()
-                            ?: throw UnableToDeleteGameException(),
-                    )
-                    throw UnableToCreateGameThreadException()
-                }
+        val discordData = discordService.createGameThread(game)
 
-        if (discordData[0] == "null") {
-            deleteOngoingGame(
-                game.homePlatformId?.toULong() ?: game.awayPlatformId?.toULong()
-                    ?: throw UnableToDeleteGameException(),
-            )
+        if (discordData.isNullOrEmpty() || discordData[0] == "null" || discordData[0].isBlank()) {
+            deleteGameById(game.gameId)
             throw UnableToCreateGameThreadException()
         }
         return discordData
