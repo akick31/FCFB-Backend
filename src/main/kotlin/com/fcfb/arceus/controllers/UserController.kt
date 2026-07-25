@@ -5,7 +5,7 @@ import com.fcfb.arceus.dto.request.UserValidationRequest
 import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.service.fcfb.UserService
 import com.fcfb.arceus.util.AuthContext
-import com.fcfb.arceus.util.UserUnauthorizedException
+import com.fcfb.arceus.util.UserForbiddenException
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -55,7 +55,7 @@ class UserController(
         @RequestParam newEmail: String,
     ): UserDTO {
         if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
-            throw UserUnauthorizedException()
+            throw UserForbiddenException()
         }
         return userService.updateEmail(id, newEmail)
     }
@@ -66,7 +66,7 @@ class UserController(
         @RequestParam newUsername: String,
     ): UserDTO {
         if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
-            throw UserUnauthorizedException()
+            throw UserForbiddenException()
         }
         return userService.updateUsername(id, newUsername)
     }
@@ -79,7 +79,7 @@ class UserController(
     ): UserDTO {
         val isAdmin = AuthContext.isAdmin()
         if (AuthContext.currentUserId() != id && !isAdmin) {
-            throw UserUnauthorizedException()
+            throw UserForbiddenException()
         }
         return userService.changePassword(id, currentPassword, newPassword, skipCurrentPasswordCheck = isAdmin)
     }

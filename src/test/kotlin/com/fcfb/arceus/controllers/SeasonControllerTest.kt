@@ -234,20 +234,20 @@ class SeasonControllerTest {
     }
 
     @Test
-    fun `should handle error when getting current season`() {
+    fun `returns 404 when there is no current season`() {
         every { seasonRepository.getCurrentSeason() } returns null
 
         mockMvc.perform(get("/api/v1/arceus/season/current").contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error").value("Current season not found"))
     }
 
     @Test
-    fun `should handle error when getting current week`() {
+    fun `returns 404 when there is no current week`() {
         every { seasonRepository.getCurrentSeason() } returns null
 
         mockMvc.perform(get("/api/v1/arceus/season/current/week").contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error").value("Current week not found"))
     }
 }

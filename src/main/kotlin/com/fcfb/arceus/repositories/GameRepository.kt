@@ -72,6 +72,7 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
             "SELECT * FROM game " +
                 "WHERE STR_TO_DATE(game_timer, '%m/%d/%Y %H:%i:%s') <= CONVERT_TZ(NOW(), 'UTC', 'America/New_York') " +
                 "AND game_status != 'FINAL' " +
+                "AND home_platform_id IS NOT NULL " +
                 "AND (game_warning = 'FIRST_WARNING' OR game_warning = 'SECOND_WARNING')",
         nativeQuery = true,
     )
@@ -84,6 +85,7 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
                 "BETWEEN DATE_ADD(CONVERT_TZ(NOW(), 'UTC', 'America/New_York'), INTERVAL 6 HOUR) " +
                 "AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC', 'America/New_York'), INTERVAL 12 HOUR) " +
                 "AND game_status != 'FINAL' " +
+                "AND home_platform_id IS NOT NULL " +
                 "AND game_warning = 'NONE'",
         nativeQuery = true,
     )
@@ -96,6 +98,7 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
                 "BETWEEN CONVERT_TZ(NOW(), 'UTC', 'America/New_York') " +
                 "AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC', 'America/New_York'), INTERVAL 6 HOUR) " +
                 "AND game_status != 'FINAL' " +
+                "AND home_platform_id IS NOT NULL " +
                 "AND game_warning = 'FIRST_WARNING'",
         nativeQuery = true,
     )

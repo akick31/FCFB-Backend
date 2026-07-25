@@ -6,6 +6,12 @@ class UserUnauthorizedException : Exception("User is unauthorized") {
     }
 }
 
+class UserForbiddenException : Exception("User is not permitted to modify this account") {
+    override fun toString(): String {
+        return "UserForbiddenException: ${super.message}"
+    }
+}
+
 class DiscordUserNotFoundException : Exception("Discord user not found") {
     override fun toString(): String {
         return "DiscordUserNotFoundException: ${super.message}"
@@ -15,12 +21,6 @@ class DiscordUserNotFoundException : Exception("Discord user not found") {
 class UnableToCreateGameThreadException : Exception("Unable to create game thread in Discord") {
     override fun toString(): String {
         return "UnableToCreateGameThreadException: ${super.message}"
-    }
-}
-
-class UnableToDeleteGameException : Exception("Unable to delete game") {
-    override fun toString(): String {
-        return "UnableToDeleteGameException: ${super.message}"
     }
 }
 

@@ -191,7 +191,7 @@ class UserControllerTest {
                 .param("id", "1")
                 .param("newEmail", "newemail@example.com"),
         )
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isForbidden)
     }
 
     @Test
@@ -216,7 +216,7 @@ class UserControllerTest {
                 .param("id", "1")
                 .param("newUsername", "newusername"),
         )
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isForbidden)
     }
 
     @Test
@@ -259,7 +259,7 @@ class UserControllerTest {
                 .param("id", "1")
                 .param("newPassword", "newpass"),
         )
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isForbidden)
     }
 
     @Test
