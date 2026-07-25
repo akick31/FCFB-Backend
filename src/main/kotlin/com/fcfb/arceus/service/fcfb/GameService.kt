@@ -1774,7 +1774,7 @@ class GameService(
     private suspend fun createDiscordThread(game: Game): List<String> {
         val discordData = discordService.createGameThread(game)
 
-        if (discordData.isNullOrEmpty() || discordData[0] == "null" || discordData[0].isBlank()) {
+        if (discordData == null || discordData.size < 2 || discordData[0] == "null" || discordData[0].isBlank()) {
             deleteGameById(game.gameId)
             throw UnableToCreateGameThreadException()
         }
