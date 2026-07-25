@@ -59,7 +59,7 @@ dependencies {
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions:1.2.3")
     implementation("com.kotlindiscord.kord.extensions:kord-extensions:1.6.0")
     implementation("com.google.code.gson:gson:2.11.0")
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.0")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("org.apache.httpcomponents:httpclient:4.5.14")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.vladmihalcea:hibernate-types-52:2.21.1")
