@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.record
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.Game
@@ -23,6 +24,23 @@ class GameRecordService(
         statName: Stats,
         gameStatsList: List<GameStats>,
         recordType: RecordType,
+        teamConference: Map<String, String?> = emptyMap(),
+    ) {
+        saveBestGameRecord(statName, gameStatsList, recordType, RecordScope.LEAGUE, null)
+        gameStatsList.groupBy { it.team }.forEach { (team, stats) ->
+            if (team != null) saveBestGameRecord(statName, stats, recordType, RecordScope.TEAM, team)
+        }
+        gameStatsList.groupBy { teamConference[it.team] }.forEach { (conference, stats) ->
+            if (conference != null) saveBestGameRecord(statName, stats, recordType, RecordScope.CONFERENCE, conference)
+        }
+    }
+
+    private fun saveBestGameRecord(
+        statName: Stats,
+        gameStatsList: List<GameStats>,
+        recordType: RecordType,
+        recordScope: RecordScope,
+        scopeValue: String?,
     ) {
         val isLowest = recordType == RecordType.SINGLE_GAME_LOWEST
         val bestGameStats =
@@ -38,6 +56,8 @@ class GameRecordService(
             Record(
                 recordName = statName,
                 recordType = recordType,
+                recordScope = recordScope,
+                scopeValue = scopeValue,
                 seasonNumber = bestGameStats.season ?: 0,
                 week = bestGameStats.week ?: 0,
                 gameId = bestGameStats.gameId,
@@ -56,8 +76,10 @@ class GameRecordService(
         gameStatsList: List<GameStats>,
         game: Game,
         recordType: RecordType,
+        recordScope: RecordScope = RecordScope.LEAGUE,
+        scopeValue: String? = null,
     ) {
-        val currentRecord = recordRepository.findTopByRecordNameAndRecordTypeOrderByRecordValueDesc(statName, recordType)
+        val currentRecord = recordRepository.findScopedRecords(statName, recordType, recordScope, scopeValue).firstOrNull()
 
         for (gameStats in gameStatsList) {
             val currentValue = recordStatUtils.getStatValue(statName, gameStats)
@@ -76,6 +98,8 @@ class GameRecordService(
                     Record(
                         recordName = statName,
                         recordType = recordType,
+                        recordScope = recordScope,
+                        scopeValue = scopeValue,
                         seasonNumber = game.season ?: 0,
                         week = game.week ?: 0,
                         gameId = game.gameId,

@@ -180,7 +180,7 @@ class GameStatsService(
         stats.turnoversLost = GameStatsCalculator.calculateTurnoversLost(stats.interceptionsLost, stats.fumblesLost)
         stats.turnoversForced = GameStatsCalculator.calculateTurnoversLost(stats.interceptionsForced, stats.fumblesForced)
         stats.turnoverTouchdownsLost = GameStatsCalculator.calculateTurnoverTouchdownsLost(allOffensivePlays)
-        stats.turnoverTouchdownsForced = GameStatsCalculator.calculateTurnoverTouchdownsLost(allOffensivePlays)
+        stats.turnoverTouchdownsForced = GameStatsCalculator.calculateTurnoverTouchdownsLost(allDefensivePlays)
         stats.fieldGoalMade = GameStatsCalculator.calculateFieldGoalMade(allOffensivePlays)
         stats.fieldGoalAttempts = GameStatsCalculator.calculateFieldGoalAttempts(allOffensivePlays)
         stats.fieldGoalPercentage = GameStatsCalculator.calculatePercentage(stats.fieldGoalMade, stats.fieldGoalAttempts)

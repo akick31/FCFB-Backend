@@ -1,5 +1,6 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.service.fcfb.RecordService
@@ -26,11 +27,15 @@ class RecordsController(
         @RequestParam(required = false) season: Int?,
         @RequestParam(required = false) recordType: RecordType?,
         @RequestParam(required = false) recordName: Stats?,
+        @RequestParam(required = false) recordScope: RecordScope?,
+        @RequestParam(required = false) scopeValue: String?,
         @PageableDefault(size = 20) pageable: Pageable,
     ) = recordService.getFilteredRecords(
         season = season,
         recordType = recordType,
         recordName = recordName,
+        recordScope = recordScope,
+        scopeValue = scopeValue,
         pageable = pageable,
     )
 

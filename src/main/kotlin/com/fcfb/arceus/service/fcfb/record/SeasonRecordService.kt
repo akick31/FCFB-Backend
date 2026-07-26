@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.record
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.GameStats
@@ -18,10 +19,13 @@ class SeasonRecordService(
     private val gameStatsRepository: GameStatsRepository,
     private val recordStatUtils: RecordStatUtils,
 ) {
+    private data class TeamSeason(val team: String, val season: Int, val value: Double)
+
     fun generateSeasonRecord(
         statName: Stats,
         gameStatsList: List<GameStats>,
         recordType: RecordType,
+        teamConference: Map<String, String?> = emptyMap(),
     ) {
         // Get game stats only for available seasons (10 and above, data unavailable for seasons 1-9)
         val availableSeasons = recordStatUtils.getAvailableSeasons()
@@ -31,51 +35,64 @@ class SeasonRecordService(
                 .filter { it.season in availableSeasons }
 
         // Group by team and season, then calculate season totals/averages
-        val teamSeasonTotals =
+        val teamSeasons =
             allGameStats
                 .groupBy { "${it.team}_${it.season}" }
-                .mapValues { (_, stats) ->
-                    when {
-                        recordStatUtils.lowestOnlyStats.contains(statName) || recordStatUtils.dualRecordStats.contains(statName) -> {
-                            // For diff stats, calculate average instead of sum
-                            recordStatUtils.calculateAverageForStat(statName, stats)
+                .mapNotNull { (key, stats) ->
+                    val value =
+                        when {
+                            recordStatUtils.lowestOnlyStats.contains(statName) || recordStatUtils.dualRecordStats.contains(statName) -> {
+                                recordStatUtils.calculateAverageForStat(statName, stats)
+                            }
+                            else -> {
+                                stats.sumOf { recordStatUtils.getStatValue(statName, it) }
+                            }
                         }
-                        else -> {
-                            // For regular stats, sum the values
-                            stats.sumOf { recordStatUtils.getStatValue(statName, it) }
-                        }
-                    }
+                    val (team, seasonStr) = key.split("_")
+                    TeamSeason(team, seasonStr.toInt(), value)
                 }
 
+        saveBestSeasonRecord(statName, teamSeasons, allGameStats, recordType, RecordScope.LEAGUE, null)
+        teamSeasons.groupBy { it.team }.forEach { (team, entries) ->
+            saveBestSeasonRecord(statName, entries, allGameStats, recordType, RecordScope.TEAM, team)
+        }
+        teamSeasons.groupBy { teamConference[it.team] }.forEach { (conference, entries) ->
+            if (conference != null) saveBestSeasonRecord(statName, entries, allGameStats, recordType, RecordScope.CONFERENCE, conference)
+        }
+    }
+
+    private fun saveBestSeasonRecord(
+        statName: Stats,
+        teamSeasons: List<TeamSeason>,
+        allGameStats: List<GameStats>,
+        recordType: RecordType,
+        recordScope: RecordScope,
+        scopeValue: String?,
+    ) {
         val isLowest = recordType == RecordType.SINGLE_SEASON_LOWEST
-        val bestTeamSeason =
+        val best =
             if (isLowest) {
-                teamSeasonTotals.minByOrNull { it.value }
+                teamSeasons.minByOrNull { it.value }
             } else {
-                teamSeasonTotals.maxByOrNull { it.value }
+                teamSeasons.maxByOrNull { it.value }
             } ?: return
 
-        val (team, seasonStr) = bestTeamSeason.key.split("_")
-        val season = seasonStr.toInt()
-        val teamSeasonGameStats = allGameStats.filter { it.team == team && it.season == season }
-        val bestGameStats = teamSeasonGameStats.first()
+        val teamSeasonGameStats = allGameStats.filter { it.team == best.team && it.season == best.season }
 
         val record =
             Record(
                 recordName = statName,
                 recordType = recordType,
-                seasonNumber = season,
-                // Season records don't have a specific week
+                recordScope = recordScope,
+                scopeValue = scopeValue,
+                seasonNumber = best.season,
                 week = null,
-                // Season records don't have a specific game ID
                 gameId = null,
-                // Season records don't have specific home/away teams
                 homeTeam = null,
-                // Season records don't have specific home/away teams
                 awayTeam = null,
-                recordTeam = team,
+                recordTeam = best.team,
                 coach = getCoachForSeasonRecord(teamSeasonGameStats),
-                recordValue = bestTeamSeason.value,
+                recordValue = best.value,
             )
 
         recordRepository.save(record)
@@ -95,8 +112,10 @@ class SeasonRecordService(
         homeSeasonStats: GameStats?,
         awaySeasonStats: GameStats?,
         recordType: RecordType,
+        recordScope: RecordScope = RecordScope.LEAGUE,
+        scopeValue: String? = null,
     ) {
-        val currentRecord = recordRepository.findTopByRecordNameAndRecordTypeOrderByRecordValueDesc(statName, recordType)
+        val currentRecord = recordRepository.findScopedRecords(statName, recordType, recordScope, scopeValue).firstOrNull()
 
         // Check both teams' season stats
         val teamStats = listOfNotNull(homeSeasonStats, awaySeasonStats)
@@ -133,6 +152,8 @@ class SeasonRecordService(
                     Record(
                         recordName = statName,
                         recordType = recordType,
+                        recordScope = recordScope,
+                        scopeValue = scopeValue,
                         seasonNumber = season,
                         // Season records don't have a specific week
                         week = null,

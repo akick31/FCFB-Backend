@@ -1,11 +1,14 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.Game
+import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Record
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
+import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.fcfb.record.GameRecordService
 import com.fcfb.arceus.service.fcfb.record.GeneralRecordService
 import com.fcfb.arceus.service.fcfb.record.RecordStatUtils
@@ -27,14 +30,27 @@ class RecordService(
     private val seasonRecordService: SeasonRecordService,
     private val generalRecordService: GeneralRecordService,
     private val recordStatUtils: RecordStatUtils,
+    private val teamRepository: TeamRepository,
 ) {
+    private fun conferenceOf(team: String?): String? =
+        try {
+            teamRepository.getTeamByName(team)?.conference?.name
+        } catch (e: Exception) {
+            null
+        }
+
+    private fun buildTeamConferenceMap(teams: Collection<String?>): Map<String, String?> =
+        teams.filterNotNull().distinct().associateWith { conferenceOf(it) }
+
     fun getFilteredRecords(
         season: Int?,
         recordType: RecordType?,
         recordName: Stats?,
+        recordScope: RecordScope?,
+        scopeValue: String?,
         pageable: Pageable,
     ): Page<Record> {
-        val spec = recordSpecificationService.createSpecification(season, recordType, recordName)
+        val spec = recordSpecificationService.createSpecification(season, recordType, recordName, recordScope, scopeValue)
         val sortOrders = recordSpecificationService.createSort()
         val sortedPageable =
             PageRequest.of(
@@ -57,8 +73,10 @@ class RecordService(
         // Get all available seasons (10 and above, since data unavailable for seasons 1-9)
         val availableSeasons = recordStatUtils.getAvailableSeasons()
 
+        val teamConference = buildTeamConferenceMap(gameStatsRepository.findAll().map { it.team })
+
         for (season in availableSeasons) {
-            generateRecordsForSeason(season, completedGameIds)
+            generateRecordsForSeason(season, completedGameIds, teamConference)
         }
 
         Logger.info("Completed generation of all records")
@@ -88,63 +106,194 @@ class RecordService(
         val homeSeasonStats = seasonRecordService.getCurrentSeasonStatsForTeam(game.homeTeam, currentSeason)
         val awaySeasonStats = seasonRecordService.getCurrentSeasonStatsForTeam(game.awayTeam, currentSeason)
 
-        // Check each stat type
-        for (stat in Stats.values()) {
-            if (recordStatUtils.generalRecordStats.contains(stat)) {
-                // General records - only check for complete games
-                if (isComplete) {
-                    if (recordStatUtils.lowestOnlyStats.contains(stat)) {
-                        generalRecordService.checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
-                    } else if (recordStatUtils.dualRecordStats.contains(stat)) {
-                        generalRecordService.checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL)
-                        generalRecordService.checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL_LOWEST)
-                    } else {
-                        generalRecordService.checkAndUpdateGeneralRecord(stat, gameStatsList, game, RecordType.GENERAL)
-                    }
-                }
-            } else if (recordStatUtils.gameOnlyStats.contains(stat)) {
-                // Game-only records - only check for complete games
-                if (isComplete) {
-                    if (recordStatUtils.lowestOnlyStats.contains(stat)) {
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
-                    } else if (recordStatUtils.dualRecordStats.contains(stat)) {
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
-                    } else {
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
-                    }
-                }
-            } else {
-                // Regular stats - game records only for complete games, season records always
-                if (isComplete) {
-                    if (recordStatUtils.lowestOnlyStats.contains(stat)) {
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
-                    } else if (recordStatUtils.dualRecordStats.contains(stat)) {
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME_LOWEST)
-                    } else {
-                        gameRecordService.checkAndUpdateGameRecord(stat, gameStatsList, game, RecordType.SINGLE_GAME)
-                    }
-                }
+        // League records (both teams compete)
+        runRecordChecks(game, gameStatsList, homeSeasonStats, awaySeasonStats, isComplete, RecordScope.LEAGUE, null)
 
-                // Season records always checked regardless of game completion
-                if (recordStatUtils.lowestOnlyStats.contains(stat)) {
-                    seasonRecordService.checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON_LOWEST)
-                } else if (recordStatUtils.dualRecordStats.contains(stat)) {
-                    seasonRecordService.checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON)
-                    seasonRecordService.checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON_LOWEST)
-                } else {
-                    seasonRecordService.checkAndUpdateSeasonRecord(stat, homeSeasonStats, awaySeasonStats, RecordType.SINGLE_SEASON)
-                }
+        // Per-team and per-conference records (each team measured on its own)
+        listOf(homeStats to game.homeTeam, awayStats to game.awayTeam).forEach { (teamGameStats, teamName) ->
+            val teamStatsList = listOfNotNull(teamGameStats)
+            val teamSeasonStats = if (teamName == game.homeTeam) homeSeasonStats else awaySeasonStats
+            runRecordChecks(game, teamStatsList, teamSeasonStats, null, isComplete, RecordScope.TEAM, teamName)
+            conferenceOf(teamName)?.let { conference ->
+                runRecordChecks(game, teamStatsList, teamSeasonStats, null, isComplete, RecordScope.CONFERENCE, conference)
             }
         }
 
         Logger.info("Completed checking records for game ${game.gameId}")
     }
 
+    private fun runRecordChecks(
+        game: Game,
+        gameStatsList: List<GameStats>,
+        homeSeasonStats: GameStats?,
+        awaySeasonStats: GameStats?,
+        isComplete: Boolean,
+        recordScope: RecordScope,
+        scopeValue: String?,
+    ) {
+        for (stat in Stats.values()) {
+            if (recordStatUtils.generalRecordStats.contains(stat)) {
+                if (isComplete) {
+                    if (recordStatUtils.lowestOnlyStats.contains(stat)) {
+                        generalRecordService.checkAndUpdateGeneralRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.GENERAL_LOWEST,
+                            recordScope,
+                            scopeValue,
+                        )
+                    } else if (recordStatUtils.dualRecordStats.contains(stat)) {
+                        generalRecordService.checkAndUpdateGeneralRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.GENERAL,
+                            recordScope,
+                            scopeValue,
+                        )
+                        generalRecordService.checkAndUpdateGeneralRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.GENERAL_LOWEST,
+                            recordScope,
+                            scopeValue,
+                        )
+                    } else {
+                        generalRecordService.checkAndUpdateGeneralRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.GENERAL,
+                            recordScope,
+                            scopeValue,
+                        )
+                    }
+                }
+            } else if (recordStatUtils.gameOnlyStats.contains(stat)) {
+                if (isComplete) {
+                    if (recordStatUtils.lowestOnlyStats.contains(stat)) {
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME_LOWEST,
+                            recordScope,
+                            scopeValue,
+                        )
+                    } else if (recordStatUtils.dualRecordStats.contains(stat)) {
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME,
+                            recordScope,
+                            scopeValue,
+                        )
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME_LOWEST,
+                            recordScope,
+                            scopeValue,
+                        )
+                    } else {
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME,
+                            recordScope,
+                            scopeValue,
+                        )
+                    }
+                }
+            } else {
+                if (isComplete) {
+                    if (recordStatUtils.lowestOnlyStats.contains(stat)) {
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME_LOWEST,
+                            recordScope,
+                            scopeValue,
+                        )
+                    } else if (recordStatUtils.dualRecordStats.contains(stat)) {
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME,
+                            recordScope,
+                            scopeValue,
+                        )
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME_LOWEST,
+                            recordScope,
+                            scopeValue,
+                        )
+                    } else {
+                        gameRecordService.checkAndUpdateGameRecord(
+                            stat,
+                            gameStatsList,
+                            game,
+                            RecordType.SINGLE_GAME,
+                            recordScope,
+                            scopeValue,
+                        )
+                    }
+                }
+
+                if (recordStatUtils.lowestOnlyStats.contains(stat)) {
+                    seasonRecordService.checkAndUpdateSeasonRecord(
+                        stat,
+                        homeSeasonStats,
+                        awaySeasonStats,
+                        RecordType.SINGLE_SEASON_LOWEST,
+                        recordScope,
+                        scopeValue,
+                    )
+                } else if (recordStatUtils.dualRecordStats.contains(stat)) {
+                    seasonRecordService.checkAndUpdateSeasonRecord(
+                        stat,
+                        homeSeasonStats,
+                        awaySeasonStats,
+                        RecordType.SINGLE_SEASON,
+                        recordScope,
+                        scopeValue,
+                    )
+                    seasonRecordService.checkAndUpdateSeasonRecord(
+                        stat,
+                        homeSeasonStats,
+                        awaySeasonStats,
+                        RecordType.SINGLE_SEASON_LOWEST,
+                        recordScope,
+                        scopeValue,
+                    )
+                } else {
+                    seasonRecordService.checkAndUpdateSeasonRecord(
+                        stat,
+                        homeSeasonStats,
+                        awaySeasonStats,
+                        RecordType.SINGLE_SEASON,
+                        recordScope,
+                        scopeValue,
+                    )
+                }
+            }
+        }
+    }
+
     private fun generateRecordsForSeason(
         seasonNumber: Int,
         completedGameIds: Set<Int>,
+        teamConference: Map<String, String?>,
     ) {
         Logger.info("Generating records for season $seasonNumber")
 
@@ -159,36 +308,60 @@ class RecordService(
             if (recordStatUtils.generalRecordStats.contains(stat)) {
                 // General records - only complete games
                 if (recordStatUtils.lowestOnlyStats.contains(stat)) {
-                    generalRecordService.generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL_LOWEST, completedGameIds)
+                    generalRecordService.generateGeneralRecord(
+                        stat,
+                        completeSeasonGameStats,
+                        RecordType.GENERAL_LOWEST,
+                        completedGameIds,
+                        teamConference,
+                    )
                 } else if (recordStatUtils.dualRecordStats.contains(stat)) {
-                    generalRecordService.generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL, completedGameIds)
-                    generalRecordService.generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL_LOWEST, completedGameIds)
+                    generalRecordService.generateGeneralRecord(
+                        stat,
+                        completeSeasonGameStats,
+                        RecordType.GENERAL,
+                        completedGameIds,
+                        teamConference,
+                    )
+                    generalRecordService.generateGeneralRecord(
+                        stat,
+                        completeSeasonGameStats,
+                        RecordType.GENERAL_LOWEST,
+                        completedGameIds,
+                        teamConference,
+                    )
                 } else {
-                    generalRecordService.generateGeneralRecord(stat, completeSeasonGameStats, RecordType.GENERAL, completedGameIds)
+                    generalRecordService.generateGeneralRecord(
+                        stat,
+                        completeSeasonGameStats,
+                        RecordType.GENERAL,
+                        completedGameIds,
+                        teamConference,
+                    )
                 }
             } else if (recordStatUtils.gameOnlyStats.contains(stat)) {
                 // Game-only records - only complete games
                 if (recordStatUtils.lowestOnlyStats.contains(stat)) {
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST, teamConference)
                 } else if (recordStatUtils.dualRecordStats.contains(stat)) {
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME, teamConference)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST, teamConference)
                 } else {
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME, teamConference)
                 }
             } else {
                 // Regular stats - game records use complete games only, season records use all games
                 if (recordStatUtils.lowestOnlyStats.contains(stat)) {
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
-                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON_LOWEST)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST, teamConference)
+                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON_LOWEST, teamConference)
                 } else if (recordStatUtils.dualRecordStats.contains(stat)) {
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST)
-                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON)
-                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON_LOWEST)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME, teamConference)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME_LOWEST, teamConference)
+                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON, teamConference)
+                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON_LOWEST, teamConference)
                 } else {
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME)
-                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON)
+                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, RecordType.SINGLE_GAME, teamConference)
+                    seasonRecordService.generateSeasonRecord(stat, allSeasonGameStats, RecordType.SINGLE_SEASON, teamConference)
                 }
             }
         }

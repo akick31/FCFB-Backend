@@ -1,5 +1,6 @@
 package com.fcfb.arceus.repositories
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.Record
@@ -60,6 +61,23 @@ interface RecordRepository : JpaRepository<Record, Long>, JpaSpecificationExecut
         recordName: Stats,
         recordType: RecordType,
     ): Record?
+
+    /**
+     * Find the current record for a specific stat, record type, and scope.
+     * A null scope value matches league records (which have no scope value).
+     */
+    @Query(
+        "SELECT r FROM Record r WHERE r.recordName = :recordName AND r.recordType = :recordType " +
+            "AND r.recordScope = :recordScope " +
+            "AND ((:scopeValue IS NULL AND r.scopeValue IS NULL) OR r.scopeValue = :scopeValue) " +
+            "ORDER BY r.recordValue DESC",
+    )
+    fun findScopedRecords(
+        @Param("recordName") recordName: Stats,
+        @Param("recordType") recordType: RecordType,
+        @Param("recordScope") recordScope: RecordScope,
+        @Param("scopeValue") scopeValue: String?,
+    ): List<Record>
 
     /**
      * Delete all records for a specific season
