@@ -964,6 +964,7 @@ class GameService(
     private fun endGame(game: Game): Game {
         try {
             game.gameStatus = GameStatus.FINAL
+            appendEndOfGamePlay(game)
             if (game.gameType != GameType.SCRIMMAGE) {
                 teamService.updateTeamWinsAndLosses(game)
                 userService.updateUserWinsAndLosses(game)
@@ -1051,6 +1052,55 @@ class GameService(
             )
             throw e
         }
+    }
+
+    private fun appendEndOfGamePlay(game: Game) {
+        val lastPlay = playRepository.getPreviousPlay(game.gameId) ?: return
+        if (lastPlay.actualResult == ActualResult.END_OF_GAME || game.homeScore == game.awayScore) {
+            return
+        }
+        val homeWon = game.homeScore > game.awayScore
+        val terminalWinProbability = if ((lastPlay.possession == TeamSide.HOME) == homeWon) 1.0 else 0.0
+        val endOfGamePlay =
+            Play(
+                gameId = game.gameId,
+                playNumber = lastPlay.playNumber + 1,
+                homeScore = game.homeScore,
+                awayScore = game.awayScore,
+                quarter = lastPlay.quarter,
+                clock = 0,
+                ballLocation = lastPlay.ballLocation,
+                possession = lastPlay.possession,
+                down = 0,
+                yardsToGo = 0,
+                defensiveNumber = null,
+                offensiveNumber = null,
+                offensiveSubmitter = null,
+                offensiveSubmitterId = null,
+                defensiveSubmitter = null,
+                defensiveSubmitterId = null,
+                playCall = null,
+                result = Scenario.END_OF_GAME,
+                actualResult = ActualResult.END_OF_GAME,
+                yards = 0,
+                playTime = 0,
+                runoffTime = 0,
+                winProbability = terminalWinProbability,
+                winProbabilityAdded = 0.0,
+                homeTeam = game.homeTeam,
+                awayTeam = game.awayTeam,
+                difference = 0,
+                timeoutUsed = false,
+                offensiveTimeoutCalled = false,
+                defensiveTimeoutCalled = false,
+                homeTimeouts = game.homeTimeouts,
+                awayTimeouts = game.awayTimeouts,
+                playFinished = true,
+                offensiveResponseSpeed = null,
+                defensiveResponseSpeed = null,
+            )
+        playRepository.save(endOfGamePlay)
+        game.winProbability = terminalWinProbability
     }
 
     private fun endOvertimePeriod(game: Game) {

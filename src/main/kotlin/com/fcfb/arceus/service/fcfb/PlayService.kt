@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.game.GameStatus
+import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.model.Game
@@ -194,6 +195,10 @@ class PlayService(
     fun rollbackPlay(gameId: Int): Play {
         try {
             val game = gameService.getGameById(gameId)
+            val latestPlay = playRepository.getPreviousPlay(gameId)
+            if (latestPlay?.actualResult == ActualResult.END_OF_GAME) {
+                playRepository.deleteById(latestPlay.playId)
+            }
             val previousPlay = getPreviousPlay(gameId)
             val gamePlay = getPlayById(game.currentPlayId!!)
             gameService.rollbackPlay(game, previousPlay, gamePlay)

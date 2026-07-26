@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.GameStats
@@ -124,13 +125,14 @@ class GameStatsService(
         game: Game,
         allPlays: List<Play>,
     ): List<GameStats> {
+        val playedPlays = allPlays.filter { it.actualResult != ActualResult.END_OF_GAME }
         var homeStats = getGameStatsByIdAndTeam(game.gameId, game.homeTeam)
-        updateScoreStats(allPlays, homeStats, TeamSide.HOME)
-        homeStats = updateStats(allPlays, TeamSide.HOME, game, homeStats)
+        updateScoreStats(playedPlays, homeStats, TeamSide.HOME)
+        homeStats = updateStats(playedPlays, TeamSide.HOME, game, homeStats)
 
         var awayStats = getGameStatsByIdAndTeam(game.gameId, game.awayTeam)
-        updateScoreStats(allPlays, awayStats, TeamSide.AWAY)
-        awayStats = updateStats(allPlays, TeamSide.AWAY, game, awayStats)
+        updateScoreStats(playedPlays, awayStats, TeamSide.AWAY)
+        awayStats = updateStats(playedPlays, TeamSide.AWAY, game, awayStats)
         return listOf(homeStats, awayStats)
     }
 
