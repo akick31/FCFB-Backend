@@ -316,7 +316,10 @@ class RecordStatUtils(
             return if (attempts > 0) total / attempts * 100 else 0.0
         }
         if (statName == Stats.AVERAGE_PUNT_LENGTH) {
-            val totalPuntYards = gameStatsList.sumOf { getStatValue(Stats.AVERAGE_PUNT_LENGTH, it) * getStatValue(Stats.PUNTS_ATTEMPTED, it) }
+            val totalPuntYards =
+                gameStatsList.sumOf {
+                    getStatValue(Stats.AVERAGE_PUNT_LENGTH, it) * getStatValue(Stats.PUNTS_ATTEMPTED, it)
+                }
             val punts = gameStatsList.sumOf { getStatValue(Stats.PUNTS_ATTEMPTED, it) }
             return if (punts > 0) totalPuntYards / punts else 0.0
         }
