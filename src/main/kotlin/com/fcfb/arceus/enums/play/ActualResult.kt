@@ -31,4 +31,5 @@ enum class ActualResult(val description: String) {
     MUFFED_PUNT("MUFFED PUNT"),
     DELAY_OF_GAME("DELAY OF GAME"),
     END_OF_HALF("END OF HALF"),
+    END_OF_GAME("END OF GAME"),
 }
