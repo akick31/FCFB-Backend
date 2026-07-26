@@ -964,6 +964,7 @@ class GameService(
     private fun endGame(game: Game): Game {
         try {
             game.gameStatus = GameStatus.FINAL
+            forceFinalWinProbability(game)
             if (game.gameType != GameType.SCRIMMAGE) {
                 teamService.updateTeamWinsAndLosses(game)
                 userService.updateUserWinsAndLosses(game)
@@ -1051,6 +1052,18 @@ class GameService(
             )
             throw e
         }
+    }
+
+    private fun forceFinalWinProbability(game: Game) {
+        val finalPlay = playRepository.getPreviousPlay(game.gameId) ?: return
+        if (game.homeScore == game.awayScore) {
+            return
+        }
+        val homeWon = game.homeScore > game.awayScore
+        val terminalWinProbability = if ((finalPlay.possession == TeamSide.HOME) == homeWon) 1.0 else 0.0
+        finalPlay.winProbability = terminalWinProbability
+        playRepository.save(finalPlay)
+        game.winProbability = terminalWinProbability
     }
 
     private fun endOvertimePeriod(game: Game) {
