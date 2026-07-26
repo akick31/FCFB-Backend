@@ -278,6 +278,55 @@ class RecordStatUtils(
         }
     }
 
+    private val rateComponents =
+        mapOf(
+            Stats.PASS_COMPLETION_PERCENTAGE to (Stats.PASS_COMPLETIONS to Stats.PASS_ATTEMPTS),
+            Stats.PASS_SUCCESS_PERCENTAGE to (Stats.PASS_SUCCESSES to Stats.PASS_ATTEMPTS),
+            Stats.RUSH_SUCCESS_PERCENTAGE to (Stats.RUSH_SUCCESSES to Stats.RUSH_ATTEMPTS),
+            Stats.FIELD_GOAL_PERCENTAGE to (Stats.FIELD_GOAL_MADE to Stats.FIELD_GOAL_ATTEMPTS),
+            Stats.THIRD_DOWN_CONVERSION_PERCENTAGE to (Stats.THIRD_DOWN_CONVERSION_SUCCESS to Stats.THIRD_DOWN_CONVERSION_ATTEMPTS),
+            Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE to (Stats.FOURTH_DOWN_CONVERSION_SUCCESS to Stats.FOURTH_DOWN_CONVERSION_ATTEMPTS),
+            Stats.RED_ZONE_SUCCESS_PERCENTAGE to (Stats.RED_ZONE_SUCCESSES to Stats.RED_ZONE_ATTEMPTS),
+            Stats.RED_ZONE_PERCENTAGE to (Stats.RED_ZONE_SUCCESSES to Stats.RED_ZONE_ATTEMPTS),
+            Stats.ONSIDE_SUCCESS_PERCENTAGE to (Stats.ONSIDE_SUCCESS to Stats.ONSIDE_ATTEMPTS),
+            Stats.TOUCHBACK_PERCENTAGE to (Stats.TOUCHBACKS to Stats.NUMBER_OF_KICKOFFS),
+        )
+
+    private val seasonMeanStats =
+        setOf(
+            Stats.AVERAGE_DIFF,
+            Stats.AVERAGE_OFFENSIVE_DIFF,
+            Stats.AVERAGE_DEFENSIVE_DIFF,
+            Stats.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
+            Stats.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF,
+            Stats.AVERAGE_YARDS_PER_PLAY,
+            Stats.AVERAGE_RESPONSE_SPEED,
+            Stats.KICK_RETURN_TD_PERCENTAGE,
+            Stats.PUNT_RETURN_TD_PERCENTAGE,
+        )
+
+    fun calculateSeasonValue(
+        statName: Stats,
+        gameStatsList: List<GameStats>,
+    ): Double {
+        if (gameStatsList.isEmpty()) return 0.0
+        rateComponents[statName]?.let { (numerator, denominator) ->
+            val total = gameStatsList.sumOf { getStatValue(numerator, it) }
+            val attempts = gameStatsList.sumOf { getStatValue(denominator, it) }
+            return if (attempts > 0) total / attempts * 100 else 0.0
+        }
+        if (statName == Stats.AVERAGE_PUNT_LENGTH) {
+            val totalPuntYards = gameStatsList.sumOf { getStatValue(Stats.AVERAGE_PUNT_LENGTH, it) * getStatValue(Stats.PUNTS_ATTEMPTED, it) }
+            val punts = gameStatsList.sumOf { getStatValue(Stats.PUNTS_ATTEMPTED, it) }
+            return if (punts > 0) totalPuntYards / punts else 0.0
+        }
+        return if (seasonMeanStats.contains(statName)) {
+            gameStatsList.map { getStatValue(statName, it) }.average()
+        } else {
+            gameStatsList.sumOf { getStatValue(statName, it) }
+        }
+    }
+
     /**
      * Get all available seasons (10 and above, since data unavailable for seasons 1-9)
      */
