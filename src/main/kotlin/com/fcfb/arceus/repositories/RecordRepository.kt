@@ -62,10 +62,6 @@ interface RecordRepository : JpaRepository<Record, Long>, JpaSpecificationExecut
         recordType: RecordType,
     ): Record?
 
-    /**
-     * Find the current record for a specific stat, record type, and scope.
-     * A null scope value matches league records (which have no scope value).
-     */
     @Query(
         "SELECT r FROM Record r WHERE r.recordName = :recordName AND r.recordType = :recordType " +
             "AND r.recordScope = :recordScope " +
@@ -78,6 +74,8 @@ interface RecordRepository : JpaRepository<Record, Long>, JpaSpecificationExecut
         @Param("recordScope") recordScope: RecordScope,
         @Param("scopeValue") scopeValue: String?,
     ): List<Record>
+
+    fun deleteByRecordScopeIn(recordScopes: Collection<RecordScope>)
 
     /**
      * Delete all records for a specific season

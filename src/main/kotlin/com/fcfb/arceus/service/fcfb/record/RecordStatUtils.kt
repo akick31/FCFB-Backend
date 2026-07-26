@@ -30,6 +30,23 @@ class RecordStatUtils(
             Stats.AVERAGE_RESPONSE_SPEED,
         )
 
+    val averagedStats =
+        setOf(
+            Stats.PASS_COMPLETION_PERCENTAGE,
+            Stats.PASS_SUCCESS_PERCENTAGE,
+            Stats.RUSH_SUCCESS_PERCENTAGE,
+            Stats.FIELD_GOAL_PERCENTAGE,
+            Stats.PUNT_RETURN_TD_PERCENTAGE,
+            Stats.ONSIDE_SUCCESS_PERCENTAGE,
+            Stats.TOUCHBACK_PERCENTAGE,
+            Stats.KICK_RETURN_TD_PERCENTAGE,
+            Stats.THIRD_DOWN_CONVERSION_PERCENTAGE,
+            Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE,
+            Stats.RED_ZONE_SUCCESS_PERCENTAGE,
+            Stats.RED_ZONE_PERCENTAGE,
+            Stats.AVERAGE_PUNT_LENGTH,
+        )
+
     /**
      * Stats that should track both highest and lowest values
      */

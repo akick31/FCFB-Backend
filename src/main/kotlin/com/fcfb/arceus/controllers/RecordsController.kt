@@ -44,4 +44,7 @@ class RecordsController(
      */
     @PostMapping("/generate/all")
     fun generateAllRecords() = recordService.generateAllRecords()
+
+    @PostMapping("/generate/teams-and-conferences")
+    fun generateTeamAndConferenceRecords() = recordService.generateTeamAndConferenceRecords()
 }

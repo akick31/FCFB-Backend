@@ -28,18 +28,25 @@ class GeneralRecordService(
         recordType: RecordType,
         completedGameIds: Set<Int>,
         teamConference: Map<String, String?> = emptyMap(),
+        scopes: Set<RecordScope> = RecordScope.ALL,
     ) {
         // Get game stats only for seasons 10 and 11 (data unavailable for seasons 1-9)
         val allGameStats =
             gameStatsRepository.findAll().toList()
                 .filter { (it.season == 10 || it.season == 11) && it.gameId in completedGameIds }
 
-        saveBestGeneralRecord(statName, allGameStats, recordType, RecordScope.LEAGUE, null)
-        allGameStats.groupBy { it.team }.forEach { (team, stats) ->
-            if (team != null) saveBestGeneralRecord(statName, stats, recordType, RecordScope.TEAM, team)
+        if (RecordScope.LEAGUE in scopes) {
+            saveBestGeneralRecord(statName, allGameStats, recordType, RecordScope.LEAGUE, null)
         }
-        allGameStats.groupBy { teamConference[it.team] }.forEach { (conference, stats) ->
-            if (conference != null) saveBestGeneralRecord(statName, stats, recordType, RecordScope.CONFERENCE, conference)
+        if (RecordScope.TEAM in scopes) {
+            allGameStats.groupBy { it.team }.forEach { (team, stats) ->
+                if (team != null) saveBestGeneralRecord(statName, stats, recordType, RecordScope.TEAM, team)
+            }
+        }
+        if (RecordScope.CONFERENCE in scopes) {
+            allGameStats.groupBy { teamConference[it.team] }.forEach { (conference, stats) ->
+                if (conference != null) saveBestGeneralRecord(statName, stats, recordType, RecordScope.CONFERENCE, conference)
+            }
         }
     }
 

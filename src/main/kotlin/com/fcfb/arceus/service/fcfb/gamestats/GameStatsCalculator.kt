@@ -397,8 +397,8 @@ object GameStatsCalculator {
         return offensiveTouchdowns + defensiveTouchdowns
     }
 
-    fun calculateAverageNormalPlayDiff(allPlays: List<Play>): Double {
-        val average =
+    fun calculateAverageNormalPlayDiff(allPlays: List<Play>): Double? {
+        val differences =
             allPlays
                 .filter { play ->
                     play.playCall != PlayCall.KICKOFF_NORMAL &&
@@ -410,13 +410,12 @@ object GameStatsCalculator {
                         play.playCall != PlayCall.SPIKE
                 }
                 .mapNotNull { it.difference }
-                .average()
 
-        return if (average.isNaN()) 0.0 else average
+        return if (differences.isEmpty()) null else differences.average()
     }
 
-    fun calculateAverageSpecialTeamsDiff(allPlays: List<Play>): Double {
-        val average =
+    fun calculateAverageSpecialTeamsDiff(allPlays: List<Play>): Double? {
+        val differences =
             allPlays
                 .filter { play ->
                     play.playCall == PlayCall.KICKOFF_NORMAL ||
@@ -426,9 +425,8 @@ object GameStatsCalculator {
                         play.playCall == PlayCall.PUNT
                 }
                 .mapNotNull { it.difference }
-                .average()
 
-        return if (average.isNaN()) 0.0 else average
+        return if (differences.isEmpty()) null else differences.average()
     }
 
     fun calculateAverageYardsPerPlay(allPlays: List<Play>): Double {
@@ -565,9 +563,9 @@ object GameStatsCalculator {
         }
     }
 
-    fun calculateAverageDiff(allPlays: List<Play>): Double {
-        val average = allPlays.mapNotNull { it.difference }.average()
-        return if (average.isNaN()) 0.0 else average
+    fun calculateAverageDiff(allPlays: List<Play>): Double? {
+        val differences = allPlays.mapNotNull { it.difference }
+        return if (differences.isEmpty()) null else differences.average()
     }
 
     fun calculateTurnoverDifferential(

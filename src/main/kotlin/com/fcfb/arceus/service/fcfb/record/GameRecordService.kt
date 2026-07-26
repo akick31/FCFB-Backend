@@ -25,13 +25,20 @@ class GameRecordService(
         gameStatsList: List<GameStats>,
         recordType: RecordType,
         teamConference: Map<String, String?> = emptyMap(),
+        scopes: Set<RecordScope> = RecordScope.ALL,
     ) {
-        saveBestGameRecord(statName, gameStatsList, recordType, RecordScope.LEAGUE, null)
-        gameStatsList.groupBy { it.team }.forEach { (team, stats) ->
-            if (team != null) saveBestGameRecord(statName, stats, recordType, RecordScope.TEAM, team)
+        if (RecordScope.LEAGUE in scopes) {
+            saveBestGameRecord(statName, gameStatsList, recordType, RecordScope.LEAGUE, null)
         }
-        gameStatsList.groupBy { teamConference[it.team] }.forEach { (conference, stats) ->
-            if (conference != null) saveBestGameRecord(statName, stats, recordType, RecordScope.CONFERENCE, conference)
+        if (RecordScope.TEAM in scopes) {
+            gameStatsList.groupBy { it.team }.forEach { (team, stats) ->
+                if (team != null) saveBestGameRecord(statName, stats, recordType, RecordScope.TEAM, team)
+            }
+        }
+        if (RecordScope.CONFERENCE in scopes) {
+            gameStatsList.groupBy { teamConference[it.team] }.forEach { (conference, stats) ->
+                if (conference != null) saveBestGameRecord(statName, stats, recordType, RecordScope.CONFERENCE, conference)
+            }
         }
     }
 

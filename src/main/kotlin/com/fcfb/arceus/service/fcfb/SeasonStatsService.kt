@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.GameStatsRepository
@@ -58,17 +59,18 @@ class SeasonStatsService(
         // Clear existing season stats
         seasonStatsRepository.deleteAll()
 
-        // Get all unique team-season combinations (excluding scrimmage games)
+        // Fetch game stats and teams once, up front, instead of re-querying per team/season below
         val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
-        val teamSeasonCombinations =
-            allGameStats
-                .map { "${it.team}_${it.season}" }
-                .distinct()
+        val gameStatsByGameId = allGameStats.groupBy { it.gameId }
+        val gameStatsByTeamSeason = allGameStats.groupBy { "${it.team}_${it.season}" }
+        val teamsByName = teamRepository.findAll().associateBy { it.name }
 
-        for (combination in teamSeasonCombinations) {
+        for ((combination, teamGameStats) in gameStatsByTeamSeason) {
             val (team, seasonStr) = combination.split("_")
             val season = seasonStr.toInt()
-            generateSeasonStatsForTeam(team, season)
+            val seasonStats =
+                aggregateGameStatsToSeasonStats(teamGameStats, team, season, gameStatsByGameId, teamsByName[team]?.conference)
+            seasonStatsRepository.save(seasonStats)
         }
 
         Logger.info("Completed generation of all season stats")
@@ -95,8 +97,18 @@ class SeasonStatsService(
             return
         }
 
+        // Get all GameStats for these games (both teams), for opponent lookups
+        val gameIds = teamGameStats.map { it.gameId }.toSet()
+        val gameStatsByGameId =
+            gameStatsRepository.findAll()
+                .filter { it.gameId in gameIds }
+                .groupBy { it.gameId }
+
+        val conference = teamRepository.findByName(team)?.conference
+
         // Create season stats by aggregating game stats
-        val seasonStats = aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber)
+        val seasonStats =
+            aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber, gameStatsByGameId, conference)
 
         seasonStatsRepository.save(seasonStats)
         Logger.info("Completed generating season stats for $team in season $seasonNumber")
@@ -120,23 +132,10 @@ class SeasonStatsService(
         gameStatsList: List<GameStats>,
         team: String,
         seasonNumber: Int,
+        gameStatsByGameId: Map<Int, List<GameStats>>,
+        conference: Conference?,
     ): SeasonStats {
         val firstGameStats = gameStatsList.first()
-
-        // Get conference from Team entity instead of GameStats
-        val teamEntity = teamRepository.findByName(team)
-        val conference = teamEntity?.conference
-
-        // Get all game IDs for this team's games
-        val gameIds = gameStatsList.map { it.gameId }.toSet()
-
-        // Get all GameStats for these games (both teams)
-        val allGameStatsForGames =
-            gameStatsRepository.findAll()
-                .filter { it.gameId in gameIds }
-
-        // Group by game ID for easy lookup
-        val gameStatsByGameId = allGameStatsForGames.groupBy { it.gameId }
 
         // Calculate wins/losses properly by comparing scores in each game
         var wins = 0

@@ -26,6 +26,7 @@ class SeasonRecordService(
         gameStatsList: List<GameStats>,
         recordType: RecordType,
         teamConference: Map<String, String?> = emptyMap(),
+        scopes: Set<RecordScope> = RecordScope.ALL,
     ) {
         // Get game stats only for available seasons (10 and above, data unavailable for seasons 1-9)
         val availableSeasons = recordStatUtils.getAvailableSeasons()
@@ -41,7 +42,9 @@ class SeasonRecordService(
                 .mapNotNull { (key, stats) ->
                     val value =
                         when {
-                            recordStatUtils.lowestOnlyStats.contains(statName) || recordStatUtils.dualRecordStats.contains(statName) -> {
+                            recordStatUtils.lowestOnlyStats.contains(statName) ||
+                                recordStatUtils.dualRecordStats.contains(statName) ||
+                                recordStatUtils.averagedStats.contains(statName) -> {
                                 recordStatUtils.calculateAverageForStat(statName, stats)
                             }
                             else -> {
@@ -52,12 +55,27 @@ class SeasonRecordService(
                     TeamSeason(team, seasonStr.toInt(), value)
                 }
 
-        saveBestSeasonRecord(statName, teamSeasons, allGameStats, recordType, RecordScope.LEAGUE, null)
-        teamSeasons.groupBy { it.team }.forEach { (team, entries) ->
-            saveBestSeasonRecord(statName, entries, allGameStats, recordType, RecordScope.TEAM, team)
+        if (RecordScope.LEAGUE in scopes) {
+            saveBestSeasonRecord(statName, teamSeasons, allGameStats, recordType, RecordScope.LEAGUE, null)
         }
-        teamSeasons.groupBy { teamConference[it.team] }.forEach { (conference, entries) ->
-            if (conference != null) saveBestSeasonRecord(statName, entries, allGameStats, recordType, RecordScope.CONFERENCE, conference)
+        if (RecordScope.TEAM in scopes) {
+            teamSeasons.groupBy { it.team }.forEach { (team, entries) ->
+                saveBestSeasonRecord(statName, entries, allGameStats, recordType, RecordScope.TEAM, team)
+            }
+        }
+        if (RecordScope.CONFERENCE in scopes) {
+            teamSeasons.groupBy { teamConference[it.team] }.forEach { (conference, entries) ->
+                if (conference != null) {
+                    saveBestSeasonRecord(
+                        statName,
+                        entries,
+                        allGameStats,
+                        recordType,
+                        RecordScope.CONFERENCE,
+                        conference,
+                    )
+                }
+            }
         }
     }
 
