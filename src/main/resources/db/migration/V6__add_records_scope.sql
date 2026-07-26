@@ -1,6 +1,6 @@
 ALTER TABLE `records`
-    ADD COLUMN `record_scope` VARCHAR(255) NOT NULL DEFAULT 'LEAGUE',
-    ADD COLUMN `scope_value` VARCHAR(255) NULL;
+    ADD COLUMN `record_scope` VARCHAR(50) NOT NULL DEFAULT 'LEAGUE',
+    ADD COLUMN `scope_value` VARCHAR(100) NULL;
 
 CREATE INDEX `idx_record_scope_lookup`
     ON `records` (`record_name`, `record_type`, `record_scope`, `scope_value`);
