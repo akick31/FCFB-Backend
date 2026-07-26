@@ -26,7 +26,6 @@ class GameStatsService(
     private val teamRepository: TeamRepository,
 ) {
     fun createGameStats(game: Game): List<GameStats> {
-        // Get current ELO for both teams
         val homeTeam =
             teamRepository.getTeamByName(game.homeTeam)
                 ?: throw Exception("Could not find home team: ${game.homeTeam}")
@@ -104,20 +103,24 @@ class GameStatsService(
     }
 
     fun generateGameStats(gameId: Int) {
-        // Get previous ranking
-        // Delete previous stats from game
+        val existingEloByTeam = gameStatsRepository.findByGameId(gameId).associate { it.team to it.teamElo }
+
         deleteByGameId(gameId)
 
-        // Create new game stats for game
         val game =
             gameRepository.getGameById(gameId)
                 ?: throw Exception("Could not find game with ID $gameId")
-        createGameStats(game)
+        val newStats = createGameStats(game)
 
-        // Get game and all plays
+        if (existingEloByTeam.isNotEmpty()) {
+            newStats.forEach { stats ->
+                existingEloByTeam[stats.team]?.let { stats.teamElo = it }
+                gameStatsRepository.save(stats)
+            }
+        }
+
         val allPlays = playRepository.getAllPlaysByGameId(gameId)
 
-        // Update the game stats
         updateGameStats(game, allPlays)
     }
 
@@ -259,7 +262,6 @@ class GameStatsService(
         stats: GameStats,
         teamSide: TeamSide,
     ) {
-        // Reset quarter scores before recalculating from all plays
         stats.q1Score = 0
         stats.q2Score = 0
         stats.q3Score = 0
@@ -304,25 +306,18 @@ class GameStatsService(
     ): List<com.fcfb.arceus.dto.response.EloHistoryEntry> {
         val gameStatsList =
             if (team.lowercase() == "all") {
-                // Get all teams' ELO history - use optimized query
-                // For "all teams", limit to most recent data to avoid timeout
                 if (season != null) {
                     gameStatsRepository.findBySeasonOrderByGameIdAsc(season)
                 } else {
-                    // For all-time, get only the most recent seasons (last 10 seasons) to avoid timeout
-                    // This is a reasonable limit for visualization while still showing meaningful history
-                    // Get the latest season directly from database
                     val latestSeason = gameStatsRepository.findMaxSeason() ?: 0
                     if (latestSeason == 0) {
                         emptyList()
                     } else {
                         val minSeason = (latestSeason - 9).coerceAtLeast(1)
-                        // Use optimized query that filters at database level
                         gameStatsRepository.findBySeasonGreaterThanEqualOrderBySeasonDescGameIdAsc(minSeason)
                     }
                 }
             } else {
-                // Get single team's ELO history
                 if (season != null) {
                     gameStatsRepository.findByTeamAndSeason(team, season)
                 } else {
@@ -334,8 +329,6 @@ class GameStatsService(
             return emptyList()
         }
 
-        // Batch fetch all games to avoid N+1 query problem
-        // Limit to 10,000 games max to avoid memory issues
         val gameIds = gameStatsList.mapNotNull { it.gameId }.distinct().take(10000)
         val gamesMap =
             if (gameIds.isNotEmpty()) {
@@ -344,7 +337,6 @@ class GameStatsService(
                 emptyMap()
             }
 
-        // Sort by team, then season, then week, then game ID
         val sortedStats =
             gameStatsList.sortedWith(
                 compareBy<GameStats> { it.team ?: "" }
