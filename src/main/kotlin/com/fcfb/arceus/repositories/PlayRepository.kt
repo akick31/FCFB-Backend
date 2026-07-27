@@ -83,6 +83,8 @@ interface PlayRepository : CrudRepository<Play, Int> {
 
     fun findByGameId(gameId: Int): List<Play>
 
+    fun findByGameIdIn(gameIds: List<Int>): List<Play>
+
     fun findByOffensiveSubmitter(offensiveSubmitter: String): List<Play>
 
     fun findByDefensiveSubmitter(defensiveSubmitter: String): List<Play>

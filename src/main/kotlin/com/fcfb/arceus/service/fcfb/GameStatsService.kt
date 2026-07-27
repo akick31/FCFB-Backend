@@ -5,6 +5,7 @@ import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
@@ -26,7 +27,6 @@ class GameStatsService(
     private val teamRepository: TeamRepository,
 ) {
     fun createGameStats(game: Game): List<GameStats> {
-        // Get current ELO for both teams
         val homeTeam =
             teamRepository.getTeamByName(game.homeTeam)
                 ?: throw Exception("Could not find home team: ${game.homeTeam}")
@@ -71,6 +71,46 @@ class GameStatsService(
         return listOf(homeStats, awayStats)
     }
 
+    private fun buildUnsavedGameStats(
+        game: Game,
+        homeTeam: Team,
+        awayTeam: Team,
+    ): Pair<GameStats, GameStats> {
+        val homeStats =
+            GameStats(
+                gameId = game.gameId,
+                team = game.homeTeam,
+                tvChannel = game.tvChannel,
+                coaches = game.homeCoaches,
+                offensivePlaybook = game.homeOffensivePlaybook,
+                defensivePlaybook = game.homeDefensivePlaybook,
+                season = game.season,
+                week = game.week,
+                subdivision = game.subdivision,
+                gameStatus = game.gameStatus,
+                gameType = game.gameType,
+                teamElo = homeTeam.currentElo,
+            )
+
+        val awayStats =
+            GameStats(
+                gameId = game.gameId,
+                team = game.awayTeam,
+                tvChannel = game.tvChannel,
+                coaches = game.awayCoaches,
+                offensivePlaybook = game.awayOffensivePlaybook,
+                defensivePlaybook = game.awayDefensivePlaybook,
+                season = game.season,
+                week = game.week,
+                subdivision = game.subdivision,
+                gameStatus = game.gameStatus,
+                gameType = game.gameType,
+                teamElo = awayTeam.currentElo,
+            )
+
+        return homeStats to awayStats
+    }
+
     fun generateGameStatsForGamesMoreRecentThanGameId(gameId: Int) {
         try {
             val allGames =
@@ -94,30 +134,54 @@ class GameStatsService(
                     throw GameNotFoundException("Could not find any games")
                 }
 
-            for (game in allGames) {
-                Logger.info("Generating game stats for game ${game.gameId}")
-                generateGameStats(game.gameId)
+            val teamsByName = teamRepository.findAll().associateBy { it.name }
+            val allStats = mutableListOf<GameStats>()
+
+            val batchSize = 200
+            for (gameBatch in allGames.chunked(batchSize)) {
+                val gameIds = gameBatch.map { it.gameId }
+                val playsByGameId = playRepository.findByGameIdIn(gameIds).groupBy { it.gameId }
+
+                for (game in gameBatch) {
+                    val homeTeam =
+                        teamsByName[game.homeTeam]
+                            ?: throw Exception("Could not find home team: ${game.homeTeam}")
+                    val awayTeam =
+                        teamsByName[game.awayTeam]
+                            ?: throw Exception("Could not find away team: ${game.awayTeam}")
+
+                    val (homeStats, awayStats) = buildUnsavedGameStats(game, homeTeam, awayTeam)
+                    val playedPlays =
+                        (playsByGameId[game.gameId] ?: emptyList())
+                            .filter { it.actualResult != ActualResult.END_OF_GAME }
+
+                    updateScoreStats(playedPlays, homeStats, TeamSide.HOME)
+                    allStats.add(updateStats(playedPlays, TeamSide.HOME, game, homeStats))
+
+                    updateScoreStats(playedPlays, awayStats, TeamSide.AWAY)
+                    allStats.add(updateStats(playedPlays, TeamSide.AWAY, game, awayStats))
+                }
+
+                Logger.info("Computed game stats through game ${gameBatch.last().gameId}")
             }
+
+            gameStatsRepository.deleteAll()
+            gameStatsRepository.saveAll(allStats)
         } catch (e: Exception) {
             throw Exception("Could not generate game stats", e)
         }
     }
 
     fun generateGameStats(gameId: Int) {
-        // Get previous ranking
-        // Delete previous stats from game
         deleteByGameId(gameId)
 
-        // Create new game stats for game
         val game =
             gameRepository.getGameById(gameId)
                 ?: throw Exception("Could not find game with ID $gameId")
         createGameStats(game)
 
-        // Get game and all plays
         val allPlays = playRepository.getAllPlaysByGameId(gameId)
 
-        // Update the game stats
         updateGameStats(game, allPlays)
     }
 
@@ -203,7 +267,11 @@ class GameStatsService(
         stats.onsideSuccessPercentage = GameStatsCalculator.calculatePercentage(stats.onsideSuccess, stats.onsideAttempts)
         stats.normalKickoffAttempts = GameStatsCalculator.calculateNormalKickoffAttempts(allOffensivePlays)
         stats.touchbacks = GameStatsCalculator.calculateTouchbacks(allOffensivePlays)
-        stats.touchbackPercentage = GameStatsCalculator.calculatePercentage(stats.touchbacks, stats.normalKickoffAttempts)
+        stats.touchbackPercentage =
+            GameStatsCalculator.calculatePercentage(
+                stats.touchbacks,
+                GameStatsCalculator.calculateNonOnsideKickoffAttempts(allOffensivePlays),
+            )
         stats.kickReturnTd = GameStatsCalculator.calculateKickReturnTd(allDefensivePlays)
         stats.kickReturnTdPercentage = GameStatsCalculator.calculatePercentage(stats.kickReturnTd, stats.numberOfKickoffs)
         stats.numberOfDrives = GameStatsCalculator.calculateNumberOfDrives(allPlays, teamSide)
@@ -259,7 +327,6 @@ class GameStatsService(
         stats: GameStats,
         teamSide: TeamSide,
     ) {
-        // Reset quarter scores before recalculating from all plays
         stats.q1Score = 0
         stats.q2Score = 0
         stats.q3Score = 0
@@ -292,37 +359,24 @@ class GameStatsService(
         return gameStatsRepository.findByTeamAndSeason(team, season)
     }
 
-    /**
-     * Get ELO history for a team
-     * @param team Team name (or "all" for all teams)
-     * @param season Season number (optional, null for all-time)
-     * @return List of ELO history entries
-     */
     fun getEloHistory(
         team: String,
         season: Int?,
     ): List<com.fcfb.arceus.dto.response.EloHistoryEntry> {
         val gameStatsList =
             if (team.lowercase() == "all") {
-                // Get all teams' ELO history - use optimized query
-                // For "all teams", limit to most recent data to avoid timeout
                 if (season != null) {
                     gameStatsRepository.findBySeasonOrderByGameIdAsc(season)
                 } else {
-                    // For all-time, get only the most recent seasons (last 10 seasons) to avoid timeout
-                    // This is a reasonable limit for visualization while still showing meaningful history
-                    // Get the latest season directly from database
                     val latestSeason = gameStatsRepository.findMaxSeason() ?: 0
                     if (latestSeason == 0) {
                         emptyList()
                     } else {
                         val minSeason = (latestSeason - 9).coerceAtLeast(1)
-                        // Use optimized query that filters at database level
                         gameStatsRepository.findBySeasonGreaterThanEqualOrderBySeasonDescGameIdAsc(minSeason)
                     }
                 }
             } else {
-                // Get single team's ELO history
                 if (season != null) {
                     gameStatsRepository.findByTeamAndSeason(team, season)
                 } else {
@@ -334,8 +388,6 @@ class GameStatsService(
             return emptyList()
         }
 
-        // Batch fetch all games to avoid N+1 query problem
-        // Limit to 10,000 games max to avoid memory issues
         val gameIds = gameStatsList.mapNotNull { it.gameId }.distinct().take(10000)
         val gamesMap =
             if (gameIds.isNotEmpty()) {
@@ -344,7 +396,6 @@ class GameStatsService(
                 emptyMap()
             }
 
-        // Sort by team, then season, then week, then game ID
         val sortedStats =
             gameStatsList.sortedWith(
                 compareBy<GameStats> { it.team ?: "" }
@@ -395,12 +446,6 @@ class GameStatsService(
         }
     }
 
-    /**
-     * Get game stats by season and week with opponent stats included
-     * @param season Season number
-     * @param week Week number (optional, null for entire season)
-     * @return List of game stats (frontend will pair with opponents by game_id)
-     */
     fun getGameStatsBySeasonAndWeek(
         season: Int,
         week: Int?,

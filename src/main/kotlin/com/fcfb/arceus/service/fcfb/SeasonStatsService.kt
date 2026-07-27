@@ -42,7 +42,6 @@ class SeasonStatsService(
                     Sort.by(sortOrders),
                 )
             } else {
-                // For unpaged requests, create a pageable with a large page size
                 PageRequest.of(0, Integer.MAX_VALUE, Sort.by(sortOrders))
             }
 
@@ -56,10 +55,8 @@ class SeasonStatsService(
     fun generateAllSeasonStats() {
         Logger.info("Starting generation of all season stats")
 
-        // Clear existing season stats
         seasonStatsRepository.deleteAll()
 
-        // Fetch game stats and teams once, up front, instead of re-querying per team/season below
         val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
         val gameStatsByGameId = allGameStats.groupBy { it.gameId }
         val gameStatsByTeamSeason = allGameStats.groupBy { "${it.team}_${it.season}" }
@@ -82,10 +79,8 @@ class SeasonStatsService(
     ) {
         Logger.info("Generating season stats for $team in season $seasonNumber")
 
-        // Delete existing season stats for this team and season
         seasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
 
-        // Get all game stats for this team and season (excluding scrimmage games)
         val teamGameStats =
             filterOutScrimmageGames(
                 gameStatsRepository.findAll()
@@ -97,7 +92,6 @@ class SeasonStatsService(
             return
         }
 
-        // Get all GameStats for these games (both teams), for opponent lookups
         val gameIds = teamGameStats.map { it.gameId }.toSet()
         val gameStatsByGameId =
             gameStatsRepository.findAll()
@@ -106,7 +100,6 @@ class SeasonStatsService(
 
         val conference = teamRepository.findByName(team)?.conference
 
-        // Create season stats by aggregating game stats
         val seasonStats =
             aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber, gameStatsByGameId, conference)
 
@@ -119,10 +112,8 @@ class SeasonStatsService(
         val season = gameStats.season ?: return
         val subdivision = gameStats.subdivision ?: return
 
-        // Regenerate season stats for this team and season
         generateSeasonStatsForTeam(team, season)
 
-        // Update conference stats for this subdivision and season
         conferenceStatsService.updateConferenceStatsForSeasonStats(
             seasonStatsRepository.findByTeamAndSeasonNumber(team, season) ?: return,
         )
@@ -137,7 +128,6 @@ class SeasonStatsService(
     ): SeasonStats {
         val firstGameStats = gameStatsList.first()
 
-        // Calculate wins/losses properly by comparing scores in each game
         var wins = 0
         var losses = 0
 
@@ -145,7 +135,6 @@ class SeasonStatsService(
             val gameId = teamGameStats.gameId
             val teamScore = teamGameStats.score
 
-            // Find the opponent's GameStats for this game
             val opponentGameStats =
                 gameStatsByGameId[gameId]
                     ?.firstOrNull { it.team != team }
@@ -157,7 +146,6 @@ class SeasonStatsService(
                 } else if (teamScore < opponentScore) {
                     losses++
                 }
-                // Ties are not counted as wins or losses
             }
         }
 
@@ -170,7 +158,6 @@ class SeasonStatsService(
             conference = conference,
             offensivePlaybook = firstGameStats.offensivePlaybook,
             defensivePlaybook = firstGameStats.defensivePlaybook,
-            // Aggregate all the stats
             passAttempts = gameStatsList.sumOf { it.passAttempts },
             passCompletions = gameStatsList.sumOf { it.passCompletions },
             passCompletionPercentage =
@@ -295,7 +282,6 @@ class SeasonStatsService(
             averageDefensiveSpecialTeamsDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDefensiveSpecialTeamsDiff }),
             averageDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDiff }),
             averageResponseSpeed = calculateAverage(gameStatsList.mapNotNull { it.averageResponseSpeed }),
-            // Opponent Stats (what the team allowed opponents to do)
             opponentPassAttempts =
                 gameStatsList.sumOf {
                     getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.passAttempts ?: 0
@@ -567,7 +553,6 @@ class SeasonStatsService(
                         conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
                 }
 
-            // Normalize stat name: remove underscores and convert to lowercase
             val normalizedStatName = statName.lowercase().replace("_", "")
 
             return when (normalizedStatName) {
@@ -644,9 +629,6 @@ class SeasonStatsService(
                 "safetiesforced" -> filteredStats.sortedByDescending { it.safetiesForced }
                 "safetiescommitted" -> filteredStats.sortedByDescending { it.safetiesCommitted }
                 "averageoffensivediff" -> {
-                    // Lower is better for offense, so sort ascending (best/lowest first)
-                    // When ascending=false (default), show best first (ascending order)
-                    // When ascending=true, show worst first (descending order)
                     val sorted = filteredStats.sortedBy { it.averageOffensiveDiff ?: Double.MAX_VALUE }
                     if (ascending) sorted.reversed() else sorted
                 }
@@ -656,12 +638,10 @@ class SeasonStatsService(
                 "averagediff" -> filteredStats.sortedByDescending { it.averageDiff ?: 0.0 }
                 "averageresponsespeed" -> filteredStats.sortedByDescending { it.averageResponseSpeed ?: 0.0 }
                 else -> {
-                    // If stat not found, log warning and sort by team name (alphabetical)
                     Logger.warn("Unknown stat name in leaderboard: $statName (normalized: $normalizedStatName)")
                     filteredStats.sortedBy { it.team }
                 }
             }.let { sortedStats ->
-                // For offensive diff and point differential, we already handled ascending/descending above, so skip reversal
                 val normalizedName = normalizedStatName
                 if ("averageoffensivediff" != normalizedName && "pointdifferential" != normalizedName) {
                     if (ascending) {

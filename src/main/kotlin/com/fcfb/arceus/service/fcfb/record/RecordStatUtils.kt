@@ -30,6 +30,19 @@ class RecordStatUtils(
             Stats.AVERAGE_RESPONSE_SPEED,
         )
 
+    val againstBaseStat =
+        mapOf(
+            Stats.POINTS_AGAINST to Stats.SCORE,
+            Stats.TOTAL_YARDS_AGAINST to Stats.TOTAL_YARDS,
+            Stats.PASS_YARDS_AGAINST to Stats.PASS_YARDS,
+            Stats.RUSH_YARDS_AGAINST to Stats.RUSH_YARDS,
+            Stats.FIRST_DOWNS_AGAINST to Stats.FIRST_DOWNS,
+            Stats.TOUCHDOWNS_AGAINST to Stats.TOUCHDOWNS,
+            Stats.THIRD_DOWN_CONVERSION_PERCENTAGE_AGAINST to Stats.THIRD_DOWN_CONVERSION_PERCENTAGE,
+            Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE_AGAINST to Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE,
+            Stats.RED_ZONE_SUCCESS_PERCENTAGE_AGAINST to Stats.RED_ZONE_SUCCESS_PERCENTAGE,
+        )
+
     val averagedStats =
         setOf(
             Stats.PASS_COMPLETION_PERCENTAGE,
@@ -244,6 +257,17 @@ class RecordStatUtils(
                 Stats.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF -> "averageDefensiveSpecialTeamsDiff"
                 Stats.AVERAGE_DIFF -> "averageDiff"
                 Stats.AVERAGE_RESPONSE_SPEED -> "averageResponseSpeed"
+
+                // Defense (opponent) stats read the base property; against records are computed from the opponent's row
+                Stats.POINTS_AGAINST -> "score"
+                Stats.TOTAL_YARDS_AGAINST -> "totalYards"
+                Stats.PASS_YARDS_AGAINST -> "passYards"
+                Stats.RUSH_YARDS_AGAINST -> "rushYards"
+                Stats.FIRST_DOWNS_AGAINST -> "firstDowns"
+                Stats.TOUCHDOWNS_AGAINST -> "touchdowns"
+                Stats.THIRD_DOWN_CONVERSION_PERCENTAGE_AGAINST -> "thirdDownConversionPercentage"
+                Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE_AGAINST -> "fourthDownConversionPercentage"
+                Stats.RED_ZONE_SUCCESS_PERCENTAGE_AGAINST -> "redZoneSuccessPercentage"
             }
 
         return try {

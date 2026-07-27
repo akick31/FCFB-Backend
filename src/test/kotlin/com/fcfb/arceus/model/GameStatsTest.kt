@@ -16,7 +16,6 @@ class GameStatsTest {
     fun `test GameStats entity annotations`() {
         val gameStats = GameStats()
 
-        // Test that the class has the correct JPA annotations
         val entityAnnotation = GameStats::class.java.getAnnotation(javax.persistence.Entity::class.java)
         assertNotNull(entityAnnotation)
 
@@ -131,7 +130,6 @@ class GameStatsTest {
     fun `test GameStats property mutability`() {
         val gameStats = GameStats()
 
-        // Test basic properties
         gameStats.id = 1
         gameStats.gameId = 123
         gameStats.team = "Alabama"
@@ -420,10 +418,8 @@ class GameStatsTest {
     fun `test GameStats team ELO`() {
         val gameStats = GameStats()
 
-        // Test default value
         assertEquals(1500.0, gameStats.teamElo)
 
-        // Test setting custom ELO values
         gameStats.teamElo = 1750.25
         assertEquals(1750.25, gameStats.teamElo)
 
@@ -438,31 +434,26 @@ class GameStatsTest {
     fun `test GameStats with all enum values`() {
         val gameStats = GameStats()
 
-        // Test all TVChannel values
         TVChannel.entries.forEach { tvChannel ->
             gameStats.tvChannel = tvChannel
             assertEquals(tvChannel, gameStats.tvChannel)
         }
 
-        // Test all OffensivePlaybook values
         OffensivePlaybook.entries.forEach { offensivePlaybook ->
             gameStats.offensivePlaybook = offensivePlaybook
             assertEquals(offensivePlaybook, gameStats.offensivePlaybook)
         }
 
-        // Test all DefensivePlaybook values
         DefensivePlaybook.entries.forEach { defensivePlaybook ->
             gameStats.defensivePlaybook = defensivePlaybook
             assertEquals(defensivePlaybook, gameStats.defensivePlaybook)
         }
 
-        // Test all Subdivision values
         Subdivision.entries.forEach { subdivision ->
             gameStats.subdivision = subdivision
             assertEquals(subdivision, gameStats.subdivision)
         }
 
-        // Test all GameType values
         GameType.entries.forEach { gameType ->
             gameStats.gameType = gameType
             assertEquals(gameType, gameStats.gameType)
@@ -512,7 +503,6 @@ class GameStatsTest {
     fun `test GameStats complete game scenario`() {
         val gameStats = GameStats()
 
-        // Set up a complete game statistics scenario
         gameStats.id = 123
         gameStats.gameId = 456
         gameStats.team = "Alabama"
@@ -528,7 +518,6 @@ class GameStatsTest {
         gameStats.gameStatus = GameStatus.FINAL
         gameStats.lastModifiedTs = "2024-10-15T18:30:00Z"
 
-        // Verify all properties
         assertEquals(123, gameStats.id)
         assertEquals(456, gameStats.gameId)
         assertEquals("Alabama", gameStats.team)

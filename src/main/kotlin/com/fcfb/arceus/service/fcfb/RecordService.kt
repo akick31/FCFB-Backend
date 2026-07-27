@@ -9,6 +9,7 @@ import com.fcfb.arceus.model.Record
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
 import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.service.fcfb.record.AgainstRecordService
 import com.fcfb.arceus.service.fcfb.record.GameRecordService
 import com.fcfb.arceus.service.fcfb.record.GeneralRecordService
 import com.fcfb.arceus.service.fcfb.record.RecordStatUtils
@@ -29,6 +30,7 @@ class RecordService(
     private val gameRecordService: GameRecordService,
     private val seasonRecordService: SeasonRecordService,
     private val generalRecordService: GeneralRecordService,
+    private val againstRecordService: AgainstRecordService,
     private val recordStatUtils: RecordStatUtils,
     private val teamRepository: TeamRepository,
 ) {
@@ -130,6 +132,7 @@ class RecordService(
         scopeValue: String?,
     ) {
         for (stat in Stats.values()) {
+            if (recordStatUtils.againstBaseStat.containsKey(stat)) continue
             if (recordStatUtils.generalRecordStats.contains(stat)) {
                 if (isComplete) {
                     if (recordStatUtils.lowestOnlyStats.contains(stat)) {
@@ -316,6 +319,7 @@ class RecordService(
         val completeSeasonGameStats = allSeasonGameStats.filter { it.gameId in completedGameIds }
 
         for (stat in Stats.values()) {
+            if (recordStatUtils.againstBaseStat.containsKey(stat)) continue
             if (recordStatUtils.generalRecordStats.contains(stat)) {
                 // General records - only complete games
                 if (recordStatUtils.lowestOnlyStats.contains(stat)) {
@@ -416,5 +420,7 @@ class RecordService(
                 }
             }
         }
+
+        againstRecordService.generateAgainstRecords(allSeasonGameStats, completeSeasonGameStats, teamConference, scopes)
     }
 }
