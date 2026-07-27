@@ -73,11 +73,12 @@ class RecordService(
         val completedGameIds = recordStatUtils.getCompletedGameIds()
 
         val availableSeasons = recordStatUtils.getAvailableSeasons()
+        val availableSeasonsSet = availableSeasons.toSet()
 
         val allGameStats = gameStatsRepository.findAll().toList()
         val gamesById = gameRepository.findAll().associateBy { it.gameId }
         val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
-        val generalGameStats = allGameStats.filter { (it.season == 10 || it.season == 11) && it.gameId in completedGameIds }
+        val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
 
         for (season in availableSeasons) {
             generateRecordsForSeason(season, completedGameIds, teamConference, allGameStats, gamesById, generalGameStats)
@@ -308,10 +309,11 @@ class RecordService(
         recordRepository.deleteByRecordScopeIn(RecordScope.TEAM_AND_CONFERENCE.toList())
         val completedGameIds = recordStatUtils.getCompletedGameIds()
         val availableSeasons = recordStatUtils.getAvailableSeasons()
+        val availableSeasonsSet = availableSeasons.toSet()
         val allGameStats = gameStatsRepository.findAll().toList()
         val gamesById = gameRepository.findAll().associateBy { it.gameId }
         val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
-        val generalGameStats = allGameStats.filter { (it.season == 10 || it.season == 11) && it.gameId in completedGameIds }
+        val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
         for (season in availableSeasons) {
             generateRecordsForSeason(
                 season,

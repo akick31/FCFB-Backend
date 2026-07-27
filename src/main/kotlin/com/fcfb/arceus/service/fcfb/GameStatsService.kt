@@ -173,7 +173,7 @@ class GameStatsService(
             }
 
             Logger.info("Saving computed game stats for ${allGames.size} games")
-            gameStatsRepository.deleteAll()
+            gameStatsRepository.deleteByGameIdIn(allGames.map { it.gameId })
             gameStatsRepository.saveAll(allStats)
             Logger.info("Completed generation of all game stats")
         } catch (e: Exception) {
@@ -199,11 +199,11 @@ class GameStatsService(
         allPlays: List<Play>,
     ): List<GameStats> {
         val playedPlays = allPlays.filter { it.actualResult != ActualResult.END_OF_GAME }
-        var homeStats = getGameStatsByIdAndTeam(game.gameId, game.homeTeam)
+        var homeStats = getOrCreateGameStatsByIdAndTeam(game, game.homeTeam)
         updateScoreStats(playedPlays, homeStats, TeamSide.HOME)
         homeStats = updateStats(playedPlays, TeamSide.HOME, game, homeStats)
 
-        var awayStats = getGameStatsByIdAndTeam(game.gameId, game.awayTeam)
+        var awayStats = getOrCreateGameStatsByIdAndTeam(game, game.awayTeam)
         updateScoreStats(playedPlays, awayStats, TeamSide.AWAY)
         awayStats = updateStats(playedPlays, TeamSide.AWAY, game, awayStats)
         return listOf(homeStats, awayStats)
@@ -216,6 +216,39 @@ class GameStatsService(
         team: String,
     ) = gameStatsRepository.getGameStatsByIdAndTeam(gameId, team)
         ?: throw GameStatsNotFoundException("Could not find game stats for game $gameId and team $team")
+
+    /**
+     * Fetch the game stats row for a team, creating a baseline row if it is missing so a live
+     * game self-heals instead of erroring when its stats were wiped (e.g. by a bulk regeneration).
+     */
+    private fun getOrCreateGameStatsByIdAndTeam(
+        game: Game,
+        team: String,
+    ): GameStats {
+        gameStatsRepository.getGameStatsByIdAndTeam(game.gameId, team)?.let { return it }
+
+        Logger.warn("Game stats missing for game ${game.gameId} team $team - creating baseline row")
+        val isHome = team == game.homeTeam
+        val teamModel =
+            teamRepository.getTeamByName(team)
+                ?: throw Exception("Could not find team: $team")
+        val stats =
+            GameStats(
+                gameId = game.gameId,
+                team = team,
+                tvChannel = game.tvChannel,
+                coaches = if (isHome) game.homeCoaches else game.awayCoaches,
+                offensivePlaybook = if (isHome) game.homeOffensivePlaybook else game.awayOffensivePlaybook,
+                defensivePlaybook = if (isHome) game.homeDefensivePlaybook else game.awayDefensivePlaybook,
+                season = game.season,
+                week = game.week,
+                subdivision = game.subdivision,
+                gameStatus = game.gameStatus,
+                gameType = game.gameType,
+                teamElo = teamModel.currentElo,
+            )
+        return gameStatsRepository.save(stats)
+    }
 
     fun getGameStatsById(gameId: Int) = gameStatsRepository.findByGameId(gameId)
 

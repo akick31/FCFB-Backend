@@ -20,6 +20,11 @@ interface GameStatsRepository : CrudRepository<GameStats, Int> {
     @Query(value = "DELETE FROM game_stats WHERE game_id = ?", nativeQuery = true)
     fun deleteByGameId(gameId: Int)
 
+    @Transactional
+    @Modifying
+    @Query(value = "DELETE FROM game_stats WHERE game_id IN (:gameIds)", nativeQuery = true)
+    fun deleteByGameIdIn(gameIds: Collection<Int>)
+
     fun findByGameId(gameId: Int): List<GameStats>
 
     fun findByTeam(team: String): List<GameStats>
