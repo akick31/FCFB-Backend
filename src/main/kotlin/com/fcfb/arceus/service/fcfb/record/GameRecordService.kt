@@ -24,20 +24,21 @@ class GameRecordService(
         statName: Stats,
         gameStatsList: List<GameStats>,
         recordType: RecordType,
+        gamesById: Map<Int, Game> = emptyMap(),
         teamConference: Map<String, String?> = emptyMap(),
         scopes: Set<RecordScope> = RecordScope.ALL,
     ) {
         if (RecordScope.LEAGUE in scopes) {
-            saveBestGameRecord(statName, gameStatsList, recordType, RecordScope.LEAGUE, null)
+            saveBestGameRecord(statName, gameStatsList, recordType, RecordScope.LEAGUE, null, gamesById)
         }
         if (RecordScope.TEAM in scopes) {
             gameStatsList.groupBy { it.team }.forEach { (team, stats) ->
-                if (team != null) saveBestGameRecord(statName, stats, recordType, RecordScope.TEAM, team)
+                if (team != null) saveBestGameRecord(statName, stats, recordType, RecordScope.TEAM, team, gamesById)
             }
         }
         if (RecordScope.CONFERENCE in scopes) {
             gameStatsList.groupBy { teamConference[it.team] }.forEach { (conference, stats) ->
-                if (conference != null) saveBestGameRecord(statName, stats, recordType, RecordScope.CONFERENCE, conference)
+                if (conference != null) saveBestGameRecord(statName, stats, recordType, RecordScope.CONFERENCE, conference, gamesById)
             }
         }
     }
@@ -48,6 +49,7 @@ class GameRecordService(
         recordType: RecordType,
         recordScope: RecordScope,
         scopeValue: String?,
+        gamesById: Map<Int, Game>,
     ) {
         val isLowest = recordType == RecordType.SINGLE_GAME_LOWEST
         val bestGameStats =
@@ -58,6 +60,7 @@ class GameRecordService(
             } ?: return
 
         val statValue = recordStatUtils.getStatValue(statName, bestGameStats)
+        val game = gamesById[bestGameStats.gameId]
 
         val record =
             Record(
@@ -68,8 +71,8 @@ class GameRecordService(
                 seasonNumber = bestGameStats.season ?: 0,
                 week = bestGameStats.week ?: 0,
                 gameId = bestGameStats.gameId,
-                homeTeam = getHomeTeamForGame(bestGameStats.gameId),
-                awayTeam = getAwayTeamForGame(bestGameStats.gameId),
+                homeTeam = game?.homeTeam ?: getHomeTeamForGame(bestGameStats.gameId),
+                awayTeam = game?.awayTeam ?: getAwayTeamForGame(bestGameStats.gameId),
                 recordTeam = bestGameStats.team ?: "",
                 coach = getCoachForGameRecord(bestGameStats),
                 recordValue = statValue,
@@ -100,7 +103,6 @@ class GameRecordService(
                 }
 
             if (isNewRecord) {
-                // New record!
                 val newRecord =
                     Record(
                         recordName = statName,

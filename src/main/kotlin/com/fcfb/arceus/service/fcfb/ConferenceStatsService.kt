@@ -53,13 +53,15 @@ class ConferenceStatsService(
             }.filterKeys { it.first != null && it.second != null }
 
         // Generate conference stats for each subdivision/conference/season combination
-        for ((subdivisionConferenceSeason, seasonStatsList) in groupedStats) {
+        val total = groupedStats.size
+        groupedStats.entries.forEachIndexed { index, (subdivisionConferenceSeason, seasonStatsList) ->
             val subdivision = subdivisionConferenceSeason.first!!
             val conference = subdivisionConferenceSeason.second!!
             val seasonNumber = subdivisionConferenceSeason.third
 
             Logger.info(
-                "Generating conference stats for $subdivision/$conference in season $seasonNumber with ${seasonStatsList.size} teams",
+                "Generating conference stats for $subdivision/$conference in season $seasonNumber " +
+                    "with ${seasonStatsList.size} teams (${index + 1}/$total)",
             )
             generateConferenceStatsForSubdivisionAndConferenceAndSeason(subdivision, conference, seasonNumber)
         }

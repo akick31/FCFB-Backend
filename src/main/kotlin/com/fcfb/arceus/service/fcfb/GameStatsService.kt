@@ -134,10 +134,13 @@ class GameStatsService(
                     throw GameNotFoundException("Could not find any games")
                 }
 
+            Logger.info("Starting generation of all game stats for ${allGames.size} games")
+
             val teamsByName = teamRepository.findAll().associateBy { it.name }
             val allStats = mutableListOf<GameStats>()
 
             val batchSize = 200
+            var processedGames = 0
             for (gameBatch in allGames.chunked(batchSize)) {
                 val gameIds = gameBatch.map { it.gameId }
                 val playsByGameId = playRepository.findByGameIdIn(gameIds).groupBy { it.gameId }
@@ -162,11 +165,17 @@ class GameStatsService(
                     allStats.add(updateStats(playedPlays, TeamSide.AWAY, game, awayStats))
                 }
 
-                Logger.info("Computed game stats through game ${gameBatch.last().gameId}")
+                processedGames += gameBatch.size
+                Logger.info(
+                    "Computed game stats through game ${gameBatch.last().gameId} " +
+                        "($processedGames/${allGames.size} games)",
+                )
             }
 
+            Logger.info("Saving computed game stats for ${allGames.size} games")
             gameStatsRepository.deleteAll()
             gameStatsRepository.saveAll(allStats)
+            Logger.info("Completed generation of all game stats")
         } catch (e: Exception) {
             throw Exception("Could not generate game stats", e)
         }

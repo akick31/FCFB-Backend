@@ -43,6 +43,26 @@ class RecordStatUtils(
             Stats.RED_ZONE_SUCCESS_PERCENTAGE_AGAINST to Stats.RED_ZONE_SUCCESS_PERCENTAGE,
         )
 
+    /**
+     * Rate/percentage stats that are meaningless as single-game records (a lone red-zone
+     * trip that scores is "100%"), so these only produce season records, not game records.
+     */
+    val percentageStats =
+        setOf(
+            Stats.PASS_COMPLETION_PERCENTAGE,
+            Stats.PASS_SUCCESS_PERCENTAGE,
+            Stats.RUSH_SUCCESS_PERCENTAGE,
+            Stats.FIELD_GOAL_PERCENTAGE,
+            Stats.PUNT_RETURN_TD_PERCENTAGE,
+            Stats.ONSIDE_SUCCESS_PERCENTAGE,
+            Stats.TOUCHBACK_PERCENTAGE,
+            Stats.KICK_RETURN_TD_PERCENTAGE,
+            Stats.THIRD_DOWN_CONVERSION_PERCENTAGE,
+            Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE,
+            Stats.RED_ZONE_SUCCESS_PERCENTAGE,
+            Stats.RED_ZONE_PERCENTAGE,
+        )
+
     val averagedStats =
         setOf(
             Stats.PASS_COMPLETION_PERCENTAGE,
@@ -311,7 +331,7 @@ class RecordStatUtils(
             Stats.THIRD_DOWN_CONVERSION_PERCENTAGE to (Stats.THIRD_DOWN_CONVERSION_SUCCESS to Stats.THIRD_DOWN_CONVERSION_ATTEMPTS),
             Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE to (Stats.FOURTH_DOWN_CONVERSION_SUCCESS to Stats.FOURTH_DOWN_CONVERSION_ATTEMPTS),
             Stats.RED_ZONE_SUCCESS_PERCENTAGE to (Stats.RED_ZONE_SUCCESSES to Stats.RED_ZONE_ATTEMPTS),
-            Stats.RED_ZONE_PERCENTAGE to (Stats.RED_ZONE_SUCCESSES to Stats.RED_ZONE_ATTEMPTS),
+            Stats.RED_ZONE_PERCENTAGE to (Stats.RED_ZONE_ATTEMPTS to Stats.NUMBER_OF_DRIVES),
             Stats.ONSIDE_SUCCESS_PERCENTAGE to (Stats.ONSIDE_SUCCESS to Stats.ONSIDE_ATTEMPTS),
             Stats.TOUCHBACK_PERCENTAGE to (Stats.TOUCHBACKS to Stats.NUMBER_OF_KICKOFFS),
         )

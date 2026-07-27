@@ -51,11 +51,12 @@ class LeagueStatsService(
             }.filterKeys { it.first != null }
 
         // Generate league stats for each subdivision/season combination
-        for ((subdivisionSeason) in groupedStats) {
+        val total = groupedStats.size
+        groupedStats.keys.forEachIndexed { index, subdivisionSeason ->
             val subdivision = subdivisionSeason.first!!
             val seasonNumber = subdivisionSeason.second
 
-            Logger.info("Generating league stats for $subdivision in season $seasonNumber")
+            Logger.info("Generating league stats for $subdivision in season $seasonNumber (${index + 1}/$total)")
             generateLeagueStatsForSubdivisionAndSeason(subdivision, seasonNumber)
         }
 

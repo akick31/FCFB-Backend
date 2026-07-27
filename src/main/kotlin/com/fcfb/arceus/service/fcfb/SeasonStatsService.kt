@@ -62,9 +62,12 @@ class SeasonStatsService(
         val gameStatsByTeamSeason = allGameStats.groupBy { "${it.team}_${it.season}" }
         val teamsByName = teamRepository.findAll().associateBy { it.name }
 
-        for ((combination, teamGameStats) in gameStatsByTeamSeason) {
+        val total = gameStatsByTeamSeason.size
+        Logger.info("Generating season stats for $total team-season combinations")
+        gameStatsByTeamSeason.entries.forEachIndexed { index, (combination, teamGameStats) ->
             val (team, seasonStr) = combination.split("_")
             val season = seasonStr.toInt()
+            Logger.info("Generating season stats for $team in season $season (${index + 1}/$total)")
             val seasonStats =
                 aggregateGameStatsToSeasonStats(teamGameStats, team, season, gameStatsByGameId, teamsByName[team]?.conference)
             seasonStatsRepository.save(seasonStats)

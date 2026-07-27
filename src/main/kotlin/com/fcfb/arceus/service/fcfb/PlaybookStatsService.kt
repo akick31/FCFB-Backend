@@ -55,7 +55,8 @@ class PlaybookStatsService(
         Logger.info("Found ${groupedStats.size} valid offensive/defensive playbook/season combinations")
 
         // Generate playbook stats for each offensive/defensive playbook/season combination
-        for ((playbookSeason, gameStatsList) in groupedStats) {
+        val total = groupedStats.size
+        groupedStats.entries.forEachIndexed { index, (playbookSeason, gameStatsList) ->
             val offensivePlaybook = playbookSeason.first!!
             val defensivePlaybook = playbookSeason.second!!
             val seasonNumber = playbookSeason.third
@@ -63,7 +64,7 @@ class PlaybookStatsService(
             if (seasonNumber != null) {
                 Logger.info(
                     "Generating playbook stats for $offensivePlaybook/$defensivePlaybook " +
-                        "in season $seasonNumber with ${gameStatsList.size} games",
+                        "in season $seasonNumber with ${gameStatsList.size} games (${index + 1}/$total)",
                 )
                 generateByPlaybooksAndSeason(
                     offensivePlaybook,

@@ -77,6 +77,8 @@ interface RecordRepository : JpaRepository<Record, Long>, JpaSpecificationExecut
 
     fun deleteByRecordScopeIn(recordScopes: Collection<RecordScope>)
 
+    fun countByRecordScope(recordScope: RecordScope): Long
+
     /**
      * Delete all records for a specific season
      */
