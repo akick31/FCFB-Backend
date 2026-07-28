@@ -22,6 +22,7 @@ pipeline {
         DISCORD_CLIENT_ID = credentials('DISCORD_CLIENT_ID')
         DISCORD_CLIENT_SECRET = credentials('DISCORD_CLIENT_SECRET')
         BOT_SERVICE_KEY = credentials('BOT_SERVICE_KEY')
+        WEBSITE_SERVICE_KEY = credentials('WEBSITE_SERVICE_KEY')
     }
 
     stages {
@@ -123,6 +124,9 @@ pipeline {
 
                         # Bot service authentication (must match bot.service.key on FCFB-Discord-Ref-Bot PRD)
                         bot.service.key=${env.BOT_SERVICE_KEY}
+
+                        # Website service authentication (must match WEBSITE_SERVICE_KEY on fcfb-website PRD)
+                        website.service.key=${env.WEBSITE_SERVICE_KEY}
 
                         # Logging configuration
                         logging.level.org.hibernate=warn

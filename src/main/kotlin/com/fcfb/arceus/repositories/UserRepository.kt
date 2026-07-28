@@ -63,6 +63,8 @@ interface UserRepository : CrudRepository<User, Long> {
 
     fun findByDiscordId(discordId: String): User?
 
+    fun findByApiKeyHash(apiKeyHash: String): User?
+
     fun findByTeam(team: String): User?
 
     fun findByPosition(position: CoachPosition): List<User>

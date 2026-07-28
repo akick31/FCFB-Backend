@@ -15,7 +15,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import java.security.SecureRandom
 import java.time.LocalDateTime
+import java.util.Base64
 import java.util.UUID
 
 @Service
@@ -333,5 +335,21 @@ class UserService(
 
         userRepository.deleteById(id)
         return HttpStatus.OK
+    }
+
+    fun generateApiKey(userId: Long): String {
+        val user = getUserById(userId)
+        val randomBytes = ByteArray(32)
+        SecureRandom().nextBytes(randomBytes)
+        val apiKey = "fcfb_pat_" + Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes)
+        user.apiKeyHash = encryptionUtils.hash(apiKey)
+        userRepository.save(user)
+        return apiKey
+    }
+
+    fun revokeApiKey(userId: Long) {
+        val user = getUserById(userId)
+        user.apiKeyHash = null
+        userRepository.save(user)
     }
 }

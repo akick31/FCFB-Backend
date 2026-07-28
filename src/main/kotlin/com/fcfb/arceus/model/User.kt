@@ -148,6 +148,10 @@ class User {
     @Column(name = "reset_token_expiration")
     var resetTokenExpiration: String? = null
 
+    @Basic
+    @Column(name = "api_key_hash")
+    var apiKeyHash: String? = null
+
     constructor(
         username: String,
         coachName: String,
