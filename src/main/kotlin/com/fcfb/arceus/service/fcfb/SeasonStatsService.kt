@@ -122,7 +122,7 @@ class SeasonStatsService(
         )
     }
 
-    private fun aggregateGameStatsToSeasonStats(
+    fun aggregateGameStatsToSeasonStats(
         gameStatsList: List<GameStats>,
         team: String,
         seasonNumber: Int,

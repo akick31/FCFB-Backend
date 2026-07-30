@@ -62,6 +62,7 @@ private val PUBLIC_READ_GET_PATHS =
         "$FULL_PATH/chart/win-probability/matchup",
         "$FULL_PATH/chart/elo",
         "$FULL_PATH/coach_transaction_log",
+        "$FULL_PATH/coach-stats",
         "$FULL_PATH/conference-stats",
         "$FULL_PATH/game-stats",
         "$FULL_PATH/game-stats/elo-history",

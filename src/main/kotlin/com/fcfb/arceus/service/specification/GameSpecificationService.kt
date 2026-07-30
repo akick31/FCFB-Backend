@@ -23,6 +23,7 @@ import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.RANKED_GAME
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort.CLOSEST_TO_END
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort.MOST_TIME_REMAINING
+import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort.NEWEST
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import javax.persistence.criteria.CriteriaBuilder
@@ -59,6 +60,7 @@ class GameSpecificationService(
     enum class GameSort {
         CLOSEST_TO_END,
         MOST_TIME_REMAINING,
+        NEWEST,
     }
 
     fun createSpecification(
@@ -173,6 +175,12 @@ class GameSpecificationService(
                 listOf(
                     org.springframework.data.domain.Sort.Order.asc("quarter"),
                     org.springframework.data.domain.Sort.Order.desc("clock"),
+                )
+            NEWEST ->
+                listOf(
+                    org.springframework.data.domain.Sort.Order.desc("season"),
+                    org.springframework.data.domain.Sort.Order.desc("week"),
+                    org.springframework.data.domain.Sort.Order.desc("gameId"),
                 )
         }
     }

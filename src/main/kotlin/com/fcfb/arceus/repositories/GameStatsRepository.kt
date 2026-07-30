@@ -50,6 +50,8 @@ interface GameStatsRepository : CrudRepository<GameStats, Int> {
     )
     fun findMaxSeason(): Int?
 
+    fun findByGameIdIn(gameIds: Collection<Int>): List<GameStats>
+
     @Query(
         value =
             "SELECT gs.* FROM game_stats gs " +
