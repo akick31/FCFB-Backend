@@ -295,7 +295,7 @@ class GameStatsService(
         val allOffensivePlays = allPlays.filter { play -> play.possession == teamSide }
         val allDefensivePlays = allPlays.filter { play -> play.possession != teamSide }
 
-        stats.score = game.homeScore
+        stats.score = if (teamSide == TeamSide.HOME) game.homeScore else game.awayScore
         stats.passAttempts = GameStatsCalculator.calculatePassAttempts(allOffensivePlays)
         stats.passCompletions = GameStatsCalculator.calculatePassCompletions(allOffensivePlays)
         stats.passCompletionPercentage = GameStatsCalculator.calculatePercentage(stats.passCompletions, stats.passAttempts)

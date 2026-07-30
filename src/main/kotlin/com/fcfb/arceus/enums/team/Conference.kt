@@ -15,6 +15,18 @@ enum class Conference(val description: String, val logoUrl: String? = null) {
     MISSOURI_VALLEY("Missouri Valley", "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/21.png"),
     COLONIAL("Colonial", "https://images.seeklogo.com/logo-png/49/2/colonial-athletic-association-logo-png_seeklogo-490062.png"),
     NEC("NEC", "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/25.png"),
+    BIG_SKY("Big Sky"),
+    SOUTHLAND("Southland"),
+    CUSA("Conference USA"),
+    OHIO_VALLEY("Ohio Valley"),
+    PATRIOT("Patriot"),
+    PIONEER("Pioneer"),
+    IVY("Ivy League"),
+    INDEPENDENT("Independent"),
+    FCS_INDEPENDENT("FCS Independent"),
+    D2("Division II"),
+    D3("Division III"),
+    NAIA("NAIA"),
     ;
 
     companion object {

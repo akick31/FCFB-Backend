@@ -621,9 +621,7 @@ object GameStatsCalculator {
             return currentQuarterScore
         }
         if (play.possession == possession) {
-            if (play.actualResult == ActualResult.TOUCHDOWN || play.actualResult == ActualResult.KICKING_TEAM_TOUCHDOWN ||
-                play.actualResult == ActualResult.PUNT_RETURN_TOUCHDOWN
-            ) {
+            if (play.actualResult == ActualResult.TOUCHDOWN || play.actualResult == ActualResult.KICKING_TEAM_TOUCHDOWN) {
                 return currentQuarterScore + 6
             }
             if (play.playCall == PlayCall.PAT && play.actualResult == ActualResult.GOOD) {
