@@ -8,6 +8,7 @@ import com.fcfb.arceus.repositories.NewSignupRepository
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.NewSignupNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -110,6 +111,11 @@ class NewSignupService(
     }
 
     fun saveNewSignup(newSignup: NewSignup) = newSignupRepository.save(newSignup)
+
+    fun deleteNewSignupById(id: Long) {
+        val newSignup = newSignupRepository.getById(id) ?: throw NewSignupNotFoundException(id)
+        newSignupRepository.delete(newSignup)
+    }
 
     fun deleteNewSignup(newSignup: NewSignup) = newSignupRepository.delete(newSignup)
 }

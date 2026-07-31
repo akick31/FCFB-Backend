@@ -395,6 +395,46 @@ class TeamService(
         return existingTeam
     }
 
+    fun fireSingleCoach(
+        name: String?,
+        discordId: String,
+        position: CoachPosition,
+        processedBy: String,
+    ): Team {
+        val existingTeam = getTeamByName(name)
+        val discordIds = existingTeam.coachDiscordIds ?: throw NoCoachDiscordIdsFoundException()
+        val index = discordIds.indexOf(discordId)
+        if (index == -1) throw NoCoachDiscordIdsFoundException()
+
+        if (discordIds.size <= 1) {
+            return fireCoach(name, processedBy)
+        }
+
+        val user = userService.getUserDTOByDiscordId(discordId)
+        if (user.team == existingTeam.name) {
+            user.team = null
+            userService.updateUser(user)
+        }
+
+        coachTransactionLogService.logCoachTransaction(
+            CoachTransactionLog(
+                existingTeam.name ?: "TEAM_NOT_FOUND",
+                position,
+                mutableListOf(user.username),
+                TransactionType.FIRED,
+                ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
+                processedBy,
+            ),
+        )
+
+        existingTeam.coachDiscordIds = discordIds.toMutableList().also { it.removeAt(index) }
+        existingTeam.coachUsernames = existingTeam.coachUsernames?.toMutableList()?.also { if (index < it.size) it.removeAt(index) }
+        existingTeam.coachNames = existingTeam.coachNames?.toMutableList()?.also { if (index < it.size) it.removeAt(index) }
+        existingTeam.coachDiscordTags = existingTeam.coachDiscordTags?.toMutableList()?.also { if (index < it.size) it.removeAt(index) }
+        saveTeam(existingTeam)
+        return existingTeam
+    }
+
     fun getOpenTeams() = teamRepository.getOpenTeams()
 
     fun getTeamsInConference(conference: String) = teamRepository.getTeamsInConference(conference)

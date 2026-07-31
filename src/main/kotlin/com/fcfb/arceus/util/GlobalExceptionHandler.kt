@@ -13,6 +13,7 @@ class GlobalExceptionHandler {
         DiscordUserNotFoundException::class,
         GameNotFoundException::class,
         GameStatsNotFoundException::class,
+        NewSignupNotFoundException::class,
         NoCoachDiscordIdsFoundException::class,
         NoCoachesFoundException::class,
         NoGameFoundException::class,

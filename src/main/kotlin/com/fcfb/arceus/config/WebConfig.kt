@@ -120,6 +120,7 @@ private val ADMIN_ONLY_DELETE_PATHS =
     arrayOf(
         "$FULL_PATH/team/*",
         "$FULL_PATH/user/*",
+        "$FULL_PATH/new_signups/*",
     )
 
 private val PRIVILEGED_POST_PATHS =
@@ -140,6 +141,7 @@ private val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/team/hire",
         "$FULL_PATH/team/hire/interim",
         "$FULL_PATH/team/fire",
+        "$FULL_PATH/team/fire/coach",
         "$FULL_PATH/request_message_log",
         "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/bulk",

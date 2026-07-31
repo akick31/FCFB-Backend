@@ -103,6 +103,21 @@ class TeamController(
     ) = teamService.fireCoach(team, processedBy)
 
     /**
+     * Fire a single coach from a team, leaving any other coaches in place
+     * @param team
+     * @param discordId
+     * @param coachPosition
+     * @param processedBy
+     */
+    @PostMapping("/fire/coach")
+    fun fireSingleCoach(
+        @RequestParam team: String,
+        @RequestParam discordId: String,
+        @RequestParam coachPosition: CoachPosition,
+        @RequestParam processedBy: String,
+    ) = teamService.fireSingleCoach(team, discordId, coachPosition, processedBy)
+
+    /**
      * Get open teams
      */
     @GetMapping("/open")
