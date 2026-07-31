@@ -8,6 +8,7 @@ import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
 import com.fcfb.arceus.util.DTOConverter
+import com.fcfb.arceus.util.DiscordAlreadyLinkedException
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.UserNotFoundException
 import com.fcfb.arceus.util.UserUnauthorizedException
@@ -117,6 +118,8 @@ class UserService(
             userRepository.getByDiscordId(discordId)
                 ?: throw UserNotFoundException("User not found with Discord ID $discordId"),
         )
+
+    fun findUserByDiscordId(discordId: String): User? = userRepository.getByDiscordId(discordId)
 
     fun getUserByTeam(team: String) =
         dtoConverter.convertToUserDTO(
@@ -255,6 +258,23 @@ class UserService(
             it.hashedEmail = encryptionUtils.hash(encryptionUtils.decrypt(it.email))
             userRepository.save(it)
         }
+    }
+
+    fun linkDiscord(
+        userId: Long,
+        discordId: String,
+        discordTag: String,
+    ): UserDTO {
+        val existing = userRepository.getByDiscordId(discordId)
+        if (existing != null && existing.id != userId) {
+            throw DiscordAlreadyLinkedException()
+        }
+
+        val user = getUserById(userId)
+        user.discordId = discordId
+        user.discordTag = discordTag
+        userRepository.save(user)
+        return dtoConverter.convertToUserDTO(user)
     }
 
     fun updateUser(user: UserDTO): UserDTO {

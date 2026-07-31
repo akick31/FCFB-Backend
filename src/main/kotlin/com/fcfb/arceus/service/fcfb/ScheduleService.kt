@@ -9,7 +9,6 @@ import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Team
@@ -479,5 +478,5 @@ open class ScheduleService(
 
     fun saveConferenceRules(request: ConferenceRulesRequest): ConferenceRulesResponse = conferenceRulesService.saveConferenceRules(request)
 
-    fun getConferenceRules(conference: Conference): ConferenceRulesResponse? = conferenceRulesService.getConferenceRules(conference)
+    fun getConferenceRules(conference: String): ConferenceRulesResponse? = conferenceRulesService.getConferenceRules(conference)
 }

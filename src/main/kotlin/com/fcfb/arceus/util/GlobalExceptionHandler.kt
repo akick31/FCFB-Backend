@@ -26,6 +26,7 @@ class GlobalExceptionHandler {
     @ExceptionHandler(
         InvalidCoinTossChoiceException::class,
         InvalidRankingsException::class,
+        InvalidConferenceException::class,
     )
     fun handleBadRequest(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.BAD_REQUEST, e)
 
@@ -38,6 +39,7 @@ class GlobalExceptionHandler {
     @ExceptionHandler(
         RankingsNotUploadedException::class,
         TooManyCoachesException::class,
+        DiscordAlreadyLinkedException::class,
     )
     fun handleConflict(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.CONFLICT, e)
 

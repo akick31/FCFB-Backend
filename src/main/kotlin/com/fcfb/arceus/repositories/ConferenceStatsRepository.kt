@@ -1,6 +1,5 @@
 package com.fcfb.arceus.repositories
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.ConferenceStats
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.data.repository.CrudRepository
@@ -12,7 +11,7 @@ interface ConferenceStatsRepository : CrudRepository<ConferenceStats, Int>, JpaS
 
     fun findBySubdivisionAndConferenceAndSeasonNumber(
         subdivision: com.fcfb.arceus.enums.team.Subdivision,
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ): ConferenceStats?
 
@@ -22,19 +21,19 @@ interface ConferenceStatsRepository : CrudRepository<ConferenceStats, Int>, JpaS
     ): List<ConferenceStats>
 
     fun findByConferenceAndSeasonNumber(
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ): List<ConferenceStats>
 
     fun findBySubdivisionOrderBySeasonNumberDesc(subdivision: com.fcfb.arceus.enums.team.Subdivision): List<ConferenceStats>
 
-    fun findByConferenceOrderBySeasonNumberDesc(conference: Conference): List<ConferenceStats>
+    fun findByConferenceOrderBySeasonNumberDesc(conference: String): List<ConferenceStats>
 
     fun findBySeasonNumberOrderBySubdivisionAsc(seasonNumber: Int): List<ConferenceStats>
 
     fun existsBySubdivisionAndConferenceAndSeasonNumber(
         subdivision: com.fcfb.arceus.enums.team.Subdivision,
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ): Boolean
 
@@ -44,13 +43,13 @@ interface ConferenceStatsRepository : CrudRepository<ConferenceStats, Int>, JpaS
     ): Boolean
 
     fun existsByConferenceAndSeasonNumber(
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ): Boolean
 
     fun countBySubdivision(subdivision: com.fcfb.arceus.enums.team.Subdivision): Long
 
-    fun countByConference(conference: Conference): Long
+    fun countByConference(conference: String): Long
 
     fun countBySeasonNumber(seasonNumber: Int): Long
 }

@@ -87,7 +87,12 @@ class UserController(
     @PutMapping("/update")
     fun updateUserRole(
         @RequestBody request: UpdateUserRequest,
-    ) = userService.updateUser(request.toUserDTO())
+    ): UserDTO {
+        if (AuthContext.currentUserId() != request.id && !AuthContext.isAdmin()) {
+            throw UserForbiddenException()
+        }
+        return userService.updateUser(request.toUserDTO())
+    }
 
     @PostMapping("/hash_emails")
     fun encryptEmails() = userService.hashEmails()

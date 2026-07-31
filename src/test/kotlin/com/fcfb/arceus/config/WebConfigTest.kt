@@ -1,6 +1,8 @@
 package com.fcfb.arceus.config
 
+import com.fcfb.arceus.repositories.UserRepository
 import com.fcfb.arceus.service.auth.SessionService
+import com.fcfb.arceus.util.EncryptionUtils
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -10,10 +12,12 @@ import kotlin.test.assertTrue
 class WebConfigTest {
     private lateinit var webConfig: WebConfig
     private val sessionService: SessionService = mockk()
+    private val userRepository: UserRepository = mockk()
+    private val encryptionUtils: EncryptionUtils = mockk()
 
     @BeforeEach
     fun setup() {
-        webConfig = WebConfig(sessionService, "test-service-key")
+        webConfig = WebConfig(sessionService, "test-service-key", "test-website-key", userRepository, encryptionUtils)
     }
 
     @Test
@@ -38,7 +42,7 @@ class WebConfigTest {
 
     @Test
     fun `WebConfig should be instantiable`() {
-        val config = WebConfig(sessionService, "test-service-key")
+        val config = WebConfig(sessionService, "test-service-key", "test-website-key", userRepository, encryptionUtils)
         assertNotNull(config, "WebConfig should be instantiable")
     }
 
@@ -50,7 +54,7 @@ class WebConfigTest {
 
     @Test
     fun `WebConfig should be a valid Spring configuration class`() {
-        val webConfig = WebConfig(sessionService, "test-service-key")
+        val webConfig = WebConfig(sessionService, "test-service-key", "test-website-key", userRepository, encryptionUtils)
         assertNotNull(webConfig, "WebConfig should be annotated with @Configuration")
 
         assertTrue(

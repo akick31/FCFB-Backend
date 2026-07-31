@@ -263,7 +263,8 @@ class UserControllerTest {
     }
 
     @Test
-    fun `updateUserRole updates user`() {
+    fun `updateUserRole updates own user`() {
+        authenticateAs(1L)
         every { userService.updateUser(any()) } returns sampleUser
 
         val jsonBody =
@@ -302,6 +303,46 @@ class UserControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.id").value(1))
             .andExpect(jsonPath("$.username").value("testuser"))
+    }
+
+    @Test
+    fun `updateUserRole rejects a non-owner, non-admin caller`() {
+        authenticateAs(2L)
+
+        val jsonBody =
+            """
+            {
+              "id": 1,
+              "username": "testuser",
+              "coachName": "Test Coach",
+              "discordTag": "test#1234",
+              "discordId": "123456789",
+              "position": "HEAD_COACH",
+              "role": "ADMIN",
+              "team": "Test Team",
+              "wins": 10,
+              "losses": 5,
+              "conferenceWins": 6,
+              "conferenceLosses": 2,
+              "conferenceChampionshipWins": 1,
+              "conferenceChampionshipLosses": 0,
+              "bowlWins": 1,
+              "bowlLosses": 0,
+              "playoffWins": 2,
+              "playoffLosses": 1,
+              "nationalChampionshipWins": 0,
+              "nationalChampionshipLosses": 1,
+              "offensivePlaybook": "AIR_RAID",
+              "defensivePlaybook": "FOUR_THREE"
+            }
+            """.trimIndent()
+
+        mockMvc.perform(
+            put("/api/v1/arceus/user/update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonBody),
+        )
+            .andExpect(status().isForbidden)
     }
 
     @Test

@@ -2,9 +2,9 @@ package com.fcfb.arceus.service.fcfb.scorebug
 
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.repositories.ConferenceRepository
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Component
 import java.awt.AlphaComposite
@@ -19,7 +19,9 @@ import java.net.URI
 import javax.imageio.ImageIO
 
 @Component
-class PostseasonScorebugRenderer : ScorebugRendererBase() {
+class PostseasonScorebugRenderer(
+    private val conferenceRepository: ConferenceRepository,
+) : ScorebugRendererBase() {
     override fun render(
         game: Game,
         homeTeam: Team,
@@ -117,8 +119,9 @@ class PostseasonScorebugRenderer : ScorebugRendererBase() {
         if (!logoLoaded && game.gameType == GameType.CONFERENCE_CHAMPIONSHIP) {
             val confLogoSize = logoSize
             val conf = homeTeam.conference ?: awayTeam.conference
-            if (conf?.logoUrl != null) {
-                drawConferenceLogo(g, conf, 8, 5, confLogoSize, confLogoSize)
+            val confLogoUrl = conf?.let { conferenceRepository.findById(it).orElse(null)?.logoUrl }
+            if (confLogoUrl != null) {
+                drawConferenceLogo(g, confLogoUrl, 8, 5, confLogoSize, confLogoSize)
                 g.color = textColor
                 g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 22f)
                 val ascent = g.fontMetrics.ascent
@@ -137,19 +140,19 @@ class PostseasonScorebugRenderer : ScorebugRendererBase() {
 
     private fun drawConferenceLogo(
         g: Graphics2D,
-        conference: Conference?,
+        logoUrl: String?,
         x: Int,
         y: Int,
         width: Int,
         height: Int,
     ) {
-        val logoUrl = conference?.logoUrl ?: return
+        if (logoUrl == null) return
         try {
             val logo = ImageIO.read(URI(logoUrl).toURL())
             g.composite = AlphaComposite.SrcOver
             g.drawImage(logo, x, y, width, height, null)
         } catch (e: IOException) {
-            Logger.error("Error loading conference logo for ${conference.name}: ${e.message}")
+            Logger.error("Error loading conference logo ($logoUrl): ${e.message}")
         }
     }
 

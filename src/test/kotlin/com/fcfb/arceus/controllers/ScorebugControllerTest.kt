@@ -1,6 +1,5 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.service.fcfb.ScorebugService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
@@ -100,7 +99,7 @@ class ScorebugControllerTest {
     fun `getScorebugsForConference should return scorebugs for valid parameters`() {
         val season = 2024
         val week = 5
-        val conference = Conference.BIG_12
+        val conference = "BIG_12"
         val mockScorebugs = listOf(mapOf<String, Any>("gameId" to "123", "image" to "base64data"))
         val mockResponse = ResponseEntity.ok(mockScorebugs)
         every { scorebugService.getScorebugsForConference(season, week, conference) } returns mockResponse
@@ -109,7 +108,7 @@ class ScorebugControllerTest {
             get("/api/v1/arceus/scorebug/conference")
                 .param("season", season.toString())
                 .param("week", week.toString())
-                .param("conference", conference.name)
+                .param("conference", conference)
                 .contentType(MediaType.APPLICATION_JSON),
         )
             .andExpect(status().isOk)

@@ -1,6 +1,5 @@
 package com.fcfb.arceus.model
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
 import javax.persistence.Basic
 import javax.persistence.Column
@@ -35,10 +34,9 @@ class SeasonStats(
     @Basic
     @Column(name = "subdivision")
     var subdivision: Subdivision? = null,
-    @Enumerated(EnumType.STRING)
     @Basic
     @Column(name = "conference")
-    var conference: Conference? = null,
+    var conference: String? = null,
     @Enumerated(EnumType.STRING)
     @Basic
     @Column(name = "offensive_playbook")

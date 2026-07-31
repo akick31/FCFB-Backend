@@ -7,10 +7,11 @@ import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.dto.response.ScheduleGenJobStatus
 import com.fcfb.arceus.dto.response.ScheduleGenLog
 import com.fcfb.arceus.enums.game.GameType
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
+import com.fcfb.arceus.model.Conference
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.repositories.ConferenceRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.service.fcfb.ScheduleService
 import com.fcfb.arceus.service.fcfb.SeasonService
@@ -40,6 +41,7 @@ class ConferenceScheduleGenerationService(
     private val seasonService: SeasonService,
     private val scheduleRepository: ScheduleRepository,
     private val teamService: TeamService,
+    private val conferenceRepository: ConferenceRepository,
     @Lazy private val scheduleService: ScheduleService,
 ) {
     companion object {
@@ -491,11 +493,11 @@ class ConferenceScheduleGenerationService(
         val jobId = UUID.randomUUID().toString()
         val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-        val skipConferences = setOf(Conference.FBS_INDEPENDENT, Conference.FAKE_TEAM)
-        val conferencesToGenerate = Conference.values().filter { it !in skipConferences }
+        val skipConferences = setOf("FBS_INDEPENDENT", "FAKE_TEAM")
+        val conferencesToGenerate = conferenceRepository.findAllByActiveTrueOrderByDisplayOrderAsc().filter { it.code !in skipConferences }
         val validConferences =
             conferencesToGenerate.filter { conf ->
-                val teams = teamService.getTeamsInConference(conf.name)
+                val teams = teamService.getTeamsInConference(conf.code)
                 !teams.isNullOrEmpty()
             }
 
@@ -541,14 +543,14 @@ class ConferenceScheduleGenerationService(
                 ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 
             try {
-                Logger.info("[${index + 1}/${conferences.size}] Generating schedule for ${conference.name}...")
-                val teams = teamService.getTeamsInConference(conference.name) ?: emptyList()
+                Logger.info("[${index + 1}/${conferences.size}] Generating schedule for ${conference.code}...")
+                val teams = teamService.getTeamsInConference(conference.code) ?: emptyList()
                 val subdivision = teams.firstOrNull()?.subdivision ?: Subdivision.FBS
 
                 val request =
                     ConferenceScheduleRequest(
                         season = season,
-                        conference = conference.name,
+                        conference = conference.code,
                         subdivision = subdivision,
                         numConferenceGames = 9,
                         protectedRivalries = emptyList(),
@@ -561,28 +563,28 @@ class ConferenceScheduleGenerationService(
 
                 job.logs.add(
                     ScheduleGenLog(
-                        conference = conference.name,
+                        conference = conference.code,
                         status = "SUCCESS",
                         gamesGenerated = generated.size,
                         message = "Generated ${generated.size} games",
                         timestamp = timestamp,
                     ),
                 )
-                Logger.info("[${index + 1}/${conferences.size}] ${conference.name}: ${generated.size} games generated")
+                Logger.info("[${index + 1}/${conferences.size}] ${conference.code}: ${generated.size} games generated")
             } catch (e: Exception) {
                 job.failedConferences++
                 val errorMsg = e.message ?: "Unknown error"
 
                 job.logs.add(
                     ScheduleGenLog(
-                        conference = conference.name,
+                        conference = conference.code,
                         status = "FAILED",
                         gamesGenerated = 0,
                         message = errorMsg,
                         timestamp = timestamp,
                     ),
                 )
-                Logger.error("[${index + 1}/${conferences.size}] FAILED ${conference.name}: $errorMsg")
+                Logger.error("[${index + 1}/${conferences.size}] FAILED ${conference.code}: $errorMsg")
             }
         }
 

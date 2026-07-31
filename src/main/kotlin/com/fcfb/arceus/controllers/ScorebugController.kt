@@ -1,7 +1,6 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.enums.game.GameMode
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.service.fcfb.ScorebugService
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
@@ -38,7 +37,7 @@ class ScorebugController(
     fun getScorebugsForConference(
         @RequestParam("season") season: Int,
         @RequestParam("week") week: Int,
-        @RequestParam("conference") conference: Conference,
+        @RequestParam("conference") conference: String,
     ) = scorebugService.getScorebugsForConference(season, week, conference)
 
     @GetMapping("/filtered")

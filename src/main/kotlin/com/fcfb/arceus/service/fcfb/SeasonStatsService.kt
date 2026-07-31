@@ -1,7 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.game.GameType
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.GameStatsRepository
@@ -127,7 +126,7 @@ class SeasonStatsService(
         team: String,
         seasonNumber: Int,
         gameStatsByGameId: Map<Int, List<GameStats>>,
-        conference: Conference?,
+        conference: String?,
     ): SeasonStats {
         val firstGameStats = gameStatsList.first()
 
@@ -553,7 +552,7 @@ class SeasonStatsService(
                 allStats.filter { stats ->
                     season?.let { stats.seasonNumber == it } ?: true &&
                         subdivision?.let { stats.subdivision?.name.equals(it, ignoreCase = true) } ?: true &&
-                        conference?.let { stats.conference?.name.equals(it, ignoreCase = true) } ?: true
+                        conference?.let { stats.conference.equals(it, ignoreCase = true) } ?: true
                 }
 
             val normalizedStatName = statName.lowercase().replace("_", "")

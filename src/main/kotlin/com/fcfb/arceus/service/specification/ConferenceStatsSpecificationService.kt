@@ -1,6 +1,5 @@
 package com.fcfb.arceus.service.specification
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.model.ConferenceStats
 import org.springframework.data.jpa.domain.Specification
@@ -13,14 +12,14 @@ import javax.persistence.criteria.Root
 @Service
 class ConferenceStatsSpecificationService {
     fun createSpecification(
-        conference: Conference?,
+        conference: String?,
         season: Int?,
         subdivision: Subdivision?,
     ): Specification<ConferenceStats> {
         return Specification { root: Root<ConferenceStats>, _: CriteriaQuery<*>, cb: CriteriaBuilder ->
             val predicates = mutableListOf<Predicate>()
 
-            conference?.let { predicates.add(cb.equal(root.get<Conference>("conference"), it)) }
+            conference?.let { predicates.add(cb.equal(root.get<String>("conference"), it)) }
             season?.let { predicates.add(cb.equal(root.get<Int>("seasonNumber"), it)) }
             subdivision?.let { predicates.add(cb.equal(root.get<Subdivision>("subdivision"), it)) }
 

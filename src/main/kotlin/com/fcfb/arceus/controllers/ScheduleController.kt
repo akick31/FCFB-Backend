@@ -8,7 +8,6 @@ import com.fcfb.arceus.dto.request.ScheduleEntry
 import com.fcfb.arceus.dto.response.ConferenceRulesResponse
 import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.service.fcfb.ScheduleService
 import com.fcfb.arceus.service.fcfb.SeasonService
@@ -248,9 +247,8 @@ class ScheduleController(
     fun getConferenceRules(
         @RequestParam("conference") conference: String,
     ): ResponseEntity<ConferenceRulesResponse> {
-        val conferenceEnum = Conference.valueOf(conference)
         val rules =
-            scheduleService.getConferenceRules(conferenceEnum)
+            scheduleService.getConferenceRules(conference)
                 ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(rules)
     }

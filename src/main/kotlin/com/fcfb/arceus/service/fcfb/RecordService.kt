@@ -38,7 +38,7 @@ class RecordService(
 ) {
     private fun conferenceOf(team: String?): String? =
         try {
-            teamRepository.getTeamByName(team)?.conference?.name
+            teamRepository.getTeamByName(team)?.conference
         } catch (e: Exception) {
             null
         }

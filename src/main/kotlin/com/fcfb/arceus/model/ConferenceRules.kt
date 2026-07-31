@@ -1,14 +1,11 @@
 package com.fcfb.arceus.model
 
-import com.fcfb.arceus.enums.team.Conference
 import com.vladmihalcea.hibernate.type.json.JsonStringType
 import org.hibernate.annotations.Type
 import org.hibernate.annotations.TypeDef
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType
 import javax.persistence.Id
@@ -23,10 +20,9 @@ class ConferenceRules {
     @Column(name = "id")
     var id: Int = 0
 
-    @Enumerated(EnumType.STRING)
     @Basic
     @Column(name = "conference", nullable = false, unique = true)
-    lateinit var conference: Conference
+    lateinit var conference: String
 
     @Basic
     @Column(name = "num_conference_games", nullable = false)

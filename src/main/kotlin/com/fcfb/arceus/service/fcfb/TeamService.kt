@@ -27,6 +27,7 @@ class TeamService(
     private val userService: UserService,
     private val coachTransactionLogService: CoachTransactionLogService,
     private val newSignupService: NewSignupService,
+    private val conferenceService: ConferenceService,
 ) {
     fun updateTeamWinsAndLosses(game: Game) {
         val homeTeam = getTeamByName(game.homeTeam)
@@ -109,6 +110,7 @@ class TeamService(
             ?: throw TeamNotFoundException("Team not found with name: $name")
 
     fun createTeam(team: Team): Team {
+        team.conference?.let { conferenceService.requireExists(it) }
         return teamRepository.save(
             Team(
                 team.logo,
@@ -153,6 +155,7 @@ class TeamService(
     }
 
     fun updateTeam(team: Team): Team {
+        team.conference?.let { conferenceService.requireExists(it) }
         val existingTeam = getTeamByName(team.name)
 
         existingTeam.apply {

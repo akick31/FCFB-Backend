@@ -1,6 +1,5 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.model.ConferenceStats
 import com.fcfb.arceus.model.SeasonStats
@@ -24,7 +23,7 @@ class ConferenceStatsService(
     private val conferenceStatsSpecificationService: ConferenceStatsSpecificationService,
 ) {
     fun getFilteredConferenceStats(
-        conference: Conference?,
+        conference: String?,
         season: Int?,
         subdivision: Subdivision?,
         pageable: Pageable,
@@ -71,7 +70,7 @@ class ConferenceStatsService(
 
     private fun generateConferenceStatsForSubdivisionAndConferenceAndSeason(
         subdivision: Subdivision,
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ) {
         Logger.info("Starting generation of conference stats for $subdivision/$conference in season $seasonNumber")
@@ -111,7 +110,7 @@ class ConferenceStatsService(
     private fun aggregateSeasonStatsToConferenceStats(
         seasonStatsList: List<SeasonStats>,
         subdivision: Subdivision,
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ): ConferenceStats {
         val totalTeams = seasonStatsList.size

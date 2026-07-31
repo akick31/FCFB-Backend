@@ -63,6 +63,7 @@ private val PUBLIC_READ_GET_PATHS =
         "$FULL_PATH/chart/elo",
         "$FULL_PATH/coach_transaction_log",
         "$FULL_PATH/coach-stats",
+        "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats",
         "$FULL_PATH/game-stats",
         "$FULL_PATH/game-stats/elo-history",
@@ -85,6 +86,7 @@ private val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
 
 private val ADMIN_ONLY_POST_PATHS =
     arrayOf(
+        "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats/generate/all",
         "$FULL_PATH/game-stats/generate",
         "$FULL_PATH/game-stats/generate/all/more_recent_than",
@@ -110,6 +112,8 @@ private val ADMIN_ONLY_PUT_PATHS =
         "$FULL_PATH/team",
         "$FULL_PATH/user/update",
         "$FULL_PATH/play",
+        "$FULL_PATH/conference/*",
+        "$FULL_PATH/conference/*/active",
     )
 
 private val ADMIN_ONLY_DELETE_PATHS =

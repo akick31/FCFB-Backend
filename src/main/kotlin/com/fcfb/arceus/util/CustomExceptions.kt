@@ -164,3 +164,15 @@ class RankingsNotUploadedException(season: Int, week: Int) : Exception(
         return "RankingsNotUploadedException: ${super.message}"
     }
 }
+
+class InvalidConferenceException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidConferenceException: ${super.message}"
+    }
+}
+
+class DiscordAlreadyLinkedException : Exception("This Discord account is already linked to another user") {
+    override fun toString(): String {
+        return "DiscordAlreadyLinkedException: ${super.message}"
+    }
+}
