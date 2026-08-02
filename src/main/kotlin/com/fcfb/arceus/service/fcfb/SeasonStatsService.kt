@@ -24,6 +24,7 @@ class SeasonStatsService(
     private val teamRepository: TeamRepository,
     private val conferenceStatsService: ConferenceStatsService,
     private val seasonStatsSpecificationService: SeasonStatsSpecificationService,
+    private val teamSeasonConferenceService: TeamSeasonConferenceService,
 ) {
     fun getFilteredSeasonStats(
         team: String?,
@@ -67,8 +68,9 @@ class SeasonStatsService(
             val (team, seasonStr) = combination.split("_")
             val season = seasonStr.toInt()
             Logger.info("Generating season stats for $team in season $season (${index + 1}/$total)")
+            val conference = teamSeasonConferenceService.getConference(team, season) ?: teamsByName[team]?.conference
             val seasonStats =
-                aggregateGameStatsToSeasonStats(teamGameStats, team, season, gameStatsByGameId, teamsByName[team]?.conference)
+                aggregateGameStatsToSeasonStats(teamGameStats, team, season, gameStatsByGameId, conference)
             seasonStatsRepository.save(seasonStats)
         }
 
@@ -100,7 +102,7 @@ class SeasonStatsService(
                 .filter { it.gameId in gameIds }
                 .groupBy { it.gameId }
 
-        val conference = teamRepository.findByName(team)?.conference
+        val conference = teamSeasonConferenceService.getConference(team, seasonNumber) ?: teamRepository.findByName(team)?.conference
 
         val seasonStats =
             aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber, gameStatsByGameId, conference)

@@ -65,6 +65,7 @@ private val PUBLIC_READ_GET_PATHS =
         "$FULL_PATH/coach-stats",
         "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats",
+        "$FULL_PATH/team-season-conference",
         "$FULL_PATH/game-stats",
         "$FULL_PATH/game-stats/elo-history",
         "$FULL_PATH/game-stats/by-season-week",

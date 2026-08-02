@@ -335,7 +335,9 @@ class TeamService(
     ): Team {
         val newSignup = newSignupService.getNewSignupById(signupId) ?: throw NewSignupNotFoundException(signupId)
         val discordId = newSignup.discordId ?: throw InvalidNewSignupException("New signup ${newSignup.username} has no linked Discord ID")
-        newSignupService.approveNewSignup(newSignup)
+        if (userService.findUserByDiscordId(discordId) == null) {
+            newSignupService.approveNewSignup(newSignup)
+        }
         return hireCoach(team, discordId, coachPosition, processedBy)
     }
 

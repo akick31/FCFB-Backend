@@ -22,6 +22,7 @@ class SeasonService(
     private val teamService: TeamService,
     private val userService: UserService,
     private val scheduleRepository: ScheduleRepository,
+    private val teamSeasonConferenceService: TeamSeasonConferenceService,
 ) {
     fun startSeason(): Season {
         val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
@@ -48,6 +49,7 @@ class SeasonService(
         teamService.resetWinsAndLosses()
         userService.resetAllDelayOfGameInstances()
         seasonRepository.save(season)
+        teamSeasonConferenceService.snapshotSeason(season.seasonNumber)
         offseasonService.endOffseason(now)
         return season
     }
