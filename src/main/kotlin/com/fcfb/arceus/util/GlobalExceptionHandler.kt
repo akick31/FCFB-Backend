@@ -28,6 +28,7 @@ class GlobalExceptionHandler {
         InvalidCoinTossChoiceException::class,
         InvalidRankingsException::class,
         InvalidConferenceException::class,
+        InvalidNewSignupException::class,
     )
     fun handleBadRequest(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.BAD_REQUEST, e)
 

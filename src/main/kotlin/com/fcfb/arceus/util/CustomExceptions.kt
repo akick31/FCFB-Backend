@@ -182,3 +182,9 @@ class DiscordAlreadyLinkedException : Exception("This Discord account is already
         return "DiscordAlreadyLinkedException: ${super.message}"
     }
 }
+
+class InvalidNewSignupException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidNewSignupException: ${super.message}"
+    }
+}

@@ -10,6 +10,8 @@ import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.log.CoachTransactionLogService
+import com.fcfb.arceus.util.InvalidNewSignupException
+import com.fcfb.arceus.util.NewSignupNotFoundException
 import com.fcfb.arceus.util.NoCoachDiscordIdsFoundException
 import com.fcfb.arceus.util.TeamNotFoundException
 import com.fcfb.arceus.util.TooManyCoachesException
@@ -323,6 +325,18 @@ class TeamService(
             )
         }
         return existingTeam
+    }
+
+    suspend fun hireCoachFromSignup(
+        signupId: Long,
+        team: String,
+        coachPosition: CoachPosition,
+        processedBy: String,
+    ): Team {
+        val newSignup = newSignupService.getNewSignupById(signupId) ?: throw NewSignupNotFoundException(signupId)
+        val discordId = newSignup.discordId ?: throw InvalidNewSignupException("New signup ${newSignup.username} has no linked Discord ID")
+        newSignupService.approveNewSignup(newSignup)
+        return hireCoach(team, discordId, coachPosition, processedBy)
     }
 
     suspend fun hireInterimCoach(

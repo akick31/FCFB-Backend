@@ -5,6 +5,7 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.service.fcfb.NewSignupService
+import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
@@ -20,11 +21,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class NewSignupControllerTest {
     private lateinit var mockMvc: MockMvc
     private val newSignupService: NewSignupService = mockk()
+    private val teamService: TeamService = mockk()
     private lateinit var newSignupController: NewSignupController
 
     @BeforeEach
     fun setup() {
-        newSignupController = NewSignupController(newSignupService)
+        newSignupController = NewSignupController(newSignupService, teamService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(newSignupController)
                 .setControllerAdvice(GlobalExceptionHandler())

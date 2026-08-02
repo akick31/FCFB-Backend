@@ -142,6 +142,7 @@ private val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/team/hire/interim",
         "$FULL_PATH/team/fire",
         "$FULL_PATH/team/fire/coach",
+        "$FULL_PATH/new_signups/*/hire",
         "$FULL_PATH/request_message_log",
         "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/bulk",
