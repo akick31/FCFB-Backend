@@ -214,12 +214,21 @@ class GameStatsService(
     }
 
     fun generateGameStats(gameId: Int) {
+        val existingEloByTeam = gameStatsRepository.findByGameId(gameId).associate { it.team to it.teamElo }
+
         deleteByGameId(gameId)
 
         val game =
             gameRepository.getGameById(gameId)
                 ?: throw Exception("Could not find game with ID $gameId")
-        createGameStats(game)
+        val newStats = createGameStats(game)
+
+        if (existingEloByTeam.isNotEmpty()) {
+            newStats.forEach { stats ->
+                existingEloByTeam[stats.team]?.let { stats.teamElo = it }
+                gameStatsRepository.save(stats)
+            }
+        }
 
         val allPlays = playRepository.getAllPlaysByGameId(gameId)
 
