@@ -20,15 +20,9 @@ class WinProbabilityController(
     private val gameService: GameService,
     private val playService: PlayService,
 ) {
-    /**
-     * Get ELO ratings for all teams
-     */
     @GetMapping("/elo-ratings")
     fun getEloRatings() = winProbabilityService.getEloRatings(teamService.getAllTeams())
 
-    /**
-     * Calculate win probability for all plays in a specific game
-     */
     @PostMapping("/calculate")
     fun calculateWinProbabilityForGame(
         @RequestParam gameId: Int,
@@ -41,9 +35,6 @@ class WinProbabilityController(
         playService,
     )
 
-    /**
-     * Calculate win probability for ALL games in the database
-     */
     @PostMapping("/calculate/all")
     fun calculateWinProbabilityForAllGames() =
         winProbabilityService.calculateWinProbabilitiesForAllGames(
@@ -52,9 +43,6 @@ class WinProbabilityController(
             teamService,
         )
 
-    /**
-     * Get win probability for each team for all plays in a game
-     */
     @GetMapping("")
     fun getWinProbabilitiesForGame(
         @RequestParam gameId: Int,

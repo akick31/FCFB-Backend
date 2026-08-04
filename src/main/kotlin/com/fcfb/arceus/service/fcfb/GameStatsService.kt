@@ -344,7 +344,7 @@ class GameStatsService(
         stats.touchbackPercentage =
             GameStatsCalculator.calculatePercentage(
                 stats.touchbacks,
-                GameStatsCalculator.calculateNonOnsideKickoffAttempts(allOffensivePlays),
+                stats.normalKickoffAttempts,
             )
         stats.kickReturnTd = GameStatsCalculator.calculateKickReturnTd(allDefensivePlays)
         stats.kickReturnTdPercentage = GameStatsCalculator.calculatePercentage(stats.kickReturnTd, stats.numberOfKickoffs)

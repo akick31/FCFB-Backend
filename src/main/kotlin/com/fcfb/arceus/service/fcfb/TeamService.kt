@@ -174,6 +174,8 @@ class TeamService(
             playoffCommitteeRanking = team.playoffCommitteeRanking
             offensivePlaybook = team.offensivePlaybook
             defensivePlaybook = team.defensivePlaybook
+            isTaken = team.isTaken
+            active = team.active
             currentWins = team.currentWins
             currentLosses = team.currentLosses
             currentConferenceWins = team.currentConferenceWins
@@ -315,7 +317,7 @@ class TeamService(
             }
             coachTransactionLogService.logCoachTransaction(
                 CoachTransactionLog(
-                    existingTeam.name ?: "TEAM_NOT_FOUND",
+                    existingTeam.name!!,
                     coachPosition,
                     mutableListOf(user.username),
                     TransactionType.HIRED,
@@ -364,7 +366,7 @@ class TeamService(
             }
             coachTransactionLogService.logCoachTransaction(
                 CoachTransactionLog(
-                    existingTeam.name ?: "TEAM_NOT_FOUND",
+                    existingTeam.name!!,
                     CoachPosition.HEAD_COACH,
                     mutableListOf(user.username),
                     TransactionType.HIRED_INTERIM,
@@ -392,7 +394,7 @@ class TeamService(
 
         coachTransactionLogService.logCoachTransaction(
             CoachTransactionLog(
-                existingTeam.name ?: "TEAM_NOT_FOUND",
+                existingTeam.name!!,
                 CoachPosition.HEAD_COACH,
                 existingTeam.coachUsernames,
                 TransactionType.FIRED,
@@ -434,7 +436,7 @@ class TeamService(
 
         coachTransactionLogService.logCoachTransaction(
             CoachTransactionLog(
-                existingTeam.name ?: "TEAM_NOT_FOUND",
+                existingTeam.name!!,
                 position,
                 mutableListOf(user.username),
                 TransactionType.FIRED,

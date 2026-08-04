@@ -52,18 +52,11 @@ class GameStatsController(
         @RequestParam("gameId") gameId: Int,
     ) = gameStatsService.generateGameStats(gameId)
 
-    /**
-     * Generate game stats for all games more recent than a game id
-     */
     @PostMapping("/generate/all/more_recent_than")
     fun generateAllGameStatsMoreRecentThanGameId(
         @RequestParam("gameId") gameId: Int,
     ) = gameStatsService.generateGameStatsForGamesMoreRecentThanGameId(gameId)
 
-    /**
-     * Generate game stats for all games
-     * @return
-     */
     @PostMapping("/generate/all")
     fun generateAllGameStats() = gameStatsService.generateAllGameStats()
 

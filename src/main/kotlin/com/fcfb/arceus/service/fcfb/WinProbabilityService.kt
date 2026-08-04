@@ -133,7 +133,6 @@ class WinProbabilityService(
             // Calculate win probability added
             val winProbabilityAdded = calculateWinProbabilityAdded(game, play, winProbability)
 
-            // Set the win probability and change on the play
             play.winProbability = winProbability
             play.winProbabilityAdded = winProbabilityAdded
 
@@ -161,6 +160,7 @@ class WinProbabilityService(
                 val allPlays = playRepository.getAllPlaysByGameId(game.gameId)
                 allPlays.find { it.playNumber == play.playNumber - 1 }
             } catch (e: Exception) {
+                logger.error("Error looking up previous play for game ${game.gameId}: ${e.message}", e)
                 null
             }
 
@@ -708,7 +708,6 @@ class WinProbabilityService(
                         totalGamesProcessed++
                     }
                 } catch (e: Exception) {
-                    // Log error but continue with other games
                     logger.error("Error processing game ${game.gameId}: ${e.message}")
                 }
             }

@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.RestController
 class ConferenceStatsController(
     private val conferenceStatsService: ConferenceStatsService,
 ) {
-    /**
-     * Get filtered conference stats with pagination
-     */
     @GetMapping
     fun getFilteredConferenceStats(
         @RequestParam(required = false) conference: String?,
@@ -33,9 +30,6 @@ class ConferenceStatsController(
         pageable = pageable,
     )
 
-    /**
-     * Generate all conference stats (recalculate all conference stats)
-     */
     @PostMapping("/generate/all")
     fun generateAllConferenceStats() = conferenceStatsService.generateAllConferenceStats()
 }

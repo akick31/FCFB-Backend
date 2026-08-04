@@ -17,9 +17,6 @@ import org.springframework.web.bind.annotation.RestController
 class LeagueStatsController(
     private val leagueStatsService: LeagueStatsService,
 ) {
-    /**
-     * Get filtered league stats with pagination
-     */
     @GetMapping
     fun getFilteredLeagueStats(
         @RequestParam(required = false) subdivision: Subdivision?,
@@ -31,9 +28,6 @@ class LeagueStatsController(
         pageable = pageable,
     )
 
-    /**
-     * Generate all league stats (recalculate all league stats)
-     */
     @PostMapping("/generate/all")
     fun generateAllLeagueStats() = leagueStatsService.generateAllLeagueStats()
 }

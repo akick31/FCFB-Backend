@@ -17,9 +17,6 @@ import com.fcfb.arceus.util.NumberNotFoundException
 import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
-/**
- * Processes a normal (run/pass/spike/kneel) play.
- */
 @Component
 class NormalPlayProcessor(
     private val gameService: GameService,

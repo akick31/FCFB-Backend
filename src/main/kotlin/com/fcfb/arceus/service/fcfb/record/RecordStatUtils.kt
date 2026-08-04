@@ -20,6 +20,11 @@ class RecordStatUtils(
     private val gameStatsRepository: GameStatsRepository,
     private val gameRepository: GameRepository,
 ) {
+    companion object {
+        /** Seasons before this had incomplete/unreliable game-stats tracking and are excluded from records. */
+        const val EARLIEST_VALID_SEASON = 10
+    }
+
     /**
      * Stats that should ONLY track lowest values (lower is better)
      */
@@ -333,7 +338,7 @@ class RecordStatUtils(
             Stats.RED_ZONE_SUCCESS_PERCENTAGE to (Stats.RED_ZONE_SUCCESSES to Stats.RED_ZONE_ATTEMPTS),
             Stats.RED_ZONE_PERCENTAGE to (Stats.RED_ZONE_ATTEMPTS to Stats.NUMBER_OF_DRIVES),
             Stats.ONSIDE_SUCCESS_PERCENTAGE to (Stats.ONSIDE_SUCCESS to Stats.ONSIDE_ATTEMPTS),
-            Stats.TOUCHBACK_PERCENTAGE to (Stats.TOUCHBACKS to Stats.NUMBER_OF_KICKOFFS),
+            Stats.TOUCHBACK_PERCENTAGE to (Stats.TOUCHBACKS to Stats.NORMAL_KICKOFF_ATTEMPTS),
         )
 
     private val seasonMeanStats =
@@ -380,7 +385,7 @@ class RecordStatUtils(
     fun getAvailableSeasons(): List<Int> {
         val allGameStats = gameStatsRepository.findAll().toList()
         val seasons = allGameStats.mapNotNull { it.season }.distinct().sorted()
-        return seasons.filter { it >= 10 } // Only seasons 10 and above
+        return seasons.filter { it >= EARLIEST_VALID_SEASON }
     }
 
     /**

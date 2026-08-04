@@ -45,7 +45,6 @@ class FileUploadController(
                     .body(mapOf("error" to "File size must be less than 5MB"))
             }
 
-            // Create images directory if it doesn't exist
             val imagesDir = File(imagesPath)
             if (!imagesDir.exists()) {
                 imagesDir.mkdirs()

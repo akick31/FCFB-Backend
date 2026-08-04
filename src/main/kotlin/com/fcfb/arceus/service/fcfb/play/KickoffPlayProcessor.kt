@@ -16,9 +16,6 @@ import com.fcfb.arceus.util.NumberNotFoundException
 import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
-/**
- * Processes a kickoff play.
- */
 @Component
 class KickoffPlayProcessor(
     private val gameService: GameService,

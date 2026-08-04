@@ -305,14 +305,7 @@ object GameStatsCalculator {
 
     fun calculateTouchbacks(allPlays: List<Play>): Int {
         return allPlays.count { play ->
-            (play.playCall == PlayCall.KICKOFF_NORMAL || play.playCall == PlayCall.KICKOFF_SQUIB) &&
-                play.result == Scenario.TOUCHBACK
-        }
-    }
-
-    fun calculateNonOnsideKickoffAttempts(allPlays: List<Play>): Int {
-        return allPlays.count { play ->
-            play.playCall == PlayCall.KICKOFF_NORMAL || play.playCall == PlayCall.KICKOFF_SQUIB
+            play.playCall == PlayCall.KICKOFF_NORMAL && play.result == Scenario.TOUCHBACK
         }
     }
 

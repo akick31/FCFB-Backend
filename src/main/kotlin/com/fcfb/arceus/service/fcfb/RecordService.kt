@@ -40,6 +40,7 @@ class RecordService(
         try {
             teamRepository.getTeamByName(team)?.conference
         } catch (e: Exception) {
+            Logger.error("Error looking up conference for team $team: ${e.message}")
             null
         }
 
@@ -118,17 +119,17 @@ class RecordService(
         val gameStatsList = listOfNotNull(homeStats, awayStats)
 
         val currentSeason = game.season ?: return
-        val homeSeasonStats = seasonRecordService.getCurrentSeasonStatsForTeam(game.homeTeam, currentSeason)
-        val awaySeasonStats = seasonRecordService.getCurrentSeasonStatsForTeam(game.awayTeam, currentSeason)
+        val homeSeasonGames = seasonRecordService.getCurrentSeasonStatsForTeam(game.homeTeam, currentSeason)
+        val awaySeasonGames = seasonRecordService.getCurrentSeasonStatsForTeam(game.awayTeam, currentSeason)
 
-        runRecordChecks(game, gameStatsList, homeSeasonStats, awaySeasonStats, isComplete, RecordScope.LEAGUE, null)
+        runRecordChecks(game, gameStatsList, homeSeasonGames, awaySeasonGames, isComplete, RecordScope.LEAGUE, null)
 
         listOf(homeStats to game.homeTeam, awayStats to game.awayTeam).forEach { (teamGameStats, teamName) ->
             val teamStatsList = listOfNotNull(teamGameStats)
-            val teamSeasonStats = if (teamName == game.homeTeam) homeSeasonStats else awaySeasonStats
-            runRecordChecks(game, teamStatsList, teamSeasonStats, null, isComplete, RecordScope.TEAM, teamName)
+            val teamSeasonGames = if (teamName == game.homeTeam) homeSeasonGames else awaySeasonGames
+            runRecordChecks(game, teamStatsList, teamSeasonGames, emptyList(), isComplete, RecordScope.TEAM, teamName)
             conferenceOf(teamName)?.let { conference ->
-                runRecordChecks(game, teamStatsList, teamSeasonStats, null, isComplete, RecordScope.CONFERENCE, conference)
+                runRecordChecks(game, teamStatsList, teamSeasonGames, emptyList(), isComplete, RecordScope.CONFERENCE, conference)
             }
         }
 
@@ -138,8 +139,8 @@ class RecordService(
     private fun runRecordChecks(
         game: Game,
         gameStatsList: List<GameStats>,
-        homeSeasonStats: GameStats?,
-        awaySeasonStats: GameStats?,
+        homeSeasonGames: List<GameStats>,
+        awaySeasonGames: List<GameStats>,
         isComplete: Boolean,
         recordScope: RecordScope,
         scopeValue: String?,
@@ -267,8 +268,8 @@ class RecordService(
                 if (recordStatUtils.lowestOnlyStats.contains(stat)) {
                     seasonRecordService.checkAndUpdateSeasonRecord(
                         stat,
-                        homeSeasonStats,
-                        awaySeasonStats,
+                        homeSeasonGames,
+                        awaySeasonGames,
                         RecordType.SINGLE_SEASON_LOWEST,
                         recordScope,
                         scopeValue,
@@ -276,16 +277,16 @@ class RecordService(
                 } else if (recordStatUtils.dualRecordStats.contains(stat)) {
                     seasonRecordService.checkAndUpdateSeasonRecord(
                         stat,
-                        homeSeasonStats,
-                        awaySeasonStats,
+                        homeSeasonGames,
+                        awaySeasonGames,
                         RecordType.SINGLE_SEASON,
                         recordScope,
                         scopeValue,
                     )
                     seasonRecordService.checkAndUpdateSeasonRecord(
                         stat,
-                        homeSeasonStats,
-                        awaySeasonStats,
+                        homeSeasonGames,
+                        awaySeasonGames,
                         RecordType.SINGLE_SEASON_LOWEST,
                         recordScope,
                         scopeValue,
@@ -293,8 +294,8 @@ class RecordService(
                 } else {
                     seasonRecordService.checkAndUpdateSeasonRecord(
                         stat,
-                        homeSeasonStats,
-                        awaySeasonStats,
+                        homeSeasonGames,
+                        awaySeasonGames,
                         RecordType.SINGLE_SEASON,
                         recordScope,
                         scopeValue,

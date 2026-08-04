@@ -5,17 +5,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class ServerUtils {
-    /**
-     * Retries a given operation with exponential backoff.
-     *
-     * @param retries The number of retry attempts.
-     * @param initialDelay The initial delay between retries in milliseconds.
-     * @param maxDelay The maximum delay between retries in milliseconds.
-     * @param factor The exponential backoff factor.
-     * @param block The operation to retry.
-     * @return The result of the operation if successful.
-     * @throws Exception If all retry attempts fail.
-     */
+    /** Retries the given operation, backing off exponentially between attempts. */
     suspend fun <T> retryWithExponentialBackoff(
         retries: Int = 3,
         initialDelay: Long = 1000,

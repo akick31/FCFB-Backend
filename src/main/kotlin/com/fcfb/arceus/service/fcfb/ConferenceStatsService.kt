@@ -75,7 +75,6 @@ class ConferenceStatsService(
     ) {
         Logger.info("Starting generation of conference stats for $subdivision/$conference in season $seasonNumber")
 
-        // Get all season stats for this subdivision, conference, and season
         val seasonStatsList =
             seasonStatsRepository.findBySeasonNumberOrderByTeamAsc(seasonNumber)
                 .filter { seasonStats ->
@@ -87,7 +86,6 @@ class ConferenceStatsService(
             return
         }
 
-        // Delete existing conference stats for this subdivision, conference, and season
         conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
             conferenceStatsRepository.delete(it)
         }

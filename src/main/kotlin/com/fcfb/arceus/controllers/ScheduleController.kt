@@ -32,89 +32,45 @@ class ScheduleController(
     private val seasonService: SeasonService,
     private val teamService: TeamService,
 ) {
-    /**
-     * Get an opponent for a given week and team
-     * @param team
-     * @return
-     */
     @GetMapping("/opponent")
     fun getTeamOpponent(
         @RequestParam("team") team: String,
     ) = scheduleService.getTeamOpponent(team)
 
-    /**
-     * Get the schedule for a given season for a team
-     * @param season
-     * @param team
-     * @return
-     */
     @GetMapping("/season")
     fun getScheduleBySeasonAndTeam(
         @RequestParam("season") season: Int,
         @RequestParam("team") team: String,
     ) = scheduleService.getScheduleBySeasonAndTeam(season, team)
 
-    /**
-     * Get the full schedule for a season
-     * @param season
-     * @return
-     */
     @GetMapping("/season/{season}")
     fun getScheduleBySeason(
         @PathVariable("season") season: Int,
     ): ResponseEntity<List<Schedule>> = ResponseEntity.ok(scheduleService.getScheduleBySeason(season))
 
-    /**
-     * Get the schedule for a season and week
-     * @param season
-     * @param week
-     * @return
-     */
     @GetMapping("/season/{season}/week/{week}")
     fun getScheduleBySeasonAndWeek(
         @PathVariable("season") season: Int,
         @PathVariable("week") week: Int,
     ): ResponseEntity<List<Schedule>> = ResponseEntity.ok(scheduleService.getScheduleBySeasonAndWeek(season, week))
 
-    /**
-     * Get the conference schedule
-     * @param season
-     * @param conference
-     * @return
-     */
     @GetMapping("/conference")
     fun getConferenceSchedule(
         @RequestParam("season") season: Int,
         @RequestParam("conference") conference: String,
     ): ResponseEntity<List<Schedule>> = ResponseEntity.ok(scheduleService.getConferenceSchedule(season, conference))
 
-    /**
-     * Get the postseason schedule (playoffs, bowls, conference championships)
-     * @param season
-     * @return
-     */
+    /** Postseason includes playoffs, bowls, and conference championships. */
     @GetMapping("/postseason/{season}")
     fun getPostseasonSchedule(
         @PathVariable("season") season: Int,
     ): ResponseEntity<List<Schedule>> = ResponseEntity.ok(scheduleService.getPostseasonSchedule(season))
 
-    /**
-     * Get a schedule entry by id
-     * @param id
-     * @return
-     */
     @GetMapping("/{id}")
     fun getScheduleById(
         @PathVariable("id") id: Int,
     ): ResponseEntity<Schedule> = ResponseEntity.ok(scheduleService.getScheduleById(id))
 
-    /**
-     * Check if a team is scheduled in a specific week
-     * @param season
-     * @param week
-     * @param team
-     * @return
-     */
     @GetMapping("/team-available")
     fun isTeamAvailable(
         @RequestParam("season") season: Int,
@@ -122,21 +78,11 @@ class ScheduleController(
         @RequestParam("team") team: String,
     ): ResponseEntity<Boolean> = ResponseEntity.ok(!scheduleService.isTeamScheduledInWeek(season, week, team))
 
-    /**
-     * Create a single schedule entry
-     * @param entry
-     * @return
-     */
     @PostMapping("")
     fun createScheduleEntry(
         @RequestBody entry: ScheduleEntry,
     ): ResponseEntity<Schedule> = ResponseEntity.status(201).body(scheduleService.createScheduleEntry(entry))
 
-    /**
-     * Create multiple schedule entries in bulk
-     * @param request
-     * @return
-     */
     @PostMapping("/bulk")
     fun createBulkScheduleEntries(
         @RequestBody request: BulkScheduleRequest,
@@ -178,33 +124,17 @@ class ScheduleController(
         return ResponseEntity.ok(job)
     }
 
-    /**
-     * Update a schedule entry
-     * @param id
-     * @param entry
-     * @return
-     */
     @PutMapping("/{id}")
     fun updateScheduleEntry(
         @PathVariable("id") id: Int,
         @RequestBody entry: ScheduleEntry,
     ): ResponseEntity<Schedule> = ResponseEntity.ok(scheduleService.updateScheduleEntry(id, entry))
 
-    /**
-     * Move a game to a different week
-     * @param request
-     * @return
-     */
     @PutMapping("/move")
     fun moveGame(
         @RequestBody request: MoveGameRequest,
     ): ResponseEntity<Schedule> = ResponseEntity.ok(scheduleService.moveGame(request))
 
-    /**
-     * Delete a schedule entry
-     * @param id
-     * @return
-     */
     @DeleteMapping("/{id}")
     fun deleteScheduleEntry(
         @PathVariable("id") id: Int,
@@ -213,11 +143,6 @@ class ScheduleController(
         return ResponseEntity.noContent().build()
     }
 
-    /**
-     * Delete all schedule entries for a season
-     * @param season
-     * @return
-     */
     @DeleteMapping("/season/{season}")
     fun deleteScheduleBySeason(
         @PathVariable("season") season: Int,
@@ -226,11 +151,6 @@ class ScheduleController(
         return ResponseEntity.noContent().build()
     }
 
-    /**
-     * Save or update conference rules
-     * @param request
-     * @return
-     */
     @PostMapping("/conference-rules")
     fun saveConferenceRules(
         @RequestBody request: ConferenceRulesRequest,
@@ -238,11 +158,6 @@ class ScheduleController(
         return ResponseEntity.ok(scheduleService.saveConferenceRules(request))
     }
 
-    /**
-     * Get conference rules for a conference
-     * @param conference
-     * @return
-     */
     @GetMapping("/conference-rules")
     fun getConferenceRules(
         @RequestParam("conference") conference: String,

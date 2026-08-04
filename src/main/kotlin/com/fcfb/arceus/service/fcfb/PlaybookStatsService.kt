@@ -84,7 +84,6 @@ class PlaybookStatsService(
     ) {
         Logger.info("Starting generation of playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber")
 
-        // Get all game stats for this offensive playbook, defensive playbook, and season
         val gameStatsList =
             gameStatsRepository.findBySeasonOrderByGameIdAsc(seasonNumber)
                 .filter { gameStats ->
@@ -96,7 +95,6 @@ class PlaybookStatsService(
             return
         }
 
-        // Delete existing playbook stats for this offensive playbook, defensive playbook, and season
         playbookStatsRepository.findByOffensivePlaybookAndDefensivePlaybookAndSeasonNumber(
             offensivePlaybook,
             defensivePlaybook,

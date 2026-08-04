@@ -220,7 +220,6 @@ class GameService(
                     )
                 }
 
-            // Create a new Discord thread
             val discordData = createDiscordThread(newGame)
             newGame.homePlatformId = discordData[0]
             newGame.awayPlatformId = discordData[0]
@@ -355,7 +354,6 @@ class GameService(
                     )
                 }
 
-            // Create a new Discord thread
             val discordData = createDiscordThread(newGame)
             newGame.homePlatformId = discordData[0]
             newGame.awayPlatformId = discordData[0]
@@ -447,7 +445,6 @@ class GameService(
             play.winProbabilityAdded = 0.0
         }
 
-        // Update everything else
         game.homeScore = homeScore
         game.awayScore = awayScore
         game.winProbability = play.winProbability
@@ -969,7 +966,6 @@ class GameService(
                 teamService.updateTeamWinsAndLosses(game)
                 userService.updateUserWinsAndLosses(game)
 
-                // Update ELO ratings
                 try {
                     val homeTeam = teamService.getTeamByName(game.homeTeam)
                     val awayTeam = teamService.getTeamByName(game.awayTeam)
@@ -988,6 +984,7 @@ class GameService(
                         }
                         userList
                     } catch (e: Exception) {
+                        Logger.error("Error looking up home coaches for game ${game.gameId}: ${e.message}")
                         emptyList()
                     }
                 val awayUsers =
@@ -998,6 +995,7 @@ class GameService(
                         }
                         userList
                     } catch (e: Exception) {
+                        Logger.error("Error looking up away coaches for game ${game.gameId}: ${e.message}")
                         emptyList()
                     }
                 for (user in homeUsers + awayUsers) {
@@ -1027,7 +1025,6 @@ class GameService(
             gameStatsService.saveGameStats(homeStats)
             gameStatsService.saveGameStats(awayStats)
 
-            // Check if any records were broken
             recordService.checkAndUpdateRecordsForGame(game)
 
             // Update season stats for non-scrimmage games
@@ -1797,8 +1794,6 @@ class GameService(
         offensiveNumber: Int,
         defesiveNumber: Int,
     ): Int = GameRules.getDifference(offensiveNumber, defesiveNumber)
-
-    fun convertClockToSeconds(clock: String): Int = GameRules.convertClockToSeconds(clock)
 
     fun isTouchdownPlay(actualResult: ActualResult?): Boolean = GameRules.isTouchdownPlay(actualResult)
 

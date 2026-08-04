@@ -4,9 +4,11 @@ import com.fcfb.arceus.dto.response.NewSignupDTO
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
+import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.service.fcfb.NewSignupService
 import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.util.GlobalExceptionHandler
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
@@ -86,5 +89,20 @@ class NewSignupControllerTest {
         mockMvc.perform(get("/api/v1/arceus/new_signups").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isInternalServerError)
             .andExpect(jsonPath("$.error").value("Failed to get signups"))
+    }
+
+    @Test
+    fun `should hire from signup successfully`() {
+        coEvery {
+            teamService.hireCoachFromSignup(1, "team1", CoachPosition.HEAD_COACH, "admin")
+        } returns Team()
+
+        mockMvc.perform(
+            post("/api/v1/arceus/new_signups/1/hire")
+                .param("team", "team1")
+                .param("coachPosition", "HEAD_COACH")
+                .param("processedBy", "admin"),
+        )
+            .andExpect(status().isOk)
     }
 }

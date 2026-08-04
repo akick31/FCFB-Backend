@@ -160,10 +160,7 @@ class GameSpecificationService(
         }
     }
 
-    /**
-     * Sort games by how far they are from being done
-     * @param sort
-     */
+    /** Sort games by how far they are from being done. */
     fun createSort(sort: GameSort): List<org.springframework.data.domain.Sort.Order> {
         return when (sort) {
             CLOSEST_TO_END ->

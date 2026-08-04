@@ -147,7 +147,6 @@ abstract class ChartRendererBase(
     ): ByteArray {
         val outputFile = File("$imagePath/charts/$filename.png")
 
-        // Create directory if it doesn't exist
         val directory = File("$imagePath/charts")
         if (!directory.exists()) {
             directory.mkdirs()

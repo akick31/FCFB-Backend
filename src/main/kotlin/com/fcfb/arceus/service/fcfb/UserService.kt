@@ -10,6 +10,7 @@ import com.fcfb.arceus.repositories.UserRepository
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.DiscordAlreadyLinkedException
 import com.fcfb.arceus.util.EncryptionUtils
+import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.UserNotFoundException
 import com.fcfb.arceus.util.UserUnauthorizedException
 import org.springframework.http.HttpStatus
@@ -33,12 +34,14 @@ class UserService(
             try {
                 getUsersByTeam(game.homeTeam)
             } catch (e: Exception) {
+                Logger.error("Error looking up home team users for game ${game.gameId}: ${e.message}")
                 emptyList()
             }
         val awayUsers =
             try {
                 getUsersByTeam(game.awayTeam)
             } catch (e: Exception) {
+                Logger.error("Error looking up away team users for game ${game.gameId}: ${e.message}")
                 emptyList()
             }
 

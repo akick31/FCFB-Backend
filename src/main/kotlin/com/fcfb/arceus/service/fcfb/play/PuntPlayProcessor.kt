@@ -17,9 +17,6 @@ import com.fcfb.arceus.util.NumberNotFoundException
 import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
-/**
- * Processes a punt play.
- */
 @Component
 class PuntPlayProcessor(
     private val gameService: GameService,

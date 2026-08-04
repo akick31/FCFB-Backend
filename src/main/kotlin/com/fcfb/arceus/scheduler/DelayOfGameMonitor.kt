@@ -103,12 +103,7 @@ class DelayOfGameMonitor(
     private fun applyPregameDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
 
-        val teamToPenalize =
-            if (game.coinTossWinner != null) {
-                game.coinTossWinner!!
-            } else {
-                game.waitingOn
-            }
+        val teamToPenalize = game.coinTossWinner ?: game.waitingOn
 
         if (teamToPenalize == TeamSide.HOME) {
             game.awayScore += 8

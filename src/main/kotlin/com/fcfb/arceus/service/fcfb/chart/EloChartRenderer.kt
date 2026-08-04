@@ -41,7 +41,6 @@ class EloChartRenderer(
             val teamEloData = mutableMapOf<String, MutableMap<Int, Double>>()
             val teamColors = mutableMapOf<String, String>()
 
-            // Initialize team data
             teams.forEach { team ->
                 teamEloData[team.name ?: ""] = mutableMapOf()
                 teamColors[team.name ?: ""] = team.primaryColor ?: "#000000"

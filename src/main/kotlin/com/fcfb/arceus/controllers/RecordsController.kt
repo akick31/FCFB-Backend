@@ -19,9 +19,6 @@ import org.springframework.web.bind.annotation.RestController
 class RecordsController(
     private val recordService: RecordService,
 ) {
-    /**
-     * Get filtered records with pagination
-     */
     @GetMapping
     fun getFilteredRecords(
         @RequestParam(required = false) season: Int?,
@@ -39,9 +36,6 @@ class RecordsController(
         pageable = pageable,
     )
 
-    /**
-     * Generate all records (recalculate all records)
-     */
     @PostMapping("/generate/all")
     fun generateAllRecords() = recordService.generateAllRecords()
 
