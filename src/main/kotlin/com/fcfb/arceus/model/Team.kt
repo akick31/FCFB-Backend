@@ -41,6 +41,10 @@ class Team {
     var logo: String? = null
 
     @Basic
+    @Column(name = "logo_dark")
+    var logoDark: String? = null
+
+    @Basic
     @Column(name = "scorebug_logo")
     var scorebugLogo: String? = null
 
@@ -91,6 +95,10 @@ class Team {
     @Basic
     @Column(name = "conference")
     var conference: String? = null
+
+    @Basic
+    @Column(name = "division")
+    var division: String? = null
 
     @Basic
     @Column(name = "current_wins")
@@ -210,8 +218,11 @@ class Team {
         active: Boolean,
         currentElo: Double,
         overallElo: Double,
+        logoDark: String? = null,
+        division: String? = null,
     ) {
         this.logo = logo
+        this.logoDark = logoDark
         this.scorebugLogo = scorebugLogo
         this.coachUsernames = coachUsernames
         this.coachNames = coachNames
@@ -228,6 +239,7 @@ class Team {
         this.offensivePlaybook = offensivePlaybook
         this.defensivePlaybook = defensivePlaybook
         this.conference = conference
+        this.division = division
         this.currentWins = currentWins
         this.currentLosses = currentLosses
         this.overallWins = overallWins

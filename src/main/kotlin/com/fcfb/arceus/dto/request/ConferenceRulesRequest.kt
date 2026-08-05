@@ -7,4 +7,5 @@ data class ConferenceRulesRequest(
     @JsonProperty("conference") val conference: String,
     @JsonProperty("numConferenceGames") val numConferenceGames: Int,
     @JsonProperty("protectedRivalries") val protectedRivalries: List<ProtectedRivalry> = emptyList(),
+    @JsonProperty("divisions") val divisions: List<String> = emptyList(),
 )

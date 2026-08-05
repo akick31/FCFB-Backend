@@ -6,6 +6,7 @@ import com.fcfb.arceus.dto.request.ConferenceScheduleRequest
 import com.fcfb.arceus.dto.request.MoveGameRequest
 import com.fcfb.arceus.dto.request.ScheduleEntry
 import com.fcfb.arceus.dto.response.ConferenceRulesResponse
+import com.fcfb.arceus.dto.response.OocGenerationResult
 import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.model.Schedule
@@ -97,7 +98,7 @@ class ScheduleController(
     fun generateConferenceSchedule(
         @RequestBody request: ConferenceScheduleRequest,
     ): ResponseEntity<List<Schedule>> {
-        val conferenceTeams = teamService.getTeamsInConference(request.conference) ?: emptyList()
+        val conferenceTeams = (teamService.getTeamsInConference(request.conference) ?: emptyList()).filter { it.active }
         return ResponseEntity.status(201).body(scheduleService.generateConferenceSchedule(request, conferenceTeams))
     }
 
@@ -123,6 +124,16 @@ class ScheduleController(
                 ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(job)
     }
+
+    /**
+     * Auto-fill every active team's remaining open weeks (1-12) with random,
+     * non-repeating, cross-conference OOC opponents. Additive only — never
+     * touches an already-scheduled game.
+     */
+    @PostMapping("/generate-ooc/{season}")
+    fun generateOutOfConferenceSchedule(
+        @PathVariable("season") season: Int,
+    ): ResponseEntity<OocGenerationResult> = ResponseEntity.ok(scheduleService.generateOutOfConferenceSchedule(season))
 
     @PutMapping("/{id}")
     fun updateScheduleEntry(

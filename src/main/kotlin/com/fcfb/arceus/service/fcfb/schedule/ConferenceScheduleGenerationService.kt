@@ -33,9 +33,11 @@ class ConferenceScheduleGenerationService(
     private val scheduleRepository: ScheduleRepository,
     private val teamService: TeamService,
     private val conferenceRepository: ConferenceRepository,
+    private val conferenceRulesService: ConferenceRulesService,
 ) {
     companion object {
         private val activeGenJobs = ConcurrentHashMap<String, ScheduleGenJob>()
+        private const val RECENT_OPPONENT_LOOKBACK_SEASONS = 5
     }
 
     /**
@@ -101,12 +103,25 @@ class ConferenceScheduleGenerationService(
 
         // ── Step 1: Generate matchups ──
         val matchups: List<Triple<String, String, Int?>> // team1, team2, forcedWeek
-        if (numTeams % 2 == 0) {
-            matchups = selectMatchupsCircleMethod(teamNames, numGames, protectedRivalries)
-            Logger.info("Circle method selected ${matchups.size} matchups for ${request.conference}")
+        if (request.divisions.isEmpty()) {
+            if (numTeams % 2 == 0) {
+                matchups = selectMatchupsCircleMethod(teamNames, numGames, protectedRivalries)
+                Logger.info("Circle method selected ${matchups.size} matchups for ${request.conference}")
+            } else {
+                matchups = selectMatchupsGreedy(teamNames, numGames, protectedRivalries)
+                Logger.info("Greedy method selected ${matchups.size} matchups for ${request.conference}")
+            }
         } else {
-            matchups = selectMatchupsGreedy(teamNames, numGames, protectedRivalries)
-            Logger.info("Greedy method selected ${matchups.size} matchups for ${request.conference}")
+            matchups =
+                selectMatchupsWithDivisions(
+                    conferenceTeams,
+                    teamNames,
+                    numGames,
+                    protectedRivalries,
+                    request.conference,
+                    request.season,
+                )
+            Logger.info("Division-aware selection produced ${matchups.size} matchups for ${request.conference}")
         }
 
         // ── Step 2: Assign weeks with backtracking ──
@@ -315,6 +330,186 @@ class ConferenceScheduleGenerationService(
     }
 
     /**
+     * Division-aware matchup selection: every team plays a full round robin against
+     * its own division, then any cross-division protected rivalries, then remaining
+     * conference-game slots are filled with cross-division opponents (prioritizing
+     * opponents not played in recent seasons). Teams with no division assigned skip
+     * the round-robin requirement entirely and get all their games from the filler
+     * pass — division participation is per-team optional.
+     *
+     * Throws [IllegalStateException] if [numGames] is too low to fit a team's
+     * division round robin plus its cross-division protected rivalries.
+     */
+    private fun selectMatchupsWithDivisions(
+        conferenceTeams: List<Team>,
+        teamNames: List<String>,
+        numGames: Int,
+        protectedRivalries: List<com.fcfb.arceus.dto.standard.ProtectedRivalry>,
+        conference: String,
+        season: Int,
+    ): List<Triple<String, String, Int?>> {
+        val divisionOf: Map<String, String?> =
+            conferenceTeams.associate { (it.name ?: "") to it.division?.takeIf { d -> d.isNotBlank() } }
+        val divisionGroups: Map<String, List<String>> =
+            teamNames.filter { divisionOf[it] != null }.groupBy { divisionOf[it]!! }
+
+        val usedKeys = mutableSetOf<String>()
+        val requiredCount = teamNames.associateWith { 0 }.toMutableMap()
+
+        // Phase 1: full intra-division round robin
+        val phase1 = mutableListOf<Triple<String, String, Int?>>()
+        for (teams in divisionGroups.values) {
+            if (teams.size < 2) continue
+            for (i in teams.indices) {
+                for (j in i + 1 until teams.size) {
+                    val t1 = teams[i]
+                    val t2 = teams[j]
+                    val forcedWeek =
+                        protectedRivalries.firstOrNull { r ->
+                            r.week != null && ((r.team1 == t1 && r.team2 == t2) || (r.team1 == t2 && r.team2 == t1))
+                        }?.week
+                    phase1.add(Triple(t1, t2, forcedWeek))
+                    usedKeys.add(listOf(t1, t2).sorted().joinToString("|"))
+                    requiredCount[t1] = (requiredCount[t1] ?: 0) + 1
+                    requiredCount[t2] = (requiredCount[t2] ?: 0) + 1
+                }
+            }
+        }
+
+        // Phase 2: cross-division (or unassigned-team) protected rivalries not already covered
+        val phase2 = mutableListOf<Triple<String, String, Int?>>()
+        for (rivalry in protectedRivalries) {
+            val t1 = rivalry.team1
+            val t2 = rivalry.team2
+            if (t1.isBlank() || t2.isBlank() || t1 !in teamNames || t2 !in teamNames) continue
+            val key = listOf(t1, t2).sorted().joinToString("|")
+            if (key in usedKeys) continue
+            phase2.add(Triple(t1, t2, rivalry.week))
+            usedKeys.add(key)
+            requiredCount[t1] = (requiredCount[t1] ?: 0) + 1
+            requiredCount[t2] = (requiredCount[t2] ?: 0) + 1
+        }
+
+        val shortfalls = teamNames.filter { (requiredCount[it] ?: 0) > numGames }
+        if (shortfalls.isNotEmpty()) {
+            val details =
+                shortfalls.joinToString("; ") { t ->
+                    val divSize = divisionOf[t]?.let { divisionGroups[it]?.size } ?: 0
+                    val rivalryCount = (requiredCount[t] ?: 0) - maxOf(divSize - 1, 0)
+                    "$t needs ${requiredCount[t]} games (${maxOf(divSize - 1, 0)} division round robin + " +
+                        "$rivalryCount cross-division rivalries)"
+                }
+            throw IllegalStateException(
+                "Cannot generate schedule for $conference: numConferenceGames is $numGames but $details",
+            )
+        }
+
+        // Phase 3: fill remaining slots with cross-division opponents
+        val remaining = teamNames.associateWith { numGames - (requiredCount[it] ?: 0) }.toMutableMap()
+        val phase3 =
+            if (remaining.values.any { it > 0 }) {
+                selectCrossDivisionFiller(remaining, usedKeys, divisionOf, teamNames, season)
+            } else {
+                emptyList()
+            }
+
+        return phase1 + phase2 + phase3
+    }
+
+    /**
+     * Greedily fills each team's remaining slots with cross-division opponents,
+     * preferring opponents not played in recent seasons (least-recently-played
+     * pairs are tried first, randomized within the same staleness tier). Retries
+     * with fresh shuffles on failure, mirroring [selectMatchupsGreedy]'s approach.
+     */
+    private fun selectCrossDivisionFiller(
+        remaining: Map<String, Int>,
+        alreadyMatchedKeys: Set<String>,
+        divisionOf: Map<String, String?>,
+        teamNames: List<String>,
+        currentSeason: Int,
+    ): List<Triple<String, String, Int?>> {
+        val lastPlayedSeason = buildRecentOpponentSeasons(currentSeason, teamNames)
+        val staleFloor = currentSeason - RECENT_OPPONENT_LOOKBACK_SEASONS - 1
+
+        val candidatePairs = mutableListOf<Pair<String, String>>()
+        for (i in teamNames.indices) {
+            for (j in i + 1 until teamNames.size) {
+                val t1 = teamNames[i]
+                val t2 = teamNames[j]
+                if (divisionOf[t1] != null && divisionOf[t1] == divisionOf[t2]) continue
+                val key = listOf(t1, t2).sorted().joinToString("|")
+                if (key in alreadyMatchedKeys) continue
+                candidatePairs.add(t1 to t2)
+            }
+        }
+
+        for (attempt in 1..20) {
+            val work = remaining.toMutableMap()
+            val matchups = mutableListOf<Triple<String, String, Int?>>()
+
+            val ordered =
+                candidatePairs
+                    .groupBy { (t1, t2) -> currentSeason - (lastPlayedSeason[listOf(t1, t2).sorted().joinToString("|")] ?: staleFloor) }
+                    .entries
+                    .sortedByDescending { it.key }
+                    .flatMap { it.value.shuffled() }
+
+            for ((t1, t2) in ordered) {
+                val r1 = work[t1] ?: 0
+                val r2 = work[t2] ?: 0
+                if (r1 > 0 && r2 > 0) {
+                    matchups.add(Triple(t1, t2, null))
+                    work[t1] = r1 - 1
+                    work[t2] = r2 - 1
+                }
+            }
+
+            if (work.values.all { it == 0 }) {
+                return matchups
+            }
+            Logger.warn("Cross-division filler attempt $attempt: ${work.values.sum()} slots unfilled. Retrying...")
+        }
+
+        throw IllegalStateException(
+            "Could not fill cross-division conference games after 20 attempts. " +
+                "Check numConferenceGames against division sizes and rivalry counts.",
+        )
+    }
+
+    /**
+     * Maps sorted matchup key ("TeamA|TeamB") -> the most recent season within
+     * [RECENT_OPPONENT_LOOKBACK_SEASONS] that pair played a conference game.
+     */
+    private fun buildRecentOpponentSeasons(
+        currentSeason: Int,
+        teamNames: List<String>,
+    ): Map<String, Int> {
+        val teamSet = teamNames.toSet()
+        val lastPlayed = mutableMapOf<String, Int>()
+
+        for (seasonsAgo in 1..RECENT_OPPONENT_LOOKBACK_SEASONS) {
+            val season = currentSeason - seasonsAgo
+            val schedule =
+                try {
+                    scheduleRepository.getScheduleBySeason(season) ?: emptyList()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            for (game in schedule) {
+                val home = game.homeTeam ?: continue
+                val away = game.awayTeam ?: continue
+                if (game.gameType != GameType.CONFERENCE_GAME) continue
+                if (home !in teamSet || away !in teamSet) continue
+                val key = listOf(home, away).sorted().joinToString("|")
+                if (key !in lastPlayed) lastPlayed[key] = season
+            }
+        }
+
+        return lastPlayed
+    }
+
+    /**
      * Generate all rounds of a round-robin tournament using the circle (polygon)
      * method.  For *n* teams (n even) this produces n-1 rounds, each containing
      * n/2 games — every possible pairing appears exactly once.
@@ -516,7 +711,7 @@ class ConferenceScheduleGenerationService(
         val validConferences =
             conferencesToGenerate.filter { conf ->
                 val teams = teamService.getTeamsInConference(conf.code)
-                !teams.isNullOrEmpty()
+                teams?.any { it.active } == true
             }
 
         val job =
@@ -562,17 +757,19 @@ class ConferenceScheduleGenerationService(
 
             try {
                 Logger.info("[${index + 1}/${conferences.size}] Generating schedule for ${conference.code}...")
-                val teams = teamService.getTeamsInConference(conference.code) ?: emptyList()
+                val teams = (teamService.getTeamsInConference(conference.code) ?: emptyList()).filter { it.active }
                 val subdivision = teams.firstOrNull()?.subdivision ?: Subdivision.FBS
+                val rules = conferenceRulesService.getConferenceRules(conference.code)
 
                 val request =
                     ConferenceScheduleRequest(
                         season = season,
                         conference = conference.code,
                         subdivision = subdivision,
-                        numConferenceGames = 9,
-                        protectedRivalries = emptyList(),
+                        numConferenceGames = rules?.numConferenceGames ?: 9,
+                        protectedRivalries = rules?.protectedRivalries ?: emptyList(),
                         startWeek = 1,
+                        divisions = rules?.divisions ?: emptyList(),
                     )
 
                 val generated = generateConferenceSchedule(request, teams)

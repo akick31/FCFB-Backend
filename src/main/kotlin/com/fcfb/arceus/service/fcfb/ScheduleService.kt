@@ -5,6 +5,7 @@ import com.fcfb.arceus.dto.request.ConferenceScheduleRequest
 import com.fcfb.arceus.dto.request.MoveGameRequest
 import com.fcfb.arceus.dto.request.ScheduleEntry
 import com.fcfb.arceus.dto.response.ConferenceRulesResponse
+import com.fcfb.arceus.dto.response.OocGenerationResult
 import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.enums.game.GameType
@@ -16,6 +17,7 @@ import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.service.fcfb.schedule.ConferenceRulesService
 import com.fcfb.arceus.service.fcfb.schedule.ConferenceScheduleGenerationService
+import com.fcfb.arceus.service.fcfb.schedule.OutOfConferenceScheduleGenerationService
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.ScheduleNotFoundException
 import org.springframework.stereotype.Service
@@ -27,6 +29,7 @@ open class ScheduleService(
     private val gameRepository: GameRepository,
     private val conferenceScheduleGenerationService: ConferenceScheduleGenerationService,
     private val conferenceRulesService: ConferenceRulesService,
+    private val outOfConferenceScheduleGenerationService: OutOfConferenceScheduleGenerationService,
 ) {
     /**
      * Check if the schedule is locked for a given season and throw if locked
@@ -475,6 +478,9 @@ open class ScheduleService(
         conferenceScheduleGenerationService.startAllConferenceGenerationAsync(season)
 
     fun getScheduleGenJobStatus(jobId: String): ScheduleGenJob? = conferenceScheduleGenerationService.getScheduleGenJobStatus(jobId)
+
+    fun generateOutOfConferenceSchedule(season: Int): OocGenerationResult =
+        outOfConferenceScheduleGenerationService.generateOutOfConferenceSchedule(season)
 
     fun saveConferenceRules(request: ConferenceRulesRequest): ConferenceRulesResponse = conferenceRulesService.saveConferenceRules(request)
 

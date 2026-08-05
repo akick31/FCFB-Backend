@@ -152,6 +152,8 @@ class TeamService(
                 true,
                 1500.0,
                 1500.0,
+                team.logoDark,
+                team.division,
             ),
         )
     }
@@ -162,12 +164,18 @@ class TeamService(
 
         existingTeam.apply {
             this.name = team.name
+            shortName = team.shortName
+            abbreviation = team.abbreviation
+            logo = team.logo
+            logoDark = team.logoDark
+            scorebugLogo = team.scorebugLogo
             coachUsernames = team.coachUsernames
             coachNames = team.coachNames
             coachDiscordTags = team.coachDiscordTags
             coachDiscordIds = team.coachDiscordIds
             subdivision = team.subdivision
             conference = team.conference
+            division = team.division
             primaryColor = team.primaryColor
             secondaryColor = team.secondaryColor
             coachesPollRanking = team.coachesPollRanking

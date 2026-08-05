@@ -1,0 +1,1 @@
+ALTER TABLE `team` ADD COLUMN `division` VARCHAR(255) NULL;
