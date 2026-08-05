@@ -34,7 +34,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "total_games")
     var totalGames: Int = 0,
-    // Passing Stats (League Totals)
     @Basic
     @Column(name = "pass_attempts")
     var passAttempts: Int = 0,
@@ -59,7 +58,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "pass_success_percentage")
     var passSuccessPercentage: Double? = null,
-    // Rushing Stats (League Totals)
     @Basic
     @Column(name = "rush_attempts")
     var rushAttempts: Int = 0,
@@ -78,7 +76,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "rush_touchdowns")
     var rushTouchdowns: Int = 0,
-    // Total Offense (League Totals)
     @Basic
     @Column(name = "total_yards")
     var totalYards: Int = 0,
@@ -88,14 +85,12 @@ class ConferenceStats(
     @Basic
     @Column(name = "first_downs")
     var firstDowns: Int = 0,
-    // Sacks (League Totals)
     @Basic
     @Column(name = "sacks_allowed")
     var sacksAllowed: Int = 0,
     @Basic
     @Column(name = "sacks_forced")
     var sacksForced: Int = 0,
-    // Turnovers (League Totals)
     @Basic
     @Column(name = "interceptions_lost")
     var interceptionsLost: Int = 0,
@@ -135,7 +130,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "fumble_return_tds_forced")
     var fumbleReturnTdsForced: Int = 0,
-    // Field Goals (League Totals)
     @Basic
     @Column(name = "field_goal_made")
     var fieldGoalMade: Int = 0,
@@ -154,7 +148,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "field_goal_touchdown")
     var fieldGoalTouchdown: Int = 0,
-    // Punting (League Totals)
     @Basic
     @Column(name = "punts_attempted")
     var puntsAttempted: Int = 0,
@@ -173,7 +166,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "punt_return_td_percentage")
     var puntReturnTdPercentage: Double? = null,
-    // Kickoffs (League Totals)
     @Basic
     @Column(name = "number_of_kickoffs")
     var numberOfKickoffs: Int = 0,
@@ -201,18 +193,15 @@ class ConferenceStats(
     @Basic
     @Column(name = "kick_return_td_percentage")
     var kickReturnTdPercentage: Double? = null,
-    // Game Flow (League Totals)
     @Basic
     @Column(name = "number_of_drives")
     var numberOfDrives: Int = 0,
     @Basic
     @Column(name = "time_of_possession")
     var timeOfPossession: Int = 0,
-    // Touchdowns (League Totals)
     @Basic
     @Column(name = "touchdowns")
     var touchdowns: Int = 0,
-    // Down Conversions (League Totals)
     @Basic
     @Column(name = "third_down_conversion_success")
     var thirdDownConversionSuccess: Int = 0,
@@ -231,14 +220,12 @@ class ConferenceStats(
     @Basic
     @Column(name = "fourth_down_conversion_percentage")
     var fourthDownConversionPercentage: Double? = null,
-    // Game Control (League Totals)
     @Basic
     @Column(name = "largest_lead")
     var largestLead: Int = 0,
     @Basic
     @Column(name = "largest_deficit")
     var largestDeficit: Int = 0,
-    // Red Zone (League Totals)
     @Basic
     @Column(name = "red_zone_attempts")
     var redZoneAttempts: Int = 0,
@@ -251,14 +238,12 @@ class ConferenceStats(
     @Basic
     @Column(name = "red_zone_percentage")
     var redZonePercentage: Double? = null,
-    // Special Teams (League Totals)
     @Basic
     @Column(name = "safeties_forced")
     var safetiesForced: Int = 0,
     @Basic
     @Column(name = "safeties_committed")
     var safetiesCommitted: Int = 0,
-    // Performance Metrics (League Averages)
     @Basic
     @Column(name = "average_offensive_diff")
     var averageOffensiveDiff: Double? = null,
@@ -277,8 +262,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "average_response_speed")
     var averageResponseSpeed: Double? = null,
-    // Opponent Stats (what teams allowed opponents to do)
-    // Opponent Passing Stats (Conference Totals)
     @Basic
     @Column(name = "opponent_pass_attempts")
     var opponentPassAttempts: Int = 0,
@@ -303,7 +286,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_pass_success_percentage", columnDefinition = "decimal(5,2)")
     var opponentPassSuccessPercentage: Double? = null,
-    // Opponent Rushing Stats (Conference Totals)
     @Basic
     @Column(name = "opponent_rush_attempts")
     var opponentRushAttempts: Int = 0,
@@ -322,7 +304,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_rush_touchdowns")
     var opponentRushTouchdowns: Int = 0,
-    // Opponent Total Offense (Conference Totals)
     @Basic
     @Column(name = "opponent_total_yards")
     var opponentTotalYards: Int = 0,
@@ -332,7 +313,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_first_downs")
     var opponentFirstDowns: Int = 0,
-    // Opponent Field Goals (Conference Totals)
     @Basic
     @Column(name = "opponent_field_goal_made")
     var opponentFieldGoalMade: Int = 0,
@@ -348,7 +328,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_field_goal_touchdown")
     var opponentFieldGoalTouchdown: Int = 0,
-    // Opponent Punting (Conference Totals)
     @Basic
     @Column(name = "opponent_punts_attempted")
     var opponentPuntsAttempted: Int = 0,
@@ -364,7 +343,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_punt_return_td_percentage", columnDefinition = "decimal(5,2)")
     var opponentPuntReturnTdPercentage: Double? = null,
-    // Opponent Kickoffs (Conference Totals)
     @Basic
     @Column(name = "opponent_number_of_kickoffs")
     var opponentNumberOfKickoffs: Int = 0,
@@ -392,18 +370,15 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_kick_return_td_percentage", columnDefinition = "decimal(5,2)")
     var opponentKickReturnTdPercentage: Double? = null,
-    // Opponent Game Flow (Conference Totals)
     @Basic
     @Column(name = "opponent_number_of_drives")
     var opponentNumberOfDrives: Int = 0,
     @Basic
     @Column(name = "opponent_time_of_possession")
     var opponentTimeOfPossession: Int = 0,
-    // Opponent Touchdowns (Conference Totals)
     @Basic
     @Column(name = "opponent_touchdowns")
     var opponentTouchdowns: Int = 0,
-    // Opponent Down Conversions (Conference Totals)
     @Basic
     @Column(name = "opponent_third_down_conversion_success")
     var opponentThirdDownConversionSuccess: Int = 0,
@@ -422,7 +397,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_fourth_down_conversion_percentage", columnDefinition = "decimal(5,2)")
     var opponentFourthDownConversionPercentage: Double? = null,
-    // Opponent Red Zone (Conference Totals)
     @Basic
     @Column(name = "opponent_red_zone_attempts")
     var opponentRedZoneAttempts: Int = 0,
@@ -435,7 +409,6 @@ class ConferenceStats(
     @Basic
     @Column(name = "opponent_red_zone_percentage", columnDefinition = "decimal(5,2)")
     var opponentRedZonePercentage: Double? = null,
-    // Additional League Info
     @Basic
     @Column(name = "last_modified_ts")
     var lastModifiedTs: String? = null,

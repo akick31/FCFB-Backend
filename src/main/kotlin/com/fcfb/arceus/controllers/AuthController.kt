@@ -34,10 +34,7 @@ class AuthController(
     @PostMapping("/logout")
     fun logout(
         @RequestHeader("Authorization") authHeader: String,
-    ): ResponseEntity<String> {
-        val token = authHeader.removePrefix("Bearer ").trim()
-        return ResponseEntity.ok(authService.logout(token))
-    }
+    ): ResponseEntity<String> = ResponseEntity.ok(authService.logout(authHeader))
 
     @GetMapping("/verify-email")
     fun verifyEmail(

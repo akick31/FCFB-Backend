@@ -11,7 +11,6 @@ class LoginResponseTest {
     fun `LoginResponse should be a data class`() {
         val loginResponse = createTestLoginResponse()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(loginResponse.toString())
         assertTrue(loginResponse.toString().contains("LoginResponse"))
     }
@@ -104,8 +103,6 @@ class LoginResponseTest {
     fun `LoginResponse should be immutable`() {
         val response = createTestLoginResponse()
 
-        // All properties should be val (immutable)
-        // This is enforced by the data class declaration
         assertNotNull(response.token)
         assertNotNull(response.userId)
         assertNotNull(response.role)
@@ -118,7 +115,6 @@ class LoginResponseTest {
 
         assertEquals(jwtToken, response.token)
 
-        // JWT tokens have 3 parts separated by dots
         val parts = response.token.split(".")
         assertEquals(3, parts.size)
         assertTrue(parts.all { it.isNotEmpty() })
@@ -126,7 +122,6 @@ class LoginResponseTest {
 
     @Test
     fun `LoginResponse should handle different authentication scenarios`() {
-        // Regular user login
         val userLogin =
             LoginResponse(
                 token = "user-token-123",
@@ -134,7 +129,6 @@ class LoginResponseTest {
                 role = UserRole.USER,
             )
 
-        // Admin login
         val adminLogin =
             LoginResponse(
                 token = "admin-token-456",
@@ -142,7 +136,6 @@ class LoginResponseTest {
                 role = UserRole.ADMIN,
             )
 
-        // Conference commissioner login
         val commissionerLogin =
             LoginResponse(
                 token = "commissioner-token-789",

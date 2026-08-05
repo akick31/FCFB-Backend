@@ -10,9 +10,6 @@ import com.fcfb.arceus.repositories.RecordRepository
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 
-/**
- * Handles generation and in-flight checking of single-season records.
- */
 @Service
 class SeasonRecordService(
     private val recordRepository: RecordRepository,
@@ -161,13 +158,9 @@ class SeasonRecordService(
         }
     }
 
-    /**
-     * Get the coach for a season record (coach who coached in the most games)
-     */
     private fun getCoachForSeasonRecord(gameStatsList: List<GameStats>): String? {
         if (gameStatsList.isEmpty()) return null
 
-        // Count how many games each coach coached
         val coachGameCounts = mutableMapOf<String, Int>()
 
         for (gameStats in gameStatsList) {
@@ -176,7 +169,6 @@ class SeasonRecordService(
             }
         }
 
-        // Return the coach who coached in the most games
         return coachGameCounts.maxByOrNull { it.value }?.key
     }
 }

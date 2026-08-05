@@ -2,10 +2,9 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.UpdateUserRequest
 import com.fcfb.arceus.dto.request.UserValidationRequest
+import com.fcfb.arceus.dto.response.ApiKeyResponse
 import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.service.fcfb.UserService
-import com.fcfb.arceus.util.AuthContext
-import com.fcfb.arceus.util.UserForbiddenException
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -53,46 +52,25 @@ class UserController(
     fun updateUserEmail(
         @RequestParam id: Long,
         @RequestParam newEmail: String,
-    ): UserDTO {
-        if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
-            throw UserForbiddenException()
-        }
-        return userService.updateEmail(id, newEmail)
-    }
+    ): UserDTO = userService.updateEmail(id, newEmail)
 
     @PutMapping("/update/username")
     fun updateUsername(
         @RequestParam id: Long,
         @RequestParam newUsername: String,
-    ): UserDTO {
-        if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
-            throw UserForbiddenException()
-        }
-        return userService.updateUsername(id, newUsername)
-    }
+    ): UserDTO = userService.updateUsername(id, newUsername)
 
     @PutMapping("/update/password")
     fun updateUserPassword(
         @RequestParam id: Long,
         @RequestParam(required = false) currentPassword: String?,
         @RequestParam newPassword: String,
-    ): UserDTO {
-        val isAdmin = AuthContext.isAdmin()
-        if (AuthContext.currentUserId() != id && !isAdmin) {
-            throw UserForbiddenException()
-        }
-        return userService.changePassword(id, currentPassword, newPassword, skipCurrentPasswordCheck = isAdmin)
-    }
+    ): UserDTO = userService.changePassword(id, currentPassword, newPassword)
 
     @PutMapping("/update")
     fun updateUserRole(
         @RequestBody request: UpdateUserRequest,
-    ): UserDTO {
-        if (AuthContext.currentUserId() != request.id && !AuthContext.isAdmin()) {
-            throw UserForbiddenException()
-        }
-        return userService.updateUser(request.toUserDTO())
-    }
+    ): UserDTO = userService.updateUserAsRequester(request.toUserDTO())
 
     @PostMapping("/hash_emails")
     fun encryptEmails() = userService.hashEmails()
@@ -103,21 +81,15 @@ class UserController(
     ) = userService.validateUser(userValidationRequest)
 
     @PostMapping("/api-key")
-    fun generateApiKey(): Map<String, String> {
-        val userId = AuthContext.currentUserId() ?: throw UserForbiddenException()
-        return mapOf("apiKey" to userService.generateApiKey(userId))
-    }
+    fun generateApiKey(): ApiKeyResponse = userService.generateApiKeyForCurrentUser()
 
     @PostMapping("/api-key/revoke")
-    fun revokeApiKey() {
-        val userId = AuthContext.currentUserId() ?: throw UserForbiddenException()
-        userService.revokeApiKey(userId)
-    }
+    fun revokeApiKey() = userService.revokeApiKeyForCurrentUser()
 
     @PostMapping("/{userId:[0-9]+}/api-key")
     fun generateApiKeyForUser(
         @PathVariable userId: Long,
-    ): Map<String, String> = mapOf("apiKey" to userService.generateApiKey(userId))
+    ): ApiKeyResponse = userService.generateApiKeyForUser(userId)
 
     @DeleteMapping("{teamId:[0-9]+}")
     fun deleteTeam(

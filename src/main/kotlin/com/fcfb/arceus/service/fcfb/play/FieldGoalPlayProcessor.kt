@@ -52,7 +52,6 @@ class FieldGoalPlayProcessor(
         val playTime = resultInformation.playTime
         ballLocation = game.ballLocation
 
-        // Determine runoff time between plays
         val clockStopped = game.clockStopped
         val runoffTime =
             playProcessingUtils.getRunoffTime(

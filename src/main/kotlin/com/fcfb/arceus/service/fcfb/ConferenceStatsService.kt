@@ -45,13 +45,11 @@ class ConferenceStatsService(
         val allSeasonStats = seasonStatsRepository.findAllByOrderBySeasonNumberDescTeamAsc()
         Logger.info("Found ${allSeasonStats.size} total season stats records")
 
-        // Group by subdivision, conference, and season
         val groupedStats =
             allSeasonStats.groupBy {
                 Triple(it.subdivision, it.conference, it.seasonNumber)
             }.filterKeys { it.first != null && it.second != null }
 
-        // Generate conference stats for each subdivision/conference/season combination
         val total = groupedStats.size
         groupedStats.entries.forEachIndexed { index, (subdivisionConferenceSeason, seasonStatsList) ->
             val subdivision = subdivisionConferenceSeason.first!!
@@ -101,7 +99,6 @@ class ConferenceStatsService(
         val conference = seasonStats.conference ?: return
         val season = seasonStats.seasonNumber
 
-        // Regenerate conference stats for this subdivision, conference, and season
         generateConferenceStatsForSubdivisionAndConferenceAndSeason(subdivision, conference, season)
     }
 
@@ -120,7 +117,6 @@ class ConferenceStatsService(
             seasonNumber = seasonNumber,
             totalTeams = totalTeams,
             totalGames = totalGames,
-            // Aggregate all the stats
             passAttempts = seasonStatsList.sumOf { it.passAttempts },
             passCompletions = seasonStatsList.sumOf { it.passCompletions },
             passCompletionPercentage =
@@ -239,14 +235,12 @@ class ConferenceStatsService(
                 ),
             safetiesForced = seasonStatsList.sumOf { it.safetiesForced },
             safetiesCommitted = seasonStatsList.sumOf { it.safetiesCommitted },
-            // Performance metrics are averages of team averages
             averageOffensiveDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageOffensiveDiff }),
             averageDefensiveDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageDefensiveDiff }),
             averageOffensiveSpecialTeamsDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageOffensiveSpecialTeamsDiff }),
             averageDefensiveSpecialTeamsDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageDefensiveSpecialTeamsDiff }),
             averageDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageDiff }),
             averageResponseSpeed = calculateAverage(seasonStatsList.mapNotNull { it.averageResponseSpeed }),
-            // Opponent Stats (what teams allowed opponents to do)
             opponentPassAttempts = seasonStatsList.sumOf { it.opponentPassAttempts },
             opponentPassCompletions = seasonStatsList.sumOf { it.opponentPassCompletions },
             opponentPassCompletionPercentage =

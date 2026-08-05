@@ -26,13 +26,6 @@ class VegasOddsController(
         @RequestParam awayElo: Double,
     ) = vegasOddsService.getVegasOddsByElo(homeElo, awayElo)
 
-    /**
-     * Calculate and update Vegas spreads for all games in a specific season and week
-     * using team_elo from game_stats
-     * @param season Season number
-     * @param week Week number
-     * @return Response indicating success and number of games updated
-     */
     @PostMapping("/update-spreads")
     fun updateSpreadsForSeasonAndWeek(
         @RequestParam season: Int,

@@ -11,8 +11,6 @@ import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.service.fcfb.ScheduleService
-import com.fcfb.arceus.service.fcfb.SeasonService
-import com.fcfb.arceus.service.fcfb.TeamService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -30,8 +28,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/schedule")
 class ScheduleController(
     private val scheduleService: ScheduleService,
-    private val seasonService: SeasonService,
-    private val teamService: TeamService,
 ) {
     @GetMapping("/opponent")
     fun getTeamOpponent(
@@ -61,7 +57,6 @@ class ScheduleController(
         @RequestParam("conference") conference: String,
     ): ResponseEntity<List<Schedule>> = ResponseEntity.ok(scheduleService.getConferenceSchedule(season, conference))
 
-    /** Postseason includes playoffs, bowls, and conference championships. */
     @GetMapping("/postseason/{season}")
     fun getPostseasonSchedule(
         @PathVariable("season") season: Int,
@@ -89,47 +84,21 @@ class ScheduleController(
         @RequestBody request: BulkScheduleRequest,
     ): ResponseEntity<List<Schedule>> = ResponseEntity.status(201).body(scheduleService.createBulkScheduleEntries(request.entries))
 
-    /**
-     * Auto-generate a conference schedule
-     * @param request
-     * @return
-     */
     @PostMapping("/generate-conference")
     fun generateConferenceSchedule(
         @RequestBody request: ConferenceScheduleRequest,
-    ): ResponseEntity<List<Schedule>> {
-        val conferenceTeams = (teamService.getTeamsInConference(request.conference) ?: emptyList()).filter { it.active }
-        return ResponseEntity.status(201).body(scheduleService.generateConferenceSchedule(request, conferenceTeams))
-    }
+    ): ResponseEntity<List<Schedule>> = ResponseEntity.status(201).body(scheduleService.generateConferenceSchedule(request))
 
-    /**
-     * Auto-generate conference schedules for ALL conferences in a season (async fire-and-forget).
-     * Returns a job ID immediately; processing happens in a background coroutine.
-     * Poll /schedule/generate-all-conferences/status/{jobId} for progress.
-     */
     @PostMapping("/generate-all-conferences/{season}")
     fun generateAllConferenceSchedules(
         @PathVariable("season") season: Int,
     ): ResponseEntity<ScheduleGenJobResponse> = ResponseEntity.status(202).body(scheduleService.startAllConferenceGenerationAsync(season))
 
-    /**
-     * Poll the status of an all-conference generation job.
-     */
     @GetMapping("/generate-all-conferences/status/{jobId}")
     fun getScheduleGenJobStatus(
         @PathVariable("jobId") jobId: String,
-    ): ResponseEntity<ScheduleGenJob> {
-        val job =
-            scheduleService.getScheduleGenJobStatus(jobId)
-                ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(job)
-    }
+    ): ResponseEntity<ScheduleGenJob> = ResponseEntity.ok(scheduleService.getScheduleGenJobStatus(jobId))
 
-    /**
-     * Auto-fill every active team's remaining open weeks (1-12) with random,
-     * non-repeating, cross-conference OOC opponents. Additive only — never
-     * touches an already-scheduled game.
-     */
     @PostMapping("/generate-ooc/{season}")
     fun generateOutOfConferenceSchedule(
         @PathVariable("season") season: Int,
@@ -165,17 +134,10 @@ class ScheduleController(
     @PostMapping("/conference-rules")
     fun saveConferenceRules(
         @RequestBody request: ConferenceRulesRequest,
-    ): ResponseEntity<ConferenceRulesResponse> {
-        return ResponseEntity.ok(scheduleService.saveConferenceRules(request))
-    }
+    ): ResponseEntity<ConferenceRulesResponse> = ResponseEntity.ok(scheduleService.saveConferenceRules(request))
 
     @GetMapping("/conference-rules")
     fun getConferenceRules(
         @RequestParam("conference") conference: String,
-    ): ResponseEntity<ConferenceRulesResponse> {
-        val rules =
-            scheduleService.getConferenceRules(conference)
-                ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(rules)
-    }
+    ): ResponseEntity<ConferenceRulesResponse> = ResponseEntity.ok(scheduleService.getConferenceRules(conference))
 }

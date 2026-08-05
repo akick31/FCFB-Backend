@@ -233,7 +233,6 @@ class TeamService(
         user.team = existingTeam.name
         when (coachPosition) {
             CoachPosition.HEAD_COACH -> {
-                // Fire previous coach if hiring a new head coach
                 if (existingTeam.coachUsernames != null) {
                     fireCoach(existingTeam.name, processedBy)
                 }

@@ -25,7 +25,6 @@ class PlayRepositoryTest {
 
     @Test
     fun `test save and findById`() {
-        // Given
         val play =
             createTestPlay(
                 playId = 1,
@@ -40,11 +39,9 @@ class PlayRepositoryTest {
         every { playRepository.save(any()) } returns play
         every { playRepository.findById(1) } returns java.util.Optional.of(play)
 
-        // When
         val savedPlay = playRepository.save(play)
         val foundPlay = playRepository.findById(savedPlay.playId).get()
 
-        // Then
         assertNotNull(foundPlay)
         assertEquals(1, foundPlay.playId)
         assertEquals(123, foundPlay.gameId)
@@ -57,7 +54,6 @@ class PlayRepositoryTest {
 
     @Test
     fun `test getPlayById`() {
-        // Given
         val play =
             createTestPlay(
                 playId = 2,
@@ -68,10 +64,8 @@ class PlayRepositoryTest {
 
         every { playRepository.getPlayById(2) } returns play
 
-        // When
         val foundPlay = playRepository.getPlayById(2)
 
-        // Then
         assertNotNull(foundPlay)
         assertEquals(2, foundPlay.playId)
         assertEquals(456, foundPlay.gameId)
@@ -81,19 +75,15 @@ class PlayRepositoryTest {
 
     @Test
     fun `test getPlayById returns null when not found`() {
-        // Given
         every { playRepository.getPlayById(999) } returns null
 
-        // When
         val foundPlay = playRepository.getPlayById(999)
 
-        // Then
         assertNull(foundPlay)
     }
 
     @Test
     fun `test getAllPlaysByGameId`() {
-        // Given
         val play1 =
             createTestPlay(
                 playId = 1,
@@ -112,10 +102,8 @@ class PlayRepositoryTest {
 
         every { playRepository.getAllPlaysByGameId(100) } returns plays
 
-        // When
         val foundPlays = playRepository.getAllPlaysByGameId(100)
 
-        // Then
         assertEquals(2, foundPlays.size)
         assertEquals(1, foundPlays[0].playId)
         assertEquals(2, foundPlays[1].playId)
@@ -123,7 +111,6 @@ class PlayRepositoryTest {
 
     @Test
     fun `test getCurrentPlay`() {
-        // Given
         val play =
             createTestPlay(
                 playId = 1,
@@ -133,10 +120,8 @@ class PlayRepositoryTest {
 
         every { playRepository.getCurrentPlay(100) } returns play
 
-        // When
         val foundPlay = playRepository.getCurrentPlay(100)
 
-        // Then
         assertNotNull(foundPlay)
         assertEquals(1, foundPlay.playId)
         assertFalse(foundPlay.playFinished)
@@ -144,19 +129,15 @@ class PlayRepositoryTest {
 
     @Test
     fun `test getCurrentPlay returns null when no unfinished plays`() {
-        // Given
         every { playRepository.getCurrentPlay(100) } returns null
 
-        // When
         val foundPlay = playRepository.getCurrentPlay(100)
 
-        // Then
         assertNull(foundPlay)
     }
 
     @Test
     fun `test getPreviousPlay`() {
-        // Given
         val play =
             createTestPlay(
                 playId = 1,
@@ -166,10 +147,8 @@ class PlayRepositoryTest {
 
         every { playRepository.getPreviousPlay(100) } returns play
 
-        // When
         val foundPlay = playRepository.getPreviousPlay(100)
 
-        // Then
         assertNotNull(foundPlay)
         assertEquals(1, foundPlay.playId)
         assertTrue(foundPlay.playFinished)
@@ -177,29 +156,23 @@ class PlayRepositoryTest {
 
     @Test
     fun `test getPreviousPlay returns null when no finished plays`() {
-        // Given
         every { playRepository.getPreviousPlay(100) } returns null
 
-        // When
         val foundPlay = playRepository.getPreviousPlay(100)
 
-        // Then
         assertNull(foundPlay)
     }
 
     @Test
     fun `test getAllPlaysByDiscordTag`() {
-        // Given
         val play1 = createTestPlay(playId = 1, offensiveSubmitter = "coach#1234")
         val play2 = createTestPlay(playId = 2, defensiveSubmitter = "coach#1234")
         val plays = listOf(play1, play2)
 
         every { playRepository.getAllPlaysByDiscordTag("coach#1234") } returns plays
 
-        // When
         val foundPlays = playRepository.getAllPlaysByDiscordTag("coach#1234")
 
-        // Then
         assertEquals(2, foundPlays.size)
         assertTrue(foundPlays.any { it.offensiveSubmitter == "coach#1234" })
         assertTrue(foundPlays.any { it.defensiveSubmitter == "coach#1234" })
@@ -207,65 +180,50 @@ class PlayRepositoryTest {
 
     @Test
     fun `test getUserAverageResponseTime`() {
-        // Given
         every { playRepository.getUserAverageResponseTime("coach#1234", 2024) } returns 15.5
 
-        // When
         val avgResponseTime = playRepository.getUserAverageResponseTime("coach#1234", 2024)
 
-        // Then
         assertEquals(15.5, avgResponseTime)
     }
 
     @Test
     fun `test getHomeDelayOfGameInstances`() {
-        // Given
         every { playRepository.getHomeDelayOfGameInstances(100) } returns 2
 
-        // When
         val delayInstances = playRepository.getHomeDelayOfGameInstances(100)
 
-        // Then
         assertEquals(2, delayInstances)
     }
 
     @Test
     fun `test getAwayDelayOfGameInstances`() {
-        // Given
         every { playRepository.getAwayDelayOfGameInstances(100) } returns 1
 
-        // When
         val delayInstances = playRepository.getAwayDelayOfGameInstances(100)
 
-        // Then
         assertEquals(1, delayInstances)
     }
 
     @Test
     fun `test deleteAllPlaysByGameId`() {
-        // Given
         every { playRepository.deleteAllPlaysByGameId(100) } returns Unit
 
-        // When
         playRepository.deleteAllPlaysByGameId(100)
 
-        // Then
         verify { playRepository.deleteAllPlaysByGameId(100) }
     }
 
     @Test
     fun `test findAll`() {
-        // Given
         val play1 = createTestPlay(playId = 1)
         val play2 = createTestPlay(playId = 2)
         val allPlays = listOf(play1, play2)
 
         every { playRepository.findAll() } returns allPlays
 
-        // When
         val foundPlays = playRepository.findAll()
 
-        // Then
         assertEquals(2, foundPlays.count())
         assertTrue(foundPlays.any { it.playId == 1 })
         assertTrue(foundPlays.any { it.playId == 2 })
@@ -273,26 +231,20 @@ class PlayRepositoryTest {
 
     @Test
     fun `test count`() {
-        // Given
         every { playRepository.count() } returns 50L
 
-        // When
         val count = playRepository.count()
 
-        // Then
         assertEquals(50L, count)
     }
 
     @Test
     fun `test delete`() {
-        // Given
         val play = createTestPlay(playId = 1)
         every { playRepository.delete(play) } returns Unit
 
-        // When
         playRepository.delete(play)
 
-        // Then
         verify { playRepository.delete(play) }
     }
 

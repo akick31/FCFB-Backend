@@ -44,10 +44,8 @@ class PostseasonScorebugRenderer(
         g.fillRect(0, 0, width, height)
         g.composite = AlphaComposite.Src
 
-        // Draw header with game logo
         drawPostseasonHeader(g, game, homeTeam, awayTeam, width, headerHeight, isPlayoff)
 
-        // Offset all existing sections by headerHeight
         val adjustedRowHeightForTeamName = rowHeight - 5
         val adjustedRowHeightForTeamScore = rowHeight + 5
 
@@ -66,7 +64,6 @@ class PostseasonScorebugRenderer(
             drawPostseasonFinalSection(g, (rowHeight - 10) * 2, game, headerHeight, accentColor)
         }
 
-        // Draw border - gold for playoffs, white otherwise
         if (isPlayoff) {
             drawPostseasonBorder(g, width, height, Color(212, 175, 55))
         } else {
@@ -94,7 +91,6 @@ class PostseasonScorebugRenderer(
         val gameName = game.postseasonGameName ?: game.gameType?.description ?: "Postseason"
         val logoSize = headerHeight - 10
 
-        // Try to load the postseason game logo (left-aligned)
         var logoLoaded = false
         val gameLogoUrl = game.postseasonGameLogo
         if (gameLogoUrl != null) {
@@ -115,7 +111,6 @@ class PostseasonScorebugRenderer(
             }
         }
 
-        // Fallback for conference championship: conference logo left, game name right
         if (!logoLoaded && game.gameType == GameType.CONFERENCE_CHAMPIONSHIP) {
             val confLogoSize = logoSize
             val conf = homeTeam.conference ?: awayTeam.conference
@@ -130,7 +125,6 @@ class PostseasonScorebugRenderer(
             }
         }
 
-        // Fallback: game name centered
         g.color = textColor
         g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 24f)
         val ascent = g.fontMetrics.ascent

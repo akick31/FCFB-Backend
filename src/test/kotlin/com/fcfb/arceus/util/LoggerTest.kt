@@ -32,10 +32,6 @@ class LoggerTest {
     fun `test debug logging`() {
         val message = "Debug test message"
         Logger.debug(message)
-
-        // Note: In a real test environment, you would typically use a logging framework's test utilities
-        // or mock the logger. This test verifies the method doesn't throw exceptions.
-        // The actual log output depends on the logging configuration.
     }
 
     @Test
@@ -45,16 +41,12 @@ class LoggerTest {
         val arg2 = 42
 
         Logger.debug(message, arg1, arg2)
-
-        // Method should not throw exceptions
     }
 
     @Test
     fun `test info logging`() {
         val message = "Info test message"
         Logger.info(message)
-
-        // Method should not throw exceptions
     }
 
     @Test
@@ -64,16 +56,12 @@ class LoggerTest {
         val arg2 = 42
 
         Logger.info(message, arg1, arg2)
-
-        // Method should not throw exceptions
     }
 
     @Test
     fun `test warn logging`() {
         val message = "GameWarning test message"
         Logger.warn(message)
-
-        // Method should not throw exceptions
     }
 
     @Test
@@ -83,16 +71,12 @@ class LoggerTest {
         val arg2 = 42
 
         Logger.warn(message, arg1, arg2)
-
-        // Method should not throw exceptions
     }
 
     @Test
     fun `test error logging`() {
         val message = "Error test message"
         Logger.error(message)
-
-        // Method should not throw exceptions
     }
 
     @Test
@@ -102,8 +86,6 @@ class LoggerTest {
         val arg2 = 42
 
         Logger.error(message, arg1, arg2)
-
-        // Method should not throw exceptions
     }
 
     @Test
@@ -116,8 +98,6 @@ class LoggerTest {
         Logger.info(message, arg1, arg2)
         Logger.warn(message, arg1, arg2)
         Logger.error(message, arg1, arg2)
-
-        // Methods should not throw exceptions with null arguments
     }
 
     @Test
@@ -128,8 +108,6 @@ class LoggerTest {
         Logger.info(message)
         Logger.warn(message)
         Logger.error(message)
-
-        // Methods should not throw exceptions with empty string
     }
 
     @Test
@@ -140,8 +118,6 @@ class LoggerTest {
         Logger.info(message)
         Logger.warn(message)
         Logger.error(message)
-
-        // Methods should not throw exceptions with special characters
     }
 
     @Test
@@ -152,8 +128,6 @@ class LoggerTest {
         Logger.info(message)
         Logger.warn(message)
         Logger.error(message)
-
-        // Methods should not throw exceptions with unicode characters
     }
 
     @Test
@@ -164,8 +138,6 @@ class LoggerTest {
         Logger.info(message)
         Logger.warn(message)
         Logger.error(message)
-
-        // Methods should not throw exceptions with very long messages
     }
 
     @Test
@@ -177,8 +149,6 @@ class LoggerTest {
         Logger.info(message, *args)
         Logger.warn(message, *args)
         Logger.error(message, *args)
-
-        // Methods should not throw exceptions with multiple arguments
     }
 
     @Test
@@ -192,8 +162,6 @@ class LoggerTest {
         Logger.info(message, obj)
         Logger.warn(message, obj)
         Logger.error(message, obj)
-
-        // Methods should not throw exceptions with complex objects
     }
 
     @Test
@@ -205,8 +173,6 @@ class LoggerTest {
         Logger.info(message, exception)
         Logger.warn(message, exception)
         Logger.error(message, exception)
-
-        // Methods should not throw exceptions when logging exceptions
     }
 
     @Test
@@ -222,8 +188,6 @@ class LoggerTest {
         Logger.info(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
         Logger.warn(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
         Logger.error(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
-
-        // Methods should not throw exceptions with different argument types
     }
 
     @Test
@@ -237,8 +201,6 @@ class LoggerTest {
         Logger.info(message, stringArg, intArg, doubleArg)
         Logger.warn(message, stringArg, intArg, doubleArg)
         Logger.error(message, stringArg, intArg, doubleArg)
-
-        // Methods should not throw exceptions with format placeholders
     }
 
     @Test
@@ -249,8 +211,6 @@ class LoggerTest {
         Logger.info(message)
         Logger.warn(message)
         Logger.error(message)
-
-        // Methods should not throw exceptions with no arguments
     }
 
     @Test
@@ -263,8 +223,6 @@ class LoggerTest {
         Logger.info(message, arg1, arg2)
         Logger.warn(message, arg1, arg2)
         Logger.error(message, arg1, arg2)
-
-        // Methods should not throw exceptions with mismatched placeholders and arguments
     }
 
     @Test
@@ -278,7 +236,5 @@ class LoggerTest {
         Logger.info(message, arg1, arg2, arg3)
         Logger.warn(message, arg1, arg2, arg3)
         Logger.error(message, arg1, arg2, arg3)
-
-        // Methods should not throw exceptions with extra arguments
     }
 }

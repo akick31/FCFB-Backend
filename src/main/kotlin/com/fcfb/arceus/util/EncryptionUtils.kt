@@ -19,7 +19,6 @@ class EncryptionUtils(
 ) {
     @Throws(Exception::class)
     fun encrypt(value: String): String {
-        // Fresh IV per call so identical plaintexts don't produce identical ciphertext
         val iv = ByteArray(16)
         SecureRandom().nextBytes(iv)
         val ivSpec = IvParameterSpec(iv)

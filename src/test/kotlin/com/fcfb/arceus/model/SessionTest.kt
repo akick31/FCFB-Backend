@@ -20,7 +20,6 @@ class SessionTest {
     fun `Session should be a data class`() {
         val session = createTestSession()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(session.toString())
         assertTrue(session.toString().contains("Session"))
     }
@@ -57,11 +56,11 @@ class SessionTest {
                 expirationDate = expiration,
             )
 
-        assertEquals(0L, session.id) // Default value
+        assertEquals(0L, session.id)
         assertEquals(789L, session.userId)
         assertEquals("secondary-token", session.token)
         assertEquals(expiration, session.expirationDate)
-        assertNotNull(session.createdAt) // Should be set to current time
+        assertNotNull(session.createdAt)
     }
 
     @Test
@@ -176,8 +175,6 @@ class SessionTest {
     fun `Session should be immutable`() {
         val session = createTestSession()
 
-        // All properties should be val (immutable)
-        // This is enforced by the data class declaration
         assertNotNull(session.id)
         assertNotNull(session.userId)
         assertNotNull(session.token)
@@ -206,7 +203,6 @@ class SessionTest {
         val activeSession = Session(1L, "active-token", futureExpiration)
         val expiredSession = Session(2L, "expired-token", pastExpiration)
 
-        // Check if session is expired (would be implemented as extension function or method)
         assertTrue(activeSession.expirationDate.isAfter(now))
         assertTrue(expiredSession.expirationDate.isBefore(now))
     }
@@ -257,26 +253,22 @@ class SessionTest {
         val now = LocalDateTime.now()
         val expiration = now.plusHours(24)
 
-        // Test all three constructors
         val fullSession = Session(1L, 100L, "token1", expiration, now)
         val partialSession = Session(200L, "token2", expiration)
         val defaultSession = Session()
 
-        // Full constructor
         assertEquals(1L, fullSession.id)
         assertEquals(100L, fullSession.userId)
         assertEquals("token1", fullSession.token)
         assertEquals(expiration, fullSession.expirationDate)
         assertEquals(now, fullSession.createdAt)
 
-        // Partial constructor
         assertEquals(0L, partialSession.id)
         assertEquals(200L, partialSession.userId)
         assertEquals("token2", partialSession.token)
         assertEquals(expiration, partialSession.expirationDate)
         assertNotNull(partialSession.createdAt)
 
-        // Default constructor
         assertEquals(0L, defaultSession.id)
         assertEquals(0L, defaultSession.userId)
         assertEquals("", defaultSession.token)

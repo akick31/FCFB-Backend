@@ -33,17 +33,14 @@ class GameRepositoryTest {
 
     @Test
     fun `test save and find by game id`() {
-        // Given
         val game = createTestGame()
 
         every { gameRepository.save(any()) } returns game
         every { gameRepository.findById(1) } returns java.util.Optional.of(game)
 
-        // When
         val saved = gameRepository.save(game)
         val found = gameRepository.findById(saved.gameId).get()
 
-        // Then
         assertNotNull(found)
         assertEquals("Alabama", found.homeTeam)
         assertEquals("Auburn", found.awayTeam)
@@ -52,15 +49,12 @@ class GameRepositoryTest {
 
     @Test
     fun `test getGameById`() {
-        // Given
         val game = createTestGame()
 
         every { gameRepository.getGameById(1) } returns game
 
-        // When
         val found = gameRepository.getGameById(1)
 
-        // Then
         assertNotNull(found)
         assertEquals("Alabama", found.homeTeam)
         assertEquals("Auburn", found.awayTeam)
@@ -68,47 +62,38 @@ class GameRepositoryTest {
 
     @Test
     fun `test getGameByRequestMessageId`() {
-        // Given
         val game = createTestGame(requestMessageId = listOf("test_message_id"))
 
         every { gameRepository.getGameByRequestMessageId("test_message_id") } returns game
 
-        // When
         val found = gameRepository.getGameByRequestMessageId("test_message_id")
 
-        // Then
         assertNotNull(found)
         assertEquals(listOf("test_message_id"), found.requestMessageId)
     }
 
     @Test
     fun `test getGameByPlatformId`() {
-        // Given
         val game = createTestGame(homePlatformId = "platform123")
 
         every { gameRepository.getGameByPlatformId(123UL) } returns game
 
-        // When
         val found = gameRepository.getGameByPlatformId(123UL)
 
-        // Then
         assertNotNull(found)
         assertEquals("platform123", found.homePlatformId)
     }
 
     @Test
     fun `test getAllGames`() {
-        // Given
         val game1 = createTestGame(gameId = 1, homeTeam = "Alabama")
         val game2 = createTestGame(gameId = 2, homeTeam = "Georgia")
         val games = listOf(game1, game2)
 
         every { gameRepository.getAllGames() } returns games
 
-        // When
         val found = gameRepository.getAllGames()
 
-        // Then
         assertEquals(2, found.size)
         assertTrue(found.any { it.homeTeam == "Alabama" })
         assertTrue(found.any { it.homeTeam == "Georgia" })
@@ -116,32 +101,26 @@ class GameRepositoryTest {
 
     @Test
     fun `test getAllOngoingGames`() {
-        // Given
         val game = createTestGame(gameStatus = GameStatus.IN_PROGRESS)
         val games = listOf(game)
 
         every { gameRepository.getAllOngoingGames() } returns games
 
-        // When
         val found = gameRepository.getAllOngoingGames()
 
-        // Then
         assertEquals(1, found.size)
         assertEquals(GameStatus.IN_PROGRESS, found.first().gameStatus)
     }
 
     @Test
     fun `test getRankedGames`() {
-        // Given
         val game = createTestGame(homeTeamRank = 5, awayTeamRank = 10)
         val games = listOf(game)
 
         every { gameRepository.getRankedGames() } returns games
 
-        // When
         val found = gameRepository.getRankedGames()
 
-        // Then
         assertEquals(1, found.size)
         assertEquals(5, found.first().homeTeamRank)
         assertEquals(10, found.first().awayTeamRank)
@@ -149,15 +128,12 @@ class GameRepositoryTest {
 
     @Test
     fun `test getGamesByTeamSeasonAndWeek`() {
-        // Given
         val game = createTestGame(homeTeam = "Alabama", season = 2024, week = 1)
 
         every { gameRepository.getGamesByTeamSeasonAndWeek("Alabama", 2024, 1) } returns game
 
-        // When
         val found = gameRepository.getGamesByTeamSeasonAndWeek("Alabama", 2024, 1)
 
-        // Then
         assertNotNull(found)
         assertEquals("Alabama", found.homeTeam)
         assertEquals(2024, found.season)
@@ -166,48 +142,39 @@ class GameRepositoryTest {
 
     @Test
     fun `test findExpiredTimers`() {
-        // Given
         val game = createTestGame(gameWarning = GameWarning.FIRST_WARNING)
         val games = listOf(game)
 
         every { gameRepository.findExpiredTimers() } returns games
 
-        // When
         val found = gameRepository.findExpiredTimers()
 
-        // Then
         assertEquals(1, found.size)
         assertEquals(GameWarning.FIRST_WARNING, found.first().gameWarning)
     }
 
     @Test
     fun `test findGamesToWarnFirstInstance`() {
-        // Given
         val game = createTestGame(gameWarning = GameWarning.NONE)
         val games = listOf(game)
 
         every { gameRepository.findGamesToWarnFirstInstance() } returns games
 
-        // When
         val found = gameRepository.findGamesToWarnFirstInstance()
 
-        // Then
         assertEquals(1, found.size)
         assertEquals(GameWarning.NONE, found.first().gameWarning)
     }
 
     @Test
     fun `test findGamesToWarnSecondInstance`() {
-        // Given
         val game = createTestGame(gameWarning = GameWarning.FIRST_WARNING)
         val games = listOf(game)
 
         every { gameRepository.findGamesToWarnSecondInstance() } returns games
 
-        // When
         val found = gameRepository.findGamesToWarnSecondInstance()
 
-        // Then
         assertEquals(1, found.size)
         assertEquals(GameWarning.FIRST_WARNING, found.first().gameWarning)
     }

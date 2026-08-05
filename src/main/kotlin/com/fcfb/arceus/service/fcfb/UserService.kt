@@ -1,16 +1,19 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.dto.request.UserValidationRequest
+import com.fcfb.arceus.dto.response.ApiKeyResponse
 import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.dto.response.UserValidationResponse
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.DiscordAlreadyLinkedException
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.UserForbiddenException
 import com.fcfb.arceus.util.UserNotFoundException
 import com.fcfb.arceus.util.UserUnauthorizedException
 import org.springframework.http.HttpStatus
@@ -63,10 +66,6 @@ class UserService(
         responseTime: Double,
     ) = userRepository.updateAverageResponseTime(userId, responseTime)
 
-    /**
-     * Reset all users' delay of game instances to 0
-     * Used when starting a new season
-     */
     fun resetAllDelayOfGameInstances() = userRepository.resetAllDelayOfGameInstances()
 
     private fun updateUserRecord(
@@ -195,10 +194,11 @@ class UserService(
         id: Long,
         currentPassword: String?,
         newPassword: String,
-        skipCurrentPasswordCheck: Boolean,
     ): UserDTO {
+        requireSelfOrAdmin(id)
+        val isAdmin = AuthContext.isAdmin()
         val user = getUserById(id)
-        if (!skipCurrentPasswordCheck) {
+        if (!isAdmin) {
             if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.password)) {
                 throw UserUnauthorizedException()
             }
@@ -210,6 +210,7 @@ class UserService(
         id: Long,
         username: String,
     ): UserDTO {
+        requireSelfOrAdmin(id)
         val user = getUserById(id)
         user.apply {
             this.username = username
@@ -222,6 +223,7 @@ class UserService(
         id: Long,
         email: String,
     ): UserDTO {
+        requireSelfOrAdmin(id)
         val user = getUserById(id)
         user.apply {
             this.email = email
@@ -229,6 +231,14 @@ class UserService(
         saveUser(user)
         return dtoConverter.convertToUserDTO(user)
     }
+
+    private fun requireSelfOrAdmin(id: Long) {
+        if (AuthContext.currentUserId() != id && !AuthContext.isAdmin()) {
+            throw UserForbiddenException()
+        }
+    }
+
+    private fun requireCurrentUserId(): Long = AuthContext.currentUserId() ?: throw UserForbiddenException()
 
     fun updateResetToken(email: String): User {
         val user = getUserByEmail(email)
@@ -278,6 +288,11 @@ class UserService(
         user.discordTag = discordTag
         userRepository.save(user)
         return dtoConverter.convertToUserDTO(user)
+    }
+
+    fun updateUserAsRequester(user: UserDTO): UserDTO {
+        requireSelfOrAdmin(user.id)
+        return updateUser(user)
     }
 
     fun updateUser(user: UserDTO): UserDTO {
@@ -370,9 +385,15 @@ class UserService(
         return apiKey
     }
 
+    fun generateApiKeyForUser(userId: Long): ApiKeyResponse = ApiKeyResponse(generateApiKey(userId))
+
+    fun generateApiKeyForCurrentUser(): ApiKeyResponse = ApiKeyResponse(generateApiKey(requireCurrentUserId()))
+
     fun revokeApiKey(userId: Long) {
         val user = getUserById(userId)
         user.apiKeyHash = null
         userRepository.save(user)
     }
+
+    fun revokeApiKeyForCurrentUser() = revokeApiKey(requireCurrentUserId())
 }

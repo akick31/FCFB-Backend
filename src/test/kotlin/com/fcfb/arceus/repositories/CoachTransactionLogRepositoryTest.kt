@@ -23,18 +23,15 @@ class CoachTransactionLogRepositoryTest {
 
     @Test
     fun `test save and find by id`() {
-        // Given
         val coachTransactionLog = createTestCoachTransactionLog()
-        coachTransactionLog.id = 1 // Set the id explicitly
+        coachTransactionLog.id = 1
 
         every { coachTransactionLogRepository.save(any()) } returns coachTransactionLog
         every { coachTransactionLogRepository.findById(1) } returns java.util.Optional.of(coachTransactionLog)
 
-        // When
         val saved = coachTransactionLogRepository.save(coachTransactionLog)
         val found = coachTransactionLogRepository.findById(saved.id!!).get()
 
-        // Then
         assertNotNull(found)
         assertEquals("Alabama", found.team)
         assertEquals(CoachPosition.HEAD_COACH, found.position)
@@ -45,7 +42,6 @@ class CoachTransactionLogRepositoryTest {
 
     @Test
     fun `test find by team`() {
-        // Given
         val coachTransactionLog1 = createTestCoachTransactionLog(team = "Alabama")
         val coachTransactionLog2 = createTestCoachTransactionLog(team = "Auburn")
         val alabamaLogs = listOf(coachTransactionLog1)
@@ -54,11 +50,9 @@ class CoachTransactionLogRepositoryTest {
         every { coachTransactionLogRepository.findByTeam("Alabama") } returns alabamaLogs
         every { coachTransactionLogRepository.findByTeam("Auburn") } returns auburnLogs
 
-        // When
         val foundAlabamaLogs = coachTransactionLogRepository.findByTeam("Alabama")
         val foundAuburnLogs = coachTransactionLogRepository.findByTeam("Auburn")
 
-        // Then
         assertEquals(1, foundAlabamaLogs.size)
         assertEquals("Alabama", foundAlabamaLogs[0].team)
         assertEquals(1, foundAuburnLogs.size)
@@ -67,7 +61,6 @@ class CoachTransactionLogRepositoryTest {
 
     @Test
     fun `test find by transaction`() {
-        // Given
         val hiredLog = createTestCoachTransactionLog(transaction = TransactionType.HIRED)
         val firedLog = createTestCoachTransactionLog(transaction = TransactionType.FIRED)
         val hiredLogs = listOf(hiredLog)
@@ -76,11 +69,9 @@ class CoachTransactionLogRepositoryTest {
         every { coachTransactionLogRepository.findByTransaction(TransactionType.HIRED) } returns hiredLogs
         every { coachTransactionLogRepository.findByTransaction(TransactionType.FIRED) } returns firedLogs
 
-        // When
         val foundHiredLogs = coachTransactionLogRepository.findByTransaction(TransactionType.HIRED)
         val foundFiredLogs = coachTransactionLogRepository.findByTransaction(TransactionType.FIRED)
 
-        // Then
         assertEquals(1, foundHiredLogs.size)
         assertEquals(TransactionType.HIRED, foundHiredLogs[0].transaction)
         assertEquals(1, foundFiredLogs.size)
@@ -89,7 +80,6 @@ class CoachTransactionLogRepositoryTest {
 
     @Test
     fun `test find by position`() {
-        // Given
         val headCoachLog = createTestCoachTransactionLog(position = CoachPosition.HEAD_COACH)
         val offensiveCoordinatorLog = createTestCoachTransactionLog(position = CoachPosition.OFFENSIVE_COORDINATOR)
         val headCoachLogs = listOf(headCoachLog)
@@ -98,11 +88,9 @@ class CoachTransactionLogRepositoryTest {
         every { coachTransactionLogRepository.findByPosition(CoachPosition.HEAD_COACH) } returns headCoachLogs
         every { coachTransactionLogRepository.findByPosition(CoachPosition.OFFENSIVE_COORDINATOR) } returns offensiveCoordinatorLogs
 
-        // When
         val foundHeadCoachLogs = coachTransactionLogRepository.findByPosition(CoachPosition.HEAD_COACH)
         val foundOffensiveCoordinatorLogs = coachTransactionLogRepository.findByPosition(CoachPosition.OFFENSIVE_COORDINATOR)
 
-        // Then
         assertEquals(1, foundHeadCoachLogs.size)
         assertEquals(CoachPosition.HEAD_COACH, foundHeadCoachLogs[0].position)
         assertEquals(1, foundOffensiveCoordinatorLogs.size)
@@ -111,7 +99,6 @@ class CoachTransactionLogRepositoryTest {
 
     @Test
     fun `test find by processed by`() {
-        // Given
         val adminLog = createTestCoachTransactionLog(processedBy = "Admin")
         val systemLog = createTestCoachTransactionLog(processedBy = "System")
         val adminLogs = listOf(adminLog)
@@ -120,11 +107,9 @@ class CoachTransactionLogRepositoryTest {
         every { coachTransactionLogRepository.findByProcessedBy("Admin") } returns adminLogs
         every { coachTransactionLogRepository.findByProcessedBy("System") } returns systemLogs
 
-        // When
         val foundAdminLogs = coachTransactionLogRepository.findByProcessedBy("Admin")
         val foundSystemLogs = coachTransactionLogRepository.findByProcessedBy("System")
 
-        // Then
         assertEquals(1, foundAdminLogs.size)
         assertEquals("Admin", foundAdminLogs[0].processedBy)
         assertEquals(1, foundSystemLogs.size)
@@ -133,26 +118,20 @@ class CoachTransactionLogRepositoryTest {
 
     @Test
     fun `test delete by id`() {
-        // Given
         every { coachTransactionLogRepository.deleteById(1) } returns Unit
 
-        // When
         coachTransactionLogRepository.deleteById(1)
 
-        // Then
         verify { coachTransactionLogRepository.deleteById(1) }
     }
 
     @Test
     fun `test update`() {
-        // Given
         val coachTransactionLog = createTestCoachTransactionLog()
         every { coachTransactionLogRepository.save(any()) } returns coachTransactionLog
 
-        // When
         val updated = coachTransactionLogRepository.save(coachTransactionLog)
 
-        // Then
         assertNotNull(updated)
         assertEquals("Alabama", updated.team)
     }

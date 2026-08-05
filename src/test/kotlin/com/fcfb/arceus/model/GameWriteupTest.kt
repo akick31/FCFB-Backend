@@ -33,7 +33,7 @@ class GameWriteupTest {
 
         val gameWriteup = GameWriteup(scenario, playCall, message)
 
-        assertEquals(0, gameWriteup.id) // ID is not set in constructor
+        assertEquals(0, gameWriteup.id)
         assertEquals(scenario, gameWriteup.scenario)
         assertEquals(playCall, gameWriteup.playCall)
         assertEquals(message, gameWriteup.message)
@@ -112,19 +112,16 @@ class GameWriteupTest {
     fun `GameWriteup should allow partial updates`() {
         val gameWriteup = GameWriteup("initial", "initial", "initial")
 
-        // Update only scenario
         gameWriteup.scenario = "updated_scenario"
         assertEquals("updated_scenario", gameWriteup.scenario)
         assertEquals("initial", gameWriteup.playCall)
         assertEquals("initial", gameWriteup.message)
 
-        // Update only playCall
         gameWriteup.playCall = "updated_playCall"
         assertEquals("updated_scenario", gameWriteup.scenario)
         assertEquals("updated_playCall", gameWriteup.playCall)
         assertEquals("initial", gameWriteup.message)
 
-        // Update only message
         gameWriteup.message = "updated_message"
         assertEquals("updated_scenario", gameWriteup.scenario)
         assertEquals("updated_playCall", gameWriteup.playCall)

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 class CleanupExpiredTokens(
     private val sessionService: SessionService,
 ) {
-    @Scheduled(fixedRate = 3600000) // Every hour
+    @Scheduled(fixedRate = 3600000)
     fun cleanUpExpiredTokens() {
         sessionService.clearExpiredTokens()
     }

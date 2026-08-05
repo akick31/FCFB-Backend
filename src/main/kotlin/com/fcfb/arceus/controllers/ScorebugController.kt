@@ -51,7 +51,7 @@ class ScorebugController(
         @RequestParam(required = false) gameMode: GameMode?,
         @PageableDefault(size = 20) pageable: Pageable,
     ) = scorebugService.getFilteredScorebugs(
-        filters = filters ?: emptyList(),
+        filters = filters,
         category = category,
         conference = conference,
         season = season,

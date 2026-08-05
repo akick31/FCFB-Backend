@@ -27,7 +27,6 @@ class GameStatsRepositoryTest {
 
     @Test
     fun `test save and findById`() {
-        // Given
         val gameStats =
             createTestGameStats(
                 id = 1,
@@ -48,11 +47,9 @@ class GameStatsRepositoryTest {
         every { gameStatsRepository.save(any()) } returns gameStats
         every { gameStatsRepository.findById(1) } returns java.util.Optional.of(gameStats)
 
-        // When
         val savedGameStats = gameStatsRepository.save(gameStats)
         val foundGameStats = gameStatsRepository.findById(savedGameStats.id).get()
 
-        // Then
         assertNotNull(foundGameStats)
         assertEquals(1, foundGameStats.id)
         assertEquals(123, foundGameStats.gameId)
@@ -71,7 +68,6 @@ class GameStatsRepositoryTest {
 
     @Test
     fun `test getGameStatsByIdAndTeam`() {
-        // Given
         val gameStats =
             createTestGameStats(
                 id = 1,
@@ -82,10 +78,8 @@ class GameStatsRepositoryTest {
 
         every { gameStatsRepository.getGameStatsByIdAndTeam(456, "Auburn") } returns gameStats
 
-        // When
         val foundGameStats = gameStatsRepository.getGameStatsByIdAndTeam(456, "Auburn")
 
-        // Then
         assertNotNull(foundGameStats)
         assertEquals(1, foundGameStats.id)
         assertEquals(456, foundGameStats.gameId)
@@ -95,53 +89,41 @@ class GameStatsRepositoryTest {
 
     @Test
     fun `test getGameStatsByIdAndTeam returns null when not found`() {
-        // Given
         every { gameStatsRepository.getGameStatsByIdAndTeam(789, "Georgia") } returns null
 
-        // When
         val foundGameStats = gameStatsRepository.getGameStatsByIdAndTeam(789, "Georgia")
 
-        // Then
         assertNull(foundGameStats)
     }
 
     @Test
     fun `test getGameStatsByIdAndTeam returns null when game not found`() {
-        // Given
         every { gameStatsRepository.getGameStatsByIdAndTeam(999, "NonExistent") } returns null
 
-        // When
         val foundGameStats = gameStatsRepository.getGameStatsByIdAndTeam(999, "NonExistent")
 
-        // Then
         assertNull(foundGameStats)
     }
 
     @Test
     fun `test deleteByGameId`() {
-        // Given
         every { gameStatsRepository.deleteByGameId(123) } returns Unit
 
-        // When
         gameStatsRepository.deleteByGameId(123)
 
-        // Then
         verify { gameStatsRepository.deleteByGameId(123) }
     }
 
     @Test
     fun `test findAll`() {
-        // Given
         val gameStats1 = createTestGameStats(id = 1, team = "Alabama")
         val gameStats2 = createTestGameStats(id = 2, team = "Auburn")
         val allGameStats = listOf(gameStats1, gameStats2)
 
         every { gameStatsRepository.findAll() } returns allGameStats
 
-        // When
         val foundGameStats = gameStatsRepository.findAll()
 
-        // Then
         assertEquals(2, foundGameStats.count())
         assertTrue(foundGameStats.any { it.team == "Alabama" })
         assertTrue(foundGameStats.any { it.team == "Auburn" })
@@ -149,26 +131,20 @@ class GameStatsRepositoryTest {
 
     @Test
     fun `test count`() {
-        // Given
         every { gameStatsRepository.count() } returns 5L
 
-        // When
         val count = gameStatsRepository.count()
 
-        // Then
         assertEquals(5L, count)
     }
 
     @Test
     fun `test delete`() {
-        // Given
         val gameStats = createTestGameStats(id = 1, team = "Alabama")
         every { gameStatsRepository.delete(gameStats) } returns Unit
 
-        // When
         gameStatsRepository.delete(gameStats)
 
-        // Then
         verify { gameStatsRepository.delete(gameStats) }
     }
 

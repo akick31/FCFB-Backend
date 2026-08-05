@@ -512,9 +512,6 @@ class SeasonStatsService(
         )
     }
 
-    /**
-     * Calculate average of a list of doubles, returning null if empty
-     */
     private fun calculateAverage(values: List<Double>): Double? {
         return if (values.isNotEmpty()) {
             values.average()

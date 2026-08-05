@@ -142,14 +142,12 @@ class GameControllerTest {
     fun `chewGame should return updated game`() {
         val channelId = 1234UL
         val mockGame = mockk<Game>()
-        every { gameService.getGameByPlatformId(channelId) } returns mockGame
-        every { gameService.chewGame(mockGame) } returns mockGame
+        every { gameService.chewGameByPlatformId(channelId) } returns mockGame
 
         val response = gameController.chewGameByPlatformId(channelId)
 
         assertEquals(ResponseEntity.ok(mockGame), response)
-        verify { gameService.getGameByPlatformId(channelId) }
-        verify { gameService.chewGame(mockGame) }
+        verify { gameService.chewGameByPlatformId(channelId) }
     }
 
     @Test

@@ -70,9 +70,7 @@ class SecurityConfigTest {
 
         try {
             val encodedPassword = passwordEncoder.encode(null)
-            // Should not reach here, but if it does, encoded password should be null or empty
         } catch (e: IllegalArgumentException) {
-            // This is expected behavior for null input
             assertTrue(true, "Password encoder should throw IllegalArgumentException for null input")
         }
     }
@@ -81,7 +79,6 @@ class SecurityConfigTest {
     fun `passwordEncoder bean should be properly configured`() {
         val passwordEncoder = securityConfig.passwordEncoder()
 
-        // Test that the bean is properly configured by encoding and verifying multiple passwords
         val testPasswords = listOf("password1", "password2", "complexPassword!@#123")
 
         testPasswords.forEach { password ->

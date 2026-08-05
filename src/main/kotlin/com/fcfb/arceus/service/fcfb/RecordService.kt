@@ -99,10 +99,6 @@ class RecordService(
         Logger.info("$prefix: $breakdown")
     }
 
-    /**
-     * Check if a game broke any records and update them.
-     * Only considers games that completed at least 4 quarters.
-     */
     fun checkAndUpdateRecordsForGame(game: Game) {
         val isComplete = recordStatUtils.isCompleteGame(game)
         if (!isComplete) {

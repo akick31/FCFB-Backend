@@ -50,7 +50,7 @@ class RequestMessageLogTest {
                 messageTs = messageTs,
             )
 
-        assertNull(requestMessageLog.id) // ID is not set in constructor
+        assertNull(requestMessageLog.id)
         assertEquals(messageType, requestMessageLog.messageType)
         assertEquals(gameId, requestMessageLog.gameId)
         assertEquals(playId, requestMessageLog.playId)
@@ -197,18 +197,15 @@ class RequestMessageLogTest {
     fun `RequestMessageLog should allow partial updates`() {
         val requestMessageLog = RequestMessageLog()
 
-        // Update only messageType
         requestMessageLog.messageType = MessageType.GAME_THREAD
         assertEquals(MessageType.GAME_THREAD, requestMessageLog.messageType)
         assertNull(requestMessageLog.gameId)
 
-        // Update only gameId
         requestMessageLog.gameId = 123
         assertEquals(MessageType.GAME_THREAD, requestMessageLog.messageType)
         assertEquals(123, requestMessageLog.gameId)
         assertNull(requestMessageLog.messageId)
 
-        // Update only messageId
         requestMessageLog.messageId = 456L
         assertEquals(MessageType.GAME_THREAD, requestMessageLog.messageType)
         assertEquals(123, requestMessageLog.gameId)

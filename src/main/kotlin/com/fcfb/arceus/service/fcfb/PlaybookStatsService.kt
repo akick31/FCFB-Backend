@@ -46,7 +46,6 @@ class PlaybookStatsService(
         val allGameStats = gameStatsRepository.findAllByOrderBySeasonDescGameIdAsc()
         Logger.info("Found ${allGameStats.size} total game stats records")
 
-        // Group by offensive playbook, defensive playbook, and season
         val groupedStats =
             allGameStats.groupBy {
                 Triple(it.offensivePlaybook, it.defensivePlaybook, it.season)
@@ -54,7 +53,6 @@ class PlaybookStatsService(
 
         Logger.info("Found ${groupedStats.size} valid offensive/defensive playbook/season combinations")
 
-        // Generate playbook stats for each offensive/defensive playbook/season combination
         val total = groupedStats.size
         groupedStats.entries.forEachIndexed { index, (playbookSeason, gameStatsList) ->
             val offensivePlaybook = playbookSeason.first!!
@@ -124,7 +122,6 @@ class PlaybookStatsService(
             seasonNumber = seasonNumber,
             totalTeams = totalTeams,
             totalGames = totalGames,
-            // Aggregate all the stats
             passAttempts = gameStatsList.sumOf { it.passAttempts },
             passCompletions = gameStatsList.sumOf { it.passCompletions },
             passCompletionPercentage =
@@ -173,7 +170,6 @@ class PlaybookStatsService(
             longestPunt = gameStatsList.maxOfOrNull { it.longestPunt } ?: 0,
             kickoffReturnTouchdowns = gameStatsList.sumOf { it.kickReturnTd },
             puntReturnTouchdowns = gameStatsList.sumOf { it.puntReturnTd },
-            // Performance metrics are averages of individual game values
             averageOffensiveDiff = calculateAverage(gameStatsList.mapNotNull { it.averageOffensiveDiff }) ?: 0.0,
             averageDefensiveDiff = calculateAverage(gameStatsList.mapNotNull { it.averageDefensiveDiff }) ?: 0.0,
             averageOffensiveSpecialTeamsDiff = calculateAverage(gameStatsList.mapNotNull { it.averageOffensiveSpecialTeamsDiff }) ?: 0.0,

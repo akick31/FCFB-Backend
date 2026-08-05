@@ -10,7 +10,6 @@ class UserValidationRequestTest {
     fun `UserValidationRequest should be a data class`() {
         val request = createTestUserValidationRequest()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(request.toString())
         assertTrue(request.toString().contains("UserValidationRequest"))
     }
@@ -50,11 +49,9 @@ class UserValidationRequestTest {
     fun `UserValidationRequest should handle Discord ID formats`() {
         val request = createTestUserValidationRequest()
 
-        // Discord IDs are typically 18-digit numbers
         assertTrue(request.discordId.length >= 17)
         assertTrue(request.discordId.all { it.isDigit() })
 
-        // Test with different Discord ID
         request.discordId = "999999999999999999"
         assertEquals("999999999999999999", request.discordId)
     }
@@ -63,7 +60,6 @@ class UserValidationRequestTest {
     fun `UserValidationRequest should handle Discord tag formats`() {
         val request = createTestUserValidationRequest()
 
-        // Test various Discord tag formats
         request.discordTag = "user#1234"
         assertEquals("user#1234", request.discordTag)
 
@@ -78,7 +74,6 @@ class UserValidationRequestTest {
     fun `UserValidationRequest should handle username formats`() {
         val request = createTestUserValidationRequest()
 
-        // Test different username formats
         request.username = "simpleuser"
         assertEquals("simpleuser", request.username)
 
@@ -96,7 +91,6 @@ class UserValidationRequestTest {
     fun `UserValidationRequest should handle email formats`() {
         val request = createTestUserValidationRequest()
 
-        // Test different email formats
         request.email = "simple@example.com"
         assertEquals("simple@example.com", request.email)
 
@@ -187,7 +181,6 @@ class UserValidationRequestTest {
                 email = "initial",
             )
 
-        // Update all fields
         request.discordId = "123456789012345678"
         request.discordTag = "newuser#1234"
         request.username = "newusername"

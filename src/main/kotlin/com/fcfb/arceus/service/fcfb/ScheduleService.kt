@@ -12,7 +12,6 @@ import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.service.fcfb.schedule.ConferenceRulesService
@@ -31,10 +30,6 @@ open class ScheduleService(
     private val conferenceRulesService: ConferenceRulesService,
     private val outOfConferenceScheduleGenerationService: OutOfConferenceScheduleGenerationService,
 ) {
-    /**
-     * Check if the schedule is locked for a given season and throw if locked
-     * @param season
-     */
     private fun checkScheduleLock(season: Int) {
         if (seasonService.isScheduleLocked(season)) {
             throw IllegalStateException("Schedule for season $season is locked and cannot be modified")
@@ -51,10 +46,6 @@ open class ScheduleService(
         scheduleRepository.save(gameToSchedule)
     }
 
-    /**
-     * Mark a manually started game as started and store the game_id
-     * @param game
-     */
     fun markManuallyStartedGameAsStarted(game: Game) {
         val gameInSchedule = findGameInSchedule(game)
         gameInSchedule.started = true
@@ -62,10 +53,6 @@ open class ScheduleService(
         scheduleRepository.save(gameInSchedule)
     }
 
-    /**
-     * Mark a game as finished and store the final scores
-     * @param game
-     */
     fun markGameAsFinished(game: Game) {
         try {
             val gameInSchedule = findGameInSchedule(game)
@@ -101,11 +88,6 @@ open class ScheduleService(
             team,
         ) ?: throw ScheduleNotFoundException("Opponent not found for $team")
 
-    /**
-     * Get the schedule for a given season for a team, enriched with game data (scores + game_id)
-     * @param season
-     * @param team
-     */
     fun getScheduleBySeasonAndTeam(
         season: Int,
         team: String,
@@ -127,11 +109,6 @@ open class ScheduleService(
     ) = scheduleRepository.getScheduleBySeasonAndWeek(season, week)
         ?: throw ScheduleNotFoundException("Schedule not found for season $season week $week")
 
-    /**
-     * Get the conference schedule, enriched with game data
-     * @param season
-     * @param conference
-     */
     fun getConferenceSchedule(
         season: Int,
         conference: String,
@@ -144,7 +121,6 @@ open class ScheduleService(
     }
 
     fun createScheduleEntry(entry: ScheduleEntry): Schedule {
-        // Postseason entries (PLAYOFFS, NATIONAL_CHAMPIONSHIP, CONFERENCE_CHAMPIONSHIP, BOWL) bypass schedule lock
         val isPostseason =
             entry.gameType in
                 listOf(
@@ -157,7 +133,6 @@ open class ScheduleService(
             checkScheduleLock(entry.season)
         }
 
-        // Prevent scheduling a team twice in the same week (skip placeholder teams)
         val placeholderTeams = setOf("TBD", "OPEN", "")
         if (entry.homeTeam !in placeholderTeams) {
             if (isTeamScheduledInWeek(entry.season, entry.week, entry.homeTeam)) {
@@ -211,12 +186,10 @@ open class ScheduleService(
 
         val placeholderTeams = setOf("TBD", "OPEN", "")
 
-        // Validate: no team should appear twice in the same week within the batch
         val teamWeekPairs = mutableSetOf<String>()
         val validEntries = mutableListOf<ScheduleEntry>()
 
         for (entry in entries) {
-            // Skip self-matchups (a team playing itself — should never happen but guards against bugs)
             if (entry.homeTeam == entry.awayTeam && entry.homeTeam !in placeholderTeams) {
                 Logger.warn("Skipping self-matchup: ${entry.homeTeam} vs ${entry.awayTeam} in S${entry.season} W${entry.week}")
                 continue
@@ -281,7 +254,6 @@ open class ScheduleService(
         id: Int,
         entry: ScheduleEntry,
     ): Schedule {
-        // Postseason entries bypass schedule lock
         val isPostseason =
             entry.gameType in
                 listOf(
@@ -327,7 +299,6 @@ open class ScheduleService(
     fun deleteScheduleEntry(id: Int) {
         val existing = scheduleRepository.findById(id).orElse(null)
         if (existing != null) {
-            // Postseason entries bypass schedule lock
             val isPostseason =
                 existing.gameType in
                     listOf(
@@ -374,11 +345,6 @@ open class ScheduleService(
         team: String,
     ): Schedule? = scheduleRepository.getScheduleBySeasonWeekAndTeam(season, week, team)
 
-    /**
-     * Get the postseason schedule (playoffs, bowls, conference championships, national championship),
-     * enriched with game data
-     * @param season
-     */
     fun getPostseasonSchedule(season: Int): List<Schedule> {
         val entries = scheduleRepository.getPostseasonSchedule(season) ?: emptyList()
         if (entries.isEmpty()) return entries
@@ -386,31 +352,14 @@ open class ScheduleService(
         return enrichScheduleWithGameData(entries, games)
     }
 
-    /**
-     * Enrich schedule entries with game data (scores and game_id) from the game table.
-     *
-     * For each schedule entry, find the matching game by:
-     *   1. game_id (if already stored in schedule)
-     *   2. Fallback: matching on (home_team, away_team, season, week)
-     *      — also checks the reverse matchup (away_team as home, home_team as away)
-     *      — week is always included to handle rematches in the same season
-     *
-     * Populates homeScore, awayScore, and gameId on the schedule entry.
-     * Scores are mapped correctly even when home/away are swapped between
-     * the schedule and game tables.
-     * Also lazy-backfills game_id into the schedule table for future fast lookups.
-     */
     private fun enrichScheduleWithGameData(
         entries: List<Schedule>,
         games: List<Game>,
     ): List<Schedule> {
         if (games.isEmpty()) return entries
 
-        // Build lookup maps for fast matching
         val gameById = games.associateBy { it.gameId }
 
-        // Index games by both forward AND reverse matchup keys so we can find a
-        // game even when the home/away sides are swapped between schedule and game table.
         val gameByMatchup = mutableMapOf<String, Game>()
         for (game in games) {
             val s = game.season ?: 0
@@ -422,7 +371,6 @@ open class ScheduleService(
         for (entry in entries) {
             val key = matchupKey(entry.homeTeam, entry.awayTeam, entry.season, entry.week)
 
-            // Find the matching game — prefer by gameId, then fall back to matchup key
             val game =
                 if (entry.gameId != null) {
                     gameById[entry.gameId] ?: gameByMatchup[key]
@@ -431,17 +379,14 @@ open class ScheduleService(
                 }
 
             if (game != null) {
-                // Map scores correctly: schedule homeTeam might not match game homeTeam
                 if (game.homeTeam == entry.homeTeam) {
                     entry.homeScore = game.homeScore
                     entry.awayScore = game.awayScore
                 } else {
-                    // Teams are swapped between schedule and game — flip scores
                     entry.homeScore = game.awayScore
                     entry.awayScore = game.homeScore
                 }
 
-                // Lazy-backfill game_id if missing
                 if (entry.gameId == null) {
                     entry.gameId = game.gameId
                     try {
@@ -469,20 +414,22 @@ open class ScheduleService(
         team: String,
     ): Boolean = scheduleRepository.getScheduleBySeasonWeekAndTeam(season, week, team) != null
 
-    fun generateConferenceSchedule(
-        request: ConferenceScheduleRequest,
-        conferenceTeams: List<Team>,
-    ): List<Schedule> = conferenceScheduleGenerationService.generateConferenceSchedule(request, conferenceTeams)
+    fun generateConferenceSchedule(request: ConferenceScheduleRequest): List<Schedule> =
+        conferenceScheduleGenerationService.generateConferenceSchedule(request)
 
     fun startAllConferenceGenerationAsync(season: Int): ScheduleGenJobResponse =
         conferenceScheduleGenerationService.startAllConferenceGenerationAsync(season)
 
-    fun getScheduleGenJobStatus(jobId: String): ScheduleGenJob? = conferenceScheduleGenerationService.getScheduleGenJobStatus(jobId)
+    fun getScheduleGenJobStatus(jobId: String): ScheduleGenJob =
+        conferenceScheduleGenerationService.getScheduleGenJobStatus(jobId)
+            ?: throw ScheduleNotFoundException("No schedule generation job found with id $jobId")
 
     fun generateOutOfConferenceSchedule(season: Int): OocGenerationResult =
         outOfConferenceScheduleGenerationService.generateOutOfConferenceSchedule(season)
 
     fun saveConferenceRules(request: ConferenceRulesRequest): ConferenceRulesResponse = conferenceRulesService.saveConferenceRules(request)
 
-    fun getConferenceRules(conference: String): ConferenceRulesResponse? = conferenceRulesService.getConferenceRules(conference)
+    fun getConferenceRules(conference: String): ConferenceRulesResponse =
+        conferenceRulesService.getConferenceRules(conference)
+            ?: throw ScheduleNotFoundException("No conference rules found for $conference")
 }

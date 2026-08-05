@@ -88,7 +88,6 @@ class NormalPlayProcessor(
         var result = resultInformation.result ?: throw ResultNotFoundException()
         var playTime = resultInformation.playTime
 
-        // Determine runoff time between plays
         val clockStopped = game.clockStopped
         val runoffTime =
             playProcessingUtils.getRunoffTime(

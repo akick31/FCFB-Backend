@@ -9,6 +9,7 @@ import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.service.fcfb.UserService
 import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.util.UserForbiddenException
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.AfterEach
@@ -183,8 +184,9 @@ class UserControllerTest {
     }
 
     @Test
-    fun `updateUserEmail rejects a non-owner, non-admin caller`() {
+    fun `updateUserEmail propagates a forbidden rejection from the service`() {
         authenticateAs(2L)
+        every { userService.updateEmail(1L, "newemail@example.com") } throws UserForbiddenException()
 
         mockMvc.perform(
             put("/api/v1/arceus/user/update/email")
@@ -208,8 +210,9 @@ class UserControllerTest {
     }
 
     @Test
-    fun `updateUsername rejects a non-owner, non-admin caller`() {
+    fun `updateUsername propagates a forbidden rejection from the service`() {
         authenticateAs(2L)
+        every { userService.updateUsername(1L, "newusername") } throws UserForbiddenException()
 
         mockMvc.perform(
             put("/api/v1/arceus/user/update/username")
@@ -223,7 +226,7 @@ class UserControllerTest {
     fun `updateUserPassword changes own password with current password`() {
         authenticateAs(1L)
         every {
-            userService.changePassword(1L, "oldpass", "newpass", skipCurrentPasswordCheck = false)
+            userService.changePassword(1L, "oldpass", "newpass")
         } returns sampleUser
 
         mockMvc.perform(
@@ -239,7 +242,7 @@ class UserControllerTest {
     fun `updateUserPassword allows admin to reset another user's password without current password`() {
         authenticateAs(999L, role = "ADMIN")
         every {
-            userService.changePassword(1L, null, "newpass", skipCurrentPasswordCheck = true)
+            userService.changePassword(1L, null, "newpass")
         } returns sampleUser
 
         mockMvc.perform(
@@ -251,8 +254,9 @@ class UserControllerTest {
     }
 
     @Test
-    fun `updateUserPassword rejects a non-owner, non-admin caller`() {
+    fun `updateUserPassword propagates a forbidden rejection from the service`() {
         authenticateAs(2L)
+        every { userService.changePassword(1L, null, "newpass") } throws UserForbiddenException()
 
         mockMvc.perform(
             put("/api/v1/arceus/user/update/password")
@@ -265,7 +269,7 @@ class UserControllerTest {
     @Test
     fun `updateUserRole updates own user`() {
         authenticateAs(1L)
-        every { userService.updateUser(any()) } returns sampleUser
+        every { userService.updateUserAsRequester(any()) } returns sampleUser
 
         val jsonBody =
             """
@@ -306,8 +310,9 @@ class UserControllerTest {
     }
 
     @Test
-    fun `updateUserRole rejects a non-owner, non-admin caller`() {
+    fun `updateUserRole propagates a forbidden rejection from the service`() {
         authenticateAs(2L)
+        every { userService.updateUserAsRequester(any()) } throws UserForbiddenException()
 
         val jsonBody =
             """

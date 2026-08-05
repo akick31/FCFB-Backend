@@ -112,7 +112,6 @@ class ScheduleTest {
     fun `Schedule should handle boolean states correctly`() {
         val schedule = Schedule()
 
-        // Test started states
         schedule.started = true
         assertEquals(true, schedule.started)
 
@@ -122,7 +121,6 @@ class ScheduleTest {
         schedule.started = null
         assertNull(schedule.started)
 
-        // Test finished states
         schedule.finished = true
         assertEquals(true, schedule.finished)
 
@@ -166,7 +164,6 @@ class ScheduleTest {
     fun `Schedule should handle different season and week values`() {
         val schedule = Schedule()
 
-        // Test season values
         schedule.season = 2023
         assertEquals(2023, schedule.season)
 
@@ -176,7 +173,6 @@ class ScheduleTest {
         schedule.season = 2025
         assertEquals(2025, schedule.season)
 
-        // Test week values
         schedule.week = 1
         assertEquals(1, schedule.week)
 
@@ -191,19 +187,16 @@ class ScheduleTest {
     fun `Schedule should handle game state combinations`() {
         val schedule = Schedule()
 
-        // Game not started, not finished
         schedule.started = false
         schedule.finished = false
         assertFalse(schedule.started!!)
         assertFalse(schedule.finished!!)
 
-        // Game started, not finished
         schedule.started = true
         schedule.finished = false
         assertEquals(true, schedule.started)
         assertFalse(schedule.finished!!)
 
-        // Game started and finished
         schedule.started = true
         schedule.finished = true
         assertEquals(true, schedule.started)

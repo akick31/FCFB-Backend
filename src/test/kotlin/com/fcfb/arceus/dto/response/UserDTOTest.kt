@@ -15,7 +15,6 @@ class UserDTOTest {
     fun `UserDTO should be a data class`() {
         val userDTO = createTestUserDTO()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(userDTO.toString())
         assertTrue(userDTO.toString().contains("UserDTO"))
     }
@@ -121,21 +120,18 @@ class UserDTOTest {
     fun `UserDTO should handle different enum values`() {
         val userDTO = createTestUserDTO()
 
-        // Test different CoachPosition values
         userDTO.position = CoachPosition.DEFENSIVE_COORDINATOR
         assertEquals(CoachPosition.DEFENSIVE_COORDINATOR, userDTO.position)
 
         userDTO.position = CoachPosition.RETIRED
         assertEquals(CoachPosition.RETIRED, userDTO.position)
 
-        // Test different Role values
         userDTO.role = UserRole.CONFERENCE_COMMISSIONER
         assertEquals(UserRole.CONFERENCE_COMMISSIONER, userDTO.role)
 
         userDTO.role = UserRole.ADMIN
         assertEquals(UserRole.ADMIN, userDTO.role)
 
-        // Test different playbook values
         userDTO.offensivePlaybook = OffensivePlaybook.FLEXBONE
         assertEquals(OffensivePlaybook.FLEXBONE, userDTO.offensivePlaybook)
 
@@ -164,7 +160,6 @@ class UserDTOTest {
     fun `UserDTO should handle statistics correctly`() {
         val userDTO = createTestUserDTO()
 
-        // Test win/loss statistics
         userDTO.wins = 12
         userDTO.losses = 3
         userDTO.winPercentage = 0.8
@@ -173,14 +168,12 @@ class UserDTOTest {
         assertEquals(3, userDTO.losses)
         assertEquals(0.8, userDTO.winPercentage)
 
-        // Test conference statistics
         userDTO.conferenceWins = 9
         userDTO.conferenceLosses = 1
 
         assertEquals(9, userDTO.conferenceWins)
         assertEquals(1, userDTO.conferenceLosses)
 
-        // Test championship statistics
         userDTO.conferenceChampionshipWins = 2
         userDTO.nationalChampionshipWins = 1
 

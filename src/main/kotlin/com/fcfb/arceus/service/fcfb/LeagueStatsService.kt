@@ -98,7 +98,6 @@ class LeagueStatsService(
             seasonNumber = seasonNumber,
             totalTeams = totalTeams,
             totalGames = totalGames,
-            // Aggregate all the stats
             passAttempts = seasonStatsList.sumOf { it.passAttempts },
             passCompletions = seasonStatsList.sumOf { it.passCompletions },
             passCompletionPercentage =
@@ -147,7 +146,6 @@ class LeagueStatsService(
             longestPunt = seasonStatsList.maxOfOrNull { it.longestPunt } ?: 0,
             kickoffReturnTouchdowns = seasonStatsList.sumOf { it.kickReturnTd },
             puntReturnTouchdowns = seasonStatsList.sumOf { it.puntReturnTd },
-            // Performance metrics are averages of team averages
             averageOffensiveDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageOffensiveDiff }) ?: 0.0,
             averageDefensiveDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageDefensiveDiff }) ?: 0.0,
             averageOffensiveSpecialTeamsDiff = calculateAverage(seasonStatsList.mapNotNull { it.averageOffensiveSpecialTeamsDiff }) ?: 0.0,

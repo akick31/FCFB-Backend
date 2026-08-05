@@ -74,7 +74,6 @@ class GameSpecificationService(
         return Specification { root: Root<Game>, _: CriteriaQuery<*>, cb: CriteriaBuilder ->
             val predicates = mutableListOf<Predicate>()
 
-            // Handle category filter
             category?.let {
                 when (it) {
                     ONGOING -> {
@@ -96,7 +95,6 @@ class GameSpecificationService(
                 }
             }
 
-            // Handle other filters
             filters.forEach { filter ->
                 when (filter) {
                     RANKED_GAME -> {
@@ -138,7 +136,6 @@ class GameSpecificationService(
                 }
             }
 
-            // Conference filter
             conference?.let {
                 val conferenceTeams = teamService.getTeamsInConference(it)?.map { team -> team.name }
                 predicates.add(
@@ -149,18 +146,15 @@ class GameSpecificationService(
                 )
             }
 
-            // Season/week filters
             season?.let { predicates.add(cb.equal(root.get<Int>("season"), it)) }
             week?.let { predicates.add(cb.equal(root.get<Int>("week"), it)) }
 
-            // GameMode filter
             gameMode?.let { predicates.add(cb.equal(root.get<GameMode>("gameMode"), it)) }
 
             cb.and(*predicates.toTypedArray())
         }
     }
 
-    /** Sort games by how far they are from being done. */
     fun createSort(sort: GameSort): List<org.springframework.data.domain.Sort.Order> {
         return when (sort) {
             CLOSEST_TO_END ->

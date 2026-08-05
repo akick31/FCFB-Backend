@@ -5,10 +5,6 @@ import com.fcfb.arceus.model.Team
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage
 
-/**
- * NBC-style scorebug renderer.
- * Currently delegates to ESPN renderer; replace with custom NBC design when ready.
- */
 @Component
 class NbcScorebugRenderer(
     private val espnRenderer: EspnScorebugRenderer,

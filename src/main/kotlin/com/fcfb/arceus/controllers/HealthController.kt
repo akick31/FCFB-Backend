@@ -1,9 +1,6 @@
 package com.fcfb.arceus.controllers
 
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.actuate.health.HealthEndpoint
-import org.springframework.boot.actuate.health.Status
-import org.springframework.http.HttpStatus
+import com.fcfb.arceus.service.HealthService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -13,17 +10,9 @@ import org.springframework.web.bind.annotation.RestController
 @CrossOrigin(origins = ["*"])
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/health")
-class HealthController {
-    @Autowired
-    private val healthEndpoint: HealthEndpoint? = null
-
+class HealthController(
+    private val healthService: HealthService,
+) {
     @GetMapping("")
-    fun healthCheck(): ResponseEntity<String> {
-        val health = healthEndpoint?.health()
-        return if (health?.status == Status.UP) {
-            ResponseEntity.ok("Application is healthy")
-        } else {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Application is unhealthy")
-        }
-    }
+    fun healthCheck(): ResponseEntity<String> = healthService.checkHealth()
 }

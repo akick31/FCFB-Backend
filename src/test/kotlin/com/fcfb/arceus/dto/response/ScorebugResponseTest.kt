@@ -13,7 +13,6 @@ class ScorebugResponseTest {
     fun `ScorebugResponse should be a data class`() {
         val response = createTestScorebugResponse()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(response.toString())
         assertTrue(response.toString().contains("ScorebugResponse"))
     }
@@ -76,14 +75,12 @@ class ScorebugResponseTest {
     fun `ScorebugResponse should handle different game IDs`() {
         val response = createTestScorebugResponse()
 
-        // Test positive IDs
         val response1 = response.copy(gameId = 1)
         assertEquals(1, response1.gameId)
 
         val response2 = response.copy(gameId = 999999)
         assertEquals(999999, response2.gameId)
 
-        // Test zero ID
         val response3 = response.copy(gameId = 0)
         assertEquals(0, response3.gameId)
     }
@@ -121,15 +118,12 @@ class ScorebugResponseTest {
 
     @Test
     fun `ScorebugResponse should handle different scorebug data sizes`() {
-        // Empty scorebug
         val emptyResponse = createTestScorebugResponse().copy(scorebug = byteArrayOf())
         assertContentEquals(byteArrayOf(), emptyResponse.scorebug)
 
-        // Small scorebug
         val smallResponse = createTestScorebugResponse().copy(scorebug = byteArrayOf(1, 2, 3))
         assertContentEquals(byteArrayOf(1, 2, 3), smallResponse.scorebug)
 
-        // Large scorebug
         val largeData = ByteArray(1000) { it.toByte() }
         val largeResponse = createTestScorebugResponse().copy(scorebug = largeData)
         assertContentEquals(largeData, largeResponse.scorebug)
@@ -143,7 +137,6 @@ class ScorebugResponseTest {
         assertContentEquals(binaryData, response.scorebug)
         assertEquals(binaryData.size, response.scorebug?.size)
 
-        // Check individual bytes
         assertEquals(-128, response.scorebug?.get(0))
         assertEquals(-1, response.scorebug?.get(1))
         assertEquals(0, response.scorebug?.get(2))
@@ -188,19 +181,15 @@ class ScorebugResponseTest {
     fun `ScorebugResponse should be immutable for non-mutable properties`() {
         val response = createTestScorebugResponse()
 
-        // All properties should be val (immutable)
-        // This is enforced by the data class declaration
         assertNotNull(response.gameId)
         assertNotNull(response.homeTeam)
         assertNotNull(response.awayTeam)
-        // scorebug and status can be null
     }
 
     @Test
     fun `ScorebugResponse should handle game status transitions`() {
         val baseResponse = createTestScorebugResponse()
 
-        // Game progression
         val pregame = baseResponse.copy(status = GameStatus.PREGAME)
         val inProgress = baseResponse.copy(status = GameStatus.IN_PROGRESS)
         val halftime = baseResponse.copy(status = GameStatus.HALFTIME)
@@ -217,15 +206,11 @@ class ScorebugResponseTest {
         val originalData = byteArrayOf(1, 2, 3, 4, 5)
         val response = createTestScorebugResponse().copy(scorebug = originalData)
 
-        // Verify original data
         assertContentEquals(originalData, response.scorebug)
 
-        // Modify the original array (this should not affect the response if properly handled)
         originalData[0] = 99
 
-        // The response should still have the original values if ByteArray is handled correctly
-        // Note: ByteArray is mutable, so this test verifies behavior
-        assertEquals(99, response.scorebug?.get(0)) // ByteArray is referenced, not copied
+        assertEquals(99, response.scorebug?.get(0))
     }
 
     @Test
@@ -253,10 +238,8 @@ class ScorebugResponseTest {
         val response2 = createTestScorebugResponse().copy(scorebug = data2)
         val response3 = createTestScorebugResponse().copy(scorebug = data3)
 
-        // Note: ByteArray equality in data classes is by reference, not content
-        // This test documents the behavior
-        assertTrue(response1 != response2) // Different ByteArray instances
-        assertTrue(response1 != response3) // Different content and instances
+        assertTrue(response1 != response2)
+        assertTrue(response1 != response3)
     }
 
     private fun createTestScorebugResponse(): ScorebugResponse {

@@ -32,11 +32,6 @@ class CoachStatsService(
     private val gameTimestampFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     private val minimumStintLength: Duration = Duration.ofDays(14)
 
-    /**
-     * Aggregated per-coach stats. A coach is credited with every game their team played during a coaching
-     * stint (permanent or interim) that lasted at least 14 days; stints shorter than that are mid-game or
-     * quick-relief substitutions and are excluded. Returns one aggregate per season+team, newest first.
-     */
     fun getCoachStats(coach: String): List<SeasonStats> {
         val stints = buildStints(coach).filter { it.end == null || Duration.between(it.start, it.end) >= minimumStintLength }
         if (stints.isEmpty()) {

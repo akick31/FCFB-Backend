@@ -1,5 +1,6 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.service.HealthService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
@@ -13,7 +14,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
-import java.lang.reflect.Field
 
 class HealthControllerTest {
     private lateinit var mockMvc: MockMvc
@@ -22,11 +22,7 @@ class HealthControllerTest {
 
     @BeforeEach
     fun setup() {
-        healthController = HealthController()
-        // Use reflection to set the mocked healthEndpoint
-        val field: Field = HealthController::class.java.getDeclaredField("healthEndpoint")
-        field.isAccessible = true
-        field.set(healthController, healthEndpoint)
+        healthController = HealthController(HealthService(healthEndpoint))
 
         mockMvc =
             MockMvcBuilders.standaloneSetup(healthController)

@@ -2,9 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.UploadRankingsRequest
 import com.fcfb.arceus.dto.response.RankingResponse
-import com.fcfb.arceus.enums.ranking.PollType
 import com.fcfb.arceus.service.fcfb.RankingService
-import com.fcfb.arceus.util.InvalidRankingsException
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -25,27 +23,17 @@ class RankingController(
         @RequestParam("season") season: Int,
         @RequestParam("week") week: Int,
         @RequestParam("pollType") pollType: String,
-    ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getRankings(season, week, parsePollType(pollType)))
+    ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getRankings(season, week, pollType))
 
     @GetMapping("/weeks")
     fun getWeeks(
         @RequestParam("season") season: Int,
         @RequestParam("pollType") pollType: String,
-    ): ResponseEntity<List<Int>> = ResponseEntity.ok(rankingService.getAvailableWeeks(season, parsePollType(pollType)))
+    ): ResponseEntity<List<Int>> = ResponseEntity.ok(rankingService.getAvailableWeeks(season, pollType))
 
     @PostMapping
     fun uploadRankings(
         @RequestBody request: UploadRankingsRequest,
     ): ResponseEntity<List<RankingResponse>> =
-        ResponseEntity.ok(
-            rankingService.uploadRankings(
-                request.season,
-                request.week,
-                parsePollType(request.pollType),
-                request.teams,
-            ),
-        )
-
-    private fun parsePollType(pollType: String): PollType =
-        PollType.fromString(pollType) ?: throw InvalidRankingsException("Unknown poll type: $pollType")
+        ResponseEntity.ok(rankingService.uploadRankings(request.season, request.week, request.pollType, request.teams))
 }

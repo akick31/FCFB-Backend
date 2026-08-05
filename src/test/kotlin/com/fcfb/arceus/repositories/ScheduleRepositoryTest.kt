@@ -23,7 +23,6 @@ class ScheduleRepositoryTest {
 
     @Test
     fun `test save and findById`() {
-        // Given
         val schedule =
             createTestSchedule(
                 id = 1,
@@ -39,11 +38,9 @@ class ScheduleRepositoryTest {
         every { scheduleRepository.save(any()) } returns schedule
         every { scheduleRepository.findById(1) } returns java.util.Optional.of(schedule)
 
-        // When
         val savedSchedule = scheduleRepository.save(schedule)
         val foundSchedule = scheduleRepository.findById(savedSchedule.id).get()
 
-        // Then
         assertNotNull(foundSchedule)
         assertEquals(1, foundSchedule.id)
         assertEquals("Alabama", foundSchedule.homeTeam)
@@ -57,7 +54,6 @@ class ScheduleRepositoryTest {
 
     @Test
     fun `test getGamesToStartBySeasonAndWeek`() {
-        // Given
         val unstartedGame1 =
             createTestSchedule(
                 id = 1,
@@ -80,10 +76,8 @@ class ScheduleRepositoryTest {
 
         every { scheduleRepository.getGamesToStartBySeasonAndWeek(2024, 8) } returns unstartedGames
 
-        // When
         val foundGames = scheduleRepository.getGamesToStartBySeasonAndWeek(2024, 8)
 
-        // Then
         assertNotNull(foundGames)
         assertEquals(2, foundGames.size)
         assertTrue(foundGames.any { it.homeTeam == "Alabama" })
@@ -92,43 +86,33 @@ class ScheduleRepositoryTest {
 
     @Test
     fun `test getTeamOpponent when team is home`() {
-        // Given
         every { scheduleRepository.getTeamOpponent(2024, 8, "Alabama") } returns "Auburn"
 
-        // When
         val opponent = scheduleRepository.getTeamOpponent(2024, 8, "Alabama")
 
-        // Then
         assertEquals("Auburn", opponent)
     }
 
     @Test
     fun `test getTeamOpponent when team is away`() {
-        // Given
         every { scheduleRepository.getTeamOpponent(2024, 8, "Auburn") } returns "Alabama"
 
-        // When
         val opponent = scheduleRepository.getTeamOpponent(2024, 8, "Auburn")
 
-        // Then
         assertEquals("Alabama", opponent)
     }
 
     @Test
     fun `test getTeamOpponent returns null when team not found`() {
-        // Given
         every { scheduleRepository.getTeamOpponent(2024, 8, "NonExistent") } returns null
 
-        // When
         val opponent = scheduleRepository.getTeamOpponent(2024, 8, "NonExistent")
 
-        // Then
         assertNull(opponent)
     }
 
     @Test
     fun `test getScheduleBySeasonAndTeam`() {
-        // Given
         val schedule1 =
             createTestSchedule(
                 id = 1,
@@ -149,10 +133,8 @@ class ScheduleRepositoryTest {
 
         every { scheduleRepository.getScheduleBySeasonAndTeam(2024, "Alabama") } returns schedules
 
-        // When
         val foundSchedules = scheduleRepository.getScheduleBySeasonAndTeam(2024, "Alabama")
 
-        // Then
         assertNotNull(foundSchedules)
         assertEquals(2, foundSchedules.size)
         assertTrue(foundSchedules.any { it.homeTeam == "Alabama" })
@@ -161,7 +143,6 @@ class ScheduleRepositoryTest {
 
     @Test
     fun `test findGameInSchedule`() {
-        // Given
         val schedule =
             createTestSchedule(
                 id = 1,
@@ -173,10 +154,8 @@ class ScheduleRepositoryTest {
 
         every { scheduleRepository.findGameInSchedule("Alabama", "Auburn", 2024, 8) } returns schedule
 
-        // When
         val foundSchedule = scheduleRepository.findGameInSchedule("Alabama", "Auburn", 2024, 8)
 
-        // Then
         assertNotNull(foundSchedule)
         assertEquals(1, foundSchedule.id)
         assertEquals("Alabama", foundSchedule.homeTeam)
@@ -185,53 +164,41 @@ class ScheduleRepositoryTest {
 
     @Test
     fun `test findGameInSchedule returns null when not found`() {
-        // Given
         every { scheduleRepository.findGameInSchedule("Alabama", "Georgia", 2024, 8) } returns null
 
-        // When
         val foundSchedule = scheduleRepository.findGameInSchedule("Alabama", "Georgia", 2024, 8)
 
-        // Then
         assertNull(foundSchedule)
     }
 
     @Test
     fun `test checkIfWeekIsOver when all games finished`() {
-        // Given
         every { scheduleRepository.checkIfWeekIsOver(2024, 8) } returns 1
 
-        // When
         val result = scheduleRepository.checkIfWeekIsOver(2024, 8)
 
-        // Then
         assertEquals(1, result)
     }
 
     @Test
     fun `test checkIfWeekIsOver when some games unfinished`() {
-        // Given
         every { scheduleRepository.checkIfWeekIsOver(2024, 8) } returns 0
 
-        // When
         val result = scheduleRepository.checkIfWeekIsOver(2024, 8)
 
-        // Then
         assertEquals(0, result)
     }
 
     @Test
     fun `test findAll`() {
-        // Given
         val schedule1 = createTestSchedule(id = 1, homeTeam = "Alabama")
         val schedule2 = createTestSchedule(id = 2, homeTeam = "Georgia")
         val allSchedules = listOf(schedule1, schedule2)
 
         every { scheduleRepository.findAll() } returns allSchedules
 
-        // When
         val foundSchedules = scheduleRepository.findAll()
 
-        // Then
         assertEquals(2, foundSchedules.count())
         assertTrue(foundSchedules.any { it.homeTeam == "Alabama" })
         assertTrue(foundSchedules.any { it.homeTeam == "Georgia" })
@@ -239,26 +206,20 @@ class ScheduleRepositoryTest {
 
     @Test
     fun `test count`() {
-        // Given
         every { scheduleRepository.count() } returns 100L
 
-        // When
         val count = scheduleRepository.count()
 
-        // Then
         assertEquals(100L, count)
     }
 
     @Test
     fun `test delete`() {
-        // Given
         val schedule = createTestSchedule(id = 1)
         every { scheduleRepository.delete(schedule) } returns Unit
 
-        // When
         scheduleRepository.delete(schedule)
 
-        // Then
         verify { scheduleRepository.delete(schedule) }
     }
 

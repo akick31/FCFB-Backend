@@ -10,10 +10,6 @@ import com.fcfb.arceus.repositories.RecordRepository
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 
-/**
- * Handles generation and in-flight checking of general (all-time) records,
- * i.e. records that don't need a season/game distinction such as "longest field goal ever".
- */
 @Service
 class GeneralRecordService(
     private val recordRepository: RecordRepository,
