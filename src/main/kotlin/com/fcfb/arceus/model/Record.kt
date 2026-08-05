@@ -1,5 +1,6 @@
 package com.fcfb.arceus.model
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import org.hibernate.annotations.CreationTimestamp
@@ -28,6 +29,12 @@ class Record(
     @Enumerated(EnumType.STRING)
     @Column(name = "record_type", nullable = false)
     var recordType: RecordType = RecordType.SINGLE_GAME,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "record_scope", nullable = false)
+    var recordScope: RecordScope = RecordScope.LEAGUE,
+    @Basic
+    @Column(name = "scope_value")
+    var scopeValue: String? = null,
     @Basic
     @Column(name = "season_number", nullable = false)
     var seasonNumber: Int = 0,

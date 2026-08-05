@@ -1,6 +1,5 @@
 package com.fcfb.arceus.model
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
@@ -12,8 +11,6 @@ import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Convert
 import javax.persistence.Entity
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType
 import javax.persistence.Id
@@ -91,10 +88,9 @@ class Team {
     @Column(name = "defensive_playbook")
     lateinit var defensivePlaybook: DefensivePlaybook
 
-    @Enumerated(EnumType.STRING)
     @Basic
     @Column(name = "conference")
-    var conference: Conference? = null
+    var conference: String? = null
 
     @Basic
     @Column(name = "current_wins")
@@ -193,7 +189,7 @@ class Team {
         subdivision: Subdivision?,
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,
-        conference: Conference?,
+        conference: String?,
         currentWins: Int,
         currentLosses: Int,
         overallWins: Int,

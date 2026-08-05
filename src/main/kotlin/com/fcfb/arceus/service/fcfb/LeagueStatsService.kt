@@ -41,21 +41,19 @@ class LeagueStatsService(
     fun generateAllLeagueStats() {
         Logger.info("Starting generation of all league stats")
 
-        // Get all season stats
         val allSeasonStats = seasonStatsRepository.findAllByOrderBySeasonNumberDescTeamAsc()
 
-        // Group by subdivision and season
         val groupedStats =
             allSeasonStats.groupBy {
                 Pair(it.subdivision, it.seasonNumber)
             }.filterKeys { it.first != null }
 
-        // Generate league stats for each subdivision/season combination
-        for ((subdivisionSeason) in groupedStats) {
+        val total = groupedStats.size
+        groupedStats.keys.forEachIndexed { index, subdivisionSeason ->
             val subdivision = subdivisionSeason.first!!
             val seasonNumber = subdivisionSeason.second
 
-            Logger.info("Generating league stats for $subdivision in season $seasonNumber")
+            Logger.info("Generating league stats for $subdivision in season $seasonNumber (${index + 1}/$total)")
             generateLeagueStatsForSubdivisionAndSeason(subdivision, seasonNumber)
         }
 
@@ -68,7 +66,6 @@ class LeagueStatsService(
     ) {
         Logger.info("Starting generation of league stats for $subdivision in season $seasonNumber")
 
-        // Get all season stats for this subdivision and season
         val seasonStatsList =
             seasonStatsRepository.findBySeasonNumberOrderByTeamAsc(seasonNumber)
                 .filter { seasonStats -> seasonStats.subdivision == subdivision }
@@ -78,12 +75,10 @@ class LeagueStatsService(
             return
         }
 
-        // Delete existing league stats for this subdivision and season
         leagueStatsRepository.findBySubdivisionAndSeasonNumber(subdivision, seasonNumber)?.let {
             leagueStatsRepository.delete(it)
         }
 
-        // Create new league stats
         val leagueStats = aggregateSeasonStatsToLeagueStats(seasonStatsList, subdivision, seasonNumber)
 
         leagueStatsRepository.save(leagueStats)

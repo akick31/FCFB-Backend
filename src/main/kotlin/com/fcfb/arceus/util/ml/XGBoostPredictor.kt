@@ -74,7 +74,6 @@ class XGBoostPredictor {
         }
 
         try {
-            // Create DMatrix for prediction - convert DoubleArray to FloatArray
             val floatFeatures = features.map { it.toFloat() }.toFloatArray()
             val dMatrix = DMatrix(floatFeatures, 1, features.size)
 

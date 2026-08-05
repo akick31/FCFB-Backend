@@ -63,83 +63,42 @@ class PlayController(
         timeoutCalled,
     )
 
-    /**
-     * Rollback the last play
-     * @param gameId
-     * @return
-     */
     @PutMapping("/rollback")
     fun rollbackPlay(
         @RequestParam("gameId") gameId: Int,
     ) = playService.rollbackPlay(gameId)
 
-    /**
-     * Get a play by its id
-     * @param playId
-     * @return
-     */
     @GetMapping("/{playId}")
     fun getPlayById(
         @PathVariable("playId") playId: Int,
     ) = playService.getPlayById(playId)
 
-    /**
-     * Get the previous play of a game
-     * @param gameId
-     * @return
-     */
     @GetMapping("/previous")
     fun getPreviousPlay(
         @RequestParam("gameId") gameId: Int,
     ) = playService.getPreviousPlay(gameId)
 
-    /**
-     * Get the current play of a game
-     * @param gameId
-     * @return
-     */
     @GetMapping("/current")
     fun getCurrentPlay(
         @RequestParam("gameId") gameId: Int,
     ) = playService.getCurrentPlay(gameId)
 
-    /**
-     * Get all plays of a game
-     * @param gameId
-     * @return
-     */
     @GetMapping("/all")
     fun getAllPlaysByGameId(
         @RequestParam("gameId") gameId: Int,
     ) = playService.getAllPlaysByGameId(gameId)
 
-    /**
-     * Get all plays with a user present
-     * @param discordTag
-     * @return
-     */
     @GetMapping("/all/user")
     fun getAllPlaysByDiscordTag(
         @RequestParam("discordTag") discordTag: String,
     ) = playService.getAllPlaysByDiscordTag(discordTag)
 
-    /**
-     * Get delay of game counts per team for a given season and week
-     * @param season
-     * @param week
-     * @return
-     */
     @GetMapping("/delay-of-game")
     fun getDelayOfGameCountsByWeek(
         @RequestParam("season") season: Int,
         @RequestParam("week") week: Int,
     ) = playService.getDelayOfGameCountsByWeek(season, week)
 
-    /**
-     * Update a play
-     * @param play
-     * @return
-     */
     @PutMapping("")
     fun updatePlay(
         @RequestBody play: Play,

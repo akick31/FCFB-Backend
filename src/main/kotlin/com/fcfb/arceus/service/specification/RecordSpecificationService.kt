@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.specification
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.Record
@@ -16,6 +17,8 @@ class RecordSpecificationService {
         season: Int?,
         recordType: RecordType?,
         recordName: Stats?,
+        recordScope: RecordScope?,
+        scopeValue: String?,
     ): Specification<Record> {
         return Specification { root: Root<Record>, _: CriteriaQuery<*>, cb: CriteriaBuilder ->
             val predicates = mutableListOf<Predicate>()
@@ -23,6 +26,8 @@ class RecordSpecificationService {
             season?.let { predicates.add(cb.equal(root.get<Int>("seasonNumber"), it)) }
             recordType?.let { predicates.add(cb.equal(root.get<RecordType>("recordType"), it)) }
             recordName?.let { predicates.add(cb.equal(root.get<Stats>("recordName"), it)) }
+            predicates.add(cb.equal(root.get<RecordScope>("recordScope"), recordScope ?: RecordScope.LEAGUE))
+            scopeValue?.let { predicates.add(cb.equal(root.get<String>("scopeValue"), it)) }
 
             cb.and(*predicates.toTypedArray())
         }

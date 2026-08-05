@@ -215,16 +215,16 @@ class GameStats(
     var touchdowns: Int = 0,
     @Basic
     @Column(name = "average_offensive_diff")
-    var averageOffensiveDiff: Double = 0.0,
+    var averageOffensiveDiff: Double? = null,
     @Basic
     @Column(name = "average_defensive_diff")
-    var averageDefensiveDiff: Double = 0.0,
+    var averageDefensiveDiff: Double? = null,
     @Basic
     @Column(name = "average_offensive_special_teams_diff")
-    var averageOffensiveSpecialTeamsDiff: Double = 0.0,
+    var averageOffensiveSpecialTeamsDiff: Double? = null,
     @Basic
     @Column(name = "average_defensive_special_teams_diff")
-    var averageDefensiveSpecialTeamsDiff: Double = 0.0,
+    var averageDefensiveSpecialTeamsDiff: Double? = null,
     @Basic
     @Column(name = "average_yards_per_play")
     var averageYardsPerPlay: Double = 0.0,

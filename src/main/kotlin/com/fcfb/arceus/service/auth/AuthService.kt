@@ -57,6 +57,12 @@ class AuthService(
         return LoginResponse(token, user.id, user.role)
     }
 
+    fun loginWithDiscord(discordId: String): LoginResponse? {
+        val user = userService.findUserByDiscordId(discordId) ?: return null
+        val token = sessionService.generateToken(user.id, user.role)
+        return LoginResponse(token, user.id, user.role)
+    }
+
     fun logout(token: String): String {
         sessionService.blacklistUserSession(token)
         return "User logged out successfully"

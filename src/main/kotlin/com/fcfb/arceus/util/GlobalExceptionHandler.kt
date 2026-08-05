@@ -13,6 +13,7 @@ class GlobalExceptionHandler {
         DiscordUserNotFoundException::class,
         GameNotFoundException::class,
         GameStatsNotFoundException::class,
+        NewSignupNotFoundException::class,
         NoCoachDiscordIdsFoundException::class,
         NoCoachesFoundException::class,
         NoGameFoundException::class,
@@ -26,6 +27,8 @@ class GlobalExceptionHandler {
     @ExceptionHandler(
         InvalidCoinTossChoiceException::class,
         InvalidRankingsException::class,
+        InvalidConferenceException::class,
+        InvalidNewSignupException::class,
     )
     fun handleBadRequest(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.BAD_REQUEST, e)
 
@@ -38,6 +41,7 @@ class GlobalExceptionHandler {
     @ExceptionHandler(
         RankingsNotUploadedException::class,
         TooManyCoachesException::class,
+        DiscordAlreadyLinkedException::class,
     )
     fun handleConflict(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.CONFLICT, e)
 

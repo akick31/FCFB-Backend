@@ -1,6 +1,11 @@
 package com.fcfb.arceus.controllers
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fcfb.arceus.dto.response.LoginResponse
+import com.fcfb.arceus.enums.user.UserRole
+import com.fcfb.arceus.service.auth.AuthService
+import com.fcfb.arceus.service.auth.SessionService
+import com.fcfb.arceus.service.fcfb.UserService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -13,10 +18,16 @@ import org.springframework.web.client.RestTemplate
 
 class DiscordOAuthControllerTest {
     private val restTemplate: RestTemplate = mockk()
+    private val sessionService: SessionService = mockk()
+    private val userService: UserService = mockk()
+    private val authService: AuthService = mockk()
 
     private val controller =
         DiscordOAuthController(
             restTemplate = restTemplate,
+            sessionService = sessionService,
+            userService = userService,
+            authService = authService,
             clientId = "test-client-id",
             clientSecret = "test-client-secret",
             redirectUri = "http://localhost/redirect",
@@ -53,6 +64,8 @@ class DiscordOAuthControllerTest {
             )
         } returns ResponseEntity(userResponseBody, HttpStatus.OK)
 
+        every { authService.loginWithDiscord(discordId) } returns null
+
         mockkStatic(RestTemplate::class)
         every { RestTemplate() } returns restTemplate
 
@@ -61,6 +74,48 @@ class DiscordOAuthControllerTest {
         assertEquals(HttpStatus.FOUND, response.statusCode)
         assertEquals(
             "http://localhost/register/complete?discordId=$discordId&discordTag=$discordTag",
+            response.headers["Location"]?.first(),
+        )
+    }
+
+    @Test
+    fun `should log in and redirect when discord id is already linked to a user`() {
+        val code = "test-code"
+        val accessToken = "test-access-token"
+        val discordTag = "TestUser"
+        val discordId = "123456"
+
+        val tokenResponseBody = objectMapper.writeValueAsString(mapOf("access_token" to accessToken))
+        val userResponseBody = objectMapper.writeValueAsString(mapOf("username" to "TestUser", "id" to discordId))
+
+        every {
+            restTemplate.exchange(
+                "https://discord.com/api/oauth2/token",
+                HttpMethod.POST,
+                any(),
+                String::class.java,
+            )
+        } returns ResponseEntity(tokenResponseBody, HttpStatus.OK)
+
+        every {
+            restTemplate.exchange(
+                "https://discord.com/api/users/@me",
+                HttpMethod.GET,
+                any(),
+                String::class.java,
+            )
+        } returns ResponseEntity(userResponseBody, HttpStatus.OK)
+
+        every { authService.loginWithDiscord(discordId) } returns LoginResponse("test-session-token", 42L, UserRole.USER)
+
+        mockkStatic(RestTemplate::class)
+        every { RestTemplate() } returns restTemplate
+
+        val response = controller.handleDiscordRedirect(code)
+
+        assertEquals(HttpStatus.FOUND, response.statusCode)
+        assertEquals(
+            "http://localhost/login?discordToken=test-session-token&discordUserId=42&discordRole=USER",
             response.headers["Location"]?.first(),
         )
     }

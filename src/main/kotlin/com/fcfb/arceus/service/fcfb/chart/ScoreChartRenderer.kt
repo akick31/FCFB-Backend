@@ -179,7 +179,6 @@ class ScoreChartRenderer(
         val title = "Score"
         g.drawString(title, padding, padding - 35)
 
-        // Get team abbreviations
         val homeTeamAbbr = homeTeam.abbreviation ?: homeTeam.name?.take(3) ?: "HOME"
         val awayTeamAbbr = awayTeam.abbreviation ?: awayTeam.name?.take(3) ?: "AWAY"
 

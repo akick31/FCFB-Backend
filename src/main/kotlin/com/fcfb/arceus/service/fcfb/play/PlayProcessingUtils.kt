@@ -109,7 +109,6 @@ class PlayProcessingUtils(
                 clock = 420
             }
         } else if (clock <= 0 && !gameService.isTouchdownPlay(actualResult) && gamePlay.quarter == 4) {
-            // Check if game is over or needs to go to OT
             quarter =
                 if (homeScore > awayScore || awayScore > homeScore) {
                     0
@@ -133,7 +132,6 @@ class PlayProcessingUtils(
                     possession = gameService.handleHalfTimePossessionChange(game)
                 }
             } else if (clock <= 0 && !gameService.isTouchdownPlay(actualResult) && gamePlay.quarter == 4) {
-                // Check if game is over or needs to go to OT
                 quarter =
                     if (homeScore > awayScore || awayScore > homeScore) {
                         0
@@ -179,7 +177,6 @@ class PlayProcessingUtils(
             clock <= 0 &&
             gamePlay.quarter == 4
         ) {
-            // Check if game is over or needs to go to OT
             quarter =
                 if (homeScore > awayScore || awayScore > homeScore) {
                     0
@@ -288,7 +285,6 @@ class PlayProcessingUtils(
             quarter = updatedQuarter
         }
 
-        // Update gamePlay values
         if (playCall == PlayCall.SPIKE || playCall == PlayCall.KNEEL) {
             gamePlay.defensiveNumber = null
             gamePlay.offensiveNumber = null

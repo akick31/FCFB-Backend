@@ -1,6 +1,5 @@
 package com.fcfb.arceus.model
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
@@ -99,7 +98,7 @@ class TeamTest {
                 subdivision = Subdivision.FBS,
                 offensivePlaybook = OffensivePlaybook.AIR_RAID,
                 defensivePlaybook = DefensivePlaybook.FOUR_THREE,
-                conference = Conference.SEC,
+                conference = "SEC",
                 currentWins = 8,
                 currentLosses = 2,
                 overallWins = 25,
@@ -138,7 +137,7 @@ class TeamTest {
         assertEquals(Subdivision.FBS, team.subdivision)
         assertEquals(OffensivePlaybook.AIR_RAID, team.offensivePlaybook)
         assertEquals(DefensivePlaybook.FOUR_THREE, team.defensivePlaybook)
-        assertEquals(Conference.SEC, team.conference)
+        assertEquals("SEC", team.conference)
         assertEquals(8, team.currentWins)
         assertEquals(2, team.currentLosses)
         assertEquals(25, team.overallWins)
@@ -181,7 +180,7 @@ class TeamTest {
         team.subdivision = Subdivision.FCS
         team.offensivePlaybook = OffensivePlaybook.SPREAD
         team.defensivePlaybook = DefensivePlaybook.THREE_FOUR
-        team.conference = Conference.BIG_TEN
+        team.conference = "BIG_TEN"
         team.currentWins = 12
         team.currentLosses = 1
         team.overallWins = 35
@@ -218,7 +217,7 @@ class TeamTest {
         assertEquals(Subdivision.FCS, team.subdivision)
         assertEquals(OffensivePlaybook.SPREAD, team.offensivePlaybook)
         assertEquals(DefensivePlaybook.THREE_FOUR, team.defensivePlaybook)
-        assertEquals(Conference.BIG_TEN, team.conference)
+        assertEquals("BIG_TEN", team.conference)
         assertEquals(12, team.currentWins)
         assertEquals(1, team.currentLosses)
         assertEquals(35, team.overallWins)
@@ -237,34 +236,6 @@ class TeamTest {
         assertEquals(1, team.nationalChampionshipLosses)
         assertFalse(team.isTaken)
         assertFalse(team.active)
-    }
-
-    @Test
-    fun `test Conference enum values`() {
-        assertEquals("ACC", Conference.ACC.description)
-        assertEquals("American", Conference.AMERICAN.description)
-        assertEquals("Big 12", Conference.BIG_12.description)
-        assertEquals("Big Ten", Conference.BIG_TEN.description)
-        assertEquals("Fake Team", Conference.FAKE_TEAM.description)
-        assertEquals("FBS Independent", Conference.FBS_INDEPENDENT.description)
-        assertEquals("MAC", Conference.MAC.description)
-        assertEquals("Mountain West", Conference.MOUNTAIN_WEST.description)
-        assertEquals("Pac-12", Conference.PAC_12.description)
-        assertEquals("SEC", Conference.SEC.description)
-        assertEquals("Sun Belt", Conference.SUN_BELT.description)
-        assertEquals("Missouri Valley", Conference.MISSOURI_VALLEY.description)
-        assertEquals("Colonial", Conference.COLONIAL.description)
-        assertEquals("NEC", Conference.NEC.description)
-    }
-
-    @Test
-    fun `test Conference fromString method`() {
-        assertEquals(Conference.ACC, Conference.fromString("ACC"))
-        assertEquals(Conference.SEC, Conference.fromString("SEC"))
-        assertEquals(Conference.BIG_TEN, Conference.fromString("Big Ten"))
-        assertEquals(Conference.PAC_12, Conference.fromString("Pac-12"))
-        assertEquals(Conference.FBS_INDEPENDENT, Conference.fromString("FBS Independent"))
-        assertNull(Conference.fromString("Invalid Conference"))
     }
 
     @Test
@@ -304,11 +275,10 @@ class TeamTest {
     }
 
     @Test
-    fun `test Team with all conference values`() {
+    fun `test Team with different conference values`() {
         val team = Team()
 
-        // Test all Conference values
-        Conference.entries.forEach { conference ->
+        listOf("SEC", "BIG_TEN", "ACC", "BIG_12", "FBS_INDEPENDENT").forEach { conference ->
             team.conference = conference
             assertEquals(conference, team.conference)
         }

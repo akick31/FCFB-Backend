@@ -5,6 +5,7 @@ import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.SeasonRepository
 import com.fcfb.arceus.service.fcfb.OffseasonService
 import com.fcfb.arceus.service.fcfb.SeasonService
+import com.fcfb.arceus.service.fcfb.TeamSeasonConferenceService
 import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.service.fcfb.UserService
 import com.fcfb.arceus.util.GlobalExceptionHandler
@@ -31,12 +32,14 @@ class SeasonControllerTest {
     private val teamService: TeamService = mockk()
     private val userService: UserService = mockk()
     private val scheduleRepository: ScheduleRepository = mockk()
+    private val teamSeasonConferenceService: TeamSeasonConferenceService = mockk()
     private lateinit var seasonService: SeasonService
     private lateinit var seasonController: SeasonController
 
     @BeforeEach
     fun setup() {
-        seasonService = SeasonService(seasonRepository, offseasonService, teamService, userService, scheduleRepository)
+        seasonService =
+            SeasonService(seasonRepository, offseasonService, teamService, userService, scheduleRepository, teamSeasonConferenceService)
         seasonController = SeasonController(seasonService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(seasonController)
@@ -78,6 +81,7 @@ class SeasonControllerTest {
         every { userService.resetAllDelayOfGameInstances() } returns Unit
         every { seasonRepository.save(any()) } returns newSeason
         every { offseasonService.endOffseason(any()) } returns Unit
+        every { teamSeasonConferenceService.snapshotSeason(any()) } returns Unit
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
@@ -117,6 +121,7 @@ class SeasonControllerTest {
         every { userService.resetAllDelayOfGameInstances() } returns Unit
         every { seasonRepository.save(any()) } returns pendingSeason
         every { offseasonService.endOffseason(any()) } returns Unit
+        every { teamSeasonConferenceService.snapshotSeason(any()) } returns Unit
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)

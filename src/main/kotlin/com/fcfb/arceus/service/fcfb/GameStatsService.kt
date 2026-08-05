@@ -5,6 +5,7 @@ import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
@@ -70,6 +71,46 @@ class GameStatsService(
         return listOf(homeStats, awayStats)
     }
 
+    private fun buildUnsavedGameStats(
+        game: Game,
+        homeTeam: Team,
+        awayTeam: Team,
+    ): Pair<GameStats, GameStats> {
+        val homeStats =
+            GameStats(
+                gameId = game.gameId,
+                team = game.homeTeam,
+                tvChannel = game.tvChannel,
+                coaches = game.homeCoaches,
+                offensivePlaybook = game.homeOffensivePlaybook,
+                defensivePlaybook = game.homeDefensivePlaybook,
+                season = game.season,
+                week = game.week,
+                subdivision = game.subdivision,
+                gameStatus = game.gameStatus,
+                gameType = game.gameType,
+                teamElo = homeTeam.currentElo,
+            )
+
+        val awayStats =
+            GameStats(
+                gameId = game.gameId,
+                team = game.awayTeam,
+                tvChannel = game.tvChannel,
+                coaches = game.awayCoaches,
+                offensivePlaybook = game.awayOffensivePlaybook,
+                defensivePlaybook = game.awayDefensivePlaybook,
+                season = game.season,
+                week = game.week,
+                subdivision = game.subdivision,
+                gameStatus = game.gameStatus,
+                gameType = game.gameType,
+                teamElo = awayTeam.currentElo,
+            )
+
+        return homeStats to awayStats
+    }
+
     fun generateGameStatsForGamesMoreRecentThanGameId(gameId: Int) {
         try {
             val allGames =
@@ -93,12 +134,82 @@ class GameStatsService(
                     throw GameNotFoundException("Could not find any games")
                 }
 
-            for (game in allGames) {
-                Logger.info("Generating game stats for game ${game.gameId}")
-                generateGameStats(game.gameId)
+            Logger.info("Starting generation of all game stats for ${allGames.size} games")
+
+            val teamsByName = teamRepository.findAll().associateBy { it.name }
+            val allStats = mutableListOf<GameStats>()
+
+            val batchSize = 200
+            var processedGames = 0
+            for (gameBatch in allGames.chunked(batchSize)) {
+                val gameIds = gameBatch.map { it.gameId }
+                val playsByGameId = playRepository.findByGameIdIn(gameIds).groupBy { it.gameId }
+
+                for (game in gameBatch) {
+                    val homeTeam =
+                        teamsByName[game.homeTeam]
+                            ?: throw Exception("Could not find home team: ${game.homeTeam}")
+                    val awayTeam =
+                        teamsByName[game.awayTeam]
+                            ?: throw Exception("Could not find away team: ${game.awayTeam}")
+
+                    val (homeStats, awayStats) = buildUnsavedGameStats(game, homeTeam, awayTeam)
+                    val playedPlays =
+                        (playsByGameId[game.gameId] ?: emptyList())
+                            .filter { it.actualResult != ActualResult.END_OF_GAME }
+
+                    updateScoreStats(playedPlays, homeStats, TeamSide.HOME)
+                    allStats.add(updateStats(playedPlays, TeamSide.HOME, game, homeStats))
+
+                    updateScoreStats(playedPlays, awayStats, TeamSide.AWAY)
+                    allStats.add(updateStats(playedPlays, TeamSide.AWAY, game, awayStats))
+                }
+
+                processedGames += gameBatch.size
+                Logger.info(
+                    "Computed game stats through game ${gameBatch.last().gameId} " +
+                        "($processedGames/${allGames.size} games)",
+                )
             }
+
+            Logger.info("Reconstructing historical ELO across ${allGames.size} games")
+            recomputeHistoricalElo(allGames, allStats)
+
+            Logger.info("Saving computed game stats for ${allGames.size} games")
+            gameStatsRepository.deleteByGameIdIn(allGames.map { it.gameId })
+            gameStatsRepository.saveAll(allStats)
+            Logger.info("Completed generation of all game stats")
         } catch (e: Exception) {
             throw Exception("Could not generate game stats", e)
+        }
+    }
+
+    private fun recomputeHistoricalElo(
+        games: List<Game>,
+        stats: List<GameStats>,
+    ) {
+        val baseElo = 1500.0
+        val kFactor = 32.0
+        val statsByKey = stats.associateBy { "${it.gameId}_${it.team}" }
+        val eloMap = HashMap<String, Double>()
+        val eloOf = { team: String -> eloMap.getOrPut(team) { baseElo } }
+
+        val orderedGames = games.sortedWith(compareBy({ it.season ?: 0 }, { it.week ?: 0 }, { it.gameId }))
+        for (game in orderedGames) {
+            val homeElo = eloOf(game.homeTeam)
+            val awayElo = eloOf(game.awayTeam)
+            var newHomeElo = homeElo
+            var newAwayElo = awayElo
+            if (game.gameStatus?.name == "FINAL") {
+                val homeWon = game.homeScore > game.awayScore
+                val expectedHome = 1.0 / (1.0 + Math.pow(10.0, (awayElo - homeElo) / 400.0))
+                newHomeElo = homeElo + kFactor * ((if (homeWon) 1.0 else 0.0) - expectedHome)
+                newAwayElo = awayElo + kFactor * ((if (homeWon) 0.0 else 1.0) - (1.0 - expectedHome))
+                eloMap[game.homeTeam] = newHomeElo
+                eloMap[game.awayTeam] = newAwayElo
+            }
+            statsByKey["${game.gameId}_${game.homeTeam}"]?.teamElo = newHomeElo
+            statsByKey["${game.gameId}_${game.awayTeam}"]?.teamElo = newAwayElo
         }
     }
 
@@ -129,11 +240,11 @@ class GameStatsService(
         allPlays: List<Play>,
     ): List<GameStats> {
         val playedPlays = allPlays.filter { it.actualResult != ActualResult.END_OF_GAME }
-        var homeStats = getGameStatsByIdAndTeam(game.gameId, game.homeTeam)
+        var homeStats = getOrCreateGameStatsByIdAndTeam(game, game.homeTeam)
         updateScoreStats(playedPlays, homeStats, TeamSide.HOME)
         homeStats = updateStats(playedPlays, TeamSide.HOME, game, homeStats)
 
-        var awayStats = getGameStatsByIdAndTeam(game.gameId, game.awayTeam)
+        var awayStats = getOrCreateGameStatsByIdAndTeam(game, game.awayTeam)
         updateScoreStats(playedPlays, awayStats, TeamSide.AWAY)
         awayStats = updateStats(playedPlays, TeamSide.AWAY, game, awayStats)
         return listOf(homeStats, awayStats)
@@ -146,6 +257,39 @@ class GameStatsService(
         team: String,
     ) = gameStatsRepository.getGameStatsByIdAndTeam(gameId, team)
         ?: throw GameStatsNotFoundException("Could not find game stats for game $gameId and team $team")
+
+    /**
+     * Fetch the game stats row for a team, creating a baseline row if it is missing so a live
+     * game self-heals instead of erroring when its stats were wiped (e.g. by a bulk regeneration).
+     */
+    private fun getOrCreateGameStatsByIdAndTeam(
+        game: Game,
+        team: String,
+    ): GameStats {
+        gameStatsRepository.getGameStatsByIdAndTeam(game.gameId, team)?.let { return it }
+
+        Logger.warn("Game stats missing for game ${game.gameId} team $team - creating baseline row")
+        val isHome = team == game.homeTeam
+        val teamModel =
+            teamRepository.getTeamByName(team)
+                ?: throw Exception("Could not find team: $team")
+        val stats =
+            GameStats(
+                gameId = game.gameId,
+                team = team,
+                tvChannel = game.tvChannel,
+                coaches = if (isHome) game.homeCoaches else game.awayCoaches,
+                offensivePlaybook = if (isHome) game.homeOffensivePlaybook else game.awayOffensivePlaybook,
+                defensivePlaybook = if (isHome) game.homeDefensivePlaybook else game.awayDefensivePlaybook,
+                season = game.season,
+                week = game.week,
+                subdivision = game.subdivision,
+                gameStatus = game.gameStatus,
+                gameType = game.gameType,
+                teamElo = teamModel.currentElo,
+            )
+        return gameStatsRepository.save(stats)
+    }
 
     fun getGameStatsById(gameId: Int) = gameStatsRepository.findByGameId(gameId)
 
@@ -160,7 +304,7 @@ class GameStatsService(
         val allOffensivePlays = allPlays.filter { play -> play.possession == teamSide }
         val allDefensivePlays = allPlays.filter { play -> play.possession != teamSide }
 
-        stats.score = game.homeScore
+        stats.score = if (teamSide == TeamSide.HOME) game.homeScore else game.awayScore
         stats.passAttempts = GameStatsCalculator.calculatePassAttempts(allOffensivePlays)
         stats.passCompletions = GameStatsCalculator.calculatePassCompletions(allOffensivePlays)
         stats.passCompletionPercentage = GameStatsCalculator.calculatePercentage(stats.passCompletions, stats.passAttempts)
@@ -183,7 +327,7 @@ class GameStatsService(
         stats.turnoversLost = GameStatsCalculator.calculateTurnoversLost(stats.interceptionsLost, stats.fumblesLost)
         stats.turnoversForced = GameStatsCalculator.calculateTurnoversLost(stats.interceptionsForced, stats.fumblesForced)
         stats.turnoverTouchdownsLost = GameStatsCalculator.calculateTurnoverTouchdownsLost(allOffensivePlays)
-        stats.turnoverTouchdownsForced = GameStatsCalculator.calculateTurnoverTouchdownsLost(allOffensivePlays)
+        stats.turnoverTouchdownsForced = GameStatsCalculator.calculateTurnoverTouchdownsLost(allDefensivePlays)
         stats.fieldGoalMade = GameStatsCalculator.calculateFieldGoalMade(allOffensivePlays)
         stats.fieldGoalAttempts = GameStatsCalculator.calculateFieldGoalAttempts(allOffensivePlays)
         stats.fieldGoalPercentage = GameStatsCalculator.calculatePercentage(stats.fieldGoalMade, stats.fieldGoalAttempts)
@@ -206,7 +350,11 @@ class GameStatsService(
         stats.onsideSuccessPercentage = GameStatsCalculator.calculatePercentage(stats.onsideSuccess, stats.onsideAttempts)
         stats.normalKickoffAttempts = GameStatsCalculator.calculateNormalKickoffAttempts(allOffensivePlays)
         stats.touchbacks = GameStatsCalculator.calculateTouchbacks(allOffensivePlays)
-        stats.touchbackPercentage = GameStatsCalculator.calculatePercentage(stats.touchbacks, stats.normalKickoffAttempts)
+        stats.touchbackPercentage =
+            GameStatsCalculator.calculatePercentage(
+                stats.touchbacks,
+                stats.normalKickoffAttempts,
+            )
         stats.kickReturnTd = GameStatsCalculator.calculateKickReturnTd(allDefensivePlays)
         stats.kickReturnTdPercentage = GameStatsCalculator.calculatePercentage(stats.kickReturnTd, stats.numberOfKickoffs)
         stats.numberOfDrives = GameStatsCalculator.calculateNumberOfDrives(allPlays, teamSide)
@@ -294,12 +442,6 @@ class GameStatsService(
         return gameStatsRepository.findByTeamAndSeason(team, season)
     }
 
-    /**
-     * Get ELO history for a team
-     * @param team Team name (or "all" for all teams)
-     * @param season Season number (optional, null for all-time)
-     * @return List of ELO history entries
-     */
     fun getEloHistory(
         team: String,
         season: Int?,
@@ -387,12 +529,6 @@ class GameStatsService(
         }
     }
 
-    /**
-     * Get game stats by season and week with opponent stats included
-     * @param season Season number
-     * @param week Week number (optional, null for entire season)
-     * @return List of game stats (frontend will pair with opponents by game_id)
-     */
     fun getGameStatsBySeasonAndWeek(
         season: Int,
         week: Int?,

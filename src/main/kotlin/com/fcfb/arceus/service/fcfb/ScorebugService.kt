@@ -5,7 +5,6 @@ import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.enums.game.TVChannel.CBS_SPORTS_NETWORK
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.service.fcfb.scorebug.CbsScorebugRenderer
 import com.fcfb.arceus.service.fcfb.scorebug.CwScorebugRenderer
@@ -154,10 +153,10 @@ class ScorebugService(
     fun getScorebugsForConference(
         season: Int,
         week: Int,
-        conference: Conference,
+        conference: String,
     ): ResponseEntity<List<Map<String, Any>>> {
         try {
-            val teams = teamService.getTeamsInConference(conference.name) ?: return ResponseEntity(HttpStatus.NOT_FOUND)
+            val teams = teamService.getTeamsInConference(conference) ?: return ResponseEntity(HttpStatus.NOT_FOUND)
             val games = gameService.getGamesWithTeams(teams, season, week)
             if (games.isEmpty()) {
                 return ResponseEntity(HttpStatus.NOT_FOUND)

@@ -18,6 +18,12 @@ class DiscordUserNotFoundException : Exception("Discord user not found") {
     }
 }
 
+class NewSignupNotFoundException(id: Long) : Exception("New signup not found with id $id") {
+    override fun toString(): String {
+        return "NewSignupNotFoundException: ${super.message}"
+    }
+}
+
 class UnableToCreateGameThreadException : Exception("Unable to create game thread in Discord") {
     override fun toString(): String {
         return "UnableToCreateGameThreadException: ${super.message}"
@@ -162,5 +168,23 @@ class RankingsNotUploadedException(season: Int, week: Int) : Exception(
 ) {
     override fun toString(): String {
         return "RankingsNotUploadedException: ${super.message}"
+    }
+}
+
+class InvalidConferenceException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidConferenceException: ${super.message}"
+    }
+}
+
+class DiscordAlreadyLinkedException : Exception("This Discord account is already linked to another user") {
+    override fun toString(): String {
+        return "DiscordAlreadyLinkedException: ${super.message}"
+    }
+}
+
+class InvalidNewSignupException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidNewSignupException: ${super.message}"
     }
 }

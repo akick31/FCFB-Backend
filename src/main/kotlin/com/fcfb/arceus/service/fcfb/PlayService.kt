@@ -7,6 +7,7 @@ import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.service.fcfb.game.GameRules
 import com.fcfb.arceus.service.fcfb.play.FieldGoalPlayProcessor
 import com.fcfb.arceus.service.fcfb.play.KickoffPlayProcessor
 import com.fcfb.arceus.service.fcfb.play.NormalPlayProcessor
@@ -57,7 +58,7 @@ class PlayService(
                 }
 
             val encryptedDefensiveNumber = encryptionUtils.encrypt(defensiveNumber.toString())
-            val clock = gameService.convertClockToSeconds(game.clock)
+            val clock = GameRules.convertClockToSeconds(game.clock)
             val gamePlay: Play =
                 playRepository.save(
                     Play(

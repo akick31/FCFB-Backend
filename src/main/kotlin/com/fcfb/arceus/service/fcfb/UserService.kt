@@ -8,14 +8,18 @@ import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
 import com.fcfb.arceus.util.DTOConverter
+import com.fcfb.arceus.util.DiscordAlreadyLinkedException
 import com.fcfb.arceus.util.EncryptionUtils
+import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.UserNotFoundException
 import com.fcfb.arceus.util.UserUnauthorizedException
 import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import java.security.SecureRandom
 import java.time.LocalDateTime
+import java.util.Base64
 import java.util.UUID
 
 @Service
@@ -30,12 +34,14 @@ class UserService(
             try {
                 getUsersByTeam(game.homeTeam)
             } catch (e: Exception) {
+                Logger.error("Error looking up home team users for game ${game.gameId}: ${e.message}")
                 emptyList()
             }
         val awayUsers =
             try {
                 getUsersByTeam(game.awayTeam)
             } catch (e: Exception) {
+                Logger.error("Error looking up away team users for game ${game.gameId}: ${e.message}")
                 emptyList()
             }
 
@@ -115,6 +121,8 @@ class UserService(
             userRepository.getByDiscordId(discordId)
                 ?: throw UserNotFoundException("User not found with Discord ID $discordId"),
         )
+
+    fun findUserByDiscordId(discordId: String): User? = userRepository.getByDiscordId(discordId)
 
     fun getUserByTeam(team: String) =
         dtoConverter.convertToUserDTO(
@@ -255,6 +263,23 @@ class UserService(
         }
     }
 
+    fun linkDiscord(
+        userId: Long,
+        discordId: String,
+        discordTag: String,
+    ): UserDTO {
+        val existing = userRepository.getByDiscordId(discordId)
+        if (existing != null && existing.id != userId) {
+            throw DiscordAlreadyLinkedException()
+        }
+
+        val user = getUserById(userId)
+        user.discordId = discordId
+        user.discordTag = discordTag
+        userRepository.save(user)
+        return dtoConverter.convertToUserDTO(user)
+    }
+
     fun updateUser(user: UserDTO): UserDTO {
         val existingUser = getUserDTOById(user.id)
 
@@ -333,5 +358,21 @@ class UserService(
 
         userRepository.deleteById(id)
         return HttpStatus.OK
+    }
+
+    fun generateApiKey(userId: Long): String {
+        val user = getUserById(userId)
+        val randomBytes = ByteArray(32)
+        SecureRandom().nextBytes(randomBytes)
+        val apiKey = "fcfb_pat_" + Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes)
+        user.apiKeyHash = encryptionUtils.hash(apiKey)
+        userRepository.save(user)
+        return apiKey
+    }
+
+    fun revokeApiKey(userId: Long) {
+        val user = getUserById(userId)
+        user.apiKeyHash = null
+        userRepository.save(user)
     }
 }

@@ -87,7 +87,12 @@ class UserController(
     @PutMapping("/update")
     fun updateUserRole(
         @RequestBody request: UpdateUserRequest,
-    ) = userService.updateUser(request.toUserDTO())
+    ): UserDTO {
+        if (AuthContext.currentUserId() != request.id && !AuthContext.isAdmin()) {
+            throw UserForbiddenException()
+        }
+        return userService.updateUser(request.toUserDTO())
+    }
 
     @PostMapping("/hash_emails")
     fun encryptEmails() = userService.hashEmails()
@@ -96,6 +101,23 @@ class UserController(
     fun validateUser(
         @RequestBody userValidationRequest: UserValidationRequest,
     ) = userService.validateUser(userValidationRequest)
+
+    @PostMapping("/api-key")
+    fun generateApiKey(): Map<String, String> {
+        val userId = AuthContext.currentUserId() ?: throw UserForbiddenException()
+        return mapOf("apiKey" to userService.generateApiKey(userId))
+    }
+
+    @PostMapping("/api-key/revoke")
+    fun revokeApiKey() {
+        val userId = AuthContext.currentUserId() ?: throw UserForbiddenException()
+        userService.revokeApiKey(userId)
+    }
+
+    @PostMapping("/{userId:[0-9]+}/api-key")
+    fun generateApiKeyForUser(
+        @PathVariable userId: Long,
+    ): Map<String, String> = mapOf("apiKey" to userService.generateApiKey(userId))
 
     @DeleteMapping("{teamId:[0-9]+}")
     fun deleteTeam(

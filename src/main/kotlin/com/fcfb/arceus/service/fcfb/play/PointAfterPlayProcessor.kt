@@ -16,9 +16,6 @@ import com.fcfb.arceus.util.NumberNotFoundException
 import com.fcfb.arceus.util.ResultNotFoundException
 import org.springframework.stereotype.Component
 
-/**
- * Processes a point-after (PAT / two-point) play.
- */
 @Component
 class PointAfterPlayProcessor(
     private val gameService: GameService,

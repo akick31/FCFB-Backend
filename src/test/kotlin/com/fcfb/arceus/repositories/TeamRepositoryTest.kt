@@ -1,6 +1,5 @@
 package com.fcfb.arceus.repositories
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
@@ -34,7 +33,7 @@ class TeamRepositoryTest {
                 shortName = "Alabama",
                 active = true,
                 isTaken = false,
-                conference = Conference.SEC,
+                conference = "SEC",
                 subdivision = Subdivision.FBS,
             )
 
@@ -51,7 +50,7 @@ class TeamRepositoryTest {
         assertEquals("Alabama", foundTeam.shortName)
         assertTrue(foundTeam.active)
         assertFalse(foundTeam.isTaken)
-        assertEquals(Conference.SEC, foundTeam.conference)
+        assertEquals("SEC", foundTeam.conference)
         assertEquals(Subdivision.FBS, foundTeam.subdivision)
     }
 
@@ -93,19 +92,19 @@ class TeamRepositoryTest {
             createTestTeam(
                 id = 1,
                 name = "Alabama",
-                conference = Conference.SEC,
+                conference = "SEC",
             )
         val secTeam2 =
             createTestTeam(
                 id = 2,
                 name = "Auburn",
-                conference = Conference.SEC,
+                conference = "SEC",
             )
         val big12Team =
             createTestTeam(
                 id = 3,
                 name = "Texas",
-                conference = Conference.BIG_12,
+                conference = "BIG_12",
             )
 
         val secTeams = listOf(secTeam1, secTeam2)
@@ -249,7 +248,7 @@ class TeamRepositoryTest {
         subdivision: Subdivision = Subdivision.FBS,
         offensivePlaybook: OffensivePlaybook = OffensivePlaybook.PRO,
         defensivePlaybook: DefensivePlaybook = DefensivePlaybook.THREE_FOUR,
-        conference: Conference = Conference.SEC,
+        conference: String = "SEC",
         currentWins: Int = 0,
         currentLosses: Int = 0,
         currentConferenceWins: Int = 0,

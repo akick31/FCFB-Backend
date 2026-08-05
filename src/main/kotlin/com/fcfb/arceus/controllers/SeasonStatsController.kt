@@ -16,9 +16,6 @@ import org.springframework.web.bind.annotation.RestController
 class SeasonStatsController(
     private val seasonStatsService: SeasonStatsService,
 ) {
-    /**
-     * Get filtered season stats with pagination
-     */
     @GetMapping
     fun getFilteredSeasonStats(
         @RequestParam(required = false) team: String?,
@@ -30,24 +27,15 @@ class SeasonStatsController(
         pageable = pageable,
     )
 
-    /**
-     * Generate all season stats (recalculate all season stats)
-     */
     @PostMapping("/generate/all")
     fun generateAllSeasonStats() = seasonStatsService.generateAllSeasonStats()
 
-    /**
-     * Generate season stats for a specific team and season
-     */
     @PostMapping("/generate/team-season")
     fun generateSeasonStatsForTeam(
         @RequestParam team: String,
         @RequestParam seasonNumber: Int,
     ) = seasonStatsService.generateSeasonStatsForTeam(team, seasonNumber)
 
-    /**
-     * Get leaderboard for a specific stat
-     */
     @GetMapping("/leaderboard")
     fun getLeaderboard(
         @RequestParam statName: String,

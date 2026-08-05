@@ -7,19 +7,19 @@ import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.dto.response.ScheduleGenJobStatus
 import com.fcfb.arceus.dto.response.ScheduleGenLog
 import com.fcfb.arceus.enums.game.GameType
-import com.fcfb.arceus.enums.team.Conference
+import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.enums.team.Subdivision
+import com.fcfb.arceus.model.Conference
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.repositories.ConferenceRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
-import com.fcfb.arceus.service.fcfb.ScheduleService
 import com.fcfb.arceus.service.fcfb.SeasonService
 import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -27,20 +27,12 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * Generates and manages conference schedules.
- *
- * [scheduleService] is injected lazily to break the circular dependency
- * between this class and [ScheduleService] (which delegates schedule
- * generation here but is itself needed here to create the resulting
- * schedule entries via [ScheduleService.createBulkScheduleEntries]).
- */
 @Service
 class ConferenceScheduleGenerationService(
     private val seasonService: SeasonService,
     private val scheduleRepository: ScheduleRepository,
     private val teamService: TeamService,
-    @Lazy private val scheduleService: ScheduleService,
+    private val conferenceRepository: ConferenceRepository,
 ) {
     companion object {
         private val activeGenJobs = ConcurrentHashMap<String, ScheduleGenJob>()
@@ -172,9 +164,37 @@ class ConferenceScheduleGenerationService(
                 )
             }
 
-        val result = scheduleService.createBulkScheduleEntries(entries)
+        val result = saveScheduleEntries(entries)
         Logger.info("Generated ${result.size} conference games for ${request.conference}")
         return result
+    }
+
+    private fun saveScheduleEntries(entries: List<ScheduleEntry>): List<Schedule> {
+        val schedules =
+            entries.map { entry ->
+                val schedule = Schedule()
+                schedule.season = entry.season
+                schedule.week = entry.week
+                schedule.subdivision = entry.subdivision
+                schedule.homeTeam = entry.homeTeam
+                schedule.awayTeam = entry.awayTeam
+                schedule.tvChannel =
+                    if (entry.gameType in listOf(GameType.BOWL, GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP)) {
+                        TVChannel.ESPN
+                    } else {
+                        entry.tvChannel
+                    }
+                schedule.gameType = entry.gameType
+                schedule.started = false
+                schedule.finished = false
+                schedule.playoffRound = entry.playoffRound
+                schedule.playoffHomeSeed = entry.playoffHomeSeed
+                schedule.playoffAwaySeed = entry.playoffAwaySeed
+                schedule.postseasonGameName = entry.postseasonGameName
+                schedule.postseasonGameLogo = entry.postseasonGameLogo
+                schedule
+            }
+        return scheduleRepository.saveAll(schedules).toList()
     }
 
     // Matchup Selection Helpers
@@ -491,11 +511,11 @@ class ConferenceScheduleGenerationService(
         val jobId = UUID.randomUUID().toString()
         val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-        val skipConferences = setOf(Conference.FBS_INDEPENDENT, Conference.FAKE_TEAM)
-        val conferencesToGenerate = Conference.values().filter { it !in skipConferences }
+        val skipConferences = setOf("FBS_INDEPENDENT", "FAKE_TEAM")
+        val conferencesToGenerate = conferenceRepository.findAllByActiveTrueOrderByDisplayOrderAsc().filter { it.code !in skipConferences }
         val validConferences =
             conferencesToGenerate.filter { conf ->
-                val teams = teamService.getTeamsInConference(conf.name)
+                val teams = teamService.getTeamsInConference(conf.code)
                 !teams.isNullOrEmpty()
             }
 
@@ -541,14 +561,14 @@ class ConferenceScheduleGenerationService(
                 ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 
             try {
-                Logger.info("[${index + 1}/${conferences.size}] Generating schedule for ${conference.name}...")
-                val teams = teamService.getTeamsInConference(conference.name) ?: emptyList()
+                Logger.info("[${index + 1}/${conferences.size}] Generating schedule for ${conference.code}...")
+                val teams = teamService.getTeamsInConference(conference.code) ?: emptyList()
                 val subdivision = teams.firstOrNull()?.subdivision ?: Subdivision.FBS
 
                 val request =
                     ConferenceScheduleRequest(
                         season = season,
-                        conference = conference.name,
+                        conference = conference.code,
                         subdivision = subdivision,
                         numConferenceGames = 9,
                         protectedRivalries = emptyList(),
@@ -561,28 +581,28 @@ class ConferenceScheduleGenerationService(
 
                 job.logs.add(
                     ScheduleGenLog(
-                        conference = conference.name,
+                        conference = conference.code,
                         status = "SUCCESS",
                         gamesGenerated = generated.size,
                         message = "Generated ${generated.size} games",
                         timestamp = timestamp,
                     ),
                 )
-                Logger.info("[${index + 1}/${conferences.size}] ${conference.name}: ${generated.size} games generated")
+                Logger.info("[${index + 1}/${conferences.size}] ${conference.code}: ${generated.size} games generated")
             } catch (e: Exception) {
                 job.failedConferences++
                 val errorMsg = e.message ?: "Unknown error"
 
                 job.logs.add(
                     ScheduleGenLog(
-                        conference = conference.name,
+                        conference = conference.code,
                         status = "FAILED",
                         gamesGenerated = 0,
                         message = errorMsg,
                         timestamp = timestamp,
                     ),
                 )
-                Logger.error("[${index + 1}/${conferences.size}] FAILED ${conference.name}: $errorMsg")
+                Logger.error("[${index + 1}/${conferences.size}] FAILED ${conference.code}: $errorMsg")
             }
         }
 

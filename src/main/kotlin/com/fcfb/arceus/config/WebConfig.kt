@@ -2,7 +2,9 @@ package com.fcfb.arceus.config
 
 import com.fcfb.arceus.controllers.ApiConstants.FULL_PATH
 import com.fcfb.arceus.filters.JwtAuthenticationFilter
+import com.fcfb.arceus.repositories.UserRepository
 import com.fcfb.arceus.service.auth.SessionService
+import com.fcfb.arceus.util.EncryptionUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -14,6 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
@@ -59,7 +62,10 @@ private val PUBLIC_READ_GET_PATHS =
         "$FULL_PATH/chart/win-probability/matchup",
         "$FULL_PATH/chart/elo",
         "$FULL_PATH/coach_transaction_log",
+        "$FULL_PATH/coach-stats",
+        "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats",
+        "$FULL_PATH/team-season-conference",
         "$FULL_PATH/game-stats",
         "$FULL_PATH/game-stats/elo-history",
         "$FULL_PATH/game-stats/by-season-week",
@@ -71,12 +77,17 @@ private val PUBLIC_READ_GET_PATHS =
         "$FULL_PATH/records",
         "$FULL_PATH/season-stats",
         "$FULL_PATH/season-stats/leaderboard",
+        "$FULL_PATH/user",
+        "$FULL_PATH/user/name",
+        "$FULL_PATH/user/team",
+        "$FULL_PATH/user/free_agents",
     )
 
 private val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
 
 private val ADMIN_ONLY_POST_PATHS =
     arrayOf(
+        "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats/generate/all",
         "$FULL_PATH/game-stats/generate",
         "$FULL_PATH/game-stats/generate/all/more_recent_than",
@@ -85,6 +96,7 @@ private val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/playbook-stats/generate/all",
         "$FULL_PATH/ranking",
         "$FULL_PATH/records/generate/all",
+        "$FULL_PATH/records/generate/teams-and-conferences",
         "$FULL_PATH/season-stats/generate/all",
         "$FULL_PATH/season-stats/generate/team-season",
         "$FULL_PATH/scorebug/generate/all",
@@ -101,16 +113,20 @@ private val ADMIN_ONLY_PUT_PATHS =
         "$FULL_PATH/team",
         "$FULL_PATH/user/update",
         "$FULL_PATH/play",
+        "$FULL_PATH/conference/*",
+        "$FULL_PATH/conference/*/active",
     )
 
 private val ADMIN_ONLY_DELETE_PATHS =
     arrayOf(
         "$FULL_PATH/team/*",
         "$FULL_PATH/user/*",
+        "$FULL_PATH/new_signups/*",
     )
 
 private val PRIVILEGED_POST_PATHS =
     arrayOf(
+        "$FULL_PATH/user/*/api-key",
         "$FULL_PATH/play/submit_defense",
         "$FULL_PATH/game",
         "$FULL_PATH/game/overtime",
@@ -126,6 +142,8 @@ private val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/team/hire",
         "$FULL_PATH/team/hire/interim",
         "$FULL_PATH/team/fire",
+        "$FULL_PATH/team/fire/coach",
+        "$FULL_PATH/new_signups/*/hire",
         "$FULL_PATH/request_message_log",
         "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/bulk",
@@ -167,10 +185,16 @@ private val PRIVILEGED_DELETE_PATHS =
 open class WebConfig(
     private val sessionService: SessionService,
     @Value("\${bot.service.key}") private val botServiceKey: String,
+    @Value("\${website.service.key}") private val websiteServiceKey: String,
+    private val userRepository: UserRepository,
+    private val encryptionUtils: EncryptionUtils,
 ) : WebSecurityConfigurerAdapter() {
     init {
         check(botServiceKey.isNotBlank() && botServiceKey != BOT_SERVICE_KEY_PLACEHOLDER) {
             "bot.service.key must be set to a real secret (BOT_SERVICE_KEY env var) before startup"
+        }
+        check(websiteServiceKey.isNotBlank() && websiteServiceKey != botServiceKey) {
+            "website.service.key must be set to a real secret (WEBSITE_SERVICE_KEY env var), distinct from the bot key"
         }
     }
 
@@ -182,7 +206,7 @@ open class WebConfig(
         http
             .csrf().disable()
             .addFilterBefore(
-                JwtAuthenticationFilter(sessionService, botServiceKey),
+                JwtAuthenticationFilter(sessionService, botServiceKey, websiteServiceKey, userRepository, encryptionUtils),
                 UsernamePasswordAuthenticationFilter::class.java,
             )
             .exceptionHandling()
@@ -234,9 +258,15 @@ open class WebConfig(
 @Configuration
 open class MvcConfig(
     @Value("\${images.path:./images}") private val imagesPath: String,
+    private val requestLoggingInterceptor: RequestLoggingInterceptor,
 ) : WebMvcConfigurer {
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         registry.addResourceHandler("/images/**")
             .addResourceLocations("file:$imagesPath/")
+    }
+
+    override fun addInterceptors(registry: InterceptorRegistry) {
+        registry.addInterceptor(requestLoggingInterceptor)
+            .excludePathPatterns("/actuator/**", "/**/health")
     }
 }

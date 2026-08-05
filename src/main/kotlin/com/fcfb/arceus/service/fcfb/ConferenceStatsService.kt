@@ -1,6 +1,5 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.model.ConferenceStats
 import com.fcfb.arceus.model.SeasonStats
@@ -24,7 +23,7 @@ class ConferenceStatsService(
     private val conferenceStatsSpecificationService: ConferenceStatsSpecificationService,
 ) {
     fun getFilteredConferenceStats(
-        conference: Conference?,
+        conference: String?,
         season: Int?,
         subdivision: Subdivision?,
         pageable: Pageable,
@@ -53,13 +52,15 @@ class ConferenceStatsService(
             }.filterKeys { it.first != null && it.second != null }
 
         // Generate conference stats for each subdivision/conference/season combination
-        for ((subdivisionConferenceSeason, seasonStatsList) in groupedStats) {
+        val total = groupedStats.size
+        groupedStats.entries.forEachIndexed { index, (subdivisionConferenceSeason, seasonStatsList) ->
             val subdivision = subdivisionConferenceSeason.first!!
             val conference = subdivisionConferenceSeason.second!!
             val seasonNumber = subdivisionConferenceSeason.third
 
             Logger.info(
-                "Generating conference stats for $subdivision/$conference in season $seasonNumber with ${seasonStatsList.size} teams",
+                "Generating conference stats for $subdivision/$conference in season $seasonNumber " +
+                    "with ${seasonStatsList.size} teams (${index + 1}/$total)",
             )
             generateConferenceStatsForSubdivisionAndConferenceAndSeason(subdivision, conference, seasonNumber)
         }
@@ -69,12 +70,11 @@ class ConferenceStatsService(
 
     private fun generateConferenceStatsForSubdivisionAndConferenceAndSeason(
         subdivision: Subdivision,
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ) {
         Logger.info("Starting generation of conference stats for $subdivision/$conference in season $seasonNumber")
 
-        // Get all season stats for this subdivision, conference, and season
         val seasonStatsList =
             seasonStatsRepository.findBySeasonNumberOrderByTeamAsc(seasonNumber)
                 .filter { seasonStats ->
@@ -86,7 +86,6 @@ class ConferenceStatsService(
             return
         }
 
-        // Delete existing conference stats for this subdivision, conference, and season
         conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
             conferenceStatsRepository.delete(it)
         }
@@ -109,7 +108,7 @@ class ConferenceStatsService(
     private fun aggregateSeasonStatsToConferenceStats(
         seasonStatsList: List<SeasonStats>,
         subdivision: Subdivision,
-        conference: Conference,
+        conference: String,
         seasonNumber: Int,
     ): ConferenceStats {
         val totalTeams = seasonStatsList.size

@@ -10,6 +10,8 @@ import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.log.CoachTransactionLogService
+import com.fcfb.arceus.util.InvalidNewSignupException
+import com.fcfb.arceus.util.NewSignupNotFoundException
 import com.fcfb.arceus.util.NoCoachDiscordIdsFoundException
 import com.fcfb.arceus.util.TeamNotFoundException
 import com.fcfb.arceus.util.TooManyCoachesException
@@ -27,6 +29,7 @@ class TeamService(
     private val userService: UserService,
     private val coachTransactionLogService: CoachTransactionLogService,
     private val newSignupService: NewSignupService,
+    private val conferenceService: ConferenceService,
 ) {
     fun updateTeamWinsAndLosses(game: Game) {
         val homeTeam = getTeamByName(game.homeTeam)
@@ -109,6 +112,7 @@ class TeamService(
             ?: throw TeamNotFoundException("Team not found with name: $name")
 
     fun createTeam(team: Team): Team {
+        team.conference?.let { conferenceService.requireExists(it) }
         return teamRepository.save(
             Team(
                 team.logo,
@@ -153,6 +157,7 @@ class TeamService(
     }
 
     fun updateTeam(team: Team): Team {
+        team.conference?.let { conferenceService.requireExists(it) }
         val existingTeam = getTeamByName(team.name)
 
         existingTeam.apply {
@@ -169,6 +174,8 @@ class TeamService(
             playoffCommitteeRanking = team.playoffCommitteeRanking
             offensivePlaybook = team.offensivePlaybook
             defensivePlaybook = team.defensivePlaybook
+            isTaken = team.isTaken
+            active = team.active
             currentWins = team.currentWins
             currentLosses = team.currentLosses
             currentConferenceWins = team.currentConferenceWins
@@ -310,7 +317,7 @@ class TeamService(
             }
             coachTransactionLogService.logCoachTransaction(
                 CoachTransactionLog(
-                    existingTeam.name ?: "TEAM_NOT_FOUND",
+                    existingTeam.name!!,
                     coachPosition,
                     mutableListOf(user.username),
                     TransactionType.HIRED,
@@ -320,6 +327,20 @@ class TeamService(
             )
         }
         return existingTeam
+    }
+
+    suspend fun hireCoachFromSignup(
+        signupId: Long,
+        team: String,
+        coachPosition: CoachPosition,
+        processedBy: String,
+    ): Team {
+        val newSignup = newSignupService.getNewSignupById(signupId) ?: throw NewSignupNotFoundException(signupId)
+        val discordId = newSignup.discordId ?: throw InvalidNewSignupException("New signup ${newSignup.username} has no linked Discord ID")
+        if (userService.findUserByDiscordId(discordId) == null) {
+            newSignupService.approveNewSignup(newSignup)
+        }
+        return hireCoach(team, discordId, coachPosition, processedBy)
     }
 
     suspend fun hireInterimCoach(
@@ -345,7 +366,7 @@ class TeamService(
             }
             coachTransactionLogService.logCoachTransaction(
                 CoachTransactionLog(
-                    existingTeam.name ?: "TEAM_NOT_FOUND",
+                    existingTeam.name!!,
                     CoachPosition.HEAD_COACH,
                     mutableListOf(user.username),
                     TransactionType.HIRED_INTERIM,
@@ -373,7 +394,7 @@ class TeamService(
 
         coachTransactionLogService.logCoachTransaction(
             CoachTransactionLog(
-                existingTeam.name ?: "TEAM_NOT_FOUND",
+                existingTeam.name!!,
                 CoachPosition.HEAD_COACH,
                 existingTeam.coachUsernames,
                 TransactionType.FIRED,
@@ -388,6 +409,46 @@ class TeamService(
         existingTeam.offensivePlaybook = OffensivePlaybook.AIR_RAID
         existingTeam.defensivePlaybook = DefensivePlaybook.FOUR_THREE
         existingTeam.isTaken = false
+        saveTeam(existingTeam)
+        return existingTeam
+    }
+
+    fun fireSingleCoach(
+        name: String?,
+        discordId: String,
+        position: CoachPosition,
+        processedBy: String,
+    ): Team {
+        val existingTeam = getTeamByName(name)
+        val discordIds = existingTeam.coachDiscordIds ?: throw NoCoachDiscordIdsFoundException()
+        val index = discordIds.indexOf(discordId)
+        if (index == -1) throw NoCoachDiscordIdsFoundException()
+
+        if (discordIds.size <= 1) {
+            return fireCoach(name, processedBy)
+        }
+
+        val user = userService.getUserDTOByDiscordId(discordId)
+        if (user.team == existingTeam.name) {
+            user.team = null
+            userService.updateUser(user)
+        }
+
+        coachTransactionLogService.logCoachTransaction(
+            CoachTransactionLog(
+                existingTeam.name!!,
+                position,
+                mutableListOf(user.username),
+                TransactionType.FIRED,
+                ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
+                processedBy,
+            ),
+        )
+
+        existingTeam.coachDiscordIds = discordIds.toMutableList().also { it.removeAt(index) }
+        existingTeam.coachUsernames = existingTeam.coachUsernames?.toMutableList()?.also { if (index < it.size) it.removeAt(index) }
+        existingTeam.coachNames = existingTeam.coachNames?.toMutableList()?.also { if (index < it.size) it.removeAt(index) }
+        existingTeam.coachDiscordTags = existingTeam.coachDiscordTags?.toMutableList()?.also { if (index < it.size) it.removeAt(index) }
         saveTeam(existingTeam)
         return existingTeam
     }

@@ -48,7 +48,6 @@ object GameStatsCalculator {
 
     fun calculatePassYards(allPlays: List<Play>): Int {
         return allPlays.sumOf { play ->
-            // Don't count sacks towards passing yards
             when {
                 play.playCall == PlayCall.PASS && play.actualResult == ActualResult.LOSS -> 0
                 play.playCall == PlayCall.PASS -> play.yards
@@ -100,7 +99,6 @@ object GameStatsCalculator {
     fun calculateRushYards(allPlays: List<Play>): Int {
         return allPlays.sumOf { play ->
             when {
-                // Count sacks towards rushing yards
                 play.playCall == PlayCall.PASS && (
                     play.result == Scenario.LOSS_OF_10_YARDS ||
                         play.result == Scenario.LOSS_OF_7_YARDS ||
@@ -326,7 +324,6 @@ object GameStatsCalculator {
 
         allPlays.sortedBy { it.playId }.forEach { play ->
             when {
-                // If the current play is a kickoff, end the current drive
                 (
                     play.playCall == PlayCall.KICKOFF_NORMAL ||
                         play.playCall == PlayCall.KICKOFF_ONSIDE ||
@@ -335,18 +332,14 @@ object GameStatsCalculator {
                     isDriveInProgress = false
                 }
 
-                // Player starts or continues a drive (possession belongs to the player)
                 play.possession == teamSide && !isDriveInProgress -> {
-                    // Start a new drive
                     driveCount++
                     isDriveInProgress = true
                 }
 
-                // If possession changes to another player or a turnover happens
                 play.possession != teamSide ||
                     play.actualResult == ActualResult.TURNOVER ||
                     play.actualResult == ActualResult.TURNOVER_TOUCHDOWN -> {
-                    // End the current drive
                     isDriveInProgress = false
                 }
             }
@@ -397,8 +390,8 @@ object GameStatsCalculator {
         return offensiveTouchdowns + defensiveTouchdowns
     }
 
-    fun calculateAverageNormalPlayDiff(allPlays: List<Play>): Double {
-        val average =
+    fun calculateAverageNormalPlayDiff(allPlays: List<Play>): Double? {
+        val differences =
             allPlays
                 .filter { play ->
                     play.playCall != PlayCall.KICKOFF_NORMAL &&
@@ -410,13 +403,12 @@ object GameStatsCalculator {
                         play.playCall != PlayCall.SPIKE
                 }
                 .mapNotNull { it.difference }
-                .average()
 
-        return if (average.isNaN()) 0.0 else average
+        return if (differences.isEmpty()) null else differences.average()
     }
 
-    fun calculateAverageSpecialTeamsDiff(allPlays: List<Play>): Double {
-        val average =
+    fun calculateAverageSpecialTeamsDiff(allPlays: List<Play>): Double? {
+        val differences =
             allPlays
                 .filter { play ->
                     play.playCall == PlayCall.KICKOFF_NORMAL ||
@@ -426,21 +418,14 @@ object GameStatsCalculator {
                         play.playCall == PlayCall.PUNT
                 }
                 .mapNotNull { it.difference }
-                .average()
 
-        return if (average.isNaN()) 0.0 else average
+        return if (differences.isEmpty()) null else differences.average()
     }
 
     fun calculateAverageYardsPerPlay(allPlays: List<Play>): Double {
         val average =
             allPlays
-                .filter { play ->
-                    play.playCall != PlayCall.KICKOFF_NORMAL &&
-                        play.playCall != PlayCall.KICKOFF_ONSIDE &&
-                        play.playCall != PlayCall.KICKOFF_SQUIB &&
-                        play.playCall != PlayCall.PAT &&
-                        play.playCall != PlayCall.TWO_POINT
-                }
+                .filter { play -> play.playCall == PlayCall.RUN || play.playCall == PlayCall.PASS }
                 .map { it.yards }
                 .average()
 
@@ -453,19 +438,23 @@ object GameStatsCalculator {
 
     fun calculateThirdDownConversionSuccess(allPlays: List<Play>): Int {
         return allPlays.count { play ->
-            play.down == 3 && play.yards > play.yardsToGo
+            (play.playCall == PlayCall.RUN || play.playCall == PlayCall.PASS) &&
+                play.down == 3 &&
+                (play.yards >= play.yardsToGo || play.actualResult == ActualResult.TOUCHDOWN)
         }
     }
 
     fun calculateThirdDownConversionAttempts(allPlays: List<Play>): Int {
         return allPlays.count { play ->
-            play.down == 3
+            play.down == 3 && (play.playCall == PlayCall.RUN || play.playCall == PlayCall.PASS)
         }
     }
 
     fun calculateFourthDownConversionSuccess(allPlays: List<Play>): Int {
         return allPlays.count { play ->
-            play.down == 4 && play.yards > play.yardsToGo
+            (play.playCall == PlayCall.RUN || play.playCall == PlayCall.PASS) &&
+                play.down == 4 &&
+                (play.yards >= play.yardsToGo || play.actualResult == ActualResult.TOUCHDOWN)
         }
     }
 
@@ -521,7 +510,6 @@ object GameStatsCalculator {
 
         allPlays.sortedBy { it.playId }.forEach { play ->
             when {
-                // If the current play is a kickoff, end the current drive
                 (
                     play.playCall == PlayCall.KICKOFF_NORMAL ||
                         play.playCall == PlayCall.KICKOFF_ONSIDE ||
@@ -530,22 +518,17 @@ object GameStatsCalculator {
                     isDriveInProgress = false
                 }
 
-                // Player starts or continues a drive (possession belongs to the player)
                 play.possession == teamSide && !isDriveInProgress -> {
-                    // Start a new drive
                     isDriveInProgress = true
                     visitedRedZoneOnDrive = false
                 }
 
-                // If possession changes to another player or a turnover happens
                 play.possession != teamSide ||
                     play.actualResult == ActualResult.TURNOVER ||
                     play.actualResult == ActualResult.TURNOVER_TOUCHDOWN -> {
-                    // End the current drive
                     isDriveInProgress = false
                 }
 
-                // If the current play is in the red zone
                 play.ballLocation >= 80 &&
                     !visitedRedZoneOnDrive &&
                     isDriveInProgress &&
@@ -565,9 +548,9 @@ object GameStatsCalculator {
         }
     }
 
-    fun calculateAverageDiff(allPlays: List<Play>): Double {
-        val average = allPlays.mapNotNull { it.difference }.average()
-        return if (average.isNaN()) 0.0 else average
+    fun calculateAverageDiff(allPlays: List<Play>): Double? {
+        val differences = allPlays.mapNotNull { it.difference }
+        return if (differences.isEmpty()) null else differences.average()
     }
 
     fun calculateTurnoverDifferential(
@@ -631,9 +614,7 @@ object GameStatsCalculator {
             return currentQuarterScore
         }
         if (play.possession == possession) {
-            if (play.actualResult == ActualResult.TOUCHDOWN || play.actualResult == ActualResult.KICKING_TEAM_TOUCHDOWN ||
-                play.actualResult == ActualResult.PUNT_RETURN_TOUCHDOWN
-            ) {
+            if (play.actualResult == ActualResult.TOUCHDOWN || play.actualResult == ActualResult.KICKING_TEAM_TOUCHDOWN) {
                 return currentQuarterScore + 6
             }
             if (play.playCall == PlayCall.PAT && play.actualResult == ActualResult.GOOD) {

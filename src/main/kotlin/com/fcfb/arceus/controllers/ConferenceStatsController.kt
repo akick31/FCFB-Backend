@@ -1,6 +1,5 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.service.fcfb.ConferenceStatsService
 import org.springframework.data.domain.Pageable
@@ -18,12 +17,9 @@ import org.springframework.web.bind.annotation.RestController
 class ConferenceStatsController(
     private val conferenceStatsService: ConferenceStatsService,
 ) {
-    /**
-     * Get filtered conference stats with pagination
-     */
     @GetMapping
     fun getFilteredConferenceStats(
-        @RequestParam(required = false) conference: Conference?,
+        @RequestParam(required = false) conference: String?,
         @RequestParam(required = false) season: Int?,
         @RequestParam(required = false) subdivision: Subdivision?,
         @PageableDefault(size = 20) pageable: Pageable,
@@ -34,9 +30,6 @@ class ConferenceStatsController(
         pageable = pageable,
     )
 
-    /**
-     * Generate all conference stats (recalculate all conference stats)
-     */
     @PostMapping("/generate/all")
     fun generateAllConferenceStats() = conferenceStatsService.generateAllConferenceStats()
 }

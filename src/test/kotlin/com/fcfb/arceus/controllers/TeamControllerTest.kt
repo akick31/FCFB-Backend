@@ -1,6 +1,5 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.enums.team.Conference
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
@@ -44,7 +43,7 @@ class TeamControllerTest {
         subdivision: Subdivision = Subdivision.FCS,
         offensivePlaybook: OffensivePlaybook = OffensivePlaybook.AIR_RAID,
         defensivePlaybook: DefensivePlaybook = DefensivePlaybook.FIVE_TWO,
-        conference: Conference = Conference.COLONIAL,
+        conference: String = "COLONIAL",
     ): Team {
         return Team(
             logo = "logo$id.png",
@@ -104,7 +103,7 @@ class TeamControllerTest {
             sampleTeam(
                 1,
                 subdivision = Subdivision.FCFB,
-                conference = Conference.SEC,
+                conference = "SEC",
                 offensivePlaybook = OffensivePlaybook.AIR_RAID,
                 defensivePlaybook = DefensivePlaybook.FOUR_THREE,
             )
@@ -112,7 +111,7 @@ class TeamControllerTest {
             sampleTeam(
                 2,
                 subdivision = Subdivision.FBS,
-                conference = Conference.ACC,
+                conference = "ACC",
                 offensivePlaybook = OffensivePlaybook.PRO,
                 defensivePlaybook = DefensivePlaybook.THREE_FOUR,
             )

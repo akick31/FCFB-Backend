@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.record
 
+import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.GameStats
@@ -18,64 +19,72 @@ class SeasonRecordService(
     private val gameStatsRepository: GameStatsRepository,
     private val recordStatUtils: RecordStatUtils,
 ) {
+    private data class TeamSeason(val team: String, val season: Int, val value: Double)
+
     fun generateSeasonRecord(
         statName: Stats,
         gameStatsList: List<GameStats>,
         recordType: RecordType,
+        teamConference: Map<String, String?> = emptyMap(),
+        scopes: Set<RecordScope> = RecordScope.ALL,
     ) {
-        // Get game stats only for available seasons (10 and above, data unavailable for seasons 1-9)
-        val availableSeasons = recordStatUtils.getAvailableSeasons()
-
-        val allGameStats =
-            gameStatsRepository.findAll().toList()
-                .filter { it.season in availableSeasons }
-
-        // Group by team and season, then calculate season totals/averages
-        val teamSeasonTotals =
-            allGameStats
-                .groupBy { "${it.team}_${it.season}" }
-                .mapValues { (_, stats) ->
-                    when {
-                        recordStatUtils.lowestOnlyStats.contains(statName) || recordStatUtils.dualRecordStats.contains(statName) -> {
-                            // For diff stats, calculate average instead of sum
-                            recordStatUtils.calculateAverageForStat(statName, stats)
-                        }
-                        else -> {
-                            // For regular stats, sum the values
-                            stats.sumOf { recordStatUtils.getStatValue(statName, it) }
-                        }
-                    }
+        val teamSeasons =
+            gameStatsList
+                .filter { it.team != null }
+                .groupBy { it.team!! }
+                .map { (team, games) ->
+                    TeamSeason(team, games.first().season ?: 0, recordStatUtils.calculateSeasonValue(statName, games))
                 }
 
+        if (RecordScope.LEAGUE in scopes) {
+            saveBestSeasonRecord(statName, teamSeasons, gameStatsList, recordType, RecordScope.LEAGUE, null)
+        }
+        if (RecordScope.TEAM in scopes) {
+            teamSeasons.groupBy { it.team }.forEach { (team, entries) ->
+                saveBestSeasonRecord(statName, entries, gameStatsList, recordType, RecordScope.TEAM, team)
+            }
+        }
+        if (RecordScope.CONFERENCE in scopes) {
+            teamSeasons.groupBy { teamConference[it.team] }.forEach { (conference, entries) ->
+                if (conference != null) {
+                    saveBestSeasonRecord(statName, entries, gameStatsList, recordType, RecordScope.CONFERENCE, conference)
+                }
+            }
+        }
+    }
+
+    private fun saveBestSeasonRecord(
+        statName: Stats,
+        teamSeasons: List<TeamSeason>,
+        allGameStats: List<GameStats>,
+        recordType: RecordType,
+        recordScope: RecordScope,
+        scopeValue: String?,
+    ) {
         val isLowest = recordType == RecordType.SINGLE_SEASON_LOWEST
-        val bestTeamSeason =
+        val best =
             if (isLowest) {
-                teamSeasonTotals.minByOrNull { it.value }
+                teamSeasons.minByOrNull { it.value }
             } else {
-                teamSeasonTotals.maxByOrNull { it.value }
+                teamSeasons.maxByOrNull { it.value }
             } ?: return
 
-        val (team, seasonStr) = bestTeamSeason.key.split("_")
-        val season = seasonStr.toInt()
-        val teamSeasonGameStats = allGameStats.filter { it.team == team && it.season == season }
-        val bestGameStats = teamSeasonGameStats.first()
+        val teamSeasonGameStats = allGameStats.filter { it.team == best.team && it.season == best.season }
 
         val record =
             Record(
                 recordName = statName,
                 recordType = recordType,
-                seasonNumber = season,
-                // Season records don't have a specific week
+                recordScope = recordScope,
+                scopeValue = scopeValue,
+                seasonNumber = best.season,
                 week = null,
-                // Season records don't have a specific game ID
                 gameId = null,
-                // Season records don't have specific home/away teams
                 homeTeam = null,
-                // Season records don't have specific home/away teams
                 awayTeam = null,
-                recordTeam = team,
+                recordTeam = best.team,
                 coach = getCoachForSeasonRecord(teamSeasonGameStats),
-                recordValue = bestTeamSeason.value,
+                recordValue = best.value,
             )
 
         recordRepository.save(record)
@@ -84,67 +93,62 @@ class SeasonRecordService(
     fun getCurrentSeasonStatsForTeam(
         team: String,
         season: Int,
-    ): GameStats? {
+    ): List<GameStats> {
         return gameStatsRepository.findAll()
             .filter { it.team == team && it.season == season }
-            .firstOrNull()
     }
+
+    private data class SeasonCandidate(val team: String, val season: Int, val value: Double, val games: List<GameStats>)
 
     fun checkAndUpdateSeasonRecord(
         statName: Stats,
-        homeSeasonStats: GameStats?,
-        awaySeasonStats: GameStats?,
+        homeSeasonGames: List<GameStats>,
+        awaySeasonGames: List<GameStats>,
         recordType: RecordType,
+        recordScope: RecordScope = RecordScope.LEAGUE,
+        scopeValue: String? = null,
     ) {
-        val currentRecord = recordRepository.findTopByRecordNameAndRecordTypeOrderByRecordValueDesc(statName, recordType)
+        val currentRecord = recordRepository.findScopedRecords(statName, recordType, recordScope, scopeValue).firstOrNull()
 
-        // Check both teams' season stats
-        val teamStats = listOfNotNull(homeSeasonStats, awaySeasonStats)
-
-        val isLowest = recordType == RecordType.SINGLE_SEASON_LOWEST
-        val bestTeamStats =
-            if (isLowest) {
-                teamStats.minByOrNull { gameStats ->
-                    recordStatUtils.getStatValue(statName, gameStats)
-                }
-            } else {
-                teamStats.maxByOrNull { gameStats ->
-                    recordStatUtils.getStatValue(statName, gameStats)
-                }
+        val candidates =
+            listOf(homeSeasonGames, awaySeasonGames).mapNotNull { games ->
+                val first = games.firstOrNull() ?: return@mapNotNull null
+                SeasonCandidate(first.team!!, first.season!!, recordStatUtils.calculateSeasonValue(statName, games), games)
             }
 
-        if (bestTeamStats != null) {
-            val currentValue = recordStatUtils.getStatValue(statName, bestTeamStats)
+        val isLowest = recordType == RecordType.SINGLE_SEASON_LOWEST
+        val best =
+            if (isLowest) {
+                candidates.minByOrNull { it.value }
+            } else {
+                candidates.maxByOrNull { it.value }
+            }
+
+        if (best != null) {
             val recordValue = currentRecord?.recordValue ?: if (isLowest) Double.MAX_VALUE else 0.0
 
             val isNewRecord =
                 if (isLowest) {
-                    currentValue < recordValue
+                    best.value < recordValue
                 } else {
-                    currentValue > recordValue
+                    best.value > recordValue
                 }
 
             if (isNewRecord) {
-                // New record!
-                val team = bestTeamStats.team ?: return
-                val season = bestTeamStats.season ?: return
-
                 val newRecord =
                     Record(
                         recordName = statName,
                         recordType = recordType,
-                        seasonNumber = season,
-                        // Season records don't have a specific week
+                        recordScope = recordScope,
+                        scopeValue = scopeValue,
+                        seasonNumber = best.season,
                         week = null,
-                        // Season records don't have a specific game ID
                         gameId = null,
-                        // Season records don't have specific home/away teams
                         homeTeam = null,
-                        // Season records don't have specific home/away teams
                         awayTeam = null,
-                        recordTeam = team,
-                        coach = getCoachForSeasonRecord(listOf(bestTeamStats)),
-                        recordValue = currentValue,
+                        recordTeam = best.team,
+                        coach = getCoachForSeasonRecord(best.games),
+                        recordValue = best.value,
                         previousRecordValue = recordValue,
                         previousRecordTeam = currentRecord?.recordTeam,
                         previousRecordGameId = currentRecord?.gameId,
@@ -152,7 +156,7 @@ class SeasonRecordService(
 
                 recordRepository.save(newRecord)
                 val recordTypeStr = if (isLowest) "LOWEST SINGLE SEASON" else "SINGLE SEASON"
-                Logger.info("New $recordTypeStr record: ${statName.name} = $currentValue by $team in season $season")
+                Logger.info("New $recordTypeStr record: ${statName.name} = ${best.value} by ${best.team} in season ${best.season}")
             }
         }
     }

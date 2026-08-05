@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.RestController
 class PlaybookStatsController(
     private val playbookStatsService: PlaybookStatsService,
 ) {
-    /**
-     * Get filtered playbook stats with pagination
-     */
     @GetMapping
     fun getFilteredPlaybookStats(
         @RequestParam(required = false) offensivePlaybook: OffensivePlaybook?,
@@ -34,9 +31,6 @@ class PlaybookStatsController(
         pageable = pageable,
     )
 
-    /**
-     * Generate all playbook stats
-     */
     @PostMapping("/generate/all")
     fun generateAll() = playbookStatsService.generateAllPlaybookStats()
 }
