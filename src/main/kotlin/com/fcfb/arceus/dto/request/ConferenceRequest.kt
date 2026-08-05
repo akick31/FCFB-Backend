@@ -8,5 +8,4 @@ data class ConferenceRequest(
     @JsonProperty("logoUrl") val logoUrl: String?,
     @JsonProperty("logoUrlDark") val logoUrlDark: String?,
     @JsonProperty("abbreviation") val abbreviation: String? = null,
-    @JsonProperty("displayOrder") val displayOrder: Int = 0,
 )

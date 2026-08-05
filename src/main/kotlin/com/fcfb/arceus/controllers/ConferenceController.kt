@@ -30,14 +30,13 @@ class ConferenceController(
         request.logoUrl,
         request.logoUrlDark,
         request.abbreviation,
-        request.displayOrder,
     )
 
     @PutMapping("/{code}")
     fun updateConference(
         @PathVariable code: String,
         @RequestBody request: ConferenceRequest,
-    ) = conferenceService.update(code, request.label, request.logoUrl, request.logoUrlDark, request.abbreviation, request.displayOrder)
+    ) = conferenceService.update(code, request.label, request.logoUrl, request.logoUrlDark, request.abbreviation)
 
     @PutMapping("/{code}/active")
     fun setConferenceActive(

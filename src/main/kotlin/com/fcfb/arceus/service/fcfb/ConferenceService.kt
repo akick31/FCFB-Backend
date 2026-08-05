@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service
 class ConferenceService(
     private val conferenceRepository: ConferenceRepository,
 ) {
-    fun getAll(): List<Conference> = conferenceRepository.findAllByOrderByDisplayOrderAsc()
+    fun getAll(): List<Conference> = conferenceRepository.findAllByOrderByLabelAsc()
 
-    fun getActive(): List<Conference> = conferenceRepository.findAllByActiveTrueOrderByDisplayOrderAsc()
+    fun getActive(): List<Conference> = conferenceRepository.findAllByActiveTrueOrderByLabelAsc()
 
     fun requireExists(code: String): Conference =
         conferenceRepository.findById(code).orElseThrow {
@@ -24,12 +24,11 @@ class ConferenceService(
         logoUrl: String?,
         logoUrlDark: String?,
         abbreviation: String?,
-        displayOrder: Int,
     ): Conference {
         if (conferenceRepository.existsById(code)) {
             throw InvalidConferenceException("Conference $code already exists")
         }
-        return conferenceRepository.save(Conference(code, label, logoUrl, logoUrlDark, abbreviation, true, displayOrder))
+        return conferenceRepository.save(Conference(code, label, logoUrl, logoUrlDark, abbreviation, true))
     }
 
     fun update(
@@ -38,14 +37,12 @@ class ConferenceService(
         logoUrl: String?,
         logoUrlDark: String?,
         abbreviation: String?,
-        displayOrder: Int,
     ): Conference {
         val conference = requireExists(code)
         conference.label = label
         conference.logoUrl = logoUrl
         conference.logoUrlDark = logoUrlDark
         conference.abbreviation = abbreviation
-        conference.displayOrder = displayOrder
         return conferenceRepository.save(conference)
     }
 
