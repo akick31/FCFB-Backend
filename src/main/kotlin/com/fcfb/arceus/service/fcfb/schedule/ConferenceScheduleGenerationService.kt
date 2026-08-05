@@ -512,7 +512,7 @@ class ConferenceScheduleGenerationService(
         val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
         val skipConferences = setOf("FBS_INDEPENDENT", "FAKE_TEAM")
-        val conferencesToGenerate = conferenceRepository.findAllByActiveTrueOrderByDisplayOrderAsc().filter { it.code !in skipConferences }
+        val conferencesToGenerate = conferenceRepository.findAllByActiveTrueOrderByLabelAsc().filter { it.code !in skipConferences }
         val validConferences =
             conferencesToGenerate.filter { conf ->
                 val teams = teamService.getTeamsInConference(conf.code)

@@ -1,10 +1,11 @@
 package com.fcfb.arceus.dto.request
 
+import com.fasterxml.jackson.annotation.JsonProperty
+
 data class ConferenceRequest(
-    val code: String,
-    val label: String,
-    val logoUrl: String?,
-    val logoUrlDark: String?,
-    val abbreviation: String? = null,
-    val displayOrder: Int = 0,
+    @JsonProperty("code") val code: String,
+    @JsonProperty("label") val label: String,
+    @JsonProperty("logoUrl") val logoUrl: String?,
+    @JsonProperty("logoUrlDark") val logoUrlDark: String?,
+    @JsonProperty("abbreviation") val abbreviation: String? = null,
 )

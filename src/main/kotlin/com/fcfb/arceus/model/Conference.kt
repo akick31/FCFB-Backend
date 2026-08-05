@@ -33,10 +33,6 @@ class Conference {
     @Column(name = "active", columnDefinition = "tinyint(1)")
     var active: Boolean = true
 
-    @Basic
-    @Column(name = "display_order")
-    var displayOrder: Int = 0
-
     constructor(
         code: String,
         label: String,
@@ -44,7 +40,6 @@ class Conference {
         logoUrlDark: String?,
         abbreviation: String?,
         active: Boolean,
-        displayOrder: Int,
     ) {
         this.code = code
         this.label = label
@@ -52,7 +47,6 @@ class Conference {
         this.logoUrlDark = logoUrlDark
         this.abbreviation = abbreviation
         this.active = active
-        this.displayOrder = displayOrder
     }
 
     constructor()

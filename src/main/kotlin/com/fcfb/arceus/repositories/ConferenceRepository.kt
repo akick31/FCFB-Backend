@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface ConferenceRepository : CrudRepository<Conference, String> {
-    fun findAllByOrderByDisplayOrderAsc(): List<Conference>
+    fun findAllByOrderByLabelAsc(): List<Conference>
 
-    fun findAllByActiveTrueOrderByDisplayOrderAsc(): List<Conference>
+    fun findAllByActiveTrueOrderByLabelAsc(): List<Conference>
 }
