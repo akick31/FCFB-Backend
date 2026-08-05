@@ -26,6 +26,10 @@ class Conference {
     var logoUrlDark: String? = null
 
     @Basic
+    @Column(name = "abbreviation")
+    var abbreviation: String? = null
+
+    @Basic
     @Column(name = "active", columnDefinition = "tinyint(1)")
     var active: Boolean = true
 
@@ -38,6 +42,7 @@ class Conference {
         label: String,
         logoUrl: String?,
         logoUrlDark: String?,
+        abbreviation: String?,
         active: Boolean,
         displayOrder: Int,
     ) {
@@ -45,6 +50,7 @@ class Conference {
         this.label = label
         this.logoUrl = logoUrl
         this.logoUrlDark = logoUrlDark
+        this.abbreviation = abbreviation
         this.active = active
         this.displayOrder = displayOrder
     }

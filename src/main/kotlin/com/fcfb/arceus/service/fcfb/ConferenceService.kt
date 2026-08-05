@@ -23,12 +23,13 @@ class ConferenceService(
         label: String,
         logoUrl: String?,
         logoUrlDark: String?,
+        abbreviation: String?,
         displayOrder: Int,
     ): Conference {
         if (conferenceRepository.existsById(code)) {
             throw InvalidConferenceException("Conference $code already exists")
         }
-        return conferenceRepository.save(Conference(code, label, logoUrl, logoUrlDark, true, displayOrder))
+        return conferenceRepository.save(Conference(code, label, logoUrl, logoUrlDark, abbreviation, true, displayOrder))
     }
 
     fun update(
@@ -36,12 +37,14 @@ class ConferenceService(
         label: String,
         logoUrl: String?,
         logoUrlDark: String?,
+        abbreviation: String?,
         displayOrder: Int,
     ): Conference {
         val conference = requireExists(code)
         conference.label = label
         conference.logoUrl = logoUrl
         conference.logoUrlDark = logoUrlDark
+        conference.abbreviation = abbreviation
         conference.displayOrder = displayOrder
         return conferenceRepository.save(conference)
     }
