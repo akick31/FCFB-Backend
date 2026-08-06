@@ -16,7 +16,6 @@ class PlayTest {
     fun `test Play entity annotations`() {
         val play = Play()
 
-        // Test that the class has the correct JPA annotations
         val entityAnnotation = Play::class.java.getAnnotation(javax.persistence.Entity::class.java)
         assertNotNull(entityAnnotation)
 
@@ -143,7 +142,6 @@ class PlayTest {
     fun `test Play property mutability`() {
         val play = Play()
 
-        // Test property mutability
         play.playId = 1
         play.gameId = 456
         play.playNumber = 10
@@ -249,7 +247,6 @@ class PlayTest {
     fun `test Play with all TeamSide values`() {
         val play = Play()
 
-        // Test all TeamSide values
         TeamSide.entries.forEach { teamSide ->
             play.possession = teamSide
             assertEquals(teamSide, play.possession)
@@ -260,7 +257,6 @@ class PlayTest {
     fun `test Play with all PlayCall values`() {
         val play = Play()
 
-        // Test all PlayCall values
         PlayCall.entries.forEach { playCall ->
             play.playCall = playCall
             assertEquals(playCall, play.playCall)
@@ -271,7 +267,6 @@ class PlayTest {
     fun `test Play with all ActualResult values`() {
         val play = Play()
 
-        // Test all ActualResult values
         ActualResult.entries.forEach { actualResult ->
             play.actualResult = actualResult
             assertEquals(actualResult, play.actualResult)
@@ -302,28 +297,24 @@ class PlayTest {
     fun `test Play game situation tracking`() {
         val play = Play()
 
-        // Test quarter tracking
         play.quarter = 1
         assertEquals(1, play.quarter)
 
         play.quarter = 4
         assertEquals(4, play.quarter)
 
-        // Test clock tracking
         play.clock = 900
         assertEquals(900, play.clock)
 
         play.clock = 0
         assertEquals(0, play.clock)
 
-        // Test ball location
         play.ballLocation = 20
         assertEquals(20, play.ballLocation)
 
         play.ballLocation = 80
         assertEquals(80, play.ballLocation)
 
-        // Test down and distance
         play.down = 1
         play.yardsToGo = 10
         assertEquals(1, play.down)
@@ -339,7 +330,6 @@ class PlayTest {
     fun `test Play timeout management`() {
         val play = Play()
 
-        // Test timeout flags
         play.timeoutUsed = true
         assertTrue(play.timeoutUsed)
 
@@ -358,7 +348,6 @@ class PlayTest {
         play.defensiveTimeoutCalled = false
         assertFalse(play.defensiveTimeoutCalled)
 
-        // Test timeout counts
         play.homeTimeouts = 3
         play.awayTimeouts = 3
         assertEquals(3, play.homeTimeouts)
@@ -386,7 +375,6 @@ class PlayTest {
         play.winProbability = null
         assertNull(play.winProbability)
 
-        // Test win probability added
         play.winProbabilityAdded = 2.5
         assertEquals(2.5, play.winProbabilityAdded)
 
@@ -506,7 +494,6 @@ class PlayTest {
     fun `test Play complete game scenario`() {
         val play = Play()
 
-        // Set up a complete play scenario
         play.gameId = 123
         play.playNumber = 15
         play.homeScore = 21
@@ -541,7 +528,6 @@ class PlayTest {
         play.offensiveResponseSpeed = 15000L
         play.defensiveResponseSpeed = 12000L
 
-        // Verify all properties
         assertEquals(123, play.gameId)
         assertEquals(15, play.playNumber)
         assertEquals(21, play.homeScore)

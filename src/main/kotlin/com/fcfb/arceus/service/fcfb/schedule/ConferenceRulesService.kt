@@ -24,49 +24,67 @@ class ConferenceRulesService(
         rules.conference = conference
         rules.numConferenceGames = request.numConferenceGames
 
-        // Serialize protected rivalries to JSON
-        val rivalriesJson =
+        rules.protectedRivalries =
             if (request.protectedRivalries.isNotEmpty()) {
                 objectMapper.writeValueAsString(request.protectedRivalries)
             } else {
                 null
             }
-        rules.protectedRivalries = rivalriesJson
+        rules.divisions =
+            if (request.divisions.isNotEmpty()) {
+                objectMapper.writeValueAsString(request.divisions)
+            } else {
+                null
+            }
 
         conferenceRulesRepository.save(rules)
         Logger.info(
             "Saved conference rules for $conference: " +
-                "${request.numConferenceGames} games, ${request.protectedRivalries.size} rivalries",
+                "${request.numConferenceGames} games, ${request.protectedRivalries.size} rivalries, ${request.divisions.size} divisions",
         )
 
         return ConferenceRulesResponse(
             conference = request.conference,
             numConferenceGames = rules.numConferenceGames,
             protectedRivalries = request.protectedRivalries,
+            divisions = request.divisions,
         )
     }
 
     fun getConferenceRules(conference: String): ConferenceRulesResponse? {
         val rules = conferenceRulesRepository.findByConference(conference) ?: return null
 
-        // Deserialize protected rivalries from JSON
-        val protectedRivalriesJson = rules.protectedRivalries
-        val rivalries =
-            if (protectedRivalriesJson != null && protectedRivalriesJson.isNotBlank()) {
-                try {
-                    objectMapper.readValue(protectedRivalriesJson, Array<ProtectedRivalry>::class.java).toList()
-                } catch (e: Exception) {
-                    Logger.error("Error deserializing protected rivalries for $conference: ${e.message}", e)
-                    emptyList()
-                }
-            } else {
-                emptyList()
-            }
-
         return ConferenceRulesResponse(
             conference = rules.conference,
             numConferenceGames = rules.numConferenceGames,
-            protectedRivalries = rivalries,
+            protectedRivalries = deserializeRivalries(conference, rules.protectedRivalries),
+            divisions = deserializeDivisions(conference, rules.divisions),
         )
+    }
+
+    private fun deserializeRivalries(
+        conference: String,
+        json: String?,
+    ): List<ProtectedRivalry> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            objectMapper.readValue(json, Array<ProtectedRivalry>::class.java).toList()
+        } catch (e: Exception) {
+            Logger.error("Error deserializing protected rivalries for $conference: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    private fun deserializeDivisions(
+        conference: String,
+        json: String?,
+    ): List<String> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            objectMapper.readValue(json, Array<String>::class.java).toList()
+        } catch (e: Exception) {
+            Logger.error("Error deserializing divisions for $conference: ${e.message}", e)
+            emptyList()
+        }
     }
 }

@@ -11,4 +11,5 @@ data class ConferenceScheduleRequest(
     @JsonProperty("numConferenceGames") val numConferenceGames: Int = 9,
     @JsonProperty("protectedRivalries") val protectedRivalries: List<ProtectedRivalry> = emptyList(),
     @JsonProperty("startWeek") val startWeek: Int = 1,
+    @JsonProperty("divisions") val divisions: List<String> = emptyList(),
 )

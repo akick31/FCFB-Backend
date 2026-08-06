@@ -36,6 +36,7 @@ import com.fcfb.arceus.service.specification.GameSpecificationService.GameCatego
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
 import com.fcfb.arceus.util.GameNotFoundException
+import com.fcfb.arceus.util.GameWeekJobNotFoundException
 import com.fcfb.arceus.util.InvalidCoinTossChoiceException
 import com.fcfb.arceus.util.InvalidHalfTimePossessionChangeException
 import com.fcfb.arceus.util.Logger
@@ -84,14 +85,12 @@ class GameService(
     private val gameStatsRepository: GameStatsRepository,
     private val rankingRepository: RankingRepository,
 ) {
-    // Game Week Job Tracking
     companion object {
         private val activeJobs = ConcurrentHashMap<String, GameWeekJob>()
 
-        // Pacing configuration
-        const val DELAY_BETWEEN_GAMES_MS = 3000L // 3 seconds between each game
-        const val BATCH_SIZE = 25 // Number of games per batch
-        const val BATCH_COOLDOWN_MS = 60000L // 60 seconds cooldown between batches
+        const val DELAY_BETWEEN_GAMES_MS = 3000L
+        const val BATCH_SIZE = 25
+        const val BATCH_COOLDOWN_MS = 60000L
     }
 
     fun saveGame(game: Game): Game = gameRepository.save(game)
@@ -117,7 +116,6 @@ class GameService(
 
             val formattedDateTime = calculateDelayOfGameTimer()
 
-            // Validate request fields
             val homeTeam = homeTeamData.name ?: throw TeamNotFoundException("Home team not found")
             val awayTeam = awayTeamData.name ?: throw TeamNotFoundException("Away team not found")
 
@@ -147,10 +145,8 @@ class GameService(
             val (season, currentWeek) = getCurrentSeasonAndWeek(startRequest, week)
             val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
 
-            // Calculate Vegas odds for the game
             val vegasOdds = vegasOddsService.calculateVegasOdds(homeTeamData, awayTeamData)
 
-            // Create and save the Game object and Stats object
             val newGame =
                 withContext(Dispatchers.IO) {
                     gameRepository.save(
@@ -225,7 +221,6 @@ class GameService(
             newGame.awayPlatformId = discordData[0]
             newGame.requestMessageId = listOf(discordData[1])
 
-            // Save the updated entity and create game stats
             withContext(Dispatchers.IO) {
                 gameRepository.save(newGame)
             }
@@ -259,7 +254,6 @@ class GameService(
 
             val formattedDateTime = calculateDelayOfGameTimer()
 
-            // Validate request fields
             val homeTeam = homeTeamData.name ?: throw TeamNotFoundException("Home team not found")
             val awayTeam = awayTeamData.name ?: throw TeamNotFoundException("Away team not found")
 
@@ -288,7 +282,6 @@ class GameService(
 
             val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
 
-            // Create and save the Game object and Stats object
             val newGame =
                 withContext(Dispatchers.IO) {
                     gameRepository.save(
@@ -359,7 +352,6 @@ class GameService(
             newGame.awayPlatformId = discordData[0]
             newGame.requestMessageId = listOf(discordData[1])
 
-            // Save the updated entity and create game stats
             withContext(Dispatchers.IO) {
                 gameRepository.save(newGame)
             }
@@ -408,7 +400,6 @@ class GameService(
         updateCloseGame(game, play)
         updateUpsetAlert(game, play)
 
-        // Update the quarter/overtime stuff
         if (quarter == 0) {
             updateEndOfRegulationGameValues(game)
         } else if (game.gameStatus == GameStatus.OVERTIME) {
@@ -425,17 +416,14 @@ class GameService(
             updateNormalPlayValues(game, clock, possession, quarter, ballLocation, down, yardsToGo, waitingOn)
         }
 
-        // Calculate Win Probability
         try {
             val homeTeam = teamService.getTeamByName(game.homeTeam)
             val awayTeam = teamService.getTeamByName(game.awayTeam)
 
-            // Get game stats to use team_elo instead of current_elo
             val gameStats = gameStatsRepository.findByGameId(game.gameId)
             val homeGameStats = gameStats.find { it.team == game.homeTeam }
             val awayGameStats = gameStats.find { it.team == game.awayTeam }
 
-            // Use team_elo from game stats if available, otherwise fall back to current_elo
             val homeElo = homeGameStats?.teamElo ?: homeTeam.currentElo
             val awayElo = awayGameStats?.teamElo ?: awayTeam.currentElo
             winProbabilityService.calculateWinProbability(game, play, homeElo, awayElo)
@@ -608,15 +596,6 @@ class GameService(
         }
     }
 
-    /**
-     * Start all games for the given week asynchronously.
-     * Returns a job ID immediately; the actual game starting happens in a background coroutine.
-     * Use [getGameWeekJobStatus] to poll for progress and [retryFailedGames] to retry failures.
-     *
-     * @param season
-     * @param week
-     * @return GameWeekJobResponse with the job ID
-     */
     fun startWeekAsync(
         season: Int,
         week: Int,
@@ -648,7 +627,6 @@ class GameService(
         Logger.info("=== STARTING GAME WEEK (async) ===")
         Logger.info("Job ID: $jobId, Season: $season, Week: $week, Games: ${gamesToStart.size}")
 
-        // Launch background coroutine to process games
         CoroutineScope(Dispatchers.IO).launch {
             processGameWeek(jobId, week, gamesToStart)
         }
@@ -661,13 +639,6 @@ class GameService(
         )
     }
 
-    /**
-     * Background processor for starting games with smart pacing.
-     * Uses a short delay between each game and a longer cooldown between batches.
-     * This is much more efficient than the old 5-minute sleep approach:
-     *   - 100 games: ~5 min (vs ~20 min before)
-     *   - 500 games: ~28 min (vs ~100 min before)
-     */
     private suspend fun processGameWeek(
         jobId: String,
         week: Int,
@@ -751,7 +722,6 @@ class GameService(
                 )
             }
 
-            // Smart pacing: short delay between each game, longer cooldown between batches
             if (batchCount >= BATCH_SIZE && index < gamesToStart.size - 1) {
                 val batchNum = (index + 1) / BATCH_SIZE
                 Logger.info("=== Batch $batchNum complete ($BATCH_SIZE games). Cooling down ${BATCH_COOLDOWN_MS / 1000}s ===")
@@ -771,18 +741,10 @@ class GameService(
         Logger.info("Job: $jobId — Total: ${job.totalGames}, Started: ${job.startedGames}, Failed: ${job.failedGames}")
     }
 
-    /**
-     * Get the status of a game week start job.
-     * Returns null if the job doesn't exist.
-     */
-    fun getGameWeekJobStatus(jobId: String): GameWeekJob? = activeJobs[jobId]
+    fun getGameWeekJobStatus(jobId: String): GameWeekJob = activeJobs[jobId] ?: throw GameWeekJobNotFoundException(jobId)
 
     fun getAllGameWeekJobs(): List<GameWeekJob> = activeJobs.values.sortedByDescending { it.startedAt }
 
-    /**
-     * Retry only the failed games from a previous job.
-     * Creates a new job that processes just the failures.
-     */
     fun retryFailedGames(originalJobId: String): GameWeekJobResponse {
         val originalJob =
             activeJobs[originalJobId]
@@ -855,7 +817,6 @@ class GameService(
                         ),
                         week,
                     )
-                // Also mark in schedule
                 scheduleService.markManuallyStartedGameAsStarted(startedGame)
                 job.startedGames++
                 batchCount++
@@ -901,7 +862,6 @@ class GameService(
                 Logger.error("[Retry ${index + 1}/${failedGames.size}] FAILED again: ${failed.homeTeam} vs ${failed.awayTeam} — $errorMsg")
             }
 
-            // Smart pacing
             if (batchCount >= BATCH_SIZE && index < failedGames.size - 1) {
                 Logger.info("=== Retry batch complete. Cooling down ${BATCH_COOLDOWN_MS / 1000}s ===")
                 delay(BATCH_COOLDOWN_MS)
@@ -932,8 +892,6 @@ class GameService(
         game: Game,
         delayOfGameInstances: Pair<Int, Int>,
     ): Game {
-        // If the home team has 3 delay of game instances, they lose,
-        // so increment the score by 8 until they are losing
         if (delayOfGameInstances.first >= 3) {
             while (game.homeScore >= game.awayScore) {
                 game.awayScore += 8
@@ -1027,7 +985,6 @@ class GameService(
 
             recordService.checkAndUpdateRecordsForGame(game)
 
-            // Update season stats for non-scrimmage games
             if (game.gameType != GameType.SCRIMMAGE) {
                 seasonStatsService.updateSeasonStatsForGame(homeStats)
                 seasonStatsService.updateSeasonStatsForGame(awayStats)
@@ -1552,7 +1509,6 @@ class GameService(
     ) {
         game.clock = "0:00"
         if (GameRules.isEndOfOvertimeHalf(play)) {
-            // Handle the end of each half of overtime
             if (game.overtimeHalf == 1) {
                 if (play.actualResult == ActualResult.TOUCHDOWN) {
                     game.possession = possession
@@ -1580,8 +1536,6 @@ class GameService(
                 }
             } else {
                 if (homeScore != awayScore || game.currentPlayType == PlayType.PAT) {
-                    // End of game, one team has won
-                    // If the game is within 2 points, kick the PAT
                     if (GameRules.isGameMathmaticallyOver(play, homeScore, awayScore)) {
                         game.possession = possession
                         game.waitingOn = waitingOn
@@ -1631,7 +1585,7 @@ class GameService(
     }
 
     fun getGameByRequestMessageId(requestMessageId: String) =
-        gameRepository.getGameByRequestMessageId(requestMessageId)
+        gameRepository.getGameByRequestMessageId("\"$requestMessageId\"")
             ?: throw GameNotFoundException("Game not found for Request Message ID: $requestMessageId")
 
     fun getGameByPlatformId(platformId: ULong) =
@@ -1640,8 +1594,12 @@ class GameService(
 
     fun getGameById(id: Int): Game = gameRepository.getGameById(id) ?: throw GameNotFoundException("No game found with ID: $id")
 
+    fun chewGameByPlatformId(channelId: ULong): Game = chewGame(getGameByPlatformId(channelId))
+
+    fun chewGameByGameId(gameId: Int): Game = chewGame(getGameById(gameId))
+
     fun getFilteredGames(
-        filters: List<GameFilter>,
+        filters: List<GameFilter>?,
         category: GameCategory?,
         conference: String?,
         season: Int?,
@@ -1650,7 +1608,7 @@ class GameService(
         sort: GameSort,
         pageable: Pageable,
     ): Page<Game> {
-        val filterSpec = gameSpecificationService.createSpecification(filters, category, conference, season, week, gameMode)
+        val filterSpec = gameSpecificationService.createSpecification(filters ?: emptyList(), category, conference, season, week, gameMode)
         val sortOrders = gameSpecificationService.createSort(sort)
         val sortedPageable =
             PageRequest.of(
@@ -1756,12 +1714,6 @@ class GameService(
             play.clock <= 210
     }
 
-    /**
-     * Determine if there is an upset alert. A game is an upset alert
-     * if at least one of the teams is ranked and the game is close
-     * @param game the game
-     * @param play the play
-     */
     private fun updateUpsetAlert(
         game: Game,
         play: Play,
@@ -1843,13 +1795,6 @@ class GameService(
         return season to currentWeek
     }
 
-    /**
-     * Get rankings history for teams
-     * Returns games with rankings (home_team_rank or away_team_rank between 1-25)
-     * @param team Team name or null for all teams
-     * @param season Season number or null for all seasons
-     * @return List of games with rankings
-     */
     fun getRankingsHistory(
         team: String?,
         season: Int?,

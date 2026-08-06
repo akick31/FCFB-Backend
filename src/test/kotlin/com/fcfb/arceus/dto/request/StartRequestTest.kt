@@ -16,7 +16,6 @@ class StartRequestTest {
     fun `StartRequest should be a data class`() {
         val startRequest = createTestStartRequest()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(startRequest.toString())
         assertTrue(startRequest.toString().contains("StartRequest"))
     }
@@ -63,37 +62,30 @@ class StartRequestTest {
     fun `StartRequest should have proper JsonProperty annotations`() {
         val startRequestClass = StartRequest::class.java
 
-        // Check homePlatform annotation
         val homePlatformField = startRequestClass.declaredConstructors[0].parameters.find { it.name == "homePlatform" }
         val homePlatformAnnotation = homePlatformField?.getAnnotation(JsonProperty::class.java)
         assertEquals("homePlatform", homePlatformAnnotation?.value)
 
-        // Check awayPlatform annotation
         val awayPlatformField = startRequestClass.declaredConstructors[0].parameters.find { it.name == "awayPlatform" }
         val awayPlatformAnnotation = awayPlatformField?.getAnnotation(JsonProperty::class.java)
         assertEquals("awayPlatform", awayPlatformAnnotation?.value)
 
-        // Check subdivision annotation
         val subdivisionField = startRequestClass.declaredConstructors[0].parameters.find { it.name == "subdivision" }
         val subdivisionAnnotation = subdivisionField?.getAnnotation(JsonProperty::class.java)
         assertEquals("subdivision", subdivisionAnnotation?.value)
 
-        // Check homeTeam annotation
         val homeTeamField = startRequestClass.declaredConstructors[0].parameters.find { it.name == "homeTeam" }
         val homeTeamAnnotation = homeTeamField?.getAnnotation(JsonProperty::class.java)
         assertEquals("homeTeam", homeTeamAnnotation?.value)
 
-        // Check awayTeam annotation
         val awayTeamField = startRequestClass.declaredConstructors[0].parameters.find { it.name == "awayTeam" }
         val awayTeamAnnotation = awayTeamField?.getAnnotation(JsonProperty::class.java)
         assertEquals("awayTeam", awayTeamAnnotation?.value)
 
-        // Check tvChannel annotation
         val tvChannelField = startRequestClass.declaredConstructors[0].parameters.find { it.name == "tvChannel" }
         val tvChannelAnnotation = tvChannelField?.getAnnotation(JsonProperty::class.java)
         assertEquals("tvChannel", tvChannelAnnotation?.value)
 
-        // Check gameType annotation
         val gameTypeField = startRequestClass.declaredConstructors[0].parameters.find { it.name == "gameType" }
         val gameTypeAnnotation = gameTypeField?.getAnnotation(JsonProperty::class.java)
         assertEquals("gameType", gameTypeAnnotation?.value)
@@ -224,15 +216,12 @@ class StartRequestTest {
     fun `StartRequest should be immutable`() {
         val startRequest = createTestStartRequest()
 
-        // All properties should be val (immutable)
-        // This is enforced by the data class declaration
         assertNotNull(startRequest.homePlatform)
         assertNotNull(startRequest.awayPlatform)
         assertNotNull(startRequest.subdivision)
         assertNotNull(startRequest.homeTeam)
         assertNotNull(startRequest.awayTeam)
         assertNotNull(startRequest.gameType)
-        // tvChannel can be null
     }
 
     @Test

@@ -118,7 +118,6 @@ class ScorebugControllerTest {
 
     @Test
     fun `getScorebugsForConference should return 500 when required parameters are missing`() {
-        // Missing season
         mockMvc.perform(
             get("/api/v1/arceus/scorebug/conference")
                 .param("week", "5")
@@ -127,7 +126,6 @@ class ScorebugControllerTest {
         )
             .andExpect(status().isInternalServerError)
 
-        // Missing week
         mockMvc.perform(
             get("/api/v1/arceus/scorebug/conference")
                 .param("season", "2024")
@@ -136,7 +134,6 @@ class ScorebugControllerTest {
         )
             .andExpect(status().isInternalServerError)
 
-        // Missing conference
         mockMvc.perform(
             get("/api/v1/arceus/scorebug/conference")
                 .param("season", "2024")

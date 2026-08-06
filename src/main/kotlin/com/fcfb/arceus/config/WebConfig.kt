@@ -149,6 +149,7 @@ private val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/schedule/bulk",
         "$FULL_PATH/schedule/generate-conference",
         "$FULL_PATH/schedule/generate-all-conferences/*",
+        "$FULL_PATH/schedule/generate-ooc/*",
         "$FULL_PATH/schedule/conference-rules",
         "$FULL_PATH/season",
         "$FULL_PATH/season/*",

@@ -30,7 +30,6 @@ class EnumConverterTest {
         gameModeConverter = GameModeConverter()
     }
 
-    // OffensivePlaybookConverter Tests
     @Test
     fun `OffensivePlaybookConverter should be properly annotated`() {
         val converterAnnotation = OffensivePlaybookConverter::class.annotations.find { it is javax.persistence.Converter }
@@ -79,7 +78,6 @@ class EnumConverterTest {
         }
     }
 
-    // DefensivePlaybookConverter Tests
     @Test
     fun `DefensivePlaybookConverter should be properly annotated`() {
         val converterAnnotation = DefensivePlaybookConverter::class.annotations.find { it is javax.persistence.Converter }
@@ -134,7 +132,6 @@ class EnumConverterTest {
         }
     }
 
-    // SubdivisionConverter Tests
     @Test
     fun `SubdivisionConverter should be properly annotated`() {
         val converterAnnotation = SubdivisionConverter::class.annotations.find { it is javax.persistence.Converter }
@@ -166,7 +163,6 @@ class EnumConverterTest {
         assertNull(result)
     }
 
-    // ResultConverter Tests
     @Test
     fun `ResultConverter should be properly annotated`() {
         val converterAnnotation = ResultConverter::class.annotations.find { it is javax.persistence.Converter }
@@ -198,7 +194,6 @@ class EnumConverterTest {
         assertNull(result)
     }
 
-    // CoinTossCallConverter Tests
     @Test
     fun `CoinTossCallConverter should be properly annotated`() {
         val converterAnnotation = CoinTossCallConverter::class.annotations.find { it is javax.persistence.Converter }
@@ -230,7 +225,6 @@ class EnumConverterTest {
         assertNull(result)
     }
 
-    // GameModeConverter Tests
     @Test
     fun `GameModeConverter should be properly annotated`() {
         val converterAnnotation = GameModeConverter::class.annotations.find { it is javax.persistence.Converter }

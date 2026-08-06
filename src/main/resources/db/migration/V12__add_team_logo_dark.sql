@@ -1,0 +1,1 @@
+ALTER TABLE `team` ADD COLUMN `logo_dark` VARCHAR(255) NULL;

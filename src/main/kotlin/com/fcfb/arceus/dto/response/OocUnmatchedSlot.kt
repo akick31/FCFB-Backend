@@ -1,0 +1,8 @@
+package com.fcfb.arceus.dto.response
+
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class OocUnmatchedSlot(
+    @JsonProperty("team") val team: String,
+    @JsonProperty("week") val week: Int,
+)

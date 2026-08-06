@@ -2,8 +2,6 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.service.fcfb.ScheduleService
-import com.fcfb.arceus.service.fcfb.SeasonService
-import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
@@ -20,16 +18,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class ScheduleControllerTest {
     private lateinit var mockMvc: MockMvc
     private lateinit var scheduleService: ScheduleService
-    private lateinit var seasonService: SeasonService
-    private lateinit var teamService: TeamService
     private lateinit var scheduleController: ScheduleController
 
     @BeforeEach
     fun setup() {
         scheduleService = mockk()
-        seasonService = mockk()
-        teamService = mockk()
-        scheduleController = ScheduleController(scheduleService, seasonService, teamService)
+        scheduleController = ScheduleController(scheduleService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(scheduleController)
                 .setControllerAdvice(GlobalExceptionHandler())

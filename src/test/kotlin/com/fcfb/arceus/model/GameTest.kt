@@ -25,7 +25,6 @@ class GameTest {
     fun `test Game entity annotations`() {
         val game = Game()
 
-        // Test that the class has the correct JPA annotations
         val entityAnnotation = Game::class.java.getAnnotation(javax.persistence.Entity::class.java)
         assertNotNull(entityAnnotation)
 
@@ -92,7 +91,6 @@ class GameTest {
         assertFalse(game.upsetAlert)
         assertFalse(game.upsetAlertPinged)
 
-        // Test that lateinit properties are not initialized
         assertThrows<UninitializedPropertyAccessException> {
             game.homeTeam
         }
@@ -251,7 +249,6 @@ class GameTest {
     fun `test Game property mutability`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -261,7 +258,6 @@ class GameTest {
         game.homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
         game.awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-        // Test basic properties
         game.gameId = 123
         game.homeCoaches = listOf("coach1", "coach2")
         game.awayCoaches = listOf("coach3", "coach4")
@@ -377,7 +373,6 @@ class GameTest {
     fun `test Game with null optional fields`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -446,7 +441,6 @@ class GameTest {
     fun `test Game with all enum values`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -456,7 +450,6 @@ class GameTest {
         game.homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
         game.awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-        // Test all TeamSide values
         TeamSide.entries.forEach { teamSide ->
             game.possession = teamSide
             game.waitingOn = teamSide
@@ -468,19 +461,16 @@ class GameTest {
             assertEquals(teamSide, game.overtimeCoinTossWinner)
         }
 
-        // Test all TVChannel values
         TVChannel.entries.forEach { tvChannel ->
             game.tvChannel = tvChannel
             assertEquals(tvChannel, game.tvChannel)
         }
 
-        // Test all Subdivision values
         Subdivision.entries.forEach { subdivision ->
             game.subdivision = subdivision
             assertEquals(subdivision, game.subdivision)
         }
 
-        // Test all OffensivePlaybook values
         OffensivePlaybook.entries.forEach { offensivePlaybook ->
             game.homeOffensivePlaybook = offensivePlaybook
             game.awayOffensivePlaybook = offensivePlaybook
@@ -488,7 +478,6 @@ class GameTest {
             assertEquals(offensivePlaybook, game.awayOffensivePlaybook)
         }
 
-        // Test all DefensivePlaybook values
         DefensivePlaybook.entries.forEach { defensivePlaybook ->
             game.homeDefensivePlaybook = defensivePlaybook
             game.awayDefensivePlaybook = defensivePlaybook
@@ -496,7 +485,6 @@ class GameTest {
             assertEquals(defensivePlaybook, game.awayDefensivePlaybook)
         }
 
-        // Test all Platform values
         com.fcfb.arceus.enums.system.Platform.entries.forEach { platform ->
             game.homePlatform = platform
             game.awayPlatform = platform
@@ -504,43 +492,36 @@ class GameTest {
             assertEquals(platform, game.awayPlatform)
         }
 
-        // Test all CoinTossChoice values
         CoinTossChoice.entries.forEach { coinTossChoice ->
             game.coinTossChoice = coinTossChoice
             assertEquals(coinTossChoice, game.coinTossChoice)
         }
 
-        // Test all OvertimeCoinTossChoice values
         OvertimeCoinTossChoice.entries.forEach { overtimeCoinTossChoice ->
             game.overtimeCoinTossChoice = overtimeCoinTossChoice
             assertEquals(overtimeCoinTossChoice, game.overtimeCoinTossChoice)
         }
 
-        // Test all PlayType values
         PlayType.entries.forEach { playType ->
             game.currentPlayType = playType
             assertEquals(playType, game.currentPlayType)
         }
 
-        // Test all GameStatus values
         GameStatus.entries.forEach { gameStatus ->
             game.gameStatus = gameStatus
             assertEquals(gameStatus, game.gameStatus)
         }
 
-        // Test all GameType values
         GameType.entries.forEach { gameType ->
             game.gameType = gameType
             assertEquals(gameType, game.gameType)
         }
 
-        // Test all GameMode values
         GameMode.entries.forEach { gameMode ->
             game.gameMode = gameMode
             assertEquals(gameMode, game.gameMode)
         }
 
-        // Test all GameWarning values
         GameWarning.entries.forEach { warning ->
             game.gameWarning = warning
             assertEquals(warning, game.gameWarning)
@@ -551,7 +532,6 @@ class GameTest {
     fun `test Game boolean properties`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -561,35 +541,30 @@ class GameTest {
         game.homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
         game.awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-        // Test clockStopped
         game.clockStopped = true
         assertTrue(game.clockStopped)
 
         game.clockStopped = false
         assertFalse(game.clockStopped)
 
-        // Test closeGame
         game.closeGame = true
         assertTrue(game.closeGame)
 
         game.closeGame = false
         assertFalse(game.closeGame)
 
-        // Test closeGamePinged
         game.closeGamePinged = true
         assertTrue(game.closeGamePinged)
 
         game.closeGamePinged = false
         assertFalse(game.closeGamePinged)
 
-        // Test upsetAlert
         game.upsetAlert = true
         assertTrue(game.upsetAlert)
 
         game.upsetAlert = false
         assertFalse(game.upsetAlert)
 
-        // Test upsetAlertPinged
         game.upsetAlertPinged = true
         assertTrue(game.upsetAlertPinged)
 
@@ -601,7 +576,6 @@ class GameTest {
     fun `test Game numeric properties`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -611,39 +585,31 @@ class GameTest {
         game.homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
         game.awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-        // Test gameId
         game.gameId = 123
         assertEquals(123, game.gameId)
 
-        // Test scores
         game.homeScore = 28
         game.awayScore = 14
         assertEquals(28, game.homeScore)
         assertEquals(14, game.awayScore)
 
-        // Test quarter
         game.quarter = 4
         assertEquals(4, game.quarter)
 
-        // Test ballLocation
         game.ballLocation = 45
         assertEquals(45, game.ballLocation)
 
-        // Test down
         game.down = 3
         assertEquals(3, game.down)
 
-        // Test yardsToGo
         game.yardsToGo = 8
         assertEquals(8, game.yardsToGo)
 
-        // Test rankings
         game.homeTeamRank = 5
         game.awayTeamRank = 12
         assertEquals(5, game.homeTeamRank)
         assertEquals(12, game.awayTeamRank)
 
-        // Test wins/losses
         game.homeWins = 8
         game.homeLosses = 2
         game.awayWins = 6
@@ -653,31 +619,25 @@ class GameTest {
         assertEquals(6, game.awayWins)
         assertEquals(4, game.awayLosses)
 
-        // Test season/week
         game.season = 2024
         game.week = 8
         assertEquals(2024, game.season)
         assertEquals(8, game.week)
 
-        // Test numPlays
         game.numPlays = 45
         assertEquals(45, game.numPlays)
 
-        // Test timeouts
         game.homeTimeouts = 2
         game.awayTimeouts = 1
         assertEquals(2, game.homeTimeouts)
         assertEquals(1, game.awayTimeouts)
 
-        // Test currentPlayId
         game.currentPlayId = 123
         assertEquals(123, game.currentPlayId)
 
-        // Test overtimeHalf
         game.overtimeHalf = 1
         assertEquals(1, game.overtimeHalf)
 
-        // Test winProbability
         game.winProbability = 0.75
         assertEquals(0.75, game.winProbability)
     }
@@ -686,7 +646,6 @@ class GameTest {
     fun `test Game string properties`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -696,21 +655,17 @@ class GameTest {
         game.homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
         game.awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-        // Test clock
         game.clock = "2:30"
         assertEquals("2:30", game.clock)
 
-        // Test timestamp
         game.timestamp = "2024-10-15T18:30:00Z"
         assertEquals("2024-10-15T18:30:00Z", game.timestamp)
 
-        // Test platform IDs
         game.homePlatformId = "home_platform_id"
         game.awayPlatformId = "away_platform_id"
         assertEquals("home_platform_id", game.homePlatformId)
         assertEquals("away_platform_id", game.awayPlatformId)
 
-        // Test timestamps
         game.lastMessageTimestamp = "2024-10-15T18:35:00Z"
         game.gameTimer = "00:05:00"
         assertEquals("2024-10-15T18:35:00Z", game.lastMessageTimestamp)
@@ -721,7 +676,6 @@ class GameTest {
     fun `test Game list properties`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -731,7 +685,6 @@ class GameTest {
         game.homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
         game.awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-        // Test coach lists
         val homeCoaches = listOf("coach1", "coach2")
         val awayCoaches = listOf("coach3", "coach4")
         game.homeCoaches = homeCoaches
@@ -739,7 +692,6 @@ class GameTest {
         assertEquals(homeCoaches, game.homeCoaches)
         assertEquals(awayCoaches, game.awayCoaches)
 
-        // Test discord ID lists
         val homeCoachDiscordIds = listOf("123456789", "987654321")
         val awayCoachDiscordIds = listOf("111222333", "444555666")
         game.homeCoachDiscordIds = homeCoachDiscordIds
@@ -747,7 +699,6 @@ class GameTest {
         assertEquals(homeCoachDiscordIds, game.homeCoachDiscordIds)
         assertEquals(awayCoachDiscordIds, game.awayCoachDiscordIds)
 
-        // Test request message ID list
         val requestMessageId = listOf("msg1", "msg2", "msg3")
         game.requestMessageId = requestMessageId
         assertEquals(requestMessageId, game.requestMessageId)
@@ -757,7 +708,6 @@ class GameTest {
     fun `test Game complete scenario`() {
         val game = Game()
 
-        // Initialize lateinit properties
         game.homeTeam = "Alabama"
         game.awayTeam = "Auburn"
         game.homeOffensivePlaybook = OffensivePlaybook.AIR_RAID
@@ -767,7 +717,6 @@ class GameTest {
         game.homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
         game.awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-        // Set up a complete game scenario
         game.gameId = 456
         game.homeCoaches = listOf("head_coach", "offensive_coordinator", "defensive_coordinator")
         game.awayCoaches = listOf("away_head_coach", "away_offensive_coordinator")
@@ -819,7 +768,6 @@ class GameTest {
         game.upsetAlert = false
         game.upsetAlertPinged = false
 
-        // Verify all properties
         assertEquals(456, game.gameId)
         assertEquals("Alabama", game.homeTeam)
         assertEquals("Auburn", game.awayTeam)

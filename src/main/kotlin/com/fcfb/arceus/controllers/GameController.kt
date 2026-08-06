@@ -51,7 +51,7 @@ class GameController(
     ): ResponseEntity<Page<Game>> =
         ResponseEntity.ok(
             gameService.getFilteredGames(
-                filters = filters ?: emptyList(),
+                filters = filters,
                 category = category,
                 conference = conference,
                 season = season,
@@ -81,12 +81,7 @@ class GameController(
     @GetMapping("/week/status/{jobId}")
     fun getGameWeekJobStatus(
         @PathVariable("jobId") jobId: String,
-    ): ResponseEntity<GameWeekJob> {
-        val job =
-            gameService.getGameWeekJobStatus(jobId)
-                ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(job)
-    }
+    ): ResponseEntity<GameWeekJob> = ResponseEntity.ok(gameService.getGameWeekJobStatus(jobId))
 
     @GetMapping("/week/jobs")
     fun getAllGameWeekJobs(): ResponseEntity<List<GameWeekJob>> = ResponseEntity.ok(gameService.getAllGameWeekJobs())
@@ -95,10 +90,7 @@ class GameController(
     fun getRankingsHistory(
         @RequestParam(required = false) team: String?,
         @RequestParam(required = false) season: Int?,
-    ): ResponseEntity<List<Game>> {
-        val games = gameService.getRankingsHistory(team, season)
-        return ResponseEntity.ok(games)
-    }
+    ): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.getRankingsHistory(team, season))
 
     @PostMapping("/week/retry/{jobId}")
     fun retryFailedGames(
@@ -121,12 +113,12 @@ class GameController(
     @PostMapping("/chew")
     fun chewGameByPlatformId(
         @RequestParam("channelId") channelId: ULong,
-    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(gameService.getGameByPlatformId(channelId)))
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGameByPlatformId(channelId))
 
     @PostMapping("{gameId}/chew")
     fun chewGameByGameId(
         @PathVariable("gameId") gameId: Int,
-    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGame(gameService.getGameById(gameId)))
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGameByGameId(gameId))
 
     @PostMapping("/chew-all")
     fun chewAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.chewAllGames())
@@ -163,7 +155,7 @@ class GameController(
     @GetMapping("/request-message")
     fun getGameByRequestMessageId(
         @RequestParam("requestMessageId") requestMessageId: String,
-    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.getGameByRequestMessageId("\"$requestMessageId\""))
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.getGameByRequestMessageId(requestMessageId))
 
     @GetMapping("/platform")
     fun getGameByPlatformId(

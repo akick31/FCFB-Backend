@@ -31,4 +31,8 @@ class ConferenceRules {
     @Type(type = "json")
     @Column(name = "protected_rivalries", columnDefinition = "longtext")
     var protectedRivalries: String? = null
+
+    @Type(type = "json")
+    @Column(name = "divisions", columnDefinition = "longtext")
+    var divisions: String? = null
 }

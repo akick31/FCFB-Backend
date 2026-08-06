@@ -13,6 +13,7 @@ import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.fcfb.gamestats.GameStatsCalculator
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameStatsNotFoundException
+import com.fcfb.arceus.util.InvalidGameStatsRequestException
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 import java.time.ZoneId
@@ -258,10 +259,17 @@ class GameStatsService(
     ) = gameStatsRepository.getGameStatsByIdAndTeam(gameId, team)
         ?: throw GameStatsNotFoundException("Could not find game stats for game $gameId and team $team")
 
-    /**
-     * Fetch the game stats row for a team, creating a baseline row if it is missing so a live
-     * game self-heals instead of erroring when its stats were wiped (e.g. by a bulk regeneration).
-     */
+    fun getGameStats(
+        gameId: Int?,
+        team: String,
+        season: Int?,
+    ): Any =
+        when {
+            gameId != null -> getGameStatsByIdAndTeam(gameId, team)
+            season != null -> getAllGameStatsForTeamAndSeason(team, season)
+            else -> throw InvalidGameStatsRequestException("Either gameId or season parameter is required")
+        }
+
     private fun getOrCreateGameStatsByIdAndTeam(
         game: Game,
         team: String,

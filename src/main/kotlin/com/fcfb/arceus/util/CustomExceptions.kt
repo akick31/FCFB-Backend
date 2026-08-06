@@ -36,6 +36,12 @@ class NoGameFoundException : Exception("No games found to start week") {
     }
 }
 
+class GameWeekJobNotFoundException(jobId: String) : Exception("No game week job found with id $jobId") {
+    override fun toString(): String {
+        return "GameWeekJobNotFoundException: ${super.message}"
+    }
+}
+
 class NumberNotFoundException : Exception("Number not found") {
     override fun toString(): String {
         return "NumberNotFoundException: ${super.message}"
@@ -186,5 +192,11 @@ class DiscordAlreadyLinkedException : Exception("This Discord account is already
 class InvalidNewSignupException(message: String) : Exception(message) {
     override fun toString(): String {
         return "InvalidNewSignupException: ${super.message}"
+    }
+}
+
+class InvalidGameStatsRequestException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidGameStatsRequestException: ${super.message}"
     }
 }

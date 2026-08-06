@@ -13,6 +13,7 @@ class GlobalExceptionHandler {
         DiscordUserNotFoundException::class,
         GameNotFoundException::class,
         GameStatsNotFoundException::class,
+        GameWeekJobNotFoundException::class,
         NewSignupNotFoundException::class,
         NoCoachDiscordIdsFoundException::class,
         NoCoachesFoundException::class,
@@ -26,6 +27,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(
         InvalidCoinTossChoiceException::class,
+        InvalidGameStatsRequestException::class,
         InvalidRankingsException::class,
         InvalidConferenceException::class,
         InvalidNewSignupException::class,

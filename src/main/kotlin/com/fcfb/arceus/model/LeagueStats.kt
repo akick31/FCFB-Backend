@@ -31,7 +31,6 @@ class LeagueStats(
     @Basic
     @Column(name = "total_games")
     var totalGames: Int = 0,
-    // Passing Stats (League Totals)
     @Basic
     @Column(name = "pass_attempts")
     var passAttempts: Int = 0,
@@ -59,7 +58,6 @@ class LeagueStats(
     @Basic
     @Column(name = "longest_pass")
     var longestPass: Int = 0,
-    // Rushing Stats (League Totals)
     @Basic
     @Column(name = "rush_attempts")
     var rushAttempts: Int = 0,
@@ -78,7 +76,6 @@ class LeagueStats(
     @Basic
     @Column(name = "longest_run")
     var longestRun: Int = 0,
-    // Total Offense
     @Basic
     @Column(name = "total_yards")
     var totalYards: Int = 0,
@@ -88,7 +85,6 @@ class LeagueStats(
     @Basic
     @Column(name = "first_downs")
     var firstDowns: Int = 0,
-    // Defense Stats (League Totals)
     @Basic
     @Column(name = "sacks_allowed")
     var sacksAllowed: Int = 0,
@@ -107,7 +103,6 @@ class LeagueStats(
     @Basic
     @Column(name = "defensive_touchdowns")
     var defensiveTouchdowns: Int = 0,
-    // Special Teams Stats (League Totals)
     @Basic
     @Column(name = "field_goals_attempted")
     var fieldGoalsAttempted: Int = 0,
@@ -132,7 +127,6 @@ class LeagueStats(
     @Basic
     @Column(name = "punt_return_touchdowns")
     var puntReturnTouchdowns: Int = 0,
-    // Performance Metrics (League Averages)
     @Basic
     @Column(name = "average_offensive_diff")
     var averageOffensiveDiff: Double = 0.0,
@@ -151,7 +145,6 @@ class LeagueStats(
     @Basic
     @Column(name = "average_response_speed")
     var averageResponseSpeed: Double = 0.0,
-    // Metadata
     @Basic
     @Column(name = "last_modified_ts")
     var lastModifiedTs: String? = null,

@@ -3,6 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.service.fcfb.GameStatsService
 import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.util.InvalidGameStatsRequestException
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -35,7 +36,7 @@ class GameStatsControllerTest {
         val gameId = 123
         val team = "Texas"
         val mockGameStats = mockk<GameStats>(relaxed = true)
-        every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } returns mockGameStats
+        every { gameStatsService.getGameStats(gameId, team, null) } returns mockGameStats
 
         mockMvc.perform(
             get("/api/v1/arceus/game-stats")
@@ -45,12 +46,15 @@ class GameStatsControllerTest {
         )
             .andExpect(status().isOk)
 
-        verify { gameStatsService.getGameStatsByIdAndTeam(gameId, team) }
+        verify { gameStatsService.getGameStats(gameId, team, null) }
     }
 
     @Test
     fun `getGameStatsByIdAndTeam should return 400 when gameId parameter is missing`() {
         val team = "Texas"
+        every { gameStatsService.getGameStats(null, team, null) } throws
+            InvalidGameStatsRequestException("Either gameId or season parameter is required")
+
         mockMvc.perform(
             get("/api/v1/arceus/game-stats")
                 .param("team", team)
@@ -95,7 +99,7 @@ class GameStatsControllerTest {
     fun `getGameStatsByIdAndTeam should handle service exception`() {
         val gameId = 123
         val team = "Texas"
-        every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } throws RuntimeException("Service error")
+        every { gameStatsService.getGameStats(gameId, team, null) } throws RuntimeException("Service error")
 
         mockMvc.perform(
             get("/api/v1/arceus/game-stats")
@@ -229,7 +233,7 @@ class GameStatsControllerTest {
         val gameId = -1
         val team = "Texas"
         val mockGameStats = mockk<GameStats>(relaxed = true)
-        every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } returns mockGameStats
+        every { gameStatsService.getGameStats(gameId, team, null) } returns mockGameStats
 
         mockMvc.perform(
             get("/api/v1/arceus/game-stats")
@@ -239,7 +243,7 @@ class GameStatsControllerTest {
         )
             .andExpect(status().isOk)
 
-        verify { gameStatsService.getGameStatsByIdAndTeam(gameId, team) }
+        verify { gameStatsService.getGameStats(gameId, team, null) }
     }
 
     @Test
@@ -247,7 +251,7 @@ class GameStatsControllerTest {
         val gameId = 999999
         val team = "Texas"
         val mockGameStats = mockk<GameStats>(relaxed = true)
-        every { gameStatsService.getGameStatsByIdAndTeam(gameId, team) } returns mockGameStats
+        every { gameStatsService.getGameStats(gameId, team, null) } returns mockGameStats
 
         mockMvc.perform(
             get("/api/v1/arceus/game-stats")
@@ -257,7 +261,7 @@ class GameStatsControllerTest {
         )
             .andExpect(status().isOk)
 
-        verify { gameStatsService.getGameStatsByIdAndTeam(gameId, team) }
+        verify { gameStatsService.getGameStats(gameId, team, null) }
     }
 
     @Test

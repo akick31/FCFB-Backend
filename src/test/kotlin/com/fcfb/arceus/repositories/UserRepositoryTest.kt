@@ -24,7 +24,6 @@ class UserRepositoryTest {
 
     @Test
     fun `test save and find by id`() {
-        // Given
         val user =
             createTestUser(
                 id = 1L,
@@ -64,11 +63,9 @@ class UserRepositoryTest {
         every { userRepository.save(any()) } returns user
         every { userRepository.findById(1L) } returns java.util.Optional.of(user)
 
-        // When
         val saved = userRepository.save(user)
         val found = userRepository.findById(saved.id).get()
 
-        // Then
         assertNotNull(found)
         assertEquals(saved.id, found.id)
         assertEquals("testuser", found.username)
@@ -106,7 +103,6 @@ class UserRepositoryTest {
 
     @Test
     fun `test find by username`() {
-        // Given
         val user =
             createTestUser(
                 id = 1L,
@@ -116,10 +112,8 @@ class UserRepositoryTest {
 
         every { userRepository.findByUsername("testuser") } returns user
 
-        // When
         val found = userRepository.findByUsername("testuser")
 
-        // Then
         assertNotNull(found)
         assertEquals("testuser", found!!.username)
         assertEquals("Test Coach", found.coachName)
@@ -127,7 +121,6 @@ class UserRepositoryTest {
 
     @Test
     fun `test find by discord id`() {
-        // Given
         val user =
             createTestUser(
                 id = 1L,
@@ -137,10 +130,8 @@ class UserRepositoryTest {
 
         every { userRepository.findByDiscordId("discord123") } returns user
 
-        // When
         val found = userRepository.findByDiscordId("discord123")
 
-        // Then
         assertNotNull(found)
         assertEquals("testuser", found!!.username)
         assertEquals("discord123", found.discordId)
@@ -148,7 +139,6 @@ class UserRepositoryTest {
 
     @Test
     fun `test find by email`() {
-        // Given
         val user =
             createTestUser(
                 id = 1L,
@@ -158,10 +148,8 @@ class UserRepositoryTest {
 
         every { userRepository.findByEmail("test@example.com") } returns user
 
-        // When
         val found = userRepository.findByEmail("test@example.com")
 
-        // Then
         assertNotNull(found)
         assertEquals("testuser", found!!.username)
         assertEquals("test@example.com", found.email)
@@ -169,7 +157,6 @@ class UserRepositoryTest {
 
     @Test
     fun `test find by team`() {
-        // Given
         val user =
             createTestUser(
                 id = 1L,
@@ -179,10 +166,8 @@ class UserRepositoryTest {
 
         every { userRepository.findByTeam("Alabama") } returns user
 
-        // When
         val found = userRepository.findByTeam("Alabama")
 
-        // Then
         assertNotNull(found)
         assertEquals("testuser", found!!.username)
         assertEquals("Alabama", found.team)
@@ -190,17 +175,14 @@ class UserRepositoryTest {
 
     @Test
     fun `test find by role`() {
-        // Given
         val user1 = createTestUser(id = 1L, username = "user1", role = UserRole.ADMIN)
         val user2 = createTestUser(id = 2L, username = "user2", role = UserRole.ADMIN)
         val users = listOf(user1, user2)
 
         every { userRepository.findByRole(UserRole.ADMIN) } returns users
 
-        // When
         val found = userRepository.findByRole(UserRole.ADMIN)
 
-        // Then
         assertNotNull(found)
         assertEquals(2, found.size)
         assertTrue(found.all { it.role == UserRole.ADMIN })
@@ -208,17 +190,14 @@ class UserRepositoryTest {
 
     @Test
     fun `test find by position`() {
-        // Given
         val user1 = createTestUser(id = 1L, username = "user1", position = CoachPosition.HEAD_COACH)
         val user2 = createTestUser(id = 2L, username = "user2", position = CoachPosition.HEAD_COACH)
         val users = listOf(user1, user2)
 
         every { userRepository.findByPosition(CoachPosition.HEAD_COACH) } returns users
 
-        // When
         val found = userRepository.findByPosition(CoachPosition.HEAD_COACH)
 
-        // Then
         assertNotNull(found)
         assertEquals(2, found.size)
         assertTrue(found.all { it.position == CoachPosition.HEAD_COACH })
@@ -226,7 +205,6 @@ class UserRepositoryTest {
 
     @Test
     fun `test update user`() {
-        // Given
         val user =
             createTestUser(
                 id = 1L,
@@ -237,10 +215,8 @@ class UserRepositoryTest {
 
         every { userRepository.save(any()) } returns user
 
-        // When
         val updated = userRepository.save(user)
 
-        // Then
         assertNotNull(updated)
         assertEquals(5, updated.wins)
         assertEquals(3, updated.losses)
@@ -248,14 +224,11 @@ class UserRepositoryTest {
 
     @Test
     fun `test delete by id`() {
-        // Given
         val userId = 1L
         every { userRepository.deleteById(userId) } returns Unit
 
-        // When
         userRepository.deleteById(userId)
 
-        // Then
         verify { userRepository.deleteById(userId) }
     }
 

@@ -139,9 +139,6 @@ class ScorebugService(
         }
     }
 
-    /**
-     * Get the latest scorebug image for a game without generating
-     */
     fun getLatestScorebugByGameId(gameId: Int): ResponseEntity<ByteArray> {
         val bytes = getScorebugBytes(gameId) ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok()
@@ -184,9 +181,6 @@ class ScorebugService(
         }
     }
 
-    /**
-     * Generates a scorebug image for the game, dispatching to the appropriate renderer
-     */
     fun generateScorebug(game: Game): BufferedImage {
         val homeTeam = teamService.getTeamByName(game.homeTeam)
         val awayTeam = teamService.getTeamByName(game.awayTeam)
@@ -205,7 +199,6 @@ class ScorebugService(
 
         val image = renderer.render(game, homeTeam, awayTeam)
 
-        // Save image to file
         val directory = File("$imagePath/scorebugs")
         if (!directory.exists()) {
             if (directory.mkdirs()) {

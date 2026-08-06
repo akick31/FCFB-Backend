@@ -30,9 +30,6 @@ class DelayOfGameMonitor(
     private val scorebugService: ScorebugService,
     private val playRepository: PlayRepository,
 ) {
-    /**
-     * Checks for delay of game every minute
-     */
     @Scheduled(fixedRate = 60000)
     fun checkForDelayOfGame() {
         val warnedGamesFirstInstance = gameService.findGamesToWarnFirstInstance()
@@ -79,10 +76,6 @@ class DelayOfGameMonitor(
         }
     }
 
-    /**
-     * Get the delay of game instances for a given game
-     * @return Pair of home and away delay of game instances
-     */
     private fun getDelayOfGameInstances(game: Game): Pair<Int, Int> {
         if (game.gameType == GameType.SCRIMMAGE) {
             return Pair(0, 0)
@@ -96,10 +89,6 @@ class DelayOfGameMonitor(
         }
     }
 
-    /**
-     * Apply a delay of game to a game in pregame status
-     * @param game
-     */
     private fun applyPregameDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
 
@@ -133,10 +122,6 @@ class DelayOfGameMonitor(
         return game
     }
 
-    /**
-     * Apply a delay of game to a game
-     * @param game
-     */
     private fun applyDelayOfGame(game: Game): Game {
         game.gameTimer = gameService.calculateDelayOfGameTimer()
 
@@ -177,7 +162,6 @@ class DelayOfGameMonitor(
 
         val savedPlay =
             if (currentPlay != null) {
-                // Use the existing play as delay of game (keep its playNumber)
                 saveDelayOfGameOnDefensePlay(teamToPenalize, currentPlay)
             } else {
                 saveDelayOfGameOnOffensePlay(game.gameId, teamToPenalize)
@@ -186,8 +170,6 @@ class DelayOfGameMonitor(
         game.currentPlayId = savedPlay.playId
         game.gameWarning = NONE
         game.clockStopped = true
-        // Set game.numPlays to match the play's playNumber to keep them in sync
-        // This ensures the next play will have the correct playNumber
         game.numPlays = savedPlay.playNumber
         game.ballLocation = 35
         gameService.saveGame(game)
@@ -195,10 +177,6 @@ class DelayOfGameMonitor(
         return game
     }
 
-    /**
-     * Save a delay of game on defense play, as defense has called a number
-     * Uses the existing play and marks it as delay of game (keeps its playNumber)
-     */
     private fun saveDelayOfGameOnDefensePlay(
         teamToPenalize: TeamSide,
         play: Play,
@@ -219,17 +197,10 @@ class DelayOfGameMonitor(
         return playRepository.save(play)
     }
 
-    /**
-     * Save a delay of game on offense play, as defense hasn't called a number
-     * @param gameId
-     * @param teamToPenalize
-     */
     private fun saveDelayOfGameOnOffensePlay(
         gameId: Int,
         teamToPenalize: TeamSide,
     ): Play {
-        // defensiveNumberSubmitted creates a play with playNumber = game.numPlays + 1
-        // This is already the next play number, so we don't need to increment it
         val play = playService.defensiveNumberSubmitted(gameId, "NONE", "NONE", 0, false)
         play.playFinished = true
         play.offensiveNumber = null

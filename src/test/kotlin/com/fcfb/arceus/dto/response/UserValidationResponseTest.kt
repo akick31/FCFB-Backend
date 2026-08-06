@@ -11,7 +11,6 @@ class UserValidationResponseTest {
     fun `UserValidationResponse should be a data class`() {
         val response = createTestUserValidationResponse()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(response.toString())
         assertTrue(response.toString().contains("UserValidationResponse"))
     }
@@ -97,13 +96,11 @@ class UserValidationResponseTest {
                 emailExists = true,
             )
 
-        // Response 1
         assertTrue(response1.discordIdExists)
         assertFalse(response1.discordTagExists)
         assertTrue(response1.usernameExists)
         assertFalse(response1.emailExists)
 
-        // Response 2
         assertFalse(response2.discordIdExists)
         assertTrue(response2.discordTagExists)
         assertFalse(response2.usernameExists)
@@ -137,7 +134,6 @@ class UserValidationResponseTest {
 
     @Test
     fun `UserValidationResponse should handle validation scenarios`() {
-        // Scenario: New user - nothing exists
         val newUser =
             UserValidationResponse(
                 discordIdExists = false,
@@ -151,7 +147,6 @@ class UserValidationResponseTest {
         assertFalse(newUser.usernameExists)
         assertFalse(newUser.emailExists)
 
-        // Scenario: Existing user - everything exists
         val existingUser =
             UserValidationResponse(
                 discordIdExists = true,
@@ -165,7 +160,6 @@ class UserValidationResponseTest {
         assertTrue(existingUser.usernameExists)
         assertTrue(existingUser.emailExists)
 
-        // Scenario: Partial conflict - some fields exist
         val partialConflict =
             UserValidationResponse(
                 discordIdExists = true,
@@ -190,7 +184,6 @@ class UserValidationResponseTest {
                 emailExists = false,
             )
 
-        // Update each property individually
         response.discordIdExists = true
         assertTrue(response.discordIdExists)
         assertFalse(response.discordTagExists)
@@ -220,7 +213,6 @@ class UserValidationResponseTest {
     fun `UserValidationResponse should support boolean operations`() {
         val response = createTestUserValidationResponse()
 
-        // Test logical operations
         val hasAnyConflict =
             response.discordIdExists || response.discordTagExists ||
                 response.usernameExists || response.emailExists
@@ -229,18 +221,16 @@ class UserValidationResponseTest {
         val hasAllConflicts =
             response.discordIdExists && response.discordTagExists &&
                 response.usernameExists && response.emailExists
-        assertFalse(hasAllConflicts) // Based on our test data
+        assertFalse(hasAllConflicts)
 
-        // Test negation
         val noDiscordIdConflict = !response.discordIdExists
-        assertFalse(noDiscordIdConflict) // Based on our test data
+        assertFalse(noDiscordIdConflict)
     }
 
     @Test
     fun `UserValidationResponse should handle validation result interpretation`() {
         val response = createTestUserValidationResponse()
 
-        // Count conflicts
         val conflictCount =
             listOf(
                 response.discordIdExists,
@@ -251,11 +241,10 @@ class UserValidationResponseTest {
 
         assertTrue(conflictCount > 0)
 
-        // Check if user can be created (no conflicts)
         val canCreateUser =
             !response.discordIdExists && !response.discordTagExists &&
                 !response.usernameExists && !response.emailExists
-        assertFalse(canCreateUser) // Based on our test data with conflicts
+        assertFalse(canCreateUser)
     }
 
     private fun createTestUserValidationResponse(): UserValidationResponse {

@@ -9,6 +9,5 @@ data class EloHistoryEntry(
     @JsonProperty("elo") val elo: Double,
     @JsonProperty("game_id") val gameId: Int?,
     @JsonProperty("opponent") val opponent: String?,
-    // "W", "L", or null if not finished
     @JsonProperty("result") val result: String?,
 )

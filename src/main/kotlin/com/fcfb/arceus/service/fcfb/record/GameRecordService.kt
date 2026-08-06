@@ -11,9 +11,6 @@ import com.fcfb.arceus.repositories.RecordRepository
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 
-/**
- * Handles generation and in-flight checking of single-game records.
- */
 @Service
 class GameRecordService(
     private val recordRepository: RecordRepository,

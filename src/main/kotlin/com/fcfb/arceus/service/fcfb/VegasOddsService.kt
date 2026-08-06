@@ -91,34 +91,16 @@ class VegasOddsService(
             ResponseEntity.internalServerError().build()
         }
 
-    /**
-     * Calculate the Vegas spread for a team based on ELO difference
-     * This is based on the standard ELO to point spread conversion
-     * @param homeElo The home team's ELO rating
-     * @param awayElo The away team's ELO rating
-     * @return The point spread from home team's perspective (negative means home is favored, positive means home is underdog)
-     */
     private fun calculateVegasSpread(
         homeElo: Double,
         awayElo: Double,
     ): Double {
-        // Standard ELO to point spread conversion: ~3 points per 100 ELO difference
-        // Add home field advantage (~2.5 points)
         val eloDifference = homeElo - awayElo
         val spread = (eloDifference / 100.0) * 3.0 + 2.5
 
-        // Round to nearest 0.5 (standard Vegas practice)
-        // Return negative for favored team, positive for underdog
         return -((spread * 2).roundToInt() / 2.0)
     }
 
-    /**
-     * Calculate and update Vegas spreads for all games in a specific season and week
-     * using team_elo from game_stats
-     * @param season Season number
-     * @param week Week number
-     * @return Response indicating success and number of games updated
-     */
     fun updateSpreadsForSeasonAndWeek(
         season: Int,
         week: Int,
@@ -126,7 +108,6 @@ class VegasOddsService(
         return try {
             logger.info("Updating Vegas spreads for season $season, week $week")
 
-            // Get all games for the specified season and week
             val games = gameRepository.getGamesBySeasonAndWeek(season, week)
             if (games.isEmpty()) {
                 return ResponseEntity.badRequest()
@@ -142,7 +123,6 @@ class VegasOddsService(
                     )
             }
 
-            // Get all game stats for the specified season and week
             val gameStatsList = gameStatsRepository.getGameStatsBySeasonAndWeek(season, week)
             if (gameStatsList.isEmpty()) {
                 return ResponseEntity.badRequest()
@@ -158,7 +138,6 @@ class VegasOddsService(
                     )
             }
 
-            // Group game stats by game ID for easy lookup
             val gameStatsByGameId = gameStatsList.groupBy { it.gameId }
 
             var updatedGames = 0
@@ -171,7 +150,6 @@ class VegasOddsService(
                     continue
                 }
 
-                // Find home and away team stats
                 val homeStats = gameStats.find { it.team == game.homeTeam }
                 val awayStats = gameStats.find { it.team == game.awayTeam }
 
@@ -180,16 +158,13 @@ class VegasOddsService(
                     continue
                 }
 
-                // Calculate spreads using team_elo from game_stats
                 val spread = calculateVegasSpread(homeStats.teamElo, awayStats.teamElo)
                 val homeSpread = spread
                 val awaySpread = -spread
 
-                // Update the game with the calculated spreads
                 game.homeVegasSpread = homeSpread
                 game.awayVegasSpread = awaySpread
 
-                // Save the updated game
                 gameRepository.save(game)
 
                 updatedGames++

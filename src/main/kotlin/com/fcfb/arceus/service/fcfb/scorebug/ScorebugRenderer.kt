@@ -15,9 +15,6 @@ import java.awt.geom.Point2D
 import java.awt.image.BufferedImage
 import java.io.InputStream
 
-/**
- * Interface for all scorebug renderers
- */
 interface ScorebugRenderer {
     fun render(
         game: Game,
@@ -26,12 +23,7 @@ interface ScorebugRenderer {
     ): BufferedImage
 }
 
-/**
- * Base class with shared drawing helpers used across multiple scorebug styles
- */
 abstract class ScorebugRendererBase : ScorebugRenderer {
-    // Scaling
-
     protected fun scaleImage(
         image: BufferedImage,
         width: Int,
@@ -49,8 +41,6 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         gScaled.dispose()
         return scaledImage
     }
-
-    // Gradient
 
     protected fun paintGradient(
         g: Graphics2D,
@@ -70,8 +60,6 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
             )
         g.paint = gradient
     }
-
-    // Team sections (ESPN/Postseason shared)
 
     protected fun drawTeamSection(
         g: Graphics2D,
@@ -277,8 +265,6 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         g.drawLine(245, yPos, 245, yPos + rowHeight)
     }
 
-    // Border
-
     protected fun drawBorder(
         g: Graphics2D,
         width: Int,
@@ -291,8 +277,6 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
         g.drawLine(width - 1, 0, width - 3, height)
         g.drawLine(0, height - 1, width, height - 3)
     }
-
-    // Text helpers
 
     protected fun getQuarterText(quarter: Int): String {
         var quarterText =
@@ -388,8 +372,6 @@ abstract class ScorebugRendererBase : ScorebugRenderer {
             else -> "Unknown Location"
         }
     }
-
-    // Fonts
 
     protected fun getSansFont(g: Graphics2D): InputStream? {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)

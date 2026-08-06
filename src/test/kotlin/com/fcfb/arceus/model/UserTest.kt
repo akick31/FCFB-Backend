@@ -16,7 +16,6 @@ class UserTest {
     fun `test User entity annotations`() {
         val user = User()
 
-        // Test that the class has the correct JPA annotations
         val entityAnnotation = User::class.java.getAnnotation(javax.persistence.Entity::class.java)
         assertNotNull(entityAnnotation)
 
@@ -127,7 +126,6 @@ class UserTest {
     fun `test User property mutability`() {
         val user = User()
 
-        // Test property mutability
         user.id = 1L
         user.username = "newuser"
         user.coachName = "New Coach"
@@ -245,13 +243,11 @@ class UserTest {
     fun `test User with all enum values`() {
         val user = User()
 
-        // Test all CoachPosition values
         CoachPosition.entries.forEach { position ->
             user.position = position
             assertEquals(position, user.position)
         }
 
-        // Test all Role values
         UserRole.entries.forEach { role ->
             user.role = role
             assertEquals(role, user.role)
@@ -262,13 +258,11 @@ class UserTest {
     fun `test User with different playbook combinations`() {
         val user = User()
 
-        // Test different offensive playbook combinations
         OffensivePlaybook.entries.forEach { offensivePlaybook ->
             user.offensivePlaybook = offensivePlaybook
             assertEquals(offensivePlaybook, user.offensivePlaybook)
         }
 
-        // Test different defensive playbook combinations
         DefensivePlaybook.entries.forEach { defensivePlaybook ->
             user.defensivePlaybook = defensivePlaybook
             assertEquals(defensivePlaybook, user.defensivePlaybook)
@@ -279,7 +273,6 @@ class UserTest {
     fun `test User statistics calculations`() {
         val user = User()
 
-        // Set up some statistics
         user.wins = 10
         user.losses = 5
         user.conferenceWins = 8

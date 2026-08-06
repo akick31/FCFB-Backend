@@ -51,7 +51,6 @@ class PuntPlayProcessor(
         var result = resultInformation.result ?: throw ResultNotFoundException()
         val playTime = resultInformation.playTime
 
-        // Determine runoff time between plays
         val clockStopped = game.clockStopped
         val runoffTime =
             playProcessingUtils.getRunoffTime(

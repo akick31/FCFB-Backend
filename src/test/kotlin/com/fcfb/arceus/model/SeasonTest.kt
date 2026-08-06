@@ -158,7 +158,6 @@ class SeasonTest {
         assertEquals("2024-08-15", season.startDate)
         assertEquals("2025-01-20", season.endDate)
 
-        // Test with different date formats
         season.startDate = "August 15, 2024"
         season.endDate = "January 20, 2025"
 
@@ -244,11 +243,9 @@ class SeasonTest {
     fun `Season should handle championship data updates`() {
         val season = Season()
 
-        // Initially no championship data
         assertNull(season.nationalChampionshipWinningTeam)
         assertNull(season.nationalChampionshipLosingTeam)
 
-        // Update championship data
         season.nationalChampionshipWinningTeam = "Michigan"
         season.nationalChampionshipLosingTeam = "Washington"
         season.nationalChampionshipWinningCoach = "Jim Harbaugh"
@@ -259,7 +256,6 @@ class SeasonTest {
         assertEquals("Jim Harbaugh", season.nationalChampionshipWinningCoach)
         assertEquals("Kalen DeBoer", season.nationalChampionshipLosingCoach)
 
-        // Clear championship data
         season.nationalChampionshipWinningTeam = null
         season.nationalChampionshipLosingTeam = null
         season.nationalChampionshipWinningCoach = null

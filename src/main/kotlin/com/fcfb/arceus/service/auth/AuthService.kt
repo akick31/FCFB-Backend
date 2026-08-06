@@ -63,8 +63,8 @@ class AuthService(
         return LoginResponse(token, user.id, user.role)
     }
 
-    fun logout(token: String): String {
-        sessionService.blacklistUserSession(token)
+    fun logout(authHeader: String): String {
+        sessionService.blacklistUserSession(authHeader.removePrefix("Bearer ").trim())
         return "User logged out successfully"
     }
 

@@ -61,9 +61,6 @@ class EmailService(
         sendEmail(email, subject, html)
     }
 
-    /**
-     * Load an email HTML template and substitute {{placeholder}} values
-     */
     private fun loadTemplate(
         name: String,
         placeholders: Map<String, String>,

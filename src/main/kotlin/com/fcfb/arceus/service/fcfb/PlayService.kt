@@ -33,14 +33,6 @@ class PlayService(
     private val kickoffPlayProcessor: KickoffPlayProcessor,
     private val pointAfterPlayProcessor: PointAfterPlayProcessor,
 ) {
-    /**
-     * Start a new play, the defensive number was submitted. The defensive number is encrypted
-     * @param gameId
-     * @param defensiveSubmitter
-     * @param defensiveNumber
-     * @param timeoutCalled
-     * @return
-     */
     fun defensiveNumberSubmitted(
         gameId: Int,
         defensiveSubmitter: String,

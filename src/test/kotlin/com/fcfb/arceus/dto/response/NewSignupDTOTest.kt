@@ -14,7 +14,6 @@ class NewSignupDTOTest {
     fun `NewSignupDTO should be a data class`() {
         val newSignupDTO = createTestNewSignupDTO()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(newSignupDTO.toString())
         assertTrue(newSignupDTO.toString().contains("NewSignupDTO"))
     }
@@ -80,14 +79,12 @@ class NewSignupDTOTest {
     fun `NewSignupDTO should handle different enum values`() {
         val newSignupDTO = createTestNewSignupDTO()
 
-        // Test different CoachPosition values
         newSignupDTO.position = CoachPosition.DEFENSIVE_COORDINATOR
         assertEquals(CoachPosition.DEFENSIVE_COORDINATOR, newSignupDTO.position)
 
         newSignupDTO.position = CoachPosition.RETIRED
         assertEquals(CoachPosition.RETIRED, newSignupDTO.position)
 
-        // Test different playbook values
         newSignupDTO.offensivePlaybook = OffensivePlaybook.FLEXBONE
         assertEquals(OffensivePlaybook.FLEXBONE, newSignupDTO.offensivePlaybook)
 
@@ -193,7 +190,6 @@ class NewSignupDTOTest {
     fun `NewSignupDTO should handle all playbook combinations`() {
         val newSignupDTO = createTestNewSignupDTO()
 
-        // Test all offensive playbooks
         val offensivePlaybooks =
             listOf(
                 OffensivePlaybook.AIR_RAID,
@@ -203,7 +199,6 @@ class NewSignupDTOTest {
                 OffensivePlaybook.WEST_COAST,
             )
 
-        // Test all defensive playbooks
         val defensivePlaybooks =
             listOf(
                 DefensivePlaybook.FOUR_THREE,
@@ -244,7 +239,6 @@ class NewSignupDTOTest {
     fun `NewSignupDTO should handle mixed null and non-null team choices`() {
         val newSignupDTO = createTestNewSignupDTO()
 
-        // Test with only first choice
         newSignupDTO.teamChoiceOne = "Alabama"
         newSignupDTO.teamChoiceTwo = null
         newSignupDTO.teamChoiceThree = null
@@ -253,14 +247,12 @@ class NewSignupDTOTest {
         assertEquals(null, newSignupDTO.teamChoiceTwo)
         assertEquals(null, newSignupDTO.teamChoiceThree)
 
-        // Test with first and second choice
         newSignupDTO.teamChoiceTwo = "Georgia"
 
         assertEquals("Alabama", newSignupDTO.teamChoiceOne)
         assertEquals("Georgia", newSignupDTO.teamChoiceTwo)
         assertEquals(null, newSignupDTO.teamChoiceThree)
 
-        // Test with all choices
         newSignupDTO.teamChoiceThree = "Texas"
 
         assertEquals("Alabama", newSignupDTO.teamChoiceOne)

@@ -16,10 +16,6 @@ import com.fcfb.arceus.service.fcfb.GameStatsService
 import com.fcfb.arceus.service.fcfb.ScorebugService
 import org.springframework.stereotype.Component
 
-/**
- * Shared helper functions used across multiple play processors (runoff time calculation,
- * playbook lookup, timeout usage resolution, and persisting the finished play).
- */
 @Component
 class PlayProcessingUtils(
     private val playRepository: PlayRepository,
@@ -100,7 +96,6 @@ class PlayProcessingUtils(
         var clock = initialClock
         var quarter = initialQuarter
 
-        // If quarter is over but game is not over
         if (clock <= 0 && !gameService.isTouchdownPlay(actualResult) && quarter < 4) {
             quarter += 1
             clock = 420 - playTime
@@ -164,7 +159,6 @@ class PlayProcessingUtils(
         var clock = initialClock
         var quarter = initialQuarter
 
-        // If quarter is over but game is not over
         if (clock <= 0 &&
             quarter < 4
         ) {
@@ -269,7 +263,6 @@ class PlayProcessingUtils(
             clock = updatedClock
             quarter = updatedQuarter
         } else {
-            // Handle end of quarter PAT scenarios
             val (updatedPossession, updatedClock, updatedQuarter) =
                 handleEndOfQuarterPATScenarios(
                     game,
@@ -312,7 +305,6 @@ class PlayProcessingUtils(
             gamePlay.defensiveTimeoutCalled = homeTimeoutCalled
         }
 
-        // Save the play and then update the game and stats
         playRepository.save(gamePlay)
 
         val game =

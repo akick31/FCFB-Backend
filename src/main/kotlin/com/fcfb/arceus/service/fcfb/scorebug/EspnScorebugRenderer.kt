@@ -63,7 +63,6 @@ class EspnScorebugRenderer : ScorebugRendererBase() {
     ) {
         val rowY = 280
 
-        // Draw Quarter Section
         var xPos = 0
         g.color = Color(255, 255, 255)
         g.fillRect(xPos, rowY, 126, rowHeight)
@@ -79,7 +78,6 @@ class EspnScorebugRenderer : ScorebugRendererBase() {
             rowY + rowHeight / 2 + quarterTextAscent / 2,
         )
 
-        // Draw Clock Section
         xPos = 100
         g.color = Color(255, 255, 255)
         g.fillRect(xPos, rowY, 160, rowHeight)
@@ -94,7 +92,6 @@ class EspnScorebugRenderer : ScorebugRendererBase() {
             rowY + rowHeight / 2 + clockTextAscent / 2,
         )
 
-        // Draw Ball Location Section
         xPos = 260
         g.color = Color(255, 255, 255)
         g.fillRect(xPos, rowY, 100, rowHeight)
@@ -123,24 +120,20 @@ class EspnScorebugRenderer : ScorebugRendererBase() {
         g.color = Color.BLACK
         g.drawString(ballLocationText, xPos + (100 - textWidth) / 2, rowY + (rowHeight) / 2 + ballLocationTextAscent / 2)
 
-        // Vertical line to separate Quarter and Clock sections
         val verticalLineX = 100
         g.color = Color.LIGHT_GRAY
         g.stroke = BasicStroke(3f)
         g.drawLine(verticalLineX, rowY + rowHeight, verticalLineX, rowY + (rowHeight / 2))
 
-        // Vertical line to separate Clock and Ball Location sections
         val verticalLineX2 = 260
         g.color = Color.LIGHT_GRAY
         g.stroke = BasicStroke(3f)
         g.drawLine(verticalLineX2, rowY + rowHeight, verticalLineX2, rowY + (rowHeight / 2))
 
-        // Top horizontal line
         g.color = Color.LIGHT_GRAY
         g.stroke = BasicStroke(3f)
         g.drawLine(0, rowY, 360, rowY)
 
-        // Bottom horizontal line
         g.color = Color.LIGHT_GRAY
         g.stroke = BasicStroke(3f)
         g.drawLine(0, rowY + rowHeight, 360, rowY + rowHeight)

@@ -43,25 +43,20 @@ class FoxScorebugRenderer : ScorebugRendererBase() {
         val infoBarY = teamBarY + teamBarHeight + 4
         val infoBarHeight = 50
 
-        // Draw timeout dots above team bars
         drawFoxTimeoutDots(g, game, awayTeam, 0, teamBarY, halfWidth - 2, isHome = false)
         drawFoxTimeoutDots(g, game, homeTeam, halfWidth + 2, teamBarY, halfWidth - 2, isHome = true)
 
-        // Draw away team section (left half)
         drawFoxTeamSection(g, game, awayTeam, 0, teamBarY, halfWidth - 2, teamBarHeight, isHome = false)
-        // Draw home team section (right half)
         drawFoxTeamSection(g, game, homeTeam, halfWidth + 2, teamBarY, halfWidth - 2, teamBarHeight, isHome = true)
 
-        // Draw possession indicator between the two score sections
         if (game.gameStatus != GameStatus.FINAL) {
             val dotSize = 10
             val dotX = halfWidth - dotSize / 2
             val dotY = teamBarY + teamBarHeight / 2 - dotSize / 2 - 5
-            g.color = Color(255, 165, 0) // Orange
+            g.color = Color(255, 165, 0)
             g.fillOval(dotX, dotY, dotSize, dotSize)
         }
 
-        // Draw info bar
         if (game.gameStatus != GameStatus.FINAL) {
             drawFoxInfoBar(g, infoBarY, infoBarHeight, width, game, homeTeam, awayTeam)
         } else {
@@ -120,7 +115,6 @@ class FoxScorebugRenderer : ScorebugRendererBase() {
                 }
             }
 
-        // Load and draw team logo
         val logoSize = 65
         val logoUrl = team.scorebugLogo
         if (logoUrl != null) {
@@ -137,7 +131,6 @@ class FoxScorebugRenderer : ScorebugRendererBase() {
         g.color = Color.WHITE
 
         if (!isHome) {
-            // Away team: [LOGO | NAME rank | SCORE]
             val textStartX = xPos + logoSize + 20
 
             var teamName = team.abbreviation ?: team.name
@@ -162,7 +155,6 @@ class FoxScorebugRenderer : ScorebugRendererBase() {
             val scoreWidth = g.fontMetrics.stringWidth(score)
             g.drawString(score, xPos + sectionWidth - scoreWidth - 12, yPos + sectionHeight / 2 + 20)
         } else {
-            // Home team: [SCORE | rank NAME | LOGO]
             val textEndX = xPos + sectionWidth - logoSize - 20
 
             g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 60f)
@@ -235,7 +227,6 @@ class FoxScorebugRenderer : ScorebugRendererBase() {
 
         g.color = Color.WHITE
 
-        // Quarter
         val quarterText = getQuarterText(game.quarter)
         g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaBoldFont(g)).deriveFont(Font.BOLD, 32f)
         val ascent = g.fontMetrics.ascent
@@ -243,35 +234,29 @@ class FoxScorebugRenderer : ScorebugRendererBase() {
         g.drawString(quarterText, 20, centerY)
         val quarterWidth = g.fontMetrics.stringWidth(quarterText)
 
-        // Separator
         g.color = Color(100, 100, 100)
         g.drawLine(quarterWidth + 40, yPos + 10, quarterWidth + 40, yPos + height - 10)
 
-        // Clock
         g.color = Color.WHITE
         val clockText = getClockText(game.quarter, game.clock)
         g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 32f)
         g.drawString(clockText, quarterWidth + 60, centerY)
         val clockWidth = g.fontMetrics.stringWidth(clockText)
 
-        // Separator
         g.color = Color(100, 100, 100)
         val sep2X = quarterWidth + clockWidth + 80
         g.drawLine(sep2X, yPos + 10, sep2X, yPos + height - 10)
 
-        // Down & Distance
         g.color = Color.WHITE
         val downText = getDownDistanceText(game)
         g.font = Font.createFont(Font.TRUETYPE_FONT, getHelveticaFont(g)).deriveFont(Font.PLAIN, 32f)
         g.drawString(downText, sep2X + 20, centerY)
         val downWidth = g.fontMetrics.stringWidth(downText)
 
-        // Separator
         g.color = Color(100, 100, 100)
         val sep3X = sep2X + downWidth + 40
         g.drawLine(sep3X, yPos + 10, sep3X, yPos + height - 10)
 
-        // Ball Location
         g.color = Color.WHITE
         val ballLocationText =
             getBallLocationText(

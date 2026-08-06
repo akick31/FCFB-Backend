@@ -46,7 +46,7 @@ class CoachTransactionLogTest {
                 processedBy = "Admin User",
             )
 
-        assertNull(log.id) // ID is not set in constructor
+        assertNull(log.id)
         assertEquals("Alabama", log.team)
         assertEquals(CoachPosition.HEAD_COACH, log.position)
         assertEquals(coachList, log.coach)
@@ -154,23 +154,18 @@ class CoachTransactionLogTest {
     fun `CoachTransactionLog should handle coach list operations`() {
         val log = CoachTransactionLog()
 
-        // Start with empty list
         assertEquals(mutableListOf<String>(), log.coach)
 
-        // Add coaches
         log.coach = mutableListOf("Coach 1")
         assertEquals(mutableListOf("Coach 1"), log.coach)
 
-        // Add more coaches
         log.coach?.add("Coach 2")
         log.coach?.add("Coach 3")
         assertEquals(mutableListOf("Coach 1", "Coach 2", "Coach 3"), log.coach)
 
-        // Remove a coach
         log.coach?.remove("Coach 2")
         assertEquals(mutableListOf("Coach 1", "Coach 3"), log.coach)
 
-        // Clear all coaches
         log.coach?.clear()
         assertTrue(log.coach?.isEmpty() == true)
     }

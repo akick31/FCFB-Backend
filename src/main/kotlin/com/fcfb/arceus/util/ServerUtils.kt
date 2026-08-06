@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class ServerUtils {
-    /** Retries the given operation, backing off exponentially between attempts. */
     suspend fun <T> retryWithExponentialBackoff(
         retries: Int = 3,
         initialDelay: Long = 1000,

@@ -1,14 +1,8 @@
 package com.fcfb.arceus.enums.records
 
-/**
- * Enum representing all possible stat types that can be tracked as records
- * Based on all fields from the GameStats model
- */
 enum class Stats {
-    // Basic Game Info
     SCORE,
 
-    // Passing Stats
     PASS_ATTEMPTS,
     PASS_COMPLETIONS,
     PASS_COMPLETION_PERCENTAGE,
@@ -18,7 +12,6 @@ enum class Stats {
     PASS_SUCCESSES,
     PASS_SUCCESS_PERCENTAGE,
 
-    // Rushing Stats
     RUSH_ATTEMPTS,
     RUSH_SUCCESSES,
     RUSH_SUCCESS_PERCENTAGE,
@@ -26,16 +19,13 @@ enum class Stats {
     LONGEST_RUN,
     RUSH_TOUCHDOWNS,
 
-    // Total Offense
     TOTAL_YARDS,
     AVERAGE_YARDS_PER_PLAY,
     FIRST_DOWNS,
 
-    // Sacks
     SACKS_ALLOWED,
     SACKS_FORCED,
 
-    // Turnovers
     INTERCEPTIONS_LOST,
     INTERCEPTIONS_FORCED,
     FUMBLES_LOST,
@@ -50,7 +40,6 @@ enum class Stats {
     FUMBLE_RETURN_TDS_COMMITTED,
     FUMBLE_RETURN_TDS_FORCED,
 
-    // Field Goals
     FIELD_GOAL_MADE,
     FIELD_GOAL_ATTEMPTS,
     FIELD_GOAL_PERCENTAGE,
@@ -58,7 +47,6 @@ enum class Stats {
     BLOCKED_OPPONENT_FIELD_GOALS,
     FIELD_GOAL_TOUCHDOWN,
 
-    // Punting
     PUNTS_ATTEMPTED,
     LONGEST_PUNT,
     AVERAGE_PUNT_LENGTH,
@@ -66,7 +54,6 @@ enum class Stats {
     PUNT_RETURN_TD,
     PUNT_RETURN_TD_PERCENTAGE,
 
-    // Kickoffs
     NUMBER_OF_KICKOFFS,
     ONSIDE_ATTEMPTS,
     ONSIDE_SUCCESS,
@@ -77,21 +64,17 @@ enum class Stats {
     KICK_RETURN_TD,
     KICK_RETURN_TD_PERCENTAGE,
 
-    // Game Flow
     NUMBER_OF_DRIVES,
     TIME_OF_POSSESSION,
 
-    // Quarter Scores
     Q1_SCORE,
     Q2_SCORE,
     Q3_SCORE,
     Q4_SCORE,
     OT_SCORE,
 
-    // Touchdowns
     TOUCHDOWNS,
 
-    // Down Conversions
     THIRD_DOWN_CONVERSION_SUCCESS,
     THIRD_DOWN_CONVERSION_ATTEMPTS,
     THIRD_DOWN_CONVERSION_PERCENTAGE,
@@ -99,21 +82,17 @@ enum class Stats {
     FOURTH_DOWN_CONVERSION_ATTEMPTS,
     FOURTH_DOWN_CONVERSION_PERCENTAGE,
 
-    // Game Control
     LARGEST_LEAD,
     LARGEST_DEFICIT,
 
-    // Red Zone
     RED_ZONE_ATTEMPTS,
     RED_ZONE_SUCCESSES,
     RED_ZONE_SUCCESS_PERCENTAGE,
     RED_ZONE_PERCENTAGE,
 
-    // Special Teams
     SAFETIES_FORCED,
     SAFETIES_COMMITTED,
 
-    // Performance Metrics
     AVERAGE_OFFENSIVE_DIFF,
     AVERAGE_DEFENSIVE_DIFF,
     AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
@@ -121,7 +100,6 @@ enum class Stats {
     AVERAGE_DIFF,
     AVERAGE_RESPONSE_SPEED,
 
-    // Defense (opponent) stats
     POINTS_AGAINST,
     TOTAL_YARDS_AGAINST,
     PASS_YARDS_AGAINST,

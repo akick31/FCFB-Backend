@@ -16,13 +16,14 @@ class RankingService(
     fun getRankings(
         season: Int,
         week: Int,
-        pollType: PollType,
-    ): List<RankingResponse> =
-        rankingRepository.findBySeasonWeekAndPollType(season, week, pollType.name).map { ranking ->
+        pollType: String,
+    ): List<RankingResponse> {
+        val parsedPollType = parsePollType(pollType)
+        return rankingRepository.findBySeasonWeekAndPollType(season, week, parsedPollType.name).map { ranking ->
             RankingResponse(
                 season = ranking.season,
                 week = ranking.week,
-                pollType = pollType.name,
+                pollType = parsedPollType.name,
                 rank = ranking.rank,
                 teamId = ranking.teamId,
                 teamName = teamRepository.findById(ranking.teamId).orElse(null)?.name,
@@ -30,11 +31,12 @@ class RankingService(
                 losses = ranking.losses,
             )
         }
+    }
 
     fun getAvailableWeeks(
         season: Int,
-        pollType: PollType,
-    ): List<Int> = rankingRepository.findWeeks(season, pollType.name)
+        pollType: String,
+    ): List<Int> = rankingRepository.findWeeks(season, parsePollType(pollType).name)
 
     fun areRankingsUploaded(
         season: Int,
@@ -45,9 +47,10 @@ class RankingService(
     fun uploadRankings(
         season: Int,
         week: Int,
-        pollType: PollType,
+        pollType: String,
         teamNames: List<String>,
     ): List<RankingResponse> {
+        val parsedPollType = parsePollType(pollType)
         val cleanedNames = teamNames.map { it.trim() }.filter { it.isNotEmpty() }
         if (cleanedNames.isEmpty()) {
             throw InvalidRankingsException("No teams were provided.")
@@ -64,12 +67,12 @@ class RankingService(
                     ?: throw InvalidRankingsException("Unknown team: $name")
             }
 
-        rankingRepository.deleteBySeasonWeekAndPollType(season, week, pollType.name)
+        rankingRepository.deleteBySeasonWeekAndPollType(season, week, parsedPollType.name)
         teams.forEachIndexed { index, team ->
-            rankingRepository.save(Ranking(season, week, pollType, index + 1, team.id, team.currentWins, team.currentLosses))
+            rankingRepository.save(Ranking(season, week, parsedPollType, index + 1, team.id, team.currentWins, team.currentLosses))
         }
 
-        when (pollType) {
+        when (parsedPollType) {
             PollType.COACHES_POLL -> {
                 teamRepository.clearCoachesPollRankings()
                 teams.forEachIndexed { index, team -> teamRepository.setCoachesPollRankingById(team.id, index + 1) }
@@ -82,4 +85,7 @@ class RankingService(
 
         return getRankings(season, week, pollType)
     }
+
+    private fun parsePollType(pollType: String): PollType =
+        PollType.fromString(pollType) ?: throw InvalidRankingsException("Unknown poll type: $pollType")
 }

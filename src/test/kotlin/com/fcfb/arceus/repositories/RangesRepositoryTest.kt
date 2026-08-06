@@ -21,7 +21,6 @@ class RangesRepositoryTest {
 
     @Test
     fun `test save and findById`() {
-        // Given
         val ranges =
             createTestRanges(
                 id = 1,
@@ -37,11 +36,9 @@ class RangesRepositoryTest {
         every { rangesRepository.save(any()) } returns ranges
         every { rangesRepository.findById(1) } returns java.util.Optional.of(ranges)
 
-        // When
         val savedRanges = rangesRepository.save(ranges)
         val foundRanges = rangesRepository.findById(savedRanges.id!!).get()
 
-        // Then
         assertNotNull(foundRanges)
         assertEquals(1, foundRanges.id)
         assertEquals("RUN", foundRanges.playType)
@@ -54,7 +51,6 @@ class RangesRepositoryTest {
 
     @Test
     fun `test getNormalResult`() {
-        // Given
         val ranges =
             createTestRanges(
                 id = 1,
@@ -68,10 +64,8 @@ class RangesRepositoryTest {
 
         every { rangesRepository.getNormalResult("PASS", "SPREAD", "THREE_FOUR", "10") } returns ranges
 
-        // When
         val foundRanges = rangesRepository.getNormalResult("PASS", "SPREAD", "THREE_FOUR", "10")
 
-        // Then
         assertNotNull(foundRanges)
         assertEquals(1, foundRanges.id)
         assertEquals("PASS", foundRanges.playType)
@@ -81,19 +75,15 @@ class RangesRepositoryTest {
 
     @Test
     fun `test getNormalResult returns null when not found`() {
-        // Given
         every { rangesRepository.getNormalResult("RUN", "AIR_RAID", "FOUR_THREE", "20") } returns null
 
-        // When
         val foundRanges = rangesRepository.getNormalResult("RUN", "AIR_RAID", "FOUR_THREE", "20")
 
-        // Then
-        assertNull(foundRanges) // 20 is outside the range 1-10
+        assertNull(foundRanges)
     }
 
     @Test
     fun `test getNonNormalResult`() {
-        // Given
         val ranges =
             createTestRanges(
                 id = 1,
@@ -105,10 +95,8 @@ class RangesRepositoryTest {
 
         every { rangesRepository.getNonNormalResult("PASS", "5") } returns ranges
 
-        // When
         val foundRanges = rangesRepository.getNonNormalResult("PASS", "5")
 
-        // Then
         assertNotNull(foundRanges)
         assertEquals(1, foundRanges.id)
         assertEquals("PASS", foundRanges.playType)
@@ -117,19 +105,15 @@ class RangesRepositoryTest {
 
     @Test
     fun `test getNonNormalResult returns null when not found`() {
-        // Given
         every { rangesRepository.getNonNormalResult("RUN", "20") } returns null
 
-        // When
         val foundRanges = rangesRepository.getNonNormalResult("RUN", "20")
 
-        // Then
         assertNull(foundRanges)
     }
 
     @Test
     fun `test getPuntResult`() {
-        // Given
         val ranges =
             createTestRanges(
                 id = 1,
@@ -141,10 +125,8 @@ class RangesRepositoryTest {
 
         every { rangesRepository.getPuntResult("PUNT", "20", "5") } returns ranges
 
-        // When
         val foundRanges = rangesRepository.getPuntResult("PUNT", "20", "5")
 
-        // Then
         assertNotNull(foundRanges)
         assertEquals(1, foundRanges.id)
         assertEquals("PUNT", foundRanges.playType)
@@ -153,19 +135,15 @@ class RangesRepositoryTest {
 
     @Test
     fun `test getPuntResult returns null when ball location out of range`() {
-        // Given
         every { rangesRepository.getPuntResult("PUNT", "50", "5") } returns null
 
-        // When
         val foundRanges = rangesRepository.getPuntResult("PUNT", "50", "5")
 
-        // Then
         assertNull(foundRanges)
     }
 
     @Test
     fun `test getFieldGoalResult`() {
-        // Given
         val ranges =
             createTestRanges(
                 id = 1,
@@ -177,10 +155,8 @@ class RangesRepositoryTest {
 
         every { rangesRepository.getFieldGoalResult("FIELD_GOAL", "30", "5") } returns ranges
 
-        // When
         val foundRanges = rangesRepository.getFieldGoalResult("FIELD_GOAL", "30", "5")
 
-        // Then
         assertNotNull(foundRanges)
         assertEquals(1, foundRanges.id)
         assertEquals("FIELD_GOAL", foundRanges.playType)
@@ -189,53 +165,41 @@ class RangesRepositoryTest {
 
     @Test
     fun `test getFieldGoalResult returns null when distance doesn't match`() {
-        // Given
         every { rangesRepository.getFieldGoalResult("FIELD_GOAL", "50", "5") } returns null
 
-        // When
         val foundRanges = rangesRepository.getFieldGoalResult("FIELD_GOAL", "50", "5")
 
-        // Then
         assertNull(foundRanges)
     }
 
     @Test
     fun `test getPlayTime`() {
-        // Given
         every { rangesRepository.getPlayTime("RUN", 5) } returns 30
 
-        // When
         val playTime = rangesRepository.getPlayTime("RUN", 5)
 
-        // Then
         assertEquals(30, playTime)
     }
 
     @Test
     fun `test getPlayTime returns null when no numeric results found`() {
-        // Given
         every { rangesRepository.getPlayTime("PASS", 10) } returns null
 
-        // When
         val playTime = rangesRepository.getPlayTime("PASS", 10)
 
-        // Then
         assertNull(playTime)
     }
 
     @Test
     fun `test findAll`() {
-        // Given
         val ranges1 = createTestRanges(id = 1, playType = "RUN")
         val ranges2 = createTestRanges(id = 2, playType = "PASS")
         val allRanges = listOf(ranges1, ranges2)
 
         every { rangesRepository.findAll() } returns allRanges
 
-        // When
         val foundRanges = rangesRepository.findAll()
 
-        // Then
         assertEquals(2, foundRanges.count())
         assertTrue(foundRanges.any { it.playType == "RUN" })
         assertTrue(foundRanges.any { it.playType == "PASS" })
@@ -243,13 +207,10 @@ class RangesRepositoryTest {
 
     @Test
     fun `test count`() {
-        // Given
         every { rangesRepository.count() } returns 25L
 
-        // When
         val count = rangesRepository.count()
 
-        // Then
         assertEquals(25L, count)
     }
 

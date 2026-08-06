@@ -11,7 +11,6 @@ class RangesTest {
     fun `test Ranges entity annotations`() {
         val ranges = Ranges()
 
-        // Test that the class has the correct JPA annotations
         val entityAnnotation = Ranges::class.java.getAnnotation(javax.persistence.Entity::class.java)
         assertNotNull(entityAnnotation)
 
@@ -69,7 +68,6 @@ class RangesTest {
     fun `test Ranges property mutability`() {
         val ranges = Ranges()
 
-        // Test property mutability
         ranges.id = 1
         ranges.playType = "KICKOFF"
         ranges.offensivePlaybook = "SPREAD"
@@ -123,7 +121,6 @@ class RangesTest {
     fun `test Ranges with all Scenario values`() {
         val ranges = Ranges()
 
-        // Test all Scenario values
         Scenario.entries.forEach { scenario ->
             ranges.result = scenario
             assertEquals(scenario, ranges.result)
@@ -151,7 +148,6 @@ class RangesTest {
     fun `test Ranges playbook management`() {
         val ranges = Ranges()
 
-        // Test offensive playbook
         ranges.offensivePlaybook = "AIR_RAID"
         assertEquals("AIR_RAID", ranges.offensivePlaybook)
 
@@ -164,7 +160,6 @@ class RangesTest {
         ranges.offensivePlaybook = null
         assertNull(ranges.offensivePlaybook)
 
-        // Test defensive playbook
         ranges.defensivePlaybook = "FOUR_THREE"
         assertEquals("FOUR_THREE", ranges.defensivePlaybook)
 
@@ -270,7 +265,6 @@ class RangesTest {
     fun `test Ranges complete scenario`() {
         val ranges = Ranges()
 
-        // Set up a complete range scenario
         ranges.id = 123
         ranges.playType = "NORMAL"
         ranges.offensivePlaybook = "AIR_RAID"
@@ -283,7 +277,6 @@ class RangesTest {
         ranges.lowerRange = 5
         ranges.upperRange = 15
 
-        // Verify all properties
         assertEquals(123, ranges.id)
         assertEquals("NORMAL", ranges.playType)
         assertEquals("AIR_RAID", ranges.offensivePlaybook)
@@ -301,7 +294,6 @@ class RangesTest {
     fun `test Ranges different play scenarios`() {
         val ranges = Ranges()
 
-        // Test kickoff scenario
         ranges.playType = "KICKOFF"
         ranges.offensivePlaybook = "PRO"
         ranges.defensivePlaybook = "FOUR_THREE"
@@ -324,7 +316,6 @@ class RangesTest {
         assertEquals(0, ranges.lowerRange)
         assertEquals(0, ranges.upperRange)
 
-        // Test PAT scenario
         ranges.playType = "PAT"
         ranges.offensivePlaybook = "SPREAD"
         ranges.defensivePlaybook = "THREE_FOUR"
@@ -378,10 +369,8 @@ class RangesTest {
                 upperRange = 15,
             )
 
-        // Test that hashCode is consistent for equal objects
         assertEquals(ranges1.hashCode(), ranges2.hashCode())
 
-        // Test that hashCode changes when properties change
         ranges2.playType = "KICKOFF"
         assert(ranges1.hashCode() != ranges2.hashCode())
     }

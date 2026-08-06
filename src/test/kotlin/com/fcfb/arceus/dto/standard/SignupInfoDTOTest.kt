@@ -11,7 +11,6 @@ class SignupInfoDTOTest {
     fun `SignupInfo should be a data class`() {
         val signupInfo = createTestSignupInfo()
 
-        // Data classes automatically implement equals, hashCode, toString, and copy
         assertNotNull(signupInfo.toString())
         assertTrue(signupInfo.toString().contains("SignupInfo"))
     }
@@ -38,27 +37,22 @@ class SignupInfoDTOTest {
     fun `SignupInfo should have proper JsonProperty annotations`() {
         val signupInfoClass = SignupInfo::class.java
 
-        // Check discord_tag annotation
         val discordTagField = signupInfoClass.declaredConstructors[0].parameters.find { it.name == "discordTag" }
         val discordTagAnnotation = discordTagField?.getAnnotation(JsonProperty::class.java)
         assertEquals("discord_tag", discordTagAnnotation?.value)
 
-        // Check discord_id annotation
         val discordIdField = signupInfoClass.declaredConstructors[0].parameters.find { it.name == "discordId" }
         val discordIdAnnotation = discordIdField?.getAnnotation(JsonProperty::class.java)
         assertEquals("discord_id", discordIdAnnotation?.value)
 
-        // Check team_choice_one annotation
         val teamChoiceOneField = signupInfoClass.declaredConstructors[0].parameters.find { it.name == "teamChoiceOne" }
         val teamChoiceOneAnnotation = teamChoiceOneField?.getAnnotation(JsonProperty::class.java)
         assertEquals("team_choice_one", teamChoiceOneAnnotation?.value)
 
-        // Check team_choice_two annotation
         val teamChoiceTwoField = signupInfoClass.declaredConstructors[0].parameters.find { it.name == "teamChoiceTwo" }
         val teamChoiceTwoAnnotation = teamChoiceTwoField?.getAnnotation(JsonProperty::class.java)
         assertEquals("team_choice_two", teamChoiceTwoAnnotation?.value)
 
-        // Check team_choice_three annotation
         val teamChoiceThreeField = signupInfoClass.declaredConstructors[0].parameters.find { it.name == "teamChoiceThree" }
         val teamChoiceThreeAnnotation = teamChoiceThreeField?.getAnnotation(JsonProperty::class.java)
         assertEquals("team_choice_three", teamChoiceThreeAnnotation?.value)
@@ -92,7 +86,6 @@ class SignupInfoDTOTest {
     fun `SignupInfo should handle Discord ID formats`() {
         val signupInfo = createTestSignupInfo()
 
-        // Discord IDs are typically 18-digit numbers
         assertTrue(signupInfo.discordId.length >= 17)
         assertTrue(signupInfo.discordId.all { it.isDigit() })
     }
@@ -186,8 +179,6 @@ class SignupInfoDTOTest {
     fun `SignupInfo should be immutable`() {
         val signupInfo = createTestSignupInfo()
 
-        // All properties should be val (immutable)
-        // This is enforced by the data class declaration
         assertNotNull(signupInfo.discordTag)
         assertNotNull(signupInfo.discordId)
         assertNotNull(signupInfo.teamChoiceOne)

@@ -5,10 +5,6 @@ import com.fcfb.arceus.model.Team
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage
 
-/**
- * TNT-style scorebug renderer.
- * Currently delegates to ESPN renderer; replace with custom TNT design when ready.
- */
 @Component
 class TntScorebugRenderer(
     private val espnRenderer: EspnScorebugRenderer,

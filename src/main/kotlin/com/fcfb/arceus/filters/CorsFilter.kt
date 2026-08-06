@@ -16,7 +16,6 @@ class CorsFilter : OncePerRequestFilter() {
         response: HttpServletResponse,
         filterChain: FilterChain,
     ) {
-        // Handle preflight request (OPTIONS)
         if ("OPTIONS" == request.method) {
             response.status = HttpServletResponse.SC_OK
 
@@ -38,9 +37,8 @@ class CorsFilter : OncePerRequestFilter() {
                     "Access-Control-Request-Method, " +
                     "Access-Control-Request-Headers",
             )
-            response.addIntHeader("Access-Control-Max-Age", 3600) // Cache preflight request for 1 hour
+            response.addIntHeader("Access-Control-Max-Age", 3600)
         } else {
-            // Allow cross-origin requests from any origin
             response.addHeader("Access-Control-Allow-Origin", "*")
             response.addHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, HEAD")
             response.addHeader(
@@ -57,7 +55,6 @@ class CorsFilter : OncePerRequestFilter() {
             response.addHeader("Access-Control-Allow-Credentials", "false")
         }
 
-        // Continue with the filter chain
         filterChain.doFilter(request, response)
     }
 }

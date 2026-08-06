@@ -16,7 +16,6 @@ class TeamTest {
     fun `test Team entity annotations`() {
         val team = Team()
 
-        // Test that the class has the correct JPA annotations
         val entityAnnotation = Team::class.java.getAnnotation(javax.persistence.Entity::class.java)
         assertNotNull(entityAnnotation)
 
@@ -64,7 +63,6 @@ class TeamTest {
         assertFalse(team.isTaken)
         assertTrue(team.active)
 
-        // Test that lateinit properties are not initialized
         assertThrows<UninitializedPropertyAccessException> {
             team.offensivePlaybook
         }
@@ -162,7 +160,6 @@ class TeamTest {
     fun `test Team property mutability`() {
         val team = Team()
 
-        // Test property mutability
         team.id = 1
         team.name = "New University"
         team.abbreviation = "NU"
@@ -288,13 +285,11 @@ class TeamTest {
     fun `test Team with different playbook combinations`() {
         val team = Team()
 
-        // Test different offensive playbook combinations
         OffensivePlaybook.entries.forEach { offensivePlaybook ->
             team.offensivePlaybook = offensivePlaybook
             assertEquals(offensivePlaybook, team.offensivePlaybook)
         }
 
-        // Test different defensive playbook combinations
         DefensivePlaybook.entries.forEach { defensivePlaybook ->
             team.defensivePlaybook = defensivePlaybook
             assertEquals(defensivePlaybook, team.defensivePlaybook)
@@ -305,7 +300,6 @@ class TeamTest {
     fun `test Team with different subdivision values`() {
         val team = Team()
 
-        // Test all Subdivision values
         Subdivision.entries.forEach { subdivision ->
             team.subdivision = subdivision
             assertEquals(subdivision, team.subdivision)
@@ -316,19 +310,16 @@ class TeamTest {
     fun `test Team statistics tracking`() {
         val team = Team()
 
-        // Set up current season statistics
         team.currentWins = 10
         team.currentLosses = 2
         team.currentConferenceWins = 8
         team.currentConferenceLosses = 1
 
-        // Set up overall statistics
         team.overallWins = 45
         team.overallLosses = 25
         team.overallConferenceWins = 35
         team.overallConferenceLosses = 20
 
-        // Set up championship statistics
         team.conferenceChampionshipWins = 3
         team.conferenceChampionshipLosses = 2
         team.bowlWins = 5
@@ -398,7 +389,6 @@ class TeamTest {
         assertEquals(discordTags, team.coachDiscordTags)
         assertEquals(discordIds, team.coachDiscordIds)
 
-        // Test adding a coach
         team.coachUsernames?.add("coach4")
         team.coachNames?.add("Special Teams Coach")
         team.coachDiscordTags?.add("stcoach#0000")
@@ -414,14 +404,12 @@ class TeamTest {
     fun `test Team status flags`() {
         val team = Team()
 
-        // Test isTaken flag
         team.isTaken = true
         assertTrue(team.isTaken)
 
         team.isTaken = false
         assertFalse(team.isTaken)
 
-        // Test active flag
         team.active = false
         assertFalse(team.active)
 
