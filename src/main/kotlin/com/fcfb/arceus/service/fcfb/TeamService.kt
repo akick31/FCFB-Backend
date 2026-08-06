@@ -30,6 +30,7 @@ class TeamService(
     private val coachTransactionLogService: CoachTransactionLogService,
     private val newSignupService: NewSignupService,
     private val conferenceService: ConferenceService,
+    private val teamScheduleCleanupService: TeamScheduleCleanupService,
 ) {
     fun updateTeamWinsAndLosses(game: Game) {
         val homeTeam = getTeamByName(game.homeTeam)
@@ -107,6 +108,8 @@ class TeamService(
             throw TeamNotFoundException("No active teams found")
         }
 
+    fun getAllTeamsIncludingInactive() = teamRepository.findAll().toList()
+
     fun getTeamByName(name: String?) =
         teamRepository.getTeamByName(name)
             ?: throw TeamNotFoundException("Team not found with name: $name")
@@ -161,6 +164,7 @@ class TeamService(
     fun updateTeam(team: Team): Team {
         team.conference?.let { conferenceService.requireExists(it) }
         val existingTeam = getTeamByName(team.name)
+        val wasActive = existingTeam.active
 
         existingTeam.apply {
             this.name = team.name
@@ -202,6 +206,9 @@ class TeamService(
             nationalChampionshipLosses = team.nationalChampionshipLosses
         }
         teamRepository.save(existingTeam)
+        if (wasActive && !existingTeam.active) {
+            existingTeam.name?.let { teamScheduleCleanupService.removeTeamFromUpcomingSchedule(it) }
+        }
         return existingTeam
     }
 

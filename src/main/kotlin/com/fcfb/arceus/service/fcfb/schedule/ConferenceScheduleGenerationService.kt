@@ -98,8 +98,7 @@ class ConferenceScheduleGenerationService(
         val existingSchedule = scheduleRepository.getScheduleBySeason(season) ?: emptyList()
         existingSchedule.filter { s ->
             s.gameType == GameType.CONFERENCE_GAME &&
-                teamNames.contains(s.homeTeam) &&
-                teamNames.contains(s.awayTeam)
+                (teamNames.contains(s.homeTeam) || teamNames.contains(s.awayTeam))
         }.forEach { scheduleRepository.delete(it) }
     }
 
@@ -134,7 +133,15 @@ class ConferenceScheduleGenerationService(
             Logger.info("Circle method selected ${matchups.size} matchups for ${request.conference}")
             return matchups
         }
-        val matchups = selectMatchupsGreedy(teamNames, numGames, protectedRivalries)
+        val feasibleGames = feasibleGreedyGameCount(teamNames.size, numGames)
+        if (feasibleGames != numGames) {
+            Logger.warn(
+                "${request.conference} has an odd number of teams (${teamNames.size}); " +
+                    "$numGames games per team is impossible (odd teams * odd games must be even). " +
+                    "Using $feasibleGames games per team instead.",
+            )
+        }
+        val matchups = selectMatchupsGreedy(teamNames, feasibleGames, protectedRivalries)
         Logger.info("Greedy method selected ${matchups.size} matchups for ${request.conference}")
         return matchups
     }
@@ -259,6 +266,11 @@ class ConferenceScheduleGenerationService(
             }
         }
     }
+
+    private fun feasibleGreedyGameCount(
+        numTeams: Int,
+        numGames: Int,
+    ): Int = if (numTeams % 2 != 0 && numGames % 2 != 0) maxOf(numGames - 1, 0) else numGames
 
     private fun selectMatchupsGreedy(
         teamNames: List<String>,
