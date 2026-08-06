@@ -5,6 +5,7 @@ import com.fcfb.arceus.service.fcfb.OffseasonService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -16,4 +17,10 @@ class OffseasonController(
 ) {
     @GetMapping
     fun getCurrentOffseason(): ResponseEntity<Offseason?> = ResponseEntity.ok(offseasonService.getCurrentOffseason())
+
+    @PostMapping("/start")
+    fun startOffseason(): ResponseEntity<Offseason> = ResponseEntity.ok(offseasonService.startOffseasonNow())
+
+    @PostMapping("/end")
+    fun endOffseason(): ResponseEntity<Offseason?> = ResponseEntity.ok(offseasonService.endOffseasonNow())
 }

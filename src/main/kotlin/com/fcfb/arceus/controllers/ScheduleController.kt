@@ -9,6 +9,7 @@ import com.fcfb.arceus.dto.response.ConferenceRulesResponse
 import com.fcfb.arceus.dto.response.OocGenerationResult
 import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
+import com.fcfb.arceus.dto.response.ScheduleValidationResult
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.service.fcfb.ScheduleService
 import org.springframework.http.ResponseEntity
@@ -140,4 +141,9 @@ class ScheduleController(
     fun getConferenceRules(
         @RequestParam("conference") conference: String,
     ): ResponseEntity<ConferenceRulesResponse> = ResponseEntity.ok(scheduleService.getConferenceRules(conference))
+
+    @GetMapping("/season/{season}/validate")
+    fun validateSchedule(
+        @PathVariable("season") season: Int,
+    ): ResponseEntity<ScheduleValidationResult> = ResponseEntity.ok(scheduleService.validateSchedule(season))
 }

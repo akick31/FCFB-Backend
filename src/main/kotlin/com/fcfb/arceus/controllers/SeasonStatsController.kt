@@ -1,5 +1,6 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.service.fcfb.PostseasonSeasonStatsService
 import com.fcfb.arceus.service.fcfb.SeasonStatsService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 @CrossOrigin(origins = ["*"])
 class SeasonStatsController(
     private val seasonStatsService: SeasonStatsService,
+    private val postseasonSeasonStatsService: PostseasonSeasonStatsService,
 ) {
     @GetMapping
     fun getFilteredSeasonStats(
@@ -45,4 +47,18 @@ class SeasonStatsController(
         @RequestParam(defaultValue = "10") limit: Int,
         @RequestParam(defaultValue = "false") ascending: Boolean,
     ) = seasonStatsService.getLeaderboard(statName, seasonNumber, subdivision, conference, limit, ascending)
+
+    @GetMapping("/postseason")
+    fun getFilteredPostseasonSeasonStats(
+        @RequestParam(required = false) team: String?,
+        @RequestParam(required = false) season: Int?,
+        @PageableDefault(size = 20) pageable: Pageable,
+    ) = postseasonSeasonStatsService.getFilteredPostseasonSeasonStats(
+        team = team,
+        season = season,
+        pageable = pageable,
+    )
+
+    @PostMapping("/postseason/generate/all")
+    fun generateAllPostseasonSeasonStats() = postseasonSeasonStatsService.generateAllPostseasonSeasonStats()
 }

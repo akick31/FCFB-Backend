@@ -7,9 +7,11 @@ import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Season
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.SeasonRepository
+import com.fcfb.arceus.service.fcfb.schedule.ScheduleValidationService
 import com.fcfb.arceus.util.CurrentSeasonNotFoundException
 import com.fcfb.arceus.util.CurrentWeekNotFoundException
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.SeasonNotReadyException
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -23,35 +25,39 @@ class SeasonService(
     private val userService: UserService,
     private val scheduleRepository: ScheduleRepository,
     private val teamSeasonConferenceService: TeamSeasonConferenceService,
+    private val scheduleValidationService: ScheduleValidationService,
 ) {
     fun startSeason(): Season {
+        val pendingSeason =
+            seasonRepository.getPendingSeason()
+                ?: throw SeasonNotReadyException("No pending season to start. Create a season for scheduling first.")
+
+        if (!pendingSeason.scheduleLocked) {
+            throw SeasonNotReadyException(
+                "Cannot start Season ${pendingSeason.seasonNumber}: the schedule must be locked before starting.",
+            )
+        }
+
+        val validation = scheduleValidationService.validateSchedule(pendingSeason.seasonNumber)
+        if (!validation.valid) {
+            val details =
+                validation.incompleteTeams.joinToString("; ") {
+                    "${it.team} (missing weeks ${it.missingWeeks.joinToString(", ")})"
+                }
+            throw SeasonNotReadyException(
+                "Cannot start Season ${pendingSeason.seasonNumber}: schedule is incomplete. $details",
+            )
+        }
+
         val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
-        val pendingSeason = seasonRepository.getPendingSeason()
-        val season =
-            if (pendingSeason != null) {
-                pendingSeason.startDate = now
-                pendingSeason.currentSeason = true
-                pendingSeason
-            } else {
-                val previousSeason = seasonRepository.getPreviousSeason()
-                Season(
-                    seasonNumber = previousSeason?.seasonNumber?.plus(1) ?: 1,
-                    startDate = now,
-                    endDate = null,
-                    nationalChampionshipWinningTeam = null,
-                    nationalChampionshipLosingTeam = null,
-                    nationalChampionshipWinningCoach = null,
-                    nationalChampionshipLosingCoach = null,
-                    currentWeek = 1,
-                    currentSeason = true,
-                )
-            }
+        pendingSeason.startDate = now
+        pendingSeason.currentSeason = true
         teamService.resetWinsAndLosses()
         userService.resetAllDelayOfGameInstances()
-        seasonRepository.save(season)
-        teamSeasonConferenceService.snapshotSeason(season.seasonNumber)
+        seasonRepository.save(pendingSeason)
+        teamSeasonConferenceService.snapshotSeason(pendingSeason.seasonNumber)
         offseasonService.endOffseason(now)
-        return season
+        return pendingSeason
     }
 
     fun endSeason(game: Game) {
@@ -77,6 +83,52 @@ class SeasonService(
 
         seasonRepository.save(season)
         offseasonService.startOffseason(nowFormatted)
+    }
+
+    fun endSeasonManually(): Season {
+        val season = getCurrentSeason()
+        if (!hasFinishedNationalChampionship(season.seasonNumber)) {
+            throw SeasonNotReadyException(
+                "Cannot end Season ${season.seasonNumber}: no finished National Championship game found.",
+            )
+        }
+        season.currentSeason = false
+        val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
+        season.endDate = now
+        seasonRepository.save(season)
+        offseasonService.startOffseason(now)
+        return season
+    }
+
+    fun hasFinishedNationalChampionship(seasonNumber: Int): Boolean =
+        (scheduleRepository.getPostseasonSchedule(seasonNumber) ?: emptyList())
+            .any { it.gameType == GameType.NATIONAL_CHAMPIONSHIP && it.finished == true }
+
+    fun setCurrentSeason(seasonNumber: Int): Season {
+        val target =
+            seasonRepository.findBySeasonNumber(seasonNumber)
+                ?: throw CurrentSeasonNotFoundException()
+        seasonRepository.findByCurrentSeason(true)
+            .filter { it.seasonNumber != seasonNumber }
+            .forEach {
+                it.currentSeason = false
+                seasonRepository.save(it)
+            }
+        target.currentSeason = true
+        seasonRepository.save(target)
+        return target
+    }
+
+    fun updateCurrentWeek(
+        seasonNumber: Int,
+        week: Int,
+    ): Season {
+        val season =
+            seasonRepository.findBySeasonNumber(seasonNumber)
+                ?: throw CurrentSeasonNotFoundException()
+        season.currentWeek = week
+        seasonRepository.save(season)
+        return season
     }
 
     fun getCurrentSeason() = seasonRepository.getCurrentSeason() ?: throw CurrentSeasonNotFoundException()

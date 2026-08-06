@@ -8,6 +8,7 @@ import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlaybookStatsRepository
 import com.fcfb.arceus.service.specification.PlaybookStatsSpecificationService
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.POSTSEASON_START_WEEK
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -43,7 +44,9 @@ class PlaybookStatsService(
     fun generateAllPlaybookStats() {
         Logger.info("Starting generation of all playbook stats")
 
-        val allGameStats = gameStatsRepository.findAllByOrderBySeasonDescGameIdAsc()
+        val allGameStats =
+            gameStatsRepository.findAllByOrderBySeasonDescGameIdAsc()
+                .filter { (it.week ?: 0) < POSTSEASON_START_WEEK }
         Logger.info("Found ${allGameStats.size} total game stats records")
 
         val groupedStats =
@@ -87,6 +90,7 @@ class PlaybookStatsService(
                 .filter { gameStats ->
                     gameStats.offensivePlaybook == offensivePlaybook && gameStats.defensivePlaybook == defensivePlaybook
                 }
+                .filter { (it.week ?: 0) < POSTSEASON_START_WEEK }
 
         if (gameStatsList.isEmpty()) {
             Logger.warn("No game stats found for $offensivePlaybook/$defensivePlaybook in season $seasonNumber")
@@ -107,7 +111,7 @@ class PlaybookStatsService(
         Logger.info("Completed generating playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber")
     }
 
-    private fun aggregateGameStatsToPlaybookStats(
+    fun aggregateGameStatsToPlaybookStats(
         gameStatsList: List<GameStats>,
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,

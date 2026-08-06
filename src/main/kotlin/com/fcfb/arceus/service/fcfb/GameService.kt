@@ -43,6 +43,7 @@ import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.NoCoachDiscordIdsFoundException
 import com.fcfb.arceus.util.NoCoachesFoundException
 import com.fcfb.arceus.util.NoGameFoundException
+import com.fcfb.arceus.util.POSTSEASON_START_WEEK
 import com.fcfb.arceus.util.RankingsNotUploadedException
 import com.fcfb.arceus.util.TeamNotFoundException
 import com.fcfb.arceus.util.UnableToCreateGameThreadException
@@ -80,6 +81,7 @@ class GameService(
     private val gameSpecificationService: GameSpecificationService,
     private val recordService: RecordService,
     private val seasonStatsService: SeasonStatsService,
+    private val postseasonSeasonStatsService: PostseasonSeasonStatsService,
     private val winProbabilityService: WinProbabilityService,
     private val vegasOddsService: VegasOddsService,
     private val gameStatsRepository: GameStatsRepository,
@@ -988,6 +990,11 @@ class GameService(
             if (game.gameType != GameType.SCRIMMAGE) {
                 seasonStatsService.updateSeasonStatsForGame(homeStats)
                 seasonStatsService.updateSeasonStatsForGame(awayStats)
+            }
+
+            if (game.gameType != GameType.SCRIMMAGE && (game.week ?: 0) >= POSTSEASON_START_WEEK) {
+                postseasonSeasonStatsService.updateSeasonStatsForGame(homeStats)
+                postseasonSeasonStatsService.updateSeasonStatsForGame(awayStats)
             }
 
             Logger.info(

@@ -85,7 +85,7 @@ class LeagueStatsService(
         Logger.info("Completed generating league stats for $subdivision in season $seasonNumber")
     }
 
-    private fun aggregateSeasonStatsToLeagueStats(
+    fun aggregateSeasonStatsToLeagueStats(
         seasonStatsList: List<SeasonStats>,
         subdivision: Subdivision,
         seasonNumber: Int,

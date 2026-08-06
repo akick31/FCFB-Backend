@@ -1,5 +1,7 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.dto.response.ScheduleValidationResult
+import com.fcfb.arceus.dto.response.TeamScheduleGap
 import com.fcfb.arceus.model.Season
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.SeasonRepository
@@ -8,6 +10,7 @@ import com.fcfb.arceus.service.fcfb.SeasonService
 import com.fcfb.arceus.service.fcfb.TeamSeasonConferenceService
 import com.fcfb.arceus.service.fcfb.TeamService
 import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.service.fcfb.schedule.ScheduleValidationService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
@@ -33,13 +36,22 @@ class SeasonControllerTest {
     private val userService: UserService = mockk()
     private val scheduleRepository: ScheduleRepository = mockk()
     private val teamSeasonConferenceService: TeamSeasonConferenceService = mockk()
+    private val scheduleValidationService: ScheduleValidationService = mockk()
     private lateinit var seasonService: SeasonService
     private lateinit var seasonController: SeasonController
 
     @BeforeEach
     fun setup() {
         seasonService =
-            SeasonService(seasonRepository, offseasonService, teamService, userService, scheduleRepository, teamSeasonConferenceService)
+            SeasonService(
+                seasonRepository,
+                offseasonService,
+                teamService,
+                userService,
+                scheduleRepository,
+                teamSeasonConferenceService,
+                scheduleValidationService,
+            )
         seasonController = SeasonController(seasonService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(seasonController)
@@ -48,61 +60,7 @@ class SeasonControllerTest {
     }
 
     @Test
-    fun `should start season successfully`() {
-        val previousSeason =
-            Season(
-                seasonNumber = 10,
-                startDate = "01/01/2023 00:00:00",
-                endDate = "12/31/2023 23:59:59",
-                nationalChampionshipWinningTeam = "Team A",
-                nationalChampionshipLosingTeam = "Team B",
-                nationalChampionshipWinningCoach = "Coach A",
-                nationalChampionshipLosingCoach = "Coach B",
-                currentWeek = 10,
-                currentSeason = false,
-            )
-
-        val newSeason =
-            Season(
-                seasonNumber = previousSeason.seasonNumber + 1,
-                startDate = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
-                endDate = null,
-                nationalChampionshipWinningTeam = null,
-                nationalChampionshipLosingTeam = null,
-                nationalChampionshipWinningCoach = null,
-                nationalChampionshipLosingCoach = null,
-                currentWeek = 1,
-                currentSeason = true,
-            )
-
-        every { seasonRepository.getPendingSeason() } returns null
-        every { seasonRepository.getPreviousSeason() } returns previousSeason
-        every { teamService.resetWinsAndLosses() } returns Unit
-        every { userService.resetAllDelayOfGameInstances() } returns Unit
-        every { seasonRepository.save(any()) } returns newSeason
-        every { offseasonService.endOffseason(any()) } returns Unit
-        every { teamSeasonConferenceService.snapshotSeason(any()) } returns Unit
-
-        mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.seasonNumber").value(newSeason.seasonNumber))
-            .andExpect(jsonPath("$.startDate").value(newSeason.startDate))
-            .andExpect(jsonPath("$.endDate").isEmpty)
-            .andExpect(jsonPath("$.nationalChampionshipWinningTeam").isEmpty)
-            .andExpect(jsonPath("$.nationalChampionshipLosingTeam").isEmpty)
-            .andExpect(jsonPath("$.nationalChampionshipWinningCoach").isEmpty)
-            .andExpect(jsonPath("$.nationalChampionshipLosingCoach").isEmpty)
-            .andExpect(jsonPath("$.currentWeek").value(newSeason.currentWeek))
-            .andExpect(jsonPath("$.currentSeason").value(newSeason.currentSeason))
-
-        verify { teamService.resetWinsAndLosses() }
-        verify { userService.resetAllDelayOfGameInstances() }
-        verify { seasonRepository.save(any()) }
-        verify { offseasonService.endOffseason(newSeason.startDate!!) }
-    }
-
-    @Test
-    fun `should activate a pending season created via createSeasonForScheduling instead of skipping ahead`() {
+    fun `should start a locked, validated pending season successfully`() {
         val pendingSeason =
             Season(
                 seasonNumber = 12,
@@ -114,9 +72,12 @@ class SeasonControllerTest {
                 nationalChampionshipLosingCoach = null,
                 currentWeek = 1,
                 currentSeason = false,
+                scheduleLocked = true,
             )
 
         every { seasonRepository.getPendingSeason() } returns pendingSeason
+        every { scheduleValidationService.validateSchedule(12) } returns
+            ScheduleValidationResult(valid = true, incompleteTeams = emptyList())
         every { teamService.resetWinsAndLosses() } returns Unit
         every { userService.resetAllDelayOfGameInstances() } returns Unit
         every { seasonRepository.save(any()) } returns pendingSeason
@@ -129,8 +90,62 @@ class SeasonControllerTest {
             .andExpect(jsonPath("$.currentSeason").value(true))
             .andExpect(jsonPath("$.startDate").isNotEmpty)
 
-        verify(exactly = 0) { seasonRepository.getPreviousSeason() }
         verify { seasonRepository.save(pendingSeason) }
+    }
+
+    @Test
+    fun `should reject starting a season when there is no pending season`() {
+        every { seasonRepository.getPendingSeason() } returns null
+
+        mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error").value("No pending season to start. Create a season for scheduling first."))
+    }
+
+    @Test
+    fun `should reject starting a season when the schedule is not locked`() {
+        val pendingSeason =
+            Season(
+                seasonNumber = 12,
+                startDate = null,
+                endDate = null,
+                nationalChampionshipWinningTeam = null,
+                nationalChampionshipLosingTeam = null,
+                nationalChampionshipWinningCoach = null,
+                nationalChampionshipLosingCoach = null,
+                currentWeek = 1,
+                currentSeason = false,
+                scheduleLocked = false,
+            )
+        every { seasonRepository.getPendingSeason() } returns pendingSeason
+
+        mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error").value("Cannot start Season 12: the schedule must be locked before starting."))
+    }
+
+    @Test
+    fun `should reject starting a season when the schedule has gaps`() {
+        val pendingSeason =
+            Season(
+                seasonNumber = 12,
+                startDate = null,
+                endDate = null,
+                nationalChampionshipWinningTeam = null,
+                nationalChampionshipLosingTeam = null,
+                nationalChampionshipWinningCoach = null,
+                nationalChampionshipLosingCoach = null,
+                currentWeek = 1,
+                currentSeason = false,
+                scheduleLocked = true,
+            )
+        every { seasonRepository.getPendingSeason() } returns pendingSeason
+        every { scheduleValidationService.validateSchedule(12) } returns
+            ScheduleValidationResult(valid = false, incompleteTeams = listOf(TeamScheduleGap("Duke", listOf(3, 4))))
+
+        mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error").value("Cannot start Season 12: schedule is incomplete. Duke (missing weeks 3, 4)"))
     }
 
     @Test
@@ -230,8 +245,23 @@ class SeasonControllerTest {
 
     @Test
     fun `should handle error when starting season`() {
-        every { seasonRepository.getPendingSeason() } returns null
-        every { seasonRepository.getPreviousSeason() } throws RuntimeException("Failed to start season")
+        val pendingSeason =
+            Season(
+                seasonNumber = 12,
+                startDate = null,
+                endDate = null,
+                nationalChampionshipWinningTeam = null,
+                nationalChampionshipLosingTeam = null,
+                nationalChampionshipWinningCoach = null,
+                nationalChampionshipLosingCoach = null,
+                currentWeek = 1,
+                currentSeason = false,
+                scheduleLocked = true,
+            )
+        every { seasonRepository.getPendingSeason() } returns pendingSeason
+        every { scheduleValidationService.validateSchedule(12) } returns
+            ScheduleValidationResult(valid = true, incompleteTeams = emptyList())
+        every { teamService.resetWinsAndLosses() } throws RuntimeException("Failed to start season")
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isInternalServerError)

@@ -2,6 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.service.fcfb.ConferenceStatsService
+import com.fcfb.arceus.service.fcfb.PostseasonConferenceStatsService
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 @CrossOrigin(origins = ["*"])
 class ConferenceStatsController(
     private val conferenceStatsService: ConferenceStatsService,
+    private val postseasonConferenceStatsService: PostseasonConferenceStatsService,
 ) {
     @GetMapping
     fun getFilteredConferenceStats(
@@ -32,4 +34,20 @@ class ConferenceStatsController(
 
     @PostMapping("/generate/all")
     fun generateAllConferenceStats() = conferenceStatsService.generateAllConferenceStats()
+
+    @GetMapping("/postseason")
+    fun getFilteredPostseasonConferenceStats(
+        @RequestParam(required = false) conference: String?,
+        @RequestParam(required = false) season: Int?,
+        @RequestParam(required = false) subdivision: Subdivision?,
+        @PageableDefault(size = 20) pageable: Pageable,
+    ) = postseasonConferenceStatsService.getFilteredPostseasonConferenceStats(
+        conference = conference,
+        season = season,
+        subdivision = subdivision,
+        pageable = pageable,
+    )
+
+    @PostMapping("/postseason/generate/all")
+    fun generateAllPostseasonConferenceStats() = postseasonConferenceStatsService.generateAllPostseasonConferenceStats()
 }
