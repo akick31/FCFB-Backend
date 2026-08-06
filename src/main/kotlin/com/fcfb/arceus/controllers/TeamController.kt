@@ -28,6 +28,9 @@ class TeamController(
     @GetMapping("")
     fun getAllTeams() = teamService.getAllTeams()
 
+    @GetMapping("/all")
+    fun getAllTeamsIncludingInactive() = teamService.getAllTeamsIncludingInactive()
+
     @GetMapping("/name")
     fun getTeamByName(
         @RequestParam name: String?,

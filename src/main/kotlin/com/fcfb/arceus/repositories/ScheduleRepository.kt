@@ -127,6 +127,17 @@ interface ScheduleRepository : CrudRepository<Schedule, Int> {
         gameType: String,
     )
 
+    @Modifying
+    @Transactional
+    @Query(
+        value = "DELETE FROM schedule WHERE season = :season AND started = false AND (home_team = :team OR away_team = :team)",
+        nativeQuery = true,
+    )
+    fun deleteUnplayedScheduleBySeasonAndTeam(
+        season: Int,
+        team: String,
+    )
+
     @Query(
         value = """
         SELECT * FROM schedule 
