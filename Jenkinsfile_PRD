@@ -77,7 +77,7 @@ pipeline {
                         spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
                         spring.jpa.hibernate.ddl-auto=validate
                         spring.jpa.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
-                        spring.jpa.show-sql=false
+                        spring.jpa.show-sql=true
                         spring.jackson.property-naming-strategy=SNAKE_CASE
                         spring.main.headless=true
                         management.security.enabled=false
@@ -130,8 +130,8 @@ pipeline {
 
                         # Logging configuration
                         logging.level.org.hibernate=warn
-                        logging.level.org.hibernate.SQL=warn
-                        logging.level.org.hibernate.type.descriptor.sql=warn
+                        logging.level.org.hibernate.SQL=DEBUG
+                        logging.level.org.hibernate.type.descriptor.sql=TRACE
                     """.stripIndent()
 
                     writeFile file: "${env.APP_PROPERTIES}", text: propertiesContent
