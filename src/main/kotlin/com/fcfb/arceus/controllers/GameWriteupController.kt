@@ -1,6 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.service.fcfb.GameWriteupService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class GameWriteupController(
     private var gameMessagesService: GameWriteupService,
 ) {
+    @Operation(summary = "Get a game writeup message for a scenario and play call")
     @GetMapping("")
     fun getGameMessageByScenario(
         @RequestParam scenario: String,

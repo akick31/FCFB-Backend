@@ -22,7 +22,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-open class GameStatsService(
+class GameStatsService(
     private val gameStatsRepository: GameStatsRepository,
     private val gameRepository: GameRepository,
     private val playRepository: PlayRepository,
@@ -130,7 +130,7 @@ open class GameStatsService(
     }
 
     @Transactional(rollbackFor = [Exception::class])
-    open fun generateAllGameStats() {
+    fun generateAllGameStats() {
         try {
             val allGames =
                 gameRepository.getAllGames().ifEmpty {
@@ -246,10 +246,12 @@ open class GameStatsService(
         var homeStats = getOrCreateGameStatsByIdAndTeam(game, game.homeTeam)
         updateScoreStats(playedPlays, homeStats, TeamSide.HOME)
         homeStats = updateStats(playedPlays, TeamSide.HOME, game, homeStats)
+        saveGameStats(homeStats)
 
         var awayStats = getOrCreateGameStatsByIdAndTeam(game, game.awayTeam)
         updateScoreStats(playedPlays, awayStats, TeamSide.AWAY)
         awayStats = updateStats(playedPlays, TeamSide.AWAY, game, awayStats)
+        saveGameStats(awayStats)
         return listOf(homeStats, awayStats)
     }
 
@@ -411,7 +413,6 @@ open class GameStatsService(
             ZonedDateTime.now(
                 ZoneId.of("America/New_York"),
             ).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
-        saveGameStats(stats)
         return stats
     }
 

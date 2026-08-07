@@ -2,6 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.service.fcfb.PostseasonSeasonStatsService
 import com.fcfb.arceus.service.fcfb.SeasonStatsService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -18,6 +19,7 @@ class SeasonStatsController(
     private val seasonStatsService: SeasonStatsService,
     private val postseasonSeasonStatsService: PostseasonSeasonStatsService,
 ) {
+    @Operation(summary = "List season stats matching the given team and season filters")
     @GetMapping
     fun getFilteredSeasonStats(
         @RequestParam(required = false) team: String?,
@@ -29,15 +31,18 @@ class SeasonStatsController(
         pageable = pageable,
     )
 
+    @Operation(summary = "Generate season stats for all teams")
     @PostMapping("/generate/all")
     fun generateAllSeasonStats() = seasonStatsService.generateAllSeasonStats()
 
+    @Operation(summary = "Generate season stats for a single team's season")
     @PostMapping("/generate/team-season")
     fun generateSeasonStatsForTeam(
         @RequestParam team: String,
         @RequestParam seasonNumber: Int,
     ) = seasonStatsService.generateSeasonStatsForTeam(team, seasonNumber)
 
+    @Operation(summary = "Get the leaderboard for a given season stat")
     @GetMapping("/leaderboard")
     fun getLeaderboard(
         @RequestParam statName: String,
@@ -48,6 +53,7 @@ class SeasonStatsController(
         @RequestParam(defaultValue = "false") ascending: Boolean,
     ) = seasonStatsService.getLeaderboard(statName, seasonNumber, subdivision, conference, limit, ascending)
 
+    @Operation(summary = "List postseason season stats matching the given team and season filters")
     @GetMapping("/postseason")
     fun getFilteredPostseasonSeasonStats(
         @RequestParam(required = false) team: String?,
@@ -59,6 +65,7 @@ class SeasonStatsController(
         pageable = pageable,
     )
 
+    @Operation(summary = "Generate postseason season stats for all teams")
     @PostMapping("/postseason/generate/all")
     fun generateAllPostseasonSeasonStats() = postseasonSeasonStatsService.generateAllPostseasonSeasonStats()
 }

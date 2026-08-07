@@ -1638,7 +1638,7 @@ class GameService(
 
     fun findExpiredTimers() =
         gameRepository.findExpiredTimers().ifEmpty {
-            Logger.info("No games found with expired timers")
+            Logger.debug("No games found with expired timers")
             emptyList()
         }
 

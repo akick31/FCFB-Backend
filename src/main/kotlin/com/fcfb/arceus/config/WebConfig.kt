@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -46,7 +47,16 @@ private val PRE_AUTH_GET_PATHS =
 private const val ACTUATOR_HEALTH_PATH = "/actuator/health"
 private const val ACTUATOR_WILDCARD_PATH = "/actuator/**"
 
-private val PRIVILEGED_GAME_STATUS_GET_PATHS =
+private val PUBLIC_API_DOCS_PATH = "$FULL_PATH/api-docs/public"
+private val ADMIN_API_DOCS_PATHS =
+    arrayOf(
+        "$FULL_PATH/api-docs",
+        "$FULL_PATH/api-docs/admin",
+        "$FULL_PATH/api-docs/admin/**",
+        "$FULL_PATH/api-docs/swagger-config",
+    )
+
+internal val PRIVILEGED_GAME_STATUS_GET_PATHS =
     arrayOf(
         "$FULL_PATH/game/request-message",
         "$FULL_PATH/game/platform",
@@ -83,9 +93,9 @@ private val PUBLIC_READ_GET_PATHS =
         "$FULL_PATH/user/free_agents",
     )
 
-private val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
+internal val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
 
-private val ADMIN_ONLY_POST_PATHS =
+internal val ADMIN_ONLY_POST_PATHS =
     arrayOf(
         "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats/generate/all",
@@ -113,7 +123,7 @@ private val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/user/hash_emails",
     )
 
-private val ADMIN_ONLY_PUT_PATHS =
+internal val ADMIN_ONLY_PUT_PATHS =
     arrayOf(
         "$FULL_PATH/team",
         "$FULL_PATH/user/update",
@@ -122,14 +132,14 @@ private val ADMIN_ONLY_PUT_PATHS =
         "$FULL_PATH/conference/*/active",
     )
 
-private val ADMIN_ONLY_DELETE_PATHS =
+internal val ADMIN_ONLY_DELETE_PATHS =
     arrayOf(
         "$FULL_PATH/team/*",
         "$FULL_PATH/user/*",
         "$FULL_PATH/new_signups/*",
     )
 
-private val PRIVILEGED_POST_PATHS =
+internal val PRIVILEGED_POST_PATHS =
     arrayOf(
         "$FULL_PATH/user/*/api-key",
         "$FULL_PATH/play/submit_defense",
@@ -160,7 +170,7 @@ private val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/season/*",
     )
 
-private val PRIVILEGED_PUT_PATHS =
+internal val PRIVILEGED_PUT_PATHS =
     arrayOf(
         "$FULL_PATH/play/submit_offense",
         "$FULL_PATH/play/rollback",
@@ -179,7 +189,7 @@ private val PRIVILEGED_PUT_PATHS =
         "$FULL_PATH/season/*/unlock-schedule",
     )
 
-private val PRIVILEGED_DELETE_PATHS =
+internal val PRIVILEGED_DELETE_PATHS =
     arrayOf(
         "$FULL_PATH/game",
         "$FULL_PATH/schedule/*",
@@ -233,6 +243,8 @@ open class WebConfig(
             .antMatchers(HttpMethod.GET, *PRE_AUTH_GET_PATHS).permitAll()
             .antMatchers(HttpMethod.GET, ACTUATOR_HEALTH_PATH).permitAll()
             .antMatchers(ACTUATOR_WILDCARD_PATH).hasAnyRole(*ADMIN_ROLES)
+            .antMatchers(HttpMethod.GET, PUBLIC_API_DOCS_PATH).permitAll()
+            .antMatchers(HttpMethod.GET, *ADMIN_API_DOCS_PATHS).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.GET, *PRIVILEGED_GAME_STATUS_GET_PATHS).hasAnyRole(*PRIVILEGED_ROLES)
             .antMatchers(HttpMethod.GET, *PUBLIC_READ_GET_PATHS).permitAll()
             .antMatchers(HttpMethod.GET, "$FULL_PATH/play/**").permitAll()
@@ -269,6 +281,12 @@ open class MvcConfig(
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         registry.addResourceHandler("/images/**")
             .addResourceLocations("file:$imagesPath/")
+    }
+
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry.addMapping("$FULL_PATH/api-docs/**")
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "HEAD", "OPTIONS")
     }
 
     override fun addInterceptors(registry: InterceptorRegistry) {

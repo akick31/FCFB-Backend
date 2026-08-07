@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class RecordService(
@@ -78,6 +79,7 @@ class RecordService(
         return recordRepository.findAll(spec, sortedPageable)
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     fun generateAllRecords() {
         Logger.info("Starting generation of all records")
 
@@ -93,11 +95,28 @@ class RecordService(
         val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
         val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
 
+        generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.ALL)
+
         for (season in availableSeasons) {
-            generateRecordsForSeason(season, completedGameIds, teamConference, allGameStats, gamesById, generalGameStats)
+            generateRecordsForSeason(season, completedGameIds, teamConference, allGameStats, gamesById)
         }
 
         logRecordCountBreakdown("Completed generation of all records", RecordScope.ALL)
+    }
+
+    private fun generateGeneralRecords(
+        generalGameStats: List<GameStats>,
+        gamesById: Map<Int, Game>,
+        teamConference: Map<String, String?>,
+        scopes: Set<RecordScope>,
+    ) {
+        val generalStats = Stats.values().filter { recordStatUtils.generalRecordStats.contains(it) }
+        generalStats.forEachIndexed { index, stat ->
+            Logger.info("Generating $stat general records (${index + 1}/${generalStats.size})")
+            recordTypesFor(stat, RecordType.GENERAL, RecordType.GENERAL_LOWEST).forEach { type ->
+                generalRecordService.generateGeneralRecord(stat, generalGameStats, type, gamesById, teamConference, scopes)
+            }
+        }
     }
 
     private fun logRecordCountBreakdown(
@@ -205,6 +224,7 @@ class RecordService(
         }
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     fun generateTeamAndConferenceRecords() {
         Logger.info("Starting generation of team and conference records")
         recordRepository.deleteByRecordScopeIn(RecordScope.TEAM_AND_CONFERENCE.toList())
@@ -215,6 +235,9 @@ class RecordService(
         val gamesById = gameRepository.findAll().associateBy { it.gameId }
         val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
         val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
+
+        generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.TEAM_AND_CONFERENCE)
+
         for (season in availableSeasons) {
             generateRecordsForSeason(
                 season,
@@ -222,7 +245,6 @@ class RecordService(
                 teamConference,
                 allGameStats,
                 gamesById,
-                generalGameStats,
                 RecordScope.TEAM_AND_CONFERENCE,
             )
         }
@@ -235,7 +257,6 @@ class RecordService(
         teamConference: Map<String, String?>,
         allGameStats: List<GameStats>,
         gamesById: Map<Int, Game>,
-        generalGameStats: List<GameStats>,
         scopes: Set<RecordScope> = RecordScope.ALL,
     ) {
         Logger.info("Generating records for season $seasonNumber")
@@ -248,16 +269,12 @@ class RecordService(
         val generatePostseason = RecordScope.LEAGUE in scopes
         val postseasonScopes = setOf(RecordScope.LEAGUE)
 
-        val statsToProcess = Stats.values().filterNot { recordStatUtils.againstBaseStat.containsKey(it) }
+        val statsToProcess =
+            Stats.values().filterNot {
+                recordStatUtils.againstBaseStat.containsKey(it) || recordStatUtils.generalRecordStats.contains(it)
+            }
         statsToProcess.forEachIndexed { index, stat ->
             Logger.info("Generating $stat records for season $seasonNumber (${index + 1}/${statsToProcess.size})")
-
-            if (recordStatUtils.generalRecordStats.contains(stat)) {
-                recordTypesFor(stat, RecordType.GENERAL, RecordType.GENERAL_LOWEST).forEach { type ->
-                    generalRecordService.generateGeneralRecord(stat, generalGameStats, type, gamesById, teamConference, scopes)
-                }
-                return@forEachIndexed
-            }
 
             if (recordStatUtils.gameOnlyStats.contains(stat)) {
                 recordTypesFor(stat, RecordType.SINGLE_GAME, RecordType.SINGLE_GAME_LOWEST).forEach { type ->

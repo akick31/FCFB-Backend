@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -39,6 +40,7 @@ class ConferenceStatsService(
         return conferenceStatsRepository.findAll(spec, sortedPageable)
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     fun generateAllConferenceStats() {
         Logger.info("Starting generation of all conference stats")
 
@@ -84,11 +86,10 @@ class ConferenceStatsService(
             return
         }
 
-        conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
-            conferenceStatsRepository.delete(it)
-        }
-
         val conferenceStats = aggregateSeasonStatsToConferenceStats(seasonStatsList, subdivision, conference, seasonNumber)
+        conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
+            conferenceStats.id = it.id
+        }
 
         conferenceStatsRepository.save(conferenceStats)
         Logger.info("Completed generating conference stats for $subdivision/$conference in season $seasonNumber")

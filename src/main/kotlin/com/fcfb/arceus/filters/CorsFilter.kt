@@ -34,6 +34,7 @@ class CorsFilter : OncePerRequestFilter() {
                     "X-Requested-With, " +
                     "Content-Type, " +
                     "Authorization, " +
+                    "X-Client-Name, " +
                     "Access-Control-Request-Method, " +
                     "Access-Control-Request-Headers",
             )
@@ -48,6 +49,7 @@ class CorsFilter : OncePerRequestFilter() {
                     "X-Requested-With, " +
                     "Content-Type, " +
                     "Authorization, " +
+                    "X-Client-Name, " +
                     "Access-Control-Request-Method, " +
                     "Access-Control-Request-Headers",
             )

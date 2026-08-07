@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -41,6 +42,7 @@ class PlaybookStatsService(
         return playbookStatsRepository.findAll(spec, sortedPageable)
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     fun generateAllPlaybookStats() {
         Logger.info("Starting generation of all playbook stats")
 
@@ -97,15 +99,12 @@ class PlaybookStatsService(
             return
         }
 
+        val playbookStats = aggregateGameStatsToPlaybookStats(gameStatsList, offensivePlaybook, defensivePlaybook, seasonNumber)
         playbookStatsRepository.findByOffensivePlaybookAndDefensivePlaybookAndSeasonNumber(
             offensivePlaybook,
             defensivePlaybook,
             seasonNumber,
-        )?.let {
-            playbookStatsRepository.delete(it)
-        }
-
-        val playbookStats = aggregateGameStatsToPlaybookStats(gameStatsList, offensivePlaybook, defensivePlaybook, seasonNumber)
+        )?.let { playbookStats.id = it.id }
 
         playbookStatsRepository.save(playbookStats)
         Logger.info("Completed generating playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber")

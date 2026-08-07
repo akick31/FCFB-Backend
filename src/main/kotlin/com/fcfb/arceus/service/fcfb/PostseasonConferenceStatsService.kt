@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class PostseasonConferenceStatsService(
@@ -39,6 +40,7 @@ class PostseasonConferenceStatsService(
         return postseasonConferenceStatsRepository.findAll(spec, sortedPageable)
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     fun generateAllPostseasonConferenceStats() {
         Logger.info("Starting generation of all postseason conference stats")
 
@@ -84,10 +86,6 @@ class PostseasonConferenceStatsService(
             return
         }
 
-        postseasonConferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
-            postseasonConferenceStatsRepository.delete(it)
-        }
-
         val conferenceStats =
             conferenceStatsService.aggregateSeasonStatsToConferenceStats(
                 seasonStatsList.map { it.toSeasonStats() },
@@ -95,8 +93,12 @@ class PostseasonConferenceStatsService(
                 conference,
                 seasonNumber,
             )
+        val postseasonConferenceStats = conferenceStats.toPostseason()
+        postseasonConferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
+            postseasonConferenceStats.id = it.id
+        }
 
-        postseasonConferenceStatsRepository.save(conferenceStats.toPostseason())
+        postseasonConferenceStatsRepository.save(postseasonConferenceStats)
         Logger.info("Completed generating postseason conference stats for $subdivision/$conference in season $seasonNumber")
     }
 
