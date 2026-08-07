@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -280,6 +281,12 @@ open class MvcConfig(
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         registry.addResourceHandler("/images/**")
             .addResourceLocations("file:$imagesPath/")
+    }
+
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry.addMapping("$FULL_PATH/api-docs/**")
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "HEAD", "OPTIONS")
     }
 
     override fun addInterceptors(registry: InterceptorRegistry) {
