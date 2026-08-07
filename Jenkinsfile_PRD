@@ -128,6 +128,10 @@ pipeline {
                         # Website service authentication (must match WEBSITE_SERVICE_KEY on fcfb-website PRD)
                         website.service.key=${env.WEBSITE_SERVICE_KEY}
 
+                        # OpenAPI docs configuration
+                        springdoc.swagger-ui.enabled=false
+                        springdoc.api-docs.path=/api/v1/arceus/api-docs
+
                         # Logging configuration
                         logging.level.org.hibernate=warn
                         logging.level.org.hibernate.SQL=warn

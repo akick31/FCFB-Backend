@@ -46,13 +46,13 @@ private val PRE_AUTH_GET_PATHS =
 private const val ACTUATOR_HEALTH_PATH = "/actuator/health"
 private const val ACTUATOR_WILDCARD_PATH = "/actuator/**"
 
-private val PUBLIC_API_DOCS_PATH = "$FULL_PATH/v3/api-docs/public"
+private val PUBLIC_API_DOCS_PATH = "$FULL_PATH/api-docs/public"
 private val ADMIN_API_DOCS_PATHS =
     arrayOf(
-        "$FULL_PATH/v3/api-docs",
-        "$FULL_PATH/v3/api-docs/admin",
-        "$FULL_PATH/v3/api-docs/admin/**",
-        "$FULL_PATH/v3/api-docs/swagger-config",
+        "$FULL_PATH/api-docs",
+        "$FULL_PATH/api-docs/admin",
+        "$FULL_PATH/api-docs/admin/**",
+        "$FULL_PATH/api-docs/swagger-config",
     )
 
 internal val PRIVILEGED_GAME_STATUS_GET_PATHS =
