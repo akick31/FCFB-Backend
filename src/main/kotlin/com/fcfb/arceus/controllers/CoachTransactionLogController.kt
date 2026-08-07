@@ -2,6 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.model.CoachTransactionLog
 import com.fcfb.arceus.service.log.CoachTransactionLogService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 class CoachTransactionLogController(
     private val coachTransactionLogService: CoachTransactionLogService,
 ) {
+    @Operation(summary = "List the entire coach transaction log")
     @GetMapping
     fun getEntireCoachTransactionLog(): ResponseEntity<List<CoachTransactionLog>> =
         ResponseEntity.ok(

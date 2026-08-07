@@ -47,6 +47,7 @@ class GameStatsController(
         @RequestParam(required = false) season: Int?,
     ) = gameStatsService.getEloHistory(team, season)
 
+    @Operation(summary = "Get game stats for a given season and week")
     @GetMapping("/by-season-week")
     fun getGameStatsBySeasonAndWeek(
         @RequestParam season: Int,

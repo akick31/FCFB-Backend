@@ -1,6 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.service.FileUploadService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.PostMapping
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile
 class FileUploadController(
     private val fileUploadService: FileUploadService,
 ) {
+    @Operation(summary = "Upload a postseason logo image")
     @PostMapping("/postseason-logo")
     fun uploadPostseasonLogo(
         @RequestParam("file") file: MultipartFile,

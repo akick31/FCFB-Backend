@@ -3,6 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.dto.request.UploadRankingsRequest
 import com.fcfb.arceus.dto.response.RankingResponse
 import com.fcfb.arceus.service.fcfb.RankingService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 class RankingController(
     private val rankingService: RankingService,
 ) {
+    @Operation(summary = "Get rankings for a season, week, and poll type")
     @GetMapping
     fun getRankings(
         @RequestParam("season") season: Int,
@@ -25,12 +27,14 @@ class RankingController(
         @RequestParam("pollType") pollType: String,
     ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getRankings(season, week, pollType))
 
+    @Operation(summary = "Get the available ranked weeks for a season and poll type")
     @GetMapping("/weeks")
     fun getWeeks(
         @RequestParam("season") season: Int,
         @RequestParam("pollType") pollType: String,
     ): ResponseEntity<List<Int>> = ResponseEntity.ok(rankingService.getAvailableWeeks(season, pollType))
 
+    @Operation(summary = "Upload rankings for a season, week, and poll type")
     @PostMapping
     fun uploadRankings(
         @RequestBody request: UploadRankingsRequest,
