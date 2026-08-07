@@ -14,6 +14,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class PostseasonPlaybookStatsService(
@@ -39,6 +40,7 @@ class PostseasonPlaybookStatsService(
         return postseasonPlaybookStatsRepository.findAll(spec, sortedPageable)
     }
 
+    @Transactional(rollbackFor = [Exception::class])
     fun generateAllPostseasonPlaybookStats() {
         Logger.info("Starting generation of all postseason playbook stats")
 

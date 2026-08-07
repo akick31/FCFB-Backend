@@ -2,6 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.model.RequestMessageLog
 import com.fcfb.arceus.service.log.RequestMessageLogService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 class RequestMessageLogController(
     private val requestMessageLogService: RequestMessageLogService,
 ) {
+    @Operation(summary = "Log a request message")
     @PostMapping("")
     fun logRequestMessage(
         @RequestBody requestMessageLog: RequestMessageLog,

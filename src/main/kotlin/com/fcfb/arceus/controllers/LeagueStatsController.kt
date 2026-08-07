@@ -3,6 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.service.fcfb.LeagueStatsService
 import com.fcfb.arceus.service.fcfb.PostseasonLeagueStatsService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -19,6 +20,7 @@ class LeagueStatsController(
     private val leagueStatsService: LeagueStatsService,
     private val postseasonLeagueStatsService: PostseasonLeagueStatsService,
 ) {
+    @Operation(summary = "Get league stats filtered by subdivision and season")
     @GetMapping
     fun getFilteredLeagueStats(
         @RequestParam(required = false) subdivision: Subdivision?,
@@ -30,9 +32,11 @@ class LeagueStatsController(
         pageable = pageable,
     )
 
+    @Operation(summary = "Generate league stats for all teams")
     @PostMapping("/generate/all")
     fun generateAllLeagueStats() = leagueStatsService.generateAllLeagueStats()
 
+    @Operation(summary = "Get postseason league stats filtered by subdivision and season")
     @GetMapping("/postseason")
     fun getFilteredPostseasonLeagueStats(
         @RequestParam(required = false) subdivision: Subdivision?,
@@ -44,6 +48,7 @@ class LeagueStatsController(
         pageable = pageable,
     )
 
+    @Operation(summary = "Generate postseason league stats for all teams")
     @PostMapping("/postseason/generate/all")
     fun generateAllPostseasonLeagueStats() = postseasonLeagueStatsService.generateAllPostseasonLeagueStats()
 }

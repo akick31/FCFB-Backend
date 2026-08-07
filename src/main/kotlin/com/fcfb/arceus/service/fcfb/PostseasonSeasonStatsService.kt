@@ -59,8 +59,6 @@ class PostseasonSeasonStatsService(
     fun generateAllPostseasonSeasonStats() {
         Logger.info("Starting generation of all postseason season stats")
 
-        postseasonSeasonStatsRepository.deleteAll()
-
         val allGameStats = filterPostseasonGames(filterOutScrimmageGames(gameStatsRepository.findAll().toList()))
         val gameStatsByGameId = allGameStats.groupBy { it.gameId }
         val gameStatsByTeamSeason = allGameStats.groupBy { "${it.team}_${it.season}" }
@@ -75,7 +73,15 @@ class PostseasonSeasonStatsService(
             val conference = teamSeasonConferenceService.getConference(team, season) ?: teamsByName[team]?.conference
             val seasonStats =
                 seasonStatsService.aggregateGameStatsToSeasonStats(teamGameStats, team, season, gameStatsByGameId, conference)
-            postseasonSeasonStatsRepository.save(seasonStats.toPostseason())
+            val postseasonStats = seasonStats.toPostseason()
+            postseasonSeasonStatsRepository.findByTeamAndSeasonNumber(team, season)?.let { postseasonStats.id = it.id }
+            postseasonSeasonStatsRepository.save(postseasonStats)
+        }
+
+        val staleSeasonStats =
+            postseasonSeasonStatsRepository.findAll().filterNot { "${it.team}_${it.seasonNumber}" in gameStatsByTeamSeason.keys }
+        if (staleSeasonStats.isNotEmpty()) {
+            postseasonSeasonStatsRepository.deleteAll(staleSeasonStats)
         }
 
         Logger.info("Completed generation of all postseason season stats")
@@ -87,8 +93,6 @@ class PostseasonSeasonStatsService(
     ) {
         Logger.info("Generating postseason season stats for $team in season $seasonNumber")
 
-        postseasonSeasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
-
         val teamGameStats =
             filterPostseasonGames(
                 filterOutScrimmageGames(
@@ -99,6 +103,7 @@ class PostseasonSeasonStatsService(
 
         if (teamGameStats.isEmpty()) {
             Logger.warn("No postseason game stats found for $team in season $seasonNumber")
+            postseasonSeasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
             return
         }
 
@@ -112,8 +117,10 @@ class PostseasonSeasonStatsService(
 
         val seasonStats =
             seasonStatsService.aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber, gameStatsByGameId, conference)
+        val postseasonStats = seasonStats.toPostseason()
+        postseasonSeasonStatsRepository.findByTeamAndSeasonNumber(team, seasonNumber)?.let { postseasonStats.id = it.id }
 
-        postseasonSeasonStatsRepository.save(seasonStats.toPostseason())
+        postseasonSeasonStatsRepository.save(postseasonStats)
         Logger.info("Completed generating postseason season stats for $team in season $seasonNumber")
     }
 

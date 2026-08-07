@@ -5,6 +5,7 @@ import com.fcfb.arceus.service.fcfb.ScorebugService
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -20,19 +21,23 @@ import org.springframework.web.bind.annotation.RestController
 class ScorebugController(
     private var scorebugService: ScorebugService,
 ) {
+    @Operation(summary = "Generate scorebugs for all games")
     @PostMapping("/generate/all")
     fun generateAllScorebugs() = scorebugService.generateAllScorebugs()
 
+    @Operation(summary = "Get a scorebug for a game")
     @GetMapping("")
     fun getScorebugByGameId(
         @RequestParam("gameId") gameId: Int,
     ) = scorebugService.getScorebugByGameId(gameId)
 
+    @Operation(summary = "Get the latest scorebug for a game")
     @GetMapping("/latest")
     fun getLatestScorebugByGameId(
         @RequestParam("gameId") gameId: Int,
     ) = scorebugService.getLatestScorebugByGameId(gameId)
 
+    @Operation(summary = "Get scorebugs for a conference in a given week")
     @GetMapping("/conference")
     fun getScorebugsForConference(
         @RequestParam("season") season: Int,
@@ -40,6 +45,7 @@ class ScorebugController(
         @RequestParam("conference") conference: String,
     ) = scorebugService.getScorebugsForConference(season, week, conference)
 
+    @Operation(summary = "Get scorebugs filtered by game criteria")
     @GetMapping("/filtered")
     fun getFilteredScorebugs(
         @RequestParam(required = false) filters: List<GameFilter>?,
