@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class CoachStatsController(
     private val coachStatsService: CoachStatsService,
 ) {
+    @Operation(summary = "Get stats for a coach")
     @GetMapping
     fun getCoachStats(
         @RequestParam coach: String,

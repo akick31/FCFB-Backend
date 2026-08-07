@@ -34,6 +34,7 @@ class ChartController(
         @RequestParam gameId: Int,
     ) = chartService.getWinProbabilityChart(gameId)
 
+    @Operation(summary = "Get the win probability charts for a season matchup between two teams")
     @GetMapping("/win-probability/matchup")
     fun getWinProbabilityChartsBySeasonAndMatchup(
         @RequestParam season: Int,
@@ -41,6 +42,7 @@ class ChartController(
         @RequestParam secondTeam: String,
     ) = chartService.getWinProbabilityChartBySeasonAndMatchup(season, firstTeam, secondTeam)
 
+    @Operation(summary = "Get the Elo chart for a season")
     @GetMapping("/elo")
     fun getEloChart(
         @RequestParam season: Int,
