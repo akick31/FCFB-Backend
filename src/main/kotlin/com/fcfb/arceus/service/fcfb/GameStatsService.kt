@@ -246,10 +246,12 @@ class GameStatsService(
         var homeStats = getOrCreateGameStatsByIdAndTeam(game, game.homeTeam)
         updateScoreStats(playedPlays, homeStats, TeamSide.HOME)
         homeStats = updateStats(playedPlays, TeamSide.HOME, game, homeStats)
+        saveGameStats(homeStats)
 
         var awayStats = getOrCreateGameStatsByIdAndTeam(game, game.awayTeam)
         updateScoreStats(playedPlays, awayStats, TeamSide.AWAY)
         awayStats = updateStats(playedPlays, TeamSide.AWAY, game, awayStats)
+        saveGameStats(awayStats)
         return listOf(homeStats, awayStats)
     }
 
@@ -411,7 +413,6 @@ class GameStatsService(
             ZonedDateTime.now(
                 ZoneId.of("America/New_York"),
             ).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
-        saveGameStats(stats)
         return stats
     }
 
