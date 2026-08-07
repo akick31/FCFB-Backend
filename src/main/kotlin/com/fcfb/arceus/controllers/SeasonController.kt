@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @CrossOrigin(origins = ["*"])
@@ -19,6 +20,20 @@ class SeasonController(
 ) {
     @PostMapping
     fun startSeason(): ResponseEntity<Season> = ResponseEntity.ok(seasonService.startSeason())
+
+    @PostMapping("/end")
+    fun endSeason(): ResponseEntity<Season> = ResponseEntity.ok(seasonService.endSeasonManually())
+
+    @PutMapping("/{seasonNumber}/set-current")
+    fun setCurrentSeason(
+        @PathVariable("seasonNumber") seasonNumber: Int,
+    ): ResponseEntity<Season> = ResponseEntity.ok(seasonService.setCurrentSeason(seasonNumber))
+
+    @PutMapping("/{seasonNumber}/week")
+    fun updateCurrentWeek(
+        @PathVariable("seasonNumber") seasonNumber: Int,
+        @RequestParam("week") week: Int,
+    ): ResponseEntity<Season> = ResponseEntity.ok(seasonService.updateCurrentWeek(seasonNumber, week))
 
     @GetMapping("/current")
     fun getCurrentSeason(): ResponseEntity<Season> = ResponseEntity.ok(seasonService.getCurrentSeason())
@@ -44,6 +59,11 @@ class SeasonController(
     fun isScheduleLocked(
         @PathVariable("seasonNumber") seasonNumber: Int,
     ): ResponseEntity<Boolean> = ResponseEntity.ok(seasonService.isScheduleLocked(seasonNumber))
+
+    @GetMapping("/{seasonNumber}/championship-finished")
+    fun hasFinishedNationalChampionship(
+        @PathVariable("seasonNumber") seasonNumber: Int,
+    ): ResponseEntity<Boolean> = ResponseEntity.ok(seasonService.hasFinishedNationalChampionship(seasonNumber))
 
     @PutMapping("/{seasonNumber}/lock-schedule")
     fun lockSchedule(

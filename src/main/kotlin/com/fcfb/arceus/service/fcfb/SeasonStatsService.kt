@@ -8,6 +8,7 @@ import com.fcfb.arceus.repositories.SeasonStatsRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.specification.SeasonStatsSpecificationService
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.POSTSEASON_START_WEEK
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -52,12 +53,16 @@ class SeasonStatsService(
         return gameStatsList.filter { it.gameType != GameType.SCRIMMAGE }
     }
 
+    private fun filterRegularSeasonGames(gameStatsList: List<GameStats>): List<GameStats> {
+        return gameStatsList.filter { (it.week ?: 0) < POSTSEASON_START_WEEK }
+    }
+
     fun generateAllSeasonStats() {
         Logger.info("Starting generation of all season stats")
 
         seasonStatsRepository.deleteAll()
 
-        val allGameStats = filterOutScrimmageGames(gameStatsRepository.findAll().toList())
+        val allGameStats = filterRegularSeasonGames(filterOutScrimmageGames(gameStatsRepository.findAll().toList()))
         val gameStatsByGameId = allGameStats.groupBy { it.gameId }
         val gameStatsByTeamSeason = allGameStats.groupBy { "${it.team}_${it.season}" }
         val teamsByName = teamRepository.findAll().associateBy { it.name }
@@ -86,9 +91,11 @@ class SeasonStatsService(
         seasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
 
         val teamGameStats =
-            filterOutScrimmageGames(
-                gameStatsRepository.findAll()
-                    .filter { it.team == team && it.season == seasonNumber },
+            filterRegularSeasonGames(
+                filterOutScrimmageGames(
+                    gameStatsRepository.findAll()
+                        .filter { it.team == team && it.season == seasonNumber },
+                ),
             )
 
         if (teamGameStats.isEmpty()) {

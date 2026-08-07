@@ -40,22 +40,6 @@ class RecordStatUtils(
             Stats.RED_ZONE_SUCCESS_PERCENTAGE_AGAINST to Stats.RED_ZONE_SUCCESS_PERCENTAGE,
         )
 
-    val percentageStats =
-        setOf(
-            Stats.PASS_COMPLETION_PERCENTAGE,
-            Stats.PASS_SUCCESS_PERCENTAGE,
-            Stats.RUSH_SUCCESS_PERCENTAGE,
-            Stats.FIELD_GOAL_PERCENTAGE,
-            Stats.PUNT_RETURN_TD_PERCENTAGE,
-            Stats.ONSIDE_SUCCESS_PERCENTAGE,
-            Stats.TOUCHBACK_PERCENTAGE,
-            Stats.KICK_RETURN_TD_PERCENTAGE,
-            Stats.THIRD_DOWN_CONVERSION_PERCENTAGE,
-            Stats.FOURTH_DOWN_CONVERSION_PERCENTAGE,
-            Stats.RED_ZONE_SUCCESS_PERCENTAGE,
-            Stats.RED_ZONE_PERCENTAGE,
-        )
-
     val averagedStats =
         setOf(
             Stats.PASS_COMPLETION_PERCENTAGE,

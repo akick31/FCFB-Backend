@@ -47,7 +47,7 @@ class GeneralRecordService(
         scopeValue: String?,
         gamesById: Map<Int, Game>,
     ) {
-        val isLowest = recordType == RecordType.GENERAL_LOWEST
+        val isLowest = recordType.isLowest
         val bestGameStats =
             if (isLowest) {
                 gameStatsList.minByOrNull { recordStatUtils.getStatValue(statName, it) }
@@ -88,10 +88,10 @@ class GeneralRecordService(
 
         for (gameStats in gameStatsList) {
             val currentValue = recordStatUtils.getStatValue(statName, gameStats)
-            val recordValue = currentRecord?.recordValue ?: if (recordType == RecordType.GENERAL_LOWEST) Double.MAX_VALUE else 0.0
+            val recordValue = currentRecord?.recordValue ?: if (recordType.isLowest) Double.MAX_VALUE else 0.0
 
             val isNewRecord =
-                if (recordType == RecordType.GENERAL_LOWEST) {
+                if (recordType.isLowest) {
                     currentValue < recordValue
                 } else {
                     currentValue > recordValue
@@ -118,8 +118,7 @@ class GeneralRecordService(
                     )
 
                 recordRepository.save(newRecord)
-                val recordTypeStr = if (recordType == RecordType.GENERAL_LOWEST) "LOWEST GENERAL" else "GENERAL"
-                Logger.info("New $recordTypeStr record: ${statName.name} = $currentValue by ${gameStats.team} in game ${game.gameId}")
+                Logger.info("New ${recordType.name} record: ${statName.name} = $currentValue by ${gameStats.team} in game ${game.gameId}")
             }
         }
     }

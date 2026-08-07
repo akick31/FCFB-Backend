@@ -102,7 +102,7 @@ class ConferenceStatsService(
         generateConferenceStatsForSubdivisionAndConferenceAndSeason(subdivision, conference, season)
     }
 
-    private fun aggregateSeasonStatsToConferenceStats(
+    fun aggregateSeasonStatsToConferenceStats(
         seasonStatsList: List<SeasonStats>,
         subdivision: Subdivision,
         conference: String,

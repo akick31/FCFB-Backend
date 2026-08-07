@@ -8,6 +8,7 @@ import com.fcfb.arceus.dto.response.ConferenceRulesResponse
 import com.fcfb.arceus.dto.response.OocGenerationResult
 import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
+import com.fcfb.arceus.dto.response.ScheduleValidationResult
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.model.Game
@@ -17,6 +18,7 @@ import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.service.fcfb.schedule.ConferenceRulesService
 import com.fcfb.arceus.service.fcfb.schedule.ConferenceScheduleGenerationService
 import com.fcfb.arceus.service.fcfb.schedule.OutOfConferenceScheduleGenerationService
+import com.fcfb.arceus.service.fcfb.schedule.ScheduleValidationService
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.ScheduleNotFoundException
 import org.springframework.stereotype.Service
@@ -29,6 +31,7 @@ open class ScheduleService(
     private val conferenceScheduleGenerationService: ConferenceScheduleGenerationService,
     private val conferenceRulesService: ConferenceRulesService,
     private val outOfConferenceScheduleGenerationService: OutOfConferenceScheduleGenerationService,
+    private val scheduleValidationService: ScheduleValidationService,
 ) {
     private fun checkScheduleLock(season: Int) {
         if (seasonService.isScheduleLocked(season)) {
@@ -432,4 +435,6 @@ open class ScheduleService(
     fun getConferenceRules(conference: String): ConferenceRulesResponse =
         conferenceRulesService.getConferenceRules(conference)
             ?: throw ScheduleNotFoundException("No conference rules found for $conference")
+
+    fun validateSchedule(season: Int): ScheduleValidationResult = scheduleValidationService.validateSchedule(season)
 }

@@ -38,6 +38,7 @@ class GameServiceTest {
     private val gameSpecificationService: GameSpecificationService = mockk(relaxed = true)
     private val recordService: RecordService = mockk(relaxed = true)
     private val seasonStatsService: SeasonStatsService = mockk(relaxed = true)
+    private val postseasonSeasonStatsService: PostseasonSeasonStatsService = mockk(relaxed = true)
     private val winProbabilityService: WinProbabilityService = mockk(relaxed = true)
     private val vegasOddsService: VegasOddsService = mockk(relaxed = true)
     private val gameStatsRepository: GameStatsRepository = mockk(relaxed = true)
@@ -71,6 +72,7 @@ class GameServiceTest {
                 gameSpecificationService,
                 recordService,
                 seasonStatsService,
+                postseasonSeasonStatsService,
                 winProbabilityService,
                 vegasOddsService,
                 gameStatsRepository,

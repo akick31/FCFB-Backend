@@ -44,6 +44,7 @@ class GlobalExceptionHandler {
         RankingsNotUploadedException::class,
         TooManyCoachesException::class,
         DiscordAlreadyLinkedException::class,
+        SeasonNotReadyException::class,
     )
     fun handleConflict(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.CONFLICT, e)
 

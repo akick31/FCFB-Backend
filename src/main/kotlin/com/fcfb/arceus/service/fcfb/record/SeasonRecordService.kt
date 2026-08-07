@@ -8,6 +8,7 @@ import com.fcfb.arceus.model.Record
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.POSTSEASON_START_WEEK
 import org.springframework.stereotype.Service
 
 @Service
@@ -58,7 +59,7 @@ class SeasonRecordService(
         recordScope: RecordScope,
         scopeValue: String?,
     ) {
-        val isLowest = recordType == RecordType.SINGLE_SEASON_LOWEST
+        val isLowest = recordType.isLowest
         val best =
             if (isLowest) {
                 teamSeasons.minByOrNull { it.value }
@@ -95,6 +96,14 @@ class SeasonRecordService(
             .filter { it.team == team && it.season == season }
     }
 
+    fun getCurrentPostseasonStatsForTeam(
+        team: String,
+        season: Int,
+    ): List<GameStats> {
+        return gameStatsRepository.findAll()
+            .filter { it.team == team && it.season == season && (it.week ?: 0) >= POSTSEASON_START_WEEK }
+    }
+
     private data class SeasonCandidate(val team: String, val season: Int, val value: Double, val games: List<GameStats>)
 
     fun checkAndUpdateSeasonRecord(
@@ -113,7 +122,7 @@ class SeasonRecordService(
                 SeasonCandidate(first.team!!, first.season!!, recordStatUtils.calculateSeasonValue(statName, games), games)
             }
 
-        val isLowest = recordType == RecordType.SINGLE_SEASON_LOWEST
+        val isLowest = recordType.isLowest
         val best =
             if (isLowest) {
                 candidates.minByOrNull { it.value }
@@ -152,8 +161,7 @@ class SeasonRecordService(
                     )
 
                 recordRepository.save(newRecord)
-                val recordTypeStr = if (isLowest) "LOWEST SINGLE SEASON" else "SINGLE SEASON"
-                Logger.info("New $recordTypeStr record: ${statName.name} = ${best.value} by ${best.team} in season ${best.season}")
+                Logger.info("New ${recordType.name} record: ${statName.name} = ${best.value} by ${best.team} in season ${best.season}")
             }
         }
     }

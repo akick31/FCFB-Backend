@@ -16,12 +16,13 @@ import com.fcfb.arceus.util.GameStatsNotFoundException
 import com.fcfb.arceus.util.InvalidGameStatsRequestException
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class GameStatsService(
+open class GameStatsService(
     private val gameStatsRepository: GameStatsRepository,
     private val gameRepository: GameRepository,
     private val playRepository: PlayRepository,
@@ -128,7 +129,8 @@ class GameStatsService(
         }
     }
 
-    fun generateAllGameStats() {
+    @Transactional(rollbackFor = [Exception::class])
+    open fun generateAllGameStats() {
         try {
             val allGames =
                 gameRepository.getAllGames().ifEmpty {

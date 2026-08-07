@@ -16,14 +16,54 @@ class AgainstRecordService(
 ) {
     fun generateAgainstRecords(
         seasonGameStats: List<GameStats>,
+        regularSeasonGameStats: List<GameStats>,
+        postseasonGameStats: List<GameStats>,
         completeSeasonGameStats: List<GameStats>,
+        completePostseasonGameStats: List<GameStats>,
         teamConference: Map<String, String?>,
         scopes: Set<RecordScope>,
     ) {
         val opponentOf = buildOpponentMap(seasonGameStats)
+        val postseasonScopes = setOf(RecordScope.LEAGUE)
         recordStatUtils.againstBaseStat.forEach { (againstStat, baseStat) ->
-            generateSeasonAgainst(againstStat, baseStat, seasonGameStats, opponentOf, teamConference, scopes)
-            generateGameAgainst(againstStat, baseStat, completeSeasonGameStats, opponentOf, teamConference, scopes)
+            generateSeasonAgainst(
+                againstStat,
+                baseStat,
+                regularSeasonGameStats,
+                opponentOf,
+                RecordType.SINGLE_SEASON_LOWEST,
+                teamConference,
+                scopes,
+            )
+            generateGameAgainst(
+                againstStat,
+                baseStat,
+                completeSeasonGameStats,
+                opponentOf,
+                RecordType.SINGLE_GAME_LOWEST,
+                teamConference,
+                scopes,
+            )
+            if (RecordScope.LEAGUE in scopes) {
+                generateSeasonAgainst(
+                    againstStat,
+                    baseStat,
+                    postseasonGameStats,
+                    opponentOf,
+                    RecordType.SINGLE_POSTSEASON_LOWEST,
+                    teamConference,
+                    postseasonScopes,
+                )
+                generateGameAgainst(
+                    againstStat,
+                    baseStat,
+                    completePostseasonGameStats,
+                    opponentOf,
+                    RecordType.SINGLE_POSTSEASON_GAME_LOWEST,
+                    teamConference,
+                    postseasonScopes,
+                )
+            }
         }
     }
 
@@ -43,6 +83,7 @@ class AgainstRecordService(
         baseStat: Stats,
         seasonGameStats: List<GameStats>,
         opponentOf: Map<GameStats, GameStats>,
+        recordType: RecordType,
         teamConference: Map<String, String?>,
         scopes: Set<RecordScope>,
     ) {
@@ -57,7 +98,7 @@ class AgainstRecordService(
             }
         }
         val teamValues = opponentsByTeam.mapValues { (_, opponents) -> recordStatUtils.calculateSeasonValue(baseStat, opponents) }
-        emitBest(againstStat, RecordType.SINGLE_SEASON_LOWEST, teamValues, ownRowByTeam, teamConference, scopes, isSeason = true)
+        emitBest(againstStat, recordType, teamValues, ownRowByTeam, teamConference, scopes, isSeason = true)
     }
 
     private fun generateGameAgainst(
@@ -65,6 +106,7 @@ class AgainstRecordService(
         baseStat: Stats,
         completeGameStats: List<GameStats>,
         opponentOf: Map<GameStats, GameStats>,
+        recordType: RecordType,
         teamConference: Map<String, String?>,
         scopes: Set<RecordScope>,
     ) {
@@ -82,7 +124,7 @@ class AgainstRecordService(
         }
         val teamValues = bestGameByTeam.mapValues { it.value.first }
         val ownRowByTeam = bestGameByTeam.mapValues { it.value.second }
-        emitBest(againstStat, RecordType.SINGLE_GAME_LOWEST, teamValues, ownRowByTeam, teamConference, scopes, isSeason = false)
+        emitBest(againstStat, recordType, teamValues, ownRowByTeam, teamConference, scopes, isSeason = false)
     }
 
     private fun emitBest(

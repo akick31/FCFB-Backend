@@ -183,6 +183,12 @@ class InvalidConferenceException(message: String) : Exception(message) {
     }
 }
 
+class SeasonNotReadyException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "SeasonNotReadyException: ${super.message}"
+    }
+}
+
 class DiscordAlreadyLinkedException : Exception("This Discord account is already linked to another user") {
     override fun toString(): String {
         return "DiscordAlreadyLinkedException: ${super.message}"
