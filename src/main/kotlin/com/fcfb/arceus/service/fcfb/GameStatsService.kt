@@ -22,7 +22,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class GameStatsService(
+open class GameStatsService(
     private val gameStatsRepository: GameStatsRepository,
     private val gameRepository: GameRepository,
     private val playRepository: PlayRepository,
@@ -130,7 +130,7 @@ class GameStatsService(
     }
 
     @Transactional(rollbackFor = [Exception::class])
-    fun generateAllGameStats() {
+    open fun generateAllGameStats() {
         try {
             val allGames =
                 gameRepository.getAllGames().ifEmpty {
