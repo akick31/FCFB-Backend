@@ -97,18 +97,16 @@ class PostseasonPlaybookStatsService(
             return
         }
 
+        val playbookStats =
+            playbookStatsService.aggregateGameStatsToPlaybookStats(gameStatsList, offensivePlaybook, defensivePlaybook, seasonNumber)
+        val postseasonPlaybookStats = playbookStats.toPostseason()
         postseasonPlaybookStatsRepository.findByOffensivePlaybookAndDefensivePlaybookAndSeasonNumber(
             offensivePlaybook,
             defensivePlaybook,
             seasonNumber,
-        )?.let {
-            postseasonPlaybookStatsRepository.delete(it)
-        }
+        )?.let { postseasonPlaybookStats.id = it.id }
 
-        val playbookStats =
-            playbookStatsService.aggregateGameStatsToPlaybookStats(gameStatsList, offensivePlaybook, defensivePlaybook, seasonNumber)
-
-        postseasonPlaybookStatsRepository.save(playbookStats.toPostseason())
+        postseasonPlaybookStatsRepository.save(postseasonPlaybookStats)
         Logger.info("Completed generating postseason playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber")
     }
 }

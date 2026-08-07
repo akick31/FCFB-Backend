@@ -77,18 +77,18 @@ class PostseasonLeagueStatsService(
             return
         }
 
-        postseasonLeagueStatsRepository.findBySubdivisionAndSeasonNumber(subdivision, seasonNumber)?.let {
-            postseasonLeagueStatsRepository.delete(it)
-        }
-
         val leagueStats =
             leagueStatsService.aggregateSeasonStatsToLeagueStats(
                 seasonStatsList.map { it.toSeasonStats() },
                 subdivision,
                 seasonNumber,
             )
+        val postseasonLeagueStats = leagueStats.toPostseason()
+        postseasonLeagueStatsRepository.findBySubdivisionAndSeasonNumber(subdivision, seasonNumber)?.let {
+            postseasonLeagueStats.id = it.id
+        }
 
-        postseasonLeagueStatsRepository.save(leagueStats.toPostseason())
+        postseasonLeagueStatsRepository.save(postseasonLeagueStats)
         Logger.info("Completed generating postseason league stats for $subdivision in season $seasonNumber")
     }
 }

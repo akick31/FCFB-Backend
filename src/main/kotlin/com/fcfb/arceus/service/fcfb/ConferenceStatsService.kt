@@ -86,11 +86,10 @@ class ConferenceStatsService(
             return
         }
 
-        conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
-            conferenceStatsRepository.delete(it)
-        }
-
         val conferenceStats = aggregateSeasonStatsToConferenceStats(seasonStatsList, subdivision, conference, seasonNumber)
+        conferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
+            conferenceStats.id = it.id
+        }
 
         conferenceStatsRepository.save(conferenceStats)
         Logger.info("Completed generating conference stats for $subdivision/$conference in season $seasonNumber")

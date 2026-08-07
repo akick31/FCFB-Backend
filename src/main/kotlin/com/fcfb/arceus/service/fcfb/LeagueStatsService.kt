@@ -77,11 +77,10 @@ class LeagueStatsService(
             return
         }
 
-        leagueStatsRepository.findBySubdivisionAndSeasonNumber(subdivision, seasonNumber)?.let {
-            leagueStatsRepository.delete(it)
-        }
-
         val leagueStats = aggregateSeasonStatsToLeagueStats(seasonStatsList, subdivision, seasonNumber)
+        leagueStatsRepository.findBySubdivisionAndSeasonNumber(subdivision, seasonNumber)?.let {
+            leagueStats.id = it.id
+        }
 
         leagueStatsRepository.save(leagueStats)
         Logger.info("Completed generating league stats for $subdivision in season $seasonNumber")

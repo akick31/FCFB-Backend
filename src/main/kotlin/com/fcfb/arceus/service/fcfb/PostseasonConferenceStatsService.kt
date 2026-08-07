@@ -86,10 +86,6 @@ class PostseasonConferenceStatsService(
             return
         }
 
-        postseasonConferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
-            postseasonConferenceStatsRepository.delete(it)
-        }
-
         val conferenceStats =
             conferenceStatsService.aggregateSeasonStatsToConferenceStats(
                 seasonStatsList.map { it.toSeasonStats() },
@@ -97,8 +93,12 @@ class PostseasonConferenceStatsService(
                 conference,
                 seasonNumber,
             )
+        val postseasonConferenceStats = conferenceStats.toPostseason()
+        postseasonConferenceStatsRepository.findBySubdivisionAndConferenceAndSeasonNumber(subdivision, conference, seasonNumber)?.let {
+            postseasonConferenceStats.id = it.id
+        }
 
-        postseasonConferenceStatsRepository.save(conferenceStats.toPostseason())
+        postseasonConferenceStatsRepository.save(postseasonConferenceStats)
         Logger.info("Completed generating postseason conference stats for $subdivision/$conference in season $seasonNumber")
     }
 

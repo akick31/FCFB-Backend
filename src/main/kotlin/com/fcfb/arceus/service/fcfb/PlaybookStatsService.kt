@@ -99,15 +99,12 @@ class PlaybookStatsService(
             return
         }
 
+        val playbookStats = aggregateGameStatsToPlaybookStats(gameStatsList, offensivePlaybook, defensivePlaybook, seasonNumber)
         playbookStatsRepository.findByOffensivePlaybookAndDefensivePlaybookAndSeasonNumber(
             offensivePlaybook,
             defensivePlaybook,
             seasonNumber,
-        )?.let {
-            playbookStatsRepository.delete(it)
-        }
-
-        val playbookStats = aggregateGameStatsToPlaybookStats(gameStatsList, offensivePlaybook, defensivePlaybook, seasonNumber)
+        )?.let { playbookStats.id = it.id }
 
         playbookStatsRepository.save(playbookStats)
         Logger.info("Completed generating playbook stats for $offensivePlaybook/$defensivePlaybook in season $seasonNumber")
