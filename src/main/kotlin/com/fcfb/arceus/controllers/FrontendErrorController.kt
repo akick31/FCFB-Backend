@@ -23,7 +23,7 @@ private const val WINDOW_SECONDS = 60L
 class FrontendErrorController(
     private val rateLimiter: InMemoryRateLimiter,
 ) {
-    @Operation(summary = "Report a frontend error for logging")
+    @Operation(summary = "Report frontend error")
     @PostMapping("")
     fun reportError(
         @RequestBody request: FrontendErrorRequest,

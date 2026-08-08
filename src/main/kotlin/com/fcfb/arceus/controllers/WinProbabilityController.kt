@@ -15,21 +15,21 @@ import org.springframework.web.bind.annotation.RestController
 class WinProbabilityController(
     private val winProbabilityOrchestrationService: WinProbabilityOrchestrationService,
 ) {
-    @Operation(summary = "Get Elo ratings for all teams")
+    @Operation(summary = "Get team Elo ratings")
     @GetMapping("/elo-ratings")
     fun getEloRatings() = winProbabilityOrchestrationService.getEloRatings()
 
-    @Operation(summary = "Calculate win probability for a game")
+    @Operation(summary = "Calculate game win probability")
     @PostMapping("/calculate")
     fun calculateWinProbabilityForGame(
         @RequestParam gameId: Int,
     ) = winProbabilityOrchestrationService.calculateWinProbabilityForGame(gameId)
 
-    @Operation(summary = "Calculate win probability for all games")
+    @Operation(summary = "Calculate all win probabilities")
     @PostMapping("/calculate/all")
     fun calculateWinProbabilityForAllGames() = winProbabilityOrchestrationService.calculateWinProbabilityForAllGames()
 
-    @Operation(summary = "Get win probabilities for a game")
+    @Operation(summary = "Get game win probabilities")
     @GetMapping("")
     fun getWinProbabilitiesForGame(
         @RequestParam gameId: Int,

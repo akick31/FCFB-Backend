@@ -21,7 +21,7 @@ class PlaybookStatsController(
     private val playbookStatsService: PlaybookStatsService,
     private val postseasonPlaybookStatsService: PostseasonPlaybookStatsService,
 ) {
-    @Operation(summary = "List playbook stats filtered by playbook and season")
+    @Operation(summary = "List playbook stats")
     @GetMapping
     fun getFilteredPlaybookStats(
         @RequestParam(required = false) offensivePlaybook: OffensivePlaybook?,
@@ -35,11 +35,11 @@ class PlaybookStatsController(
         pageable = pageable,
     )
 
-    @Operation(summary = "Generate playbook stats for all seasons")
+    @Operation(summary = "Generate playbook stats")
     @PostMapping("/generate/all")
     fun generateAll() = playbookStatsService.generateAllPlaybookStats()
 
-    @Operation(summary = "List postseason playbook stats filtered by playbook and season")
+    @Operation(summary = "List postseason playbook stats")
     @GetMapping("/postseason")
     fun getFilteredPostseasonPlaybookStats(
         @RequestParam(required = false) offensivePlaybook: OffensivePlaybook?,
@@ -53,7 +53,7 @@ class PlaybookStatsController(
         pageable = pageable,
     )
 
-    @Operation(summary = "Generate postseason playbook stats for all seasons")
+    @Operation(summary = "Generate postseason playbook stats")
     @PostMapping("/postseason/generate/all")
     fun generateAllPostseason() = postseasonPlaybookStatsService.generateAllPostseasonPlaybookStats()
 }

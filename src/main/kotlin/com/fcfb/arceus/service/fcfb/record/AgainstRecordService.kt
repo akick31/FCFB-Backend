@@ -78,6 +78,8 @@ class AgainstRecordService(
         return map
     }
 
+    private data class TeamSeasonAgainst(val team: String, val season: Int, val value: Double, val ownRow: GameStats)
+
     private fun generateSeasonAgainst(
         againstStat: Stats,
         baseStat: Stats,
@@ -87,18 +89,79 @@ class AgainstRecordService(
         teamConference: Map<String, String?>,
         scopes: Set<RecordScope>,
     ) {
-        val opponentsByTeam = HashMap<String, MutableList<GameStats>>()
-        val ownRowByTeam = HashMap<String, GameStats>()
+        val opponentsByTeamSeason = HashMap<Pair<String, Int>, MutableList<GameStats>>()
+        val ownRowByTeamSeason = HashMap<Pair<String, Int>, GameStats>()
         seasonGameStats.forEach { row ->
             val opponent = opponentOf[row]
             val team = row.team
-            if (opponent != null && team != null) {
-                opponentsByTeam.getOrPut(team) { mutableListOf() }.add(opponent)
-                ownRowByTeam.putIfAbsent(team, row)
+            val season = row.season
+            if (opponent != null && team != null && season != null) {
+                val key = team to season
+                opponentsByTeamSeason.getOrPut(key) { mutableListOf() }.add(opponent)
+                ownRowByTeamSeason.putIfAbsent(key, row)
             }
         }
-        val teamValues = opponentsByTeam.mapValues { (_, opponents) -> recordStatUtils.calculateSeasonValue(baseStat, opponents) }
-        emitBest(againstStat, recordType, teamValues, ownRowByTeam, teamConference, scopes, isSeason = true)
+        val entries =
+            opponentsByTeamSeason.map { (key, opponents) ->
+                TeamSeasonAgainst(
+                    key.first,
+                    key.second,
+                    recordStatUtils.calculateSeasonValue(baseStat, opponents),
+                    ownRowByTeamSeason.getValue(key),
+                )
+            }
+        emitBestSeasonAgainst(againstStat, recordType, entries, teamConference, scopes)
+    }
+
+    private fun emitBestSeasonAgainst(
+        againstStat: Stats,
+        recordType: RecordType,
+        entries: List<TeamSeasonAgainst>,
+        teamConference: Map<String, String?>,
+        scopes: Set<RecordScope>,
+    ) {
+        if (entries.isEmpty()) return
+        if (RecordScope.LEAGUE in scopes) {
+            saveBestSeasonAgainst(againstStat, recordType, entries, RecordScope.LEAGUE, null)
+        }
+        if (RecordScope.TEAM in scopes) {
+            entries.groupBy { it.team }.forEach { (team, teamEntries) ->
+                saveBestSeasonAgainst(againstStat, recordType, teamEntries, RecordScope.TEAM, team)
+            }
+        }
+        if (RecordScope.CONFERENCE in scopes) {
+            entries.groupBy { teamConference[it.team] }.forEach { (conference, confEntries) ->
+                if (conference != null) {
+                    saveBestSeasonAgainst(againstStat, recordType, confEntries, RecordScope.CONFERENCE, conference)
+                }
+            }
+        }
+    }
+
+    private fun saveBestSeasonAgainst(
+        againstStat: Stats,
+        recordType: RecordType,
+        entries: List<TeamSeasonAgainst>,
+        recordScope: RecordScope,
+        scopeValue: String?,
+    ) {
+        val best = entries.minByOrNull { it.value } ?: return
+        val record =
+            Record(
+                recordName = againstStat,
+                recordType = recordType,
+                recordScope = recordScope,
+                scopeValue = scopeValue,
+                seasonNumber = best.season,
+                week = null,
+                gameId = null,
+                homeTeam = null,
+                awayTeam = null,
+                recordTeam = best.team,
+                coach = gameRecordService.getCoachForGameRecord(best.ownRow),
+                recordValue = best.value,
+            )
+        recordRepository.save(record)
     }
 
     private fun generateGameAgainst(
@@ -124,52 +187,49 @@ class AgainstRecordService(
         }
         val teamValues = bestGameByTeam.mapValues { it.value.first }
         val ownRowByTeam = bestGameByTeam.mapValues { it.value.second }
-        emitBest(againstStat, recordType, teamValues, ownRowByTeam, teamConference, scopes, isSeason = false)
+        emitBestGameAgainst(againstStat, recordType, teamValues, ownRowByTeam, teamConference, scopes)
     }
 
-    private fun emitBest(
+    private fun emitBestGameAgainst(
         againstStat: Stats,
         recordType: RecordType,
         teamValues: Map<String, Double>,
         ownRowByTeam: Map<String, GameStats>,
         teamConference: Map<String, String?>,
         scopes: Set<RecordScope>,
-        isSeason: Boolean,
     ) {
         if (teamValues.isEmpty()) return
         if (RecordScope.LEAGUE in scopes) {
-            saveAgainst(againstStat, recordType, teamValues, ownRowByTeam, RecordScope.LEAGUE, null, isSeason)
+            saveGameAgainst(againstStat, recordType, teamValues, ownRowByTeam, RecordScope.LEAGUE, null)
         }
         if (RecordScope.TEAM in scopes) {
             teamValues.forEach { (team, value) ->
-                saveAgainst(againstStat, recordType, mapOf(team to value), ownRowByTeam, RecordScope.TEAM, team, isSeason)
+                saveGameAgainst(againstStat, recordType, mapOf(team to value), ownRowByTeam, RecordScope.TEAM, team)
             }
         }
         if (RecordScope.CONFERENCE in scopes) {
             teamValues.entries.groupBy { teamConference[it.key] }.forEach { (conference, entries) ->
                 if (conference != null) {
-                    saveAgainst(
+                    saveGameAgainst(
                         againstStat,
                         recordType,
                         entries.associate { it.key to it.value },
                         ownRowByTeam,
                         RecordScope.CONFERENCE,
                         conference,
-                        isSeason,
                     )
                 }
             }
         }
     }
 
-    private fun saveAgainst(
+    private fun saveGameAgainst(
         againstStat: Stats,
         recordType: RecordType,
         teamValues: Map<String, Double>,
         ownRowByTeam: Map<String, GameStats>,
         recordScope: RecordScope,
         scopeValue: String?,
-        isSeason: Boolean,
     ) {
         val best = teamValues.entries.minByOrNull { it.value } ?: return
         val ownRow = ownRowByTeam[best.key] ?: return
@@ -180,8 +240,8 @@ class AgainstRecordService(
                 recordScope = recordScope,
                 scopeValue = scopeValue,
                 seasonNumber = ownRow.season ?: 0,
-                week = if (isSeason) null else ownRow.week ?: 0,
-                gameId = if (isSeason) null else ownRow.gameId,
+                week = ownRow.week ?: 0,
+                gameId = ownRow.gameId,
                 homeTeam = null,
                 awayTeam = null,
                 recordTeam = best.key,

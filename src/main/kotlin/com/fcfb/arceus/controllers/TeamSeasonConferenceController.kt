@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class TeamSeasonConferenceController(
     private val teamSeasonConferenceService: TeamSeasonConferenceService,
 ) {
-    @Operation(summary = "Get team-conference assignments for a season")
+    @Operation(summary = "Get season conference assignments")
     @GetMapping
     fun getForSeason(
         @RequestParam season: Int,

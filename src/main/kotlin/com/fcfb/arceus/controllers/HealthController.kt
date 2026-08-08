@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 class HealthController(
     private val healthService: HealthService,
 ) {
-    @Operation(summary = "Check the health of the service")
+    @Operation(summary = "Check service health")
     @GetMapping("")
     fun healthCheck(): ResponseEntity<String> = healthService.checkHealth()
 }

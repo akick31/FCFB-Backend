@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 class GameStatsController(
     private var gameStatsService: GameStatsService,
 ) {
-    @Operation(summary = "Get game stats for a team, optionally filtered by game and season")
+    @Operation(summary = "Get team game stats")
     @GetMapping("")
     fun getGameStats(
         @RequestParam(required = false) gameId: Int?,
@@ -24,30 +24,30 @@ class GameStatsController(
         @RequestParam(required = false) season: Int?,
     ): ResponseEntity<Any> = ResponseEntity.ok(gameStatsService.getGameStats(gameId, team, season))
 
-    @Operation(summary = "Generate game stats for a single game")
+    @Operation(summary = "Generate game stats")
     @PostMapping("/generate")
     fun generateGameStats(
         @RequestParam("gameId") gameId: Int,
     ) = gameStatsService.generateGameStats(gameId)
 
-    @Operation(summary = "Generate game stats for all games more recent than a given game ID")
+    @Operation(summary = "Generate game stats since ID")
     @PostMapping("/generate/all/more_recent_than")
     fun generateAllGameStatsMoreRecentThanGameId(
         @RequestParam("gameId") gameId: Int,
     ) = gameStatsService.generateGameStatsForGamesMoreRecentThanGameId(gameId)
 
-    @Operation(summary = "Generate game stats for all games")
+    @Operation(summary = "Generate all game stats")
     @PostMapping("/generate/all")
     fun generateAllGameStats() = gameStatsService.generateAllGameStats()
 
-    @Operation(summary = "Get a team's Elo history, optionally filtered by season")
+    @Operation(summary = "Get team Elo history")
     @GetMapping("/elo-history")
     fun getEloHistory(
         @RequestParam team: String,
         @RequestParam(required = false) season: Int?,
     ) = gameStatsService.getEloHistory(team, season)
 
-    @Operation(summary = "Get game stats for a given season and week")
+    @Operation(summary = "Get game stats by week")
     @GetMapping("/by-season-week")
     fun getGameStatsBySeasonAndWeek(
         @RequestParam season: Int,

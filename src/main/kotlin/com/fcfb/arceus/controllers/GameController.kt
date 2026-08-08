@@ -20,7 +20,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -34,13 +33,13 @@ import org.springframework.web.bind.annotation.RestController
 class GameController(
     private val gameService: GameService,
 ) {
-    @Operation(summary = "Get an ongoing game by its ID")
-    @GetMapping("/{id}")
+    @Operation(summary = "Get ongoing game by ID")
+    @GetMapping(params = ["id"])
     fun getOngoingGameById(
-        @PathVariable("id") id: Int,
+        @RequestParam("id") id: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.getGameById(id))
 
-    @Operation(summary = "List games matching the given filters, category, and sort order")
+    @Operation(summary = "List games")
     @GetMapping
     fun getFilteredGames(
         @RequestParam(required = false) filters: List<GameFilter>?,
@@ -65,165 +64,165 @@ class GameController(
             ),
         )
 
-    @Operation(summary = "Start a new game")
+    @Operation(summary = "Start game")
     @PostMapping
     suspend fun startGame(
         @RequestBody startRequest: StartRequest,
     ): ResponseEntity<Game> = ResponseEntity.status(201).body(gameService.startSingleGame(startRequest, null))
 
-    @Operation(summary = "Start a new overtime game")
+    @Operation(summary = "Start overtime game")
     @PostMapping("/overtime")
     suspend fun startOvertimeGame(
         @RequestBody startRequest: StartRequest,
     ): ResponseEntity<Game> = ResponseEntity.status(201).body(gameService.startOvertimeGame(startRequest))
 
-    @Operation(summary = "Start all games for a given season and week")
+    @Operation(summary = "Start week's games")
     @PostMapping("/week")
     fun startWeek(
         @RequestParam("season") season: Int,
         @RequestParam("week") week: Int,
     ): ResponseEntity<GameWeekJobResponse> = ResponseEntity.status(202).body(gameService.startWeekAsync(season, week))
 
-    @Operation(summary = "Get the status of a game week job by its ID")
-    @GetMapping("/week/status/{jobId}")
+    @Operation(summary = "Get game week job status")
+    @GetMapping("/week/status")
     fun getGameWeekJobStatus(
-        @PathVariable("jobId") jobId: String,
+        @RequestParam("jobId") jobId: String,
     ): ResponseEntity<GameWeekJob> = ResponseEntity.ok(gameService.getGameWeekJobStatus(jobId))
 
-    @Operation(summary = "List all game week jobs")
+    @Operation(summary = "List game week jobs")
     @GetMapping("/week/jobs")
     fun getAllGameWeekJobs(): ResponseEntity<List<GameWeekJob>> = ResponseEntity.ok(gameService.getAllGameWeekJobs())
 
-    @Operation(summary = "Get a team's rankings history for a season")
+    @Operation(summary = "Team season rankings history")
     @GetMapping("/rankings-history")
     fun getRankingsHistory(
         @RequestParam(required = false) team: String?,
         @RequestParam(required = false) season: Int?,
     ): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.getRankingsHistory(team, season))
 
-    @Operation(summary = "Retry the failed games in a game week job")
-    @PostMapping("/week/retry/{jobId}")
+    @Operation(summary = "Retry failed games")
+    @PostMapping("/week/retry")
     fun retryFailedGames(
-        @PathVariable("jobId") jobId: String,
+        @RequestParam("jobId") jobId: String,
     ): ResponseEntity<GameWeekJobResponse> = ResponseEntity.status(202).body(gameService.retryFailedGames(jobId))
 
-    @Operation(summary = "End a game by its channel ID")
-    @PostMapping("/end")
+    @Operation(summary = "End game by channel ID")
+    @PostMapping("/end", params = ["channelId"])
     fun endGameByChannelId(
         @RequestParam("channelId") channelId: ULong,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGameByChannelId(channelId))
 
-    @Operation(summary = "End a game by its game ID")
-    @PostMapping("{gameId}/end")
+    @Operation(summary = "End game by ID")
+    @PostMapping("/end", params = ["gameId"])
     fun endGameByGameId(
-        @PathVariable("gameId") gameId: Int,
+        @RequestParam("gameId") gameId: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGameByGameId(gameId))
 
     @Operation(summary = "End all ongoing games")
     @PostMapping("/end-all")
     fun endAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.endAllGames())
 
-    @Operation(summary = "Chew the clock on a game by its platform channel ID")
-    @PostMapping("/chew")
+    @Operation(summary = "Chew clock by channel ID")
+    @PostMapping("/chew", params = ["channelId"])
     fun chewGameByPlatformId(
         @RequestParam("channelId") channelId: ULong,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGameByPlatformId(channelId))
 
-    @Operation(summary = "Chew the clock on a game by its game ID")
-    @PostMapping("{gameId}/chew")
+    @Operation(summary = "Chew clock by game ID")
+    @PostMapping("/chew", params = ["gameId"])
     fun chewGameByGameId(
-        @PathVariable("gameId") gameId: Int,
+        @RequestParam("gameId") gameId: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.chewGameByGameId(gameId))
 
-    @Operation(summary = "Chew the clock on all ongoing games")
+    @Operation(summary = "Chew clock on all games")
     @PostMapping("/chew-all")
     fun chewAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.chewAllGames())
 
-    @Operation(summary = "Run the coin toss for a game")
-    @PutMapping("/{gameId}/coin-toss")
+    @Operation(summary = "Run coin toss")
+    @PutMapping("/coin-toss")
     fun runCoinToss(
-        @PathVariable("gameId") gameId: String,
+        @RequestParam("gameId") gameId: Int,
         @RequestParam("coinTossCall") coinTossCall: CoinTossCall,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.runCoinToss(gameId, coinTossCall))
 
-    @Operation(summary = "Record a coach's coin toss choice for a game")
-    @PutMapping("/{gameId}/coin-toss-choice")
+    @Operation(summary = "Record coin toss choice")
+    @PutMapping("/coin-toss-choice")
     fun makeCoinTossChoice(
-        @PathVariable("gameId") gameId: String,
+        @RequestParam("gameId") gameId: Int,
         @RequestParam("coinTossChoice") coinTossChoice: CoinTossChoice,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.makeCoinTossChoice(gameId, coinTossChoice))
 
-    @Operation(summary = "Record a coach's overtime coin toss choice for a game")
-    @PutMapping("/{gameId}/overtime-coin-toss-choice")
+    @Operation(summary = "Record overtime coin toss choice")
+    @PutMapping("/overtime-coin-toss-choice")
     fun makeOvertimeCoinTossChoice(
-        @PathVariable("gameId") gameId: String,
+        @RequestParam("gameId") gameId: Int,
         @RequestParam("coinTossChoice") coinTossChoice: OvertimeCoinTossChoice,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.makeOvertimeCoinTossChoice(gameId, coinTossChoice))
 
-    @Operation(summary = "Update the request message ID for a game")
-    @PutMapping("/{gameId}/request-message")
+    @Operation(summary = "Update request message ID")
+    @PutMapping("/request-message")
     fun updateRequestMessageId(
-        @PathVariable("gameId") gameId: Int,
+        @RequestParam("gameId") gameId: Int,
         @RequestParam("requestMessageId") requestMessageId: String,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.updateRequestMessageId(gameId, requestMessageId))
 
-    @Operation(summary = "Update the last message timestamp for a game")
-    @PutMapping("/{gameId}/last-message-timestamp")
+    @Operation(summary = "Update last message timestamp")
+    @PutMapping("/last-message-timestamp")
     fun updateLastMessageTimestamp(
-        @PathVariable("gameId") gameId: Int,
+        @RequestParam("gameId") gameId: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.updateLastMessageTimestamp(gameId))
 
-    @Operation(summary = "Get a game by its request message ID")
+    @Operation(summary = "Get game by request message ID")
     @GetMapping("/request-message")
     fun getGameByRequestMessageId(
         @RequestParam("requestMessageId") requestMessageId: String,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.getGameByRequestMessageId(requestMessageId))
 
-    @Operation(summary = "Get a game by its platform channel ID")
+    @Operation(summary = "Get game by channel ID")
     @GetMapping("/platform")
     fun getGameByPlatformId(
         @RequestParam("platformId") platformId: ULong,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.getGameByPlatformId(platformId))
 
-    @Operation(summary = "Substitute a coach into a game")
-    @PutMapping("/{gameId}/sub")
+    @Operation(summary = "Substitute coach into game")
+    @PutMapping("/sub")
     fun subCoachIntoGame(
-        @PathVariable("gameId") gameId: Int,
+        @RequestParam("gameId") gameId: Int,
         @RequestParam("team") team: String,
         @RequestParam("discordId") discordId: String,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.subCoachIntoGame(gameId, team, discordId))
 
-    @Operation(summary = "Restart a game by its channel ID")
+    @Operation(summary = "Restart game by channel ID")
     @PostMapping("/restart")
     suspend fun restartGame(
         @RequestParam("channelId") channelId: ULong,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.restartGame(channelId))
 
-    @Operation(summary = "Mark a game as having sent its close game ping")
-    @PutMapping("/{gameId}/close-game-pinged")
+    @Operation(summary = "Mark close game ping sent")
+    @PutMapping("/close-game-pinged")
     fun markCloseGamePinged(
-        @PathVariable("gameId") gameId: Int,
+        @RequestParam("gameId") gameId: Int,
     ): ResponseEntity<Void> {
         gameService.markCloseGamePinged(gameId)
         return ResponseEntity.noContent().build()
     }
 
-    @Operation(summary = "Mark a game as having sent its upset alert ping")
-    @PutMapping("/{gameId}/upset-alert-pinged")
+    @Operation(summary = "Mark upset alert ping sent")
+    @PutMapping("/upset-alert-pinged")
     fun markUpsetAlertPinged(
-        @PathVariable("gameId") gameId: Int,
+        @RequestParam("gameId") gameId: Int,
     ): ResponseEntity<Void> {
         gameService.markUpsetAlertPinged(gameId)
         return ResponseEntity.noContent().build()
     }
 
-    @Operation(summary = "Update an existing game")
+    @Operation(summary = "Update game")
     @PutMapping("")
     fun updateGame(
         @RequestBody game: Game,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.updateGame(game))
 
-    @Operation(summary = "Delete an ongoing game by its channel ID")
+    @Operation(summary = "Delete game by channel ID")
     @DeleteMapping("")
     fun deleteOngoingGame(
         @RequestParam("channelId") channelId: ULong,

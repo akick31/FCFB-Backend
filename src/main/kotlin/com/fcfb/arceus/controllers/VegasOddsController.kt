@@ -15,21 +15,21 @@ class VegasOddsController(
     private val vegasOddsService: VegasOddsService,
     private val teamService: TeamService,
 ) {
-    @Operation(summary = "Get Vegas odds for a matchup between two teams")
+    @Operation(summary = "Matchup Vegas odds")
     @GetMapping("")
     fun getVegasOddsByTeams(
         @RequestParam homeTeamName: String,
         @RequestParam awayTeamName: String,
     ) = vegasOddsService.getVegasOddsByTeams(homeTeamName, awayTeamName, teamService)
 
-    @Operation(summary = "Get Vegas odds calculated from two teams' Elo ratings")
+    @Operation(summary = "Vegas odds from Elo ratings")
     @GetMapping("/elo")
     fun getVegasOddsByElo(
         @RequestParam homeElo: Double,
         @RequestParam awayElo: Double,
     ) = vegasOddsService.getVegasOddsByElo(homeElo, awayElo)
 
-    @Operation(summary = "Update Vegas spreads for all games in a season and week")
+    @Operation(summary = "Update Vegas spreads")
     @PostMapping("/update-spreads")
     fun updateSpreadsForSeasonAndWeek(
         @RequestParam season: Int,

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController
 class DiscordOAuthController(
     private val discordOAuthService: DiscordOAuthService,
 ) {
-    @Operation(summary = "Handle the Discord OAuth redirect callback")
+    @Operation(summary = "Discord OAuth callback")
     @GetMapping("${ApiConstants.FULL_PATH}/discord/redirect")
     fun handleDiscordRedirect(
         @RequestParam("code") code: String,

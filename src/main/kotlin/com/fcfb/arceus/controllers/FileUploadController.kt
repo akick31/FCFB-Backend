@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile
 class FileUploadController(
     private val fileUploadService: FileUploadService,
 ) {
-    @Operation(summary = "Upload a postseason logo image")
+    @Operation(summary = "Upload postseason logo")
     @PostMapping("/postseason-logo")
     fun uploadPostseasonLogo(
         @RequestParam("file") file: MultipartFile,

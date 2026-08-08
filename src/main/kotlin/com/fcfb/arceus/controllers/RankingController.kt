@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 class RankingController(
     private val rankingService: RankingService,
 ) {
-    @Operation(summary = "Get rankings for a season, week, and poll type")
+    @Operation(summary = "Get rankings by week")
     @GetMapping
     fun getRankings(
         @RequestParam("season") season: Int,
@@ -27,14 +27,14 @@ class RankingController(
         @RequestParam("pollType") pollType: String,
     ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getRankings(season, week, pollType))
 
-    @Operation(summary = "Get the available ranked weeks for a season and poll type")
+    @Operation(summary = "Get available ranked weeks")
     @GetMapping("/weeks")
     fun getWeeks(
         @RequestParam("season") season: Int,
         @RequestParam("pollType") pollType: String,
     ): ResponseEntity<List<Int>> = ResponseEntity.ok(rankingService.getAvailableWeeks(season, pollType))
 
-    @Operation(summary = "Upload rankings for a season, week, and poll type")
+    @Operation(summary = "Upload rankings")
     @PostMapping
     fun uploadRankings(
         @RequestBody request: UploadRankingsRequest,

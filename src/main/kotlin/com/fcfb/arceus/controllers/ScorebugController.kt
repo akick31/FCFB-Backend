@@ -21,23 +21,23 @@ import org.springframework.web.bind.annotation.RestController
 class ScorebugController(
     private var scorebugService: ScorebugService,
 ) {
-    @Operation(summary = "Generate scorebugs for all games")
+    @Operation(summary = "Generate all scorebugs")
     @PostMapping("/generate/all")
     fun generateAllScorebugs() = scorebugService.generateAllScorebugs()
 
-    @Operation(summary = "Get a scorebug for a game")
+    @Operation(summary = "Get game scorebug")
     @GetMapping("")
     fun getScorebugByGameId(
         @RequestParam("gameId") gameId: Int,
     ) = scorebugService.getScorebugByGameId(gameId)
 
-    @Operation(summary = "Get the latest scorebug for a game")
+    @Operation(summary = "Get latest game scorebug")
     @GetMapping("/latest")
     fun getLatestScorebugByGameId(
         @RequestParam("gameId") gameId: Int,
     ) = scorebugService.getLatestScorebugByGameId(gameId)
 
-    @Operation(summary = "Get scorebugs for a conference in a given week")
+    @Operation(summary = "Conference scorebugs by week")
     @GetMapping("/conference")
     fun getScorebugsForConference(
         @RequestParam("season") season: Int,
@@ -45,7 +45,7 @@ class ScorebugController(
         @RequestParam("conference") conference: String,
     ) = scorebugService.getScorebugsForConference(season, week, conference)
 
-    @Operation(summary = "Get scorebugs filtered by game criteria")
+    @Operation(summary = "Filter scorebugs by game")
     @GetMapping("/filtered")
     fun getFilteredScorebugs(
         @RequestParam(required = false) filters: List<GameFilter>?,

@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 class CoachTransactionLogController(
     private val coachTransactionLogService: CoachTransactionLogService,
 ) {
-    @Operation(summary = "List the entire coach transaction log")
+    @Operation(summary = "List coach transactions")
     @GetMapping
     fun getEntireCoachTransactionLog(): ResponseEntity<List<CoachTransactionLog>> =
         ResponseEntity.ok(

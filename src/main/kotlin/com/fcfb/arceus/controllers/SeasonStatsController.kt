@@ -19,7 +19,7 @@ class SeasonStatsController(
     private val seasonStatsService: SeasonStatsService,
     private val postseasonSeasonStatsService: PostseasonSeasonStatsService,
 ) {
-    @Operation(summary = "List season stats matching the given team and season filters")
+    @Operation(summary = "List season stats")
     @GetMapping
     fun getFilteredSeasonStats(
         @RequestParam(required = false) team: String?,
@@ -31,18 +31,18 @@ class SeasonStatsController(
         pageable = pageable,
     )
 
-    @Operation(summary = "Generate season stats for all teams")
+    @Operation(summary = "Generate all season stats")
     @PostMapping("/generate/all")
     fun generateAllSeasonStats() = seasonStatsService.generateAllSeasonStats()
 
-    @Operation(summary = "Generate season stats for a single team's season")
+    @Operation(summary = "Generate team season stats")
     @PostMapping("/generate/team-season")
     fun generateSeasonStatsForTeam(
         @RequestParam team: String,
         @RequestParam seasonNumber: Int,
     ) = seasonStatsService.generateSeasonStatsForTeam(team, seasonNumber)
 
-    @Operation(summary = "Get the leaderboard for a given season stat")
+    @Operation(summary = "Get season stat leaderboard")
     @GetMapping("/leaderboard")
     fun getLeaderboard(
         @RequestParam statName: String,
@@ -53,7 +53,7 @@ class SeasonStatsController(
         @RequestParam(defaultValue = "false") ascending: Boolean,
     ) = seasonStatsService.getLeaderboard(statName, seasonNumber, subdivision, conference, limit, ascending)
 
-    @Operation(summary = "List postseason season stats matching the given team and season filters")
+    @Operation(summary = "List postseason season stats")
     @GetMapping("/postseason")
     fun getFilteredPostseasonSeasonStats(
         @RequestParam(required = false) team: String?,
@@ -65,7 +65,7 @@ class SeasonStatsController(
         pageable = pageable,
     )
 
-    @Operation(summary = "Generate postseason season stats for all teams")
+    @Operation(summary = "Generate postseason season stats")
     @PostMapping("/postseason/generate/all")
     fun generateAllPostseasonSeasonStats() = postseasonSeasonStatsService.generateAllPostseasonSeasonStats()
 }

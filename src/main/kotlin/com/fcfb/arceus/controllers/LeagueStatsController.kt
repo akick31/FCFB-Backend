@@ -20,7 +20,7 @@ class LeagueStatsController(
     private val leagueStatsService: LeagueStatsService,
     private val postseasonLeagueStatsService: PostseasonLeagueStatsService,
 ) {
-    @Operation(summary = "Get league stats filtered by subdivision and season")
+    @Operation(summary = "Get league stats")
     @GetMapping
     fun getFilteredLeagueStats(
         @RequestParam(required = false) subdivision: Subdivision?,
@@ -32,11 +32,11 @@ class LeagueStatsController(
         pageable = pageable,
     )
 
-    @Operation(summary = "Generate league stats for all teams")
+    @Operation(summary = "Generate league stats")
     @PostMapping("/generate/all")
     fun generateAllLeagueStats() = leagueStatsService.generateAllLeagueStats()
 
-    @Operation(summary = "Get postseason league stats filtered by subdivision and season")
+    @Operation(summary = "Get postseason league stats")
     @GetMapping("/postseason")
     fun getFilteredPostseasonLeagueStats(
         @RequestParam(required = false) subdivision: Subdivision?,
@@ -48,7 +48,7 @@ class LeagueStatsController(
         pageable = pageable,
     )
 
-    @Operation(summary = "Generate postseason league stats for all teams")
+    @Operation(summary = "Generate postseason league stats")
     @PostMapping("/postseason/generate/all")
     fun generateAllPostseasonLeagueStats() = postseasonLeagueStatsService.generateAllPostseasonLeagueStats()
 }

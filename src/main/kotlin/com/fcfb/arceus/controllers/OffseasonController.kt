@@ -16,15 +16,15 @@ import org.springframework.web.bind.annotation.RestController
 class OffseasonController(
     private val offseasonService: OffseasonService,
 ) {
-    @Operation(summary = "Get the current offseason")
+    @Operation(summary = "Get current offseason")
     @GetMapping
     fun getCurrentOffseason(): ResponseEntity<Offseason?> = ResponseEntity.ok(offseasonService.getCurrentOffseason())
 
-    @Operation(summary = "Start the offseason now")
+    @Operation(summary = "Start offseason")
     @PostMapping("/start")
     fun startOffseason(): ResponseEntity<Offseason> = ResponseEntity.ok(offseasonService.startOffseasonNow())
 
-    @Operation(summary = "End the offseason now")
+    @Operation(summary = "End offseason")
     @PostMapping("/end")
     fun endOffseason(): ResponseEntity<Offseason?> = ResponseEntity.ok(offseasonService.endOffseasonNow())
 }

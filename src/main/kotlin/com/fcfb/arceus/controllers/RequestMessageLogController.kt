@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 class RequestMessageLogController(
     private val requestMessageLogService: RequestMessageLogService,
 ) {
-    @Operation(summary = "Log a request message")
+    @Operation(summary = "Log request message")
     @PostMapping("")
     fun logRequestMessage(
         @RequestBody requestMessageLog: RequestMessageLog,

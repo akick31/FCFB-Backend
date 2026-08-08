@@ -60,7 +60,7 @@ internal val PRIVILEGED_GAME_STATUS_GET_PATHS =
     arrayOf(
         "$FULL_PATH/game/request-message",
         "$FULL_PATH/game/platform",
-        "$FULL_PATH/game/week/status/*",
+        "$FULL_PATH/game/week/status",
         "$FULL_PATH/game/week/jobs",
     )
 
@@ -81,7 +81,6 @@ private val PUBLIC_READ_GET_PATHS =
         "$FULL_PATH/game-stats/by-season-week",
         "$FULL_PATH/game_writeup",
         "$FULL_PATH/game",
-        "$FULL_PATH/game/*",
         "$FULL_PATH/league-stats",
         "$FULL_PATH/playbook-stats",
         "$FULL_PATH/records",
@@ -128,72 +127,69 @@ internal val ADMIN_ONLY_PUT_PATHS =
         "$FULL_PATH/team",
         "$FULL_PATH/user/update",
         "$FULL_PATH/play",
-        "$FULL_PATH/conference/*",
-        "$FULL_PATH/conference/*/active",
+        "$FULL_PATH/conference",
+        "$FULL_PATH/conference/active",
     )
 
 internal val ADMIN_ONLY_DELETE_PATHS =
     arrayOf(
-        "$FULL_PATH/team/*",
-        "$FULL_PATH/user/*",
-        "$FULL_PATH/new_signups/*",
+        "$FULL_PATH/team",
+        "$FULL_PATH/user",
+        "$FULL_PATH/new_signups",
     )
 
 internal val PRIVILEGED_POST_PATHS =
     arrayOf(
-        "$FULL_PATH/user/*/api-key",
         "$FULL_PATH/play/submit_defense",
         "$FULL_PATH/game",
         "$FULL_PATH/game/overtime",
         "$FULL_PATH/game/week",
-        "$FULL_PATH/game/week/retry/*",
+        "$FULL_PATH/game/week/retry",
         "$FULL_PATH/game/end",
-        "$FULL_PATH/game/*/end",
         "$FULL_PATH/game/end-all",
         "$FULL_PATH/game/chew",
-        "$FULL_PATH/game/*/chew",
         "$FULL_PATH/game/chew-all",
         "$FULL_PATH/game/restart",
         "$FULL_PATH/team/hire",
         "$FULL_PATH/team/hire/interim",
         "$FULL_PATH/team/fire",
         "$FULL_PATH/team/fire/coach",
-        "$FULL_PATH/new_signups/*/hire",
+        "$FULL_PATH/new_signups/hire",
         "$FULL_PATH/request_message_log",
         "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/bulk",
         "$FULL_PATH/schedule/generate-conference",
-        "$FULL_PATH/schedule/generate-all-conferences/*",
-        "$FULL_PATH/schedule/generate-ooc/*",
+        "$FULL_PATH/schedule/generate-all-conferences",
+        "$FULL_PATH/schedule/generate-ooc",
         "$FULL_PATH/schedule/conference-rules",
         "$FULL_PATH/season",
-        "$FULL_PATH/season/*",
+        "$FULL_PATH/user/api-key/for-user",
     )
 
 internal val PRIVILEGED_PUT_PATHS =
     arrayOf(
         "$FULL_PATH/play/submit_offense",
         "$FULL_PATH/play/rollback",
-        "$FULL_PATH/game/*/coin-toss",
-        "$FULL_PATH/game/*/coin-toss-choice",
-        "$FULL_PATH/game/*/overtime-coin-toss-choice",
-        "$FULL_PATH/game/*/request-message",
-        "$FULL_PATH/game/*/last-message-timestamp",
-        "$FULL_PATH/game/*/sub",
-        "$FULL_PATH/game/*/close-game-pinged",
-        "$FULL_PATH/game/*/upset-alert-pinged",
+        "$FULL_PATH/game/coin-toss",
+        "$FULL_PATH/game/coin-toss-choice",
+        "$FULL_PATH/game/overtime-coin-toss-choice",
+        "$FULL_PATH/game/request-message",
+        "$FULL_PATH/game/last-message-timestamp",
+        "$FULL_PATH/game/sub",
+        "$FULL_PATH/game/close-game-pinged",
+        "$FULL_PATH/game/upset-alert-pinged",
         "$FULL_PATH/game",
-        "$FULL_PATH/schedule/*",
+        "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/move",
-        "$FULL_PATH/season/*/lock-schedule",
-        "$FULL_PATH/season/*/unlock-schedule",
+        "$FULL_PATH/season/lock-schedule",
+        "$FULL_PATH/season/unlock-schedule",
     )
 
 internal val PRIVILEGED_DELETE_PATHS =
     arrayOf(
         "$FULL_PATH/game",
-        "$FULL_PATH/schedule/*",
-        "$FULL_PATH/schedule/season/*",
+        "$FULL_PATH/schedule",
+        "$FULL_PATH/schedule/season",
     )
 
 @Configuration

@@ -29,9 +29,9 @@ class SeasonRecordService(
         val teamSeasons =
             gameStatsList
                 .filter { it.team != null }
-                .groupBy { it.team!! }
-                .map { (team, games) ->
-                    TeamSeason(team, games.first().season ?: 0, recordStatUtils.calculateSeasonValue(statName, games))
+                .groupBy { (it.team!!) to (it.season ?: 0) }
+                .map { (key, games) ->
+                    TeamSeason(key.first, key.second, recordStatUtils.calculateSeasonValue(statName, games))
                 }
 
         if (RecordScope.LEAGUE in scopes) {

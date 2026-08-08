@@ -96,10 +96,7 @@ class RecordService(
         val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
 
         generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.ALL)
-
-        for (season in availableSeasons) {
-            generateRecordsForSeason(season, completedGameIds, teamConference, allGameStats, gamesById)
-        }
+        generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.ALL)
 
         logRecordCountBreakdown("Completed generation of all records", RecordScope.ALL)
     }
@@ -237,34 +234,22 @@ class RecordService(
         val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
 
         generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.TEAM_AND_CONFERENCE)
+        generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.TEAM_AND_CONFERENCE)
 
-        for (season in availableSeasons) {
-            generateRecordsForSeason(
-                season,
-                completedGameIds,
-                teamConference,
-                allGameStats,
-                gamesById,
-                RecordScope.TEAM_AND_CONFERENCE,
-            )
-        }
         logRecordCountBreakdown("Completed generation of team and conference records", RecordScope.TEAM_AND_CONFERENCE)
     }
 
-    private fun generateRecordsForSeason(
-        seasonNumber: Int,
+    /** Records are all-time bests, so candidates must be compared across all of history in one pass, not once per season. */
+    private fun generateHistoryWideRecords(
+        allGameStats: List<GameStats>,
         completedGameIds: Set<Int>,
         teamConference: Map<String, String?>,
-        allGameStats: List<GameStats>,
         gamesById: Map<Int, Game>,
-        scopes: Set<RecordScope> = RecordScope.ALL,
+        scopes: Set<RecordScope>,
     ) {
-        Logger.info("Generating records for season $seasonNumber")
-
-        val allSeasonGameStats = allGameStats.filter { it.season == seasonNumber }
-        val completeSeasonGameStats = allSeasonGameStats.filter { it.gameId in completedGameIds }
-        val regularSeasonGameStats = allSeasonGameStats.filter { (it.week ?: 0) < POSTSEASON_START_WEEK }
-        val postseasonGameStats = allSeasonGameStats.filter { (it.week ?: 0) >= POSTSEASON_START_WEEK }
+        val completeGameStats = allGameStats.filter { it.gameId in completedGameIds }
+        val regularSeasonGameStats = allGameStats.filter { (it.week ?: 0) < POSTSEASON_START_WEEK }
+        val postseasonGameStats = allGameStats.filter { (it.week ?: 0) >= POSTSEASON_START_WEEK }
         val completePostseasonGameStats = postseasonGameStats.filter { it.gameId in completedGameIds }
         val generatePostseason = RecordScope.LEAGUE in scopes
         val postseasonScopes = setOf(RecordScope.LEAGUE)
@@ -274,11 +259,11 @@ class RecordService(
                 recordStatUtils.againstBaseStat.containsKey(it) || recordStatUtils.generalRecordStats.contains(it)
             }
         statsToProcess.forEachIndexed { index, stat ->
-            Logger.info("Generating $stat records for season $seasonNumber (${index + 1}/${statsToProcess.size})")
+            Logger.info("Generating $stat records (${index + 1}/${statsToProcess.size})")
 
             if (recordStatUtils.gameOnlyStats.contains(stat)) {
                 recordTypesFor(stat, RecordType.SINGLE_GAME, RecordType.SINGLE_GAME_LOWEST).forEach { type ->
-                    gameRecordService.generateGameRecord(stat, completeSeasonGameStats, type, gamesById, teamConference, scopes)
+                    gameRecordService.generateGameRecord(stat, completeGameStats, type, gamesById, teamConference, scopes)
                 }
                 if (generatePostseason) {
                     recordTypesFor(stat, RecordType.SINGLE_POSTSEASON_GAME, RecordType.SINGLE_POSTSEASON_GAME_LOWEST).forEach { type ->
@@ -296,7 +281,7 @@ class RecordService(
             }
 
             recordTypesFor(stat, RecordType.SINGLE_GAME, RecordType.SINGLE_GAME_LOWEST).forEach { type ->
-                gameRecordService.generateGameRecord(stat, completeSeasonGameStats, type, gamesById, teamConference, scopes)
+                gameRecordService.generateGameRecord(stat, completeGameStats, type, gamesById, teamConference, scopes)
             }
             if (generatePostseason) {
                 recordTypesFor(stat, RecordType.SINGLE_POSTSEASON_GAME, RecordType.SINGLE_POSTSEASON_GAME_LOWEST).forEach { type ->
@@ -321,16 +306,16 @@ class RecordService(
             }
         }
 
-        Logger.info("Generating defense (against) records for season $seasonNumber")
+        Logger.info("Generating defense (against) records")
         againstRecordService.generateAgainstRecords(
-            allSeasonGameStats,
+            allGameStats,
             regularSeasonGameStats,
             postseasonGameStats,
-            completeSeasonGameStats,
+            completeGameStats,
             completePostseasonGameStats,
             teamConference,
             scopes,
         )
-        Logger.info("Completed generating records for season $seasonNumber")
+        Logger.info("Completed generating defense (against) records")
     }
 }

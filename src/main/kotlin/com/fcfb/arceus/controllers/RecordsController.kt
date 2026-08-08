@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 class RecordsController(
     private val recordService: RecordService,
 ) {
-    @Operation(summary = "Get records filtered by season, type, name, and scope")
+    @Operation(summary = "Get filtered records")
     @GetMapping
     fun getFilteredRecords(
         @RequestParam(required = false) season: Int?,
@@ -42,7 +42,7 @@ class RecordsController(
     @PostMapping("/generate/all")
     fun generateAllRecords() = recordService.generateAllRecords()
 
-    @Operation(summary = "Generate team and conference records")
+    @Operation(summary = "Generate team/conference records")
     @PostMapping("/generate/teams-and-conferences")
     fun generateTeamAndConferenceRecords() = recordService.generateTeamAndConferenceRecords()
 }

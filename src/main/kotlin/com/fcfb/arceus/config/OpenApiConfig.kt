@@ -20,6 +20,34 @@ private val restrictedPathsByMethod =
         HttpMethod.DELETE to (ADMIN_ONLY_DELETE_PATHS + PRIVILEGED_DELETE_PATHS),
     )
 
+private val docsExcludedPathsByMethod =
+    mapOf(
+        HttpMethod.GET to
+            arrayOf(
+                "$FULL_PATH/auth/verify-email",
+                "$FULL_PATH/discord/redirect",
+                "$FULL_PATH/season/**",
+                "$FULL_PATH/offseason/**",
+            ),
+        HttpMethod.POST to
+            arrayOf(
+                "$FULL_PATH/auth/**",
+                "$FULL_PATH/internal/frontend-errors",
+                "$FULL_PATH/offseason/**",
+                "$FULL_PATH/season/**",
+                "$FULL_PATH/user/validate",
+                "$FULL_PATH/user/api-key",
+                "$FULL_PATH/user/api-key/revoke",
+            ),
+        HttpMethod.PUT to
+            arrayOf(
+                "$FULL_PATH/season/**",
+                "$FULL_PATH/user/update/email",
+                "$FULL_PATH/user/update/username",
+                "$FULL_PATH/user/update/password",
+            ),
+    )
+
 private fun isRestricted(
     method: PathItem.HttpMethod,
     path: String,
@@ -28,15 +56,24 @@ private fun isRestricted(
     return patterns.any { pathMatcher.match(it, path) }
 }
 
+private fun isDocsExcluded(
+    method: PathItem.HttpMethod,
+    path: String,
+): Boolean {
+    val patterns = docsExcludedPathsByMethod[HttpMethod.valueOf(method.name)] ?: return false
+    return patterns.any { pathMatcher.match(it, path) }
+}
+
 private fun filterOperations(
     openApi: OpenAPI,
-    keepRestricted: Boolean,
+    includeRestricted: Boolean,
 ) {
     val paths = openApi.paths ?: return
     val emptyPaths = mutableListOf<String>()
     for ((path, pathItem) in paths) {
         pathItem.readOperationsMap().keys.forEach { method ->
-            if (isRestricted(method, path) != keepRestricted) {
+            val keep = !isDocsExcluded(method, path) && (includeRestricted || !isRestricted(method, path))
+            if (!keep) {
                 pathItem.operation(method, null)
             }
         }
@@ -63,7 +100,7 @@ open class OpenApiConfig {
         GroupedOpenApi.builder()
             .group("public")
             .pathsToMatch("$FULL_PATH/**")
-            .addOpenApiCustomiser { openApi -> filterOperations(openApi, keepRestricted = false) }
+            .addOpenApiCustomiser { openApi -> filterOperations(openApi, includeRestricted = false) }
             .build()
 
     @Bean
@@ -71,6 +108,6 @@ open class OpenApiConfig {
         GroupedOpenApi.builder()
             .group("admin")
             .pathsToMatch("$FULL_PATH/**")
-            .addOpenApiCustomiser { openApi -> filterOperations(openApi, keepRestricted = true) }
+            .addOpenApiCustomiser { openApi -> filterOperations(openApi, includeRestricted = true) }
             .build()
 }
