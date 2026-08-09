@@ -27,7 +27,7 @@ class TeamController(
     ) = teamService.getTeamById(teamId)
 
     @Operation(summary = "List all active teams")
-    @GetMapping("")
+    @GetMapping("/active")
     fun getAllTeams() = teamService.getAllTeams()
 
     @Operation(summary = "List all teams")

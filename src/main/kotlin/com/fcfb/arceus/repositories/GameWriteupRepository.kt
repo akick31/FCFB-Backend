@@ -18,4 +18,7 @@ interface GameWriteupRepository : CrudRepository<GameWriteup, Int> {
     fun findByPlayCall(playCall: String): List<GameWriteup>
 
     fun findByMessage(message: String): List<GameWriteup>
+
+    @Query(value = "SELECT DISTINCT g.scenario FROM game_writeup g ORDER BY g.scenario", nativeQuery = true)
+    fun findDistinctScenarios(): List<String>
 }

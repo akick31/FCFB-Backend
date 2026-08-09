@@ -41,7 +41,7 @@ class UserController(
     ) = userService.getUserByTeam(team)
 
     @Operation(summary = "List users")
-    @GetMapping("")
+    @GetMapping("/all")
     fun getAllUsers() = userService.getAllUsers()
 
     @Operation(summary = "List free agents")

@@ -34,7 +34,7 @@ class GameController(
     private val gameService: GameService,
 ) {
     @Operation(summary = "Get ongoing game by ID")
-    @GetMapping(params = ["id"])
+    @GetMapping("/ongoing")
     fun getOngoingGameById(
         @RequestParam("id") id: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.getGameById(id))

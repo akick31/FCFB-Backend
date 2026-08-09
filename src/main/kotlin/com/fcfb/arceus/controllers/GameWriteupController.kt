@@ -20,4 +20,8 @@ class GameWriteupController(
         @RequestParam scenario: String,
         @RequestParam playCall: String,
     ) = gameMessagesService.getGameMessageByScenario(scenario, playCall)
+
+    @Operation(summary = "List writeup scenarios")
+    @GetMapping("/scenarios")
+    fun getScenarios() = gameMessagesService.getDistinctScenarios()
 }
