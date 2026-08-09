@@ -40,7 +40,7 @@ class GameStatsController(
     @PostMapping("/generate/all")
     fun generateAllGameStats() = gameStatsService.generateAllGameStats()
 
-    @Operation(summary = "Get team Elo history")
+    @Operation(summary = "Get team ELO history")
     @GetMapping("/elo-history")
     fun getEloHistory(
         @RequestParam team: String,

@@ -22,7 +22,7 @@ class VegasOddsController(
         @RequestParam awayTeamName: String,
     ) = vegasOddsService.getVegasOddsByTeams(homeTeamName, awayTeamName, teamService)
 
-    @Operation(summary = "Vegas odds from Elo ratings")
+    @Operation(summary = "Vegas odds from ELO ratings")
     @GetMapping("/elo")
     fun getVegasOddsByElo(
         @RequestParam homeElo: Double,
