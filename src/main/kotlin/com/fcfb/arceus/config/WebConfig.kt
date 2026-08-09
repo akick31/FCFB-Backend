@@ -64,34 +64,6 @@ internal val PRIVILEGED_GAME_STATUS_GET_PATHS =
         "$FULL_PATH/game/week/jobs",
     )
 
-private val PUBLIC_READ_GET_PATHS =
-    arrayOf(
-        "$FULL_PATH/chart/score",
-        "$FULL_PATH/chart/score/matchup",
-        "$FULL_PATH/chart/win-probability",
-        "$FULL_PATH/chart/win-probability/matchup",
-        "$FULL_PATH/chart/elo",
-        "$FULL_PATH/coach_transaction_log",
-        "$FULL_PATH/coach-stats",
-        "$FULL_PATH/conference",
-        "$FULL_PATH/conference-stats",
-        "$FULL_PATH/team-season-conference",
-        "$FULL_PATH/game-stats",
-        "$FULL_PATH/game-stats/elo-history",
-        "$FULL_PATH/game-stats/by-season-week",
-        "$FULL_PATH/game_writeup",
-        "$FULL_PATH/game",
-        "$FULL_PATH/league-stats",
-        "$FULL_PATH/playbook-stats",
-        "$FULL_PATH/records",
-        "$FULL_PATH/season-stats",
-        "$FULL_PATH/season-stats/leaderboard",
-        "$FULL_PATH/user",
-        "$FULL_PATH/user/name",
-        "$FULL_PATH/user/team",
-        "$FULL_PATH/user/free_agents",
-    )
-
 internal val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
 
 internal val ADMIN_ONLY_POST_PATHS =
@@ -242,16 +214,6 @@ open class WebConfig(
             .antMatchers(HttpMethod.GET, PUBLIC_API_DOCS_PATH).permitAll()
             .antMatchers(HttpMethod.GET, *ADMIN_API_DOCS_PATHS).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.GET, *PRIVILEGED_GAME_STATUS_GET_PATHS).hasAnyRole(*PRIVILEGED_ROLES)
-            .antMatchers(HttpMethod.GET, *PUBLIC_READ_GET_PATHS).permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/play/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/schedule/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/scorebug/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/season/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/offseason/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/ranking", "$FULL_PATH/ranking/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/team/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/vegas-odds/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/win-probability/**").permitAll()
             .antMatchers(HttpMethod.GET, *ADMIN_ONLY_GET_PATHS).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.POST, *ADMIN_ONLY_POST_PATHS).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.PUT, *ADMIN_ONLY_PUT_PATHS).hasAnyRole(*ADMIN_ROLES)
