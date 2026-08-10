@@ -7,8 +7,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    @ExceptionHandler(CurrentSeasonNotFoundException::class)
+    fun handleCurrentSeasonNotFound(e: Exception): ResponseEntity<Map<String, String>> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to (e.message ?: HttpStatus.NOT_FOUND.reasonPhrase)))
+
     @ExceptionHandler(
-        CurrentSeasonNotFoundException::class,
         CurrentWeekNotFoundException::class,
         DiscordUserNotFoundException::class,
         GameNotFoundException::class,
