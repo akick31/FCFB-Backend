@@ -214,6 +214,8 @@ class SeasonService(
                         newGame.gameType = GameType.BOWL
                         newGame.postseasonGameName = sourceGame.postseasonGameName
                         newGame.postseasonGameLogo = sourceGame.postseasonGameLogo
+                        newGame.neutralSite = true
+                        newGame.venue = sourceGame.venue
                         newGame.started = false
                         newGame.finished = false
                         newGame

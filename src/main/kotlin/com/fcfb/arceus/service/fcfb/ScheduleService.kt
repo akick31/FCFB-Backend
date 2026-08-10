@@ -11,10 +11,13 @@ import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.dto.response.ScheduleValidationResult
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
+import com.fcfb.arceus.model.BowlVenue
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Schedule
+import com.fcfb.arceus.repositories.BowlVenueRepository
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
+import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.fcfb.schedule.ConferenceRulesService
 import com.fcfb.arceus.service.fcfb.schedule.ConferenceScheduleGenerationService
 import com.fcfb.arceus.service.fcfb.schedule.OutOfConferenceScheduleGenerationService
@@ -23,11 +26,17 @@ import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.ScheduleNotFoundException
 import org.springframework.stereotype.Service
 
+private val NEUTRAL_SITE_GAME_TYPES =
+    setOf(GameType.PLAYOFFS, GameType.NATIONAL_CHAMPIONSHIP, GameType.CONFERENCE_CHAMPIONSHIP, GameType.BOWL)
+
 @Service
 open class ScheduleService(
     private val seasonService: SeasonService,
     private val scheduleRepository: ScheduleRepository,
     private val gameRepository: GameRepository,
+    private val teamRepository: TeamRepository,
+    private val bowlVenueRepository: BowlVenueRepository,
+    private val conferenceService: ConferenceService,
     private val conferenceScheduleGenerationService: ConferenceScheduleGenerationService,
     private val conferenceRulesService: ConferenceRulesService,
     private val outOfConferenceScheduleGenerationService: OutOfConferenceScheduleGenerationService,
@@ -38,6 +47,25 @@ open class ScheduleService(
             throw IllegalStateException("Schedule for season $season is locked and cannot be modified")
         }
     }
+
+    private fun resolveNeutralSite(entry: ScheduleEntry): Boolean = entry.gameType in NEUTRAL_SITE_GAME_TYPES || entry.neutralSite
+
+    private fun saveVenueDefault(entry: ScheduleEntry) {
+        val venue = entry.venue?.takeIf { it.isNotBlank() } ?: return
+        when (entry.gameType) {
+            GameType.BOWL -> {
+                val name = entry.postseasonGameName?.trim()?.takeIf { it.isNotBlank() } ?: return
+                bowlVenueRepository.save(BowlVenue(name, venue))
+            }
+            GameType.CONFERENCE_CHAMPIONSHIP -> {
+                val conferenceCode = teamRepository.getTeamByName(entry.homeTeam)?.conference ?: return
+                conferenceService.updateChampionshipVenue(conferenceCode, venue)
+            }
+            else -> {}
+        }
+    }
+
+    fun getBowlVenue(name: String): String? = bowlVenueRepository.findById(name.trim()).orElse(null)?.venue
 
     fun getGamesToStartBySeasonAndWeek(
         season: Int,
@@ -124,14 +152,7 @@ open class ScheduleService(
     }
 
     fun createScheduleEntry(entry: ScheduleEntry): Schedule {
-        val isPostseason =
-            entry.gameType in
-                listOf(
-                    GameType.PLAYOFFS,
-                    GameType.NATIONAL_CHAMPIONSHIP,
-                    GameType.CONFERENCE_CHAMPIONSHIP,
-                    GameType.BOWL,
-                )
+        val isPostseason = entry.gameType in NEUTRAL_SITE_GAME_TYPES
         if (!isPostseason) {
             checkScheduleLock(entry.season)
         }
@@ -179,7 +200,10 @@ open class ScheduleService(
         schedule.playoffAwaySeed = entry.playoffAwaySeed
         schedule.postseasonGameName = entry.postseasonGameName
         schedule.postseasonGameLogo = entry.postseasonGameLogo
+        schedule.neutralSite = resolveNeutralSite(entry)
+        schedule.venue = entry.venue
         val saved = scheduleRepository.save(schedule)
+        saveVenueDefault(entry)
         Logger.info("Created schedule entry: ${entry.homeTeam} vs ${entry.awayTeam} (Season ${entry.season}, Week ${entry.week})")
         return saved
     }
@@ -246,9 +270,12 @@ open class ScheduleService(
                 schedule.playoffAwaySeed = entry.playoffAwaySeed
                 schedule.postseasonGameName = entry.postseasonGameName
                 schedule.postseasonGameLogo = entry.postseasonGameLogo
+                schedule.neutralSite = resolveNeutralSite(entry)
+                schedule.venue = entry.venue
                 schedule
             }
         val saved = scheduleRepository.saveAll(schedules).toList()
+        validEntries.forEach { saveVenueDefault(it) }
         Logger.info("Created ${saved.size} schedule entries in bulk for season ${entries.firstOrNull()?.season}")
         return saved
     }
@@ -257,14 +284,7 @@ open class ScheduleService(
         id: Int,
         entry: ScheduleEntry,
     ): Schedule {
-        val isPostseason =
-            entry.gameType in
-                listOf(
-                    GameType.PLAYOFFS,
-                    GameType.NATIONAL_CHAMPIONSHIP,
-                    GameType.CONFERENCE_CHAMPIONSHIP,
-                    GameType.BOWL,
-                )
+        val isPostseason = entry.gameType in NEUTRAL_SITE_GAME_TYPES
         if (!isPostseason) {
             checkScheduleLock(entry.season)
         }
@@ -294,7 +314,10 @@ open class ScheduleService(
         schedule.playoffAwaySeed = entry.playoffAwaySeed
         schedule.postseasonGameName = entry.postseasonGameName
         schedule.postseasonGameLogo = entry.postseasonGameLogo
+        schedule.neutralSite = resolveNeutralSite(entry)
+        schedule.venue = entry.venue
         val saved = scheduleRepository.save(schedule)
+        saveVenueDefault(entry)
         Logger.info("Updated schedule entry $id: ${entry.homeTeam} vs ${entry.awayTeam}")
         return saved
     }
@@ -302,14 +325,7 @@ open class ScheduleService(
     fun deleteScheduleEntry(id: Int) {
         val existing = scheduleRepository.findById(id).orElse(null)
         if (existing != null) {
-            val isPostseason =
-                existing.gameType in
-                    listOf(
-                        GameType.PLAYOFFS,
-                        GameType.NATIONAL_CHAMPIONSHIP,
-                        GameType.CONFERENCE_CHAMPIONSHIP,
-                        GameType.BOWL,
-                    )
+            val isPostseason = existing.gameType in NEUTRAL_SITE_GAME_TYPES
             if (!isPostseason) {
                 checkScheduleLock(existing.season)
             }

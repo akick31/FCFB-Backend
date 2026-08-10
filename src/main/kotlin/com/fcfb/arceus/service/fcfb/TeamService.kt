@@ -157,6 +157,7 @@ class TeamService(
                 1500.0,
                 team.logoDark,
                 team.division,
+                team.stadium,
             ),
         )
     }
@@ -173,6 +174,7 @@ class TeamService(
             logo = team.logo
             logoDark = team.logoDark
             scorebugLogo = team.scorebugLogo
+            stadium = team.stadium
             coachUsernames = team.coachUsernames
             coachNames = team.coachNames
             coachDiscordTags = team.coachDiscordTags

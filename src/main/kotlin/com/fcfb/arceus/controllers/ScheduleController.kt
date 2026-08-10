@@ -36,6 +36,12 @@ class ScheduleController(
         @RequestParam("team") team: String,
     ) = scheduleService.getTeamOpponent(team)
 
+    @Operation(summary = "Get saved bowl venue")
+    @GetMapping("/bowl-venue")
+    fun getBowlVenue(
+        @RequestParam("name") name: String,
+    ): ResponseEntity<String?> = ResponseEntity.ok(scheduleService.getBowlVenue(name))
+
     @Operation(summary = "Get team season schedule")
     @GetMapping("/season", params = ["team"])
     fun getScheduleBySeasonAndTeam(

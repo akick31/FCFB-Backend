@@ -48,6 +48,10 @@ class Team {
     @Column(name = "scorebug_logo")
     var scorebugLogo: String? = null
 
+    @Basic
+    @Column(name = "stadium")
+    var stadium: String? = null
+
     @Type(type = "json")
     @Column(name = "coach_usernames", columnDefinition = "longtext")
     var coachUsernames: MutableList<String>? = mutableListOf()
@@ -220,9 +224,11 @@ class Team {
         overallElo: Double,
         logoDark: String? = null,
         division: String? = null,
+        stadium: String? = null,
     ) {
         this.logo = logo
         this.logoDark = logoDark
+        this.stadium = stadium
         this.scorebugLogo = scorebugLogo
         this.coachUsernames = coachUsernames
         this.coachNames = coachNames

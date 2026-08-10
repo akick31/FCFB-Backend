@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.http.converter.HttpMessageConverter
+import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
@@ -250,5 +252,9 @@ open class MvcConfig(
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(requestLoggingInterceptor)
             .excludePathPatterns("/actuator/**", "/**/health")
+    }
+
+    override fun extendMessageConverters(converters: MutableList<HttpMessageConverter<*>>) {
+        converters.removeIf { it is KotlinSerializationJsonHttpMessageConverter }
     }
 }

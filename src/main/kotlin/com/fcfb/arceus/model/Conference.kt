@@ -33,6 +33,10 @@ class Conference {
     @Column(name = "active", columnDefinition = "tinyint(1)")
     var active: Boolean = true
 
+    @Basic
+    @Column(name = "championship_venue")
+    var championshipVenue: String? = null
+
     constructor(
         code: String,
         label: String,
