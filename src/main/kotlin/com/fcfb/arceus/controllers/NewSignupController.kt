@@ -3,10 +3,10 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.service.fcfb.NewSignupService
 import com.fcfb.arceus.service.fcfb.TeamService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -19,17 +19,20 @@ class NewSignupController(
     private var newSignupService: NewSignupService,
     private val teamService: TeamService,
 ) {
+    @Operation(summary = "List pending signups")
     @GetMapping("")
     fun getNewSignups() = newSignupService.getNewSignups()
 
-    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete signup")
+    @DeleteMapping("")
     fun deleteNewSignup(
-        @PathVariable id: Long,
+        @RequestParam id: Long,
     ) = newSignupService.deleteNewSignupById(id)
 
-    @PostMapping("/{id}/hire")
+    @Operation(summary = "Hire coach to team")
+    @PostMapping("/hire")
     suspend fun hireFromSignup(
-        @PathVariable id: Long,
+        @RequestParam id: Long,
         @RequestParam team: String,
         @RequestParam coachPosition: CoachPosition,
         @RequestParam processedBy: String,

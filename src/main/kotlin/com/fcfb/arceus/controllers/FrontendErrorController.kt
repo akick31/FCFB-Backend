@@ -3,6 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.dto.request.FrontendErrorRequest
 import com.fcfb.arceus.util.InMemoryRateLimiter
 import com.fcfb.arceus.util.Logger
+import io.swagger.v3.oas.annotations.Operation
 import org.slf4j.MDC
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -22,6 +23,7 @@ private const val WINDOW_SECONDS = 60L
 class FrontendErrorController(
     private val rateLimiter: InMemoryRateLimiter,
 ) {
+    @Operation(summary = "Report frontend error")
     @PostMapping("")
     fun reportError(
         @RequestBody request: FrontendErrorRequest,

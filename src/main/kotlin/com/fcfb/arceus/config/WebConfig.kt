@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -46,46 +47,26 @@ private val PRE_AUTH_GET_PATHS =
 private const val ACTUATOR_HEALTH_PATH = "/actuator/health"
 private const val ACTUATOR_WILDCARD_PATH = "/actuator/**"
 
-private val PRIVILEGED_GAME_STATUS_GET_PATHS =
+private val PUBLIC_API_DOCS_PATH = "$FULL_PATH/api-docs/public"
+private val ADMIN_API_DOCS_PATHS =
+    arrayOf(
+        "$FULL_PATH/api-docs",
+        "$FULL_PATH/api-docs/admin",
+        "$FULL_PATH/api-docs/admin/**",
+        "$FULL_PATH/api-docs/swagger-config",
+    )
+
+internal val PRIVILEGED_GAME_STATUS_GET_PATHS =
     arrayOf(
         "$FULL_PATH/game/request-message",
         "$FULL_PATH/game/platform",
-        "$FULL_PATH/game/week/status/*",
+        "$FULL_PATH/game/week/status",
         "$FULL_PATH/game/week/jobs",
     )
 
-private val PUBLIC_READ_GET_PATHS =
-    arrayOf(
-        "$FULL_PATH/chart/score",
-        "$FULL_PATH/chart/score/matchup",
-        "$FULL_PATH/chart/win-probability",
-        "$FULL_PATH/chart/win-probability/matchup",
-        "$FULL_PATH/chart/elo",
-        "$FULL_PATH/coach_transaction_log",
-        "$FULL_PATH/coach-stats",
-        "$FULL_PATH/conference",
-        "$FULL_PATH/conference-stats",
-        "$FULL_PATH/team-season-conference",
-        "$FULL_PATH/game-stats",
-        "$FULL_PATH/game-stats/elo-history",
-        "$FULL_PATH/game-stats/by-season-week",
-        "$FULL_PATH/game_writeup",
-        "$FULL_PATH/game",
-        "$FULL_PATH/game/*",
-        "$FULL_PATH/league-stats",
-        "$FULL_PATH/playbook-stats",
-        "$FULL_PATH/records",
-        "$FULL_PATH/season-stats",
-        "$FULL_PATH/season-stats/leaderboard",
-        "$FULL_PATH/user",
-        "$FULL_PATH/user/name",
-        "$FULL_PATH/user/team",
-        "$FULL_PATH/user/free_agents",
-    )
+internal val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
 
-private val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
-
-private val ADMIN_ONLY_POST_PATHS =
+internal val ADMIN_ONLY_POST_PATHS =
     arrayOf(
         "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats/generate/all",
@@ -113,77 +94,74 @@ private val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/user/hash_emails",
     )
 
-private val ADMIN_ONLY_PUT_PATHS =
+internal val ADMIN_ONLY_PUT_PATHS =
     arrayOf(
         "$FULL_PATH/team",
         "$FULL_PATH/user/update",
         "$FULL_PATH/play",
-        "$FULL_PATH/conference/*",
-        "$FULL_PATH/conference/*/active",
+        "$FULL_PATH/conference",
+        "$FULL_PATH/conference/active",
     )
 
-private val ADMIN_ONLY_DELETE_PATHS =
+internal val ADMIN_ONLY_DELETE_PATHS =
     arrayOf(
-        "$FULL_PATH/team/*",
-        "$FULL_PATH/user/*",
-        "$FULL_PATH/new_signups/*",
+        "$FULL_PATH/team",
+        "$FULL_PATH/user",
+        "$FULL_PATH/new_signups",
     )
 
-private val PRIVILEGED_POST_PATHS =
+internal val PRIVILEGED_POST_PATHS =
     arrayOf(
-        "$FULL_PATH/user/*/api-key",
         "$FULL_PATH/play/submit_defense",
         "$FULL_PATH/game",
         "$FULL_PATH/game/overtime",
         "$FULL_PATH/game/week",
-        "$FULL_PATH/game/week/retry/*",
+        "$FULL_PATH/game/week/retry",
         "$FULL_PATH/game/end",
-        "$FULL_PATH/game/*/end",
         "$FULL_PATH/game/end-all",
         "$FULL_PATH/game/chew",
-        "$FULL_PATH/game/*/chew",
         "$FULL_PATH/game/chew-all",
         "$FULL_PATH/game/restart",
         "$FULL_PATH/team/hire",
         "$FULL_PATH/team/hire/interim",
         "$FULL_PATH/team/fire",
         "$FULL_PATH/team/fire/coach",
-        "$FULL_PATH/new_signups/*/hire",
+        "$FULL_PATH/new_signups/hire",
         "$FULL_PATH/request_message_log",
         "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/bulk",
         "$FULL_PATH/schedule/generate-conference",
-        "$FULL_PATH/schedule/generate-all-conferences/*",
-        "$FULL_PATH/schedule/generate-ooc/*",
+        "$FULL_PATH/schedule/generate-all-conferences",
+        "$FULL_PATH/schedule/generate-ooc",
         "$FULL_PATH/schedule/conference-rules",
         "$FULL_PATH/season",
-        "$FULL_PATH/season/*",
+        "$FULL_PATH/user/api-key/for-user",
     )
 
-private val PRIVILEGED_PUT_PATHS =
+internal val PRIVILEGED_PUT_PATHS =
     arrayOf(
         "$FULL_PATH/play/submit_offense",
         "$FULL_PATH/play/rollback",
-        "$FULL_PATH/game/*/coin-toss",
-        "$FULL_PATH/game/*/coin-toss-choice",
-        "$FULL_PATH/game/*/overtime-coin-toss-choice",
-        "$FULL_PATH/game/*/request-message",
-        "$FULL_PATH/game/*/last-message-timestamp",
-        "$FULL_PATH/game/*/sub",
-        "$FULL_PATH/game/*/close-game-pinged",
-        "$FULL_PATH/game/*/upset-alert-pinged",
+        "$FULL_PATH/game/coin-toss",
+        "$FULL_PATH/game/coin-toss-choice",
+        "$FULL_PATH/game/overtime-coin-toss-choice",
+        "$FULL_PATH/game/request-message",
+        "$FULL_PATH/game/last-message-timestamp",
+        "$FULL_PATH/game/sub",
+        "$FULL_PATH/game/close-game-pinged",
+        "$FULL_PATH/game/upset-alert-pinged",
         "$FULL_PATH/game",
-        "$FULL_PATH/schedule/*",
+        "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/move",
-        "$FULL_PATH/season/*/lock-schedule",
-        "$FULL_PATH/season/*/unlock-schedule",
+        "$FULL_PATH/season/lock-schedule",
+        "$FULL_PATH/season/unlock-schedule",
     )
 
-private val PRIVILEGED_DELETE_PATHS =
+internal val PRIVILEGED_DELETE_PATHS =
     arrayOf(
         "$FULL_PATH/game",
-        "$FULL_PATH/schedule/*",
-        "$FULL_PATH/schedule/season/*",
+        "$FULL_PATH/schedule",
+        "$FULL_PATH/schedule/season",
     )
 
 @Configuration
@@ -233,17 +211,9 @@ open class WebConfig(
             .antMatchers(HttpMethod.GET, *PRE_AUTH_GET_PATHS).permitAll()
             .antMatchers(HttpMethod.GET, ACTUATOR_HEALTH_PATH).permitAll()
             .antMatchers(ACTUATOR_WILDCARD_PATH).hasAnyRole(*ADMIN_ROLES)
+            .antMatchers(HttpMethod.GET, PUBLIC_API_DOCS_PATH).permitAll()
+            .antMatchers(HttpMethod.GET, *ADMIN_API_DOCS_PATHS).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.GET, *PRIVILEGED_GAME_STATUS_GET_PATHS).hasAnyRole(*PRIVILEGED_ROLES)
-            .antMatchers(HttpMethod.GET, *PUBLIC_READ_GET_PATHS).permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/play/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/schedule/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/scorebug/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/season/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/offseason/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/ranking", "$FULL_PATH/ranking/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/team/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/vegas-odds/**").permitAll()
-            .antMatchers(HttpMethod.GET, "$FULL_PATH/win-probability/**").permitAll()
             .antMatchers(HttpMethod.GET, *ADMIN_ONLY_GET_PATHS).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.POST, *ADMIN_ONLY_POST_PATHS).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.PUT, *ADMIN_ONLY_PUT_PATHS).hasAnyRole(*ADMIN_ROLES)
@@ -269,6 +239,12 @@ open class MvcConfig(
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         registry.addResourceHandler("/images/**")
             .addResourceLocations("file:$imagesPath/")
+    }
+
+    override fun addCorsMappings(registry: CorsRegistry) {
+        registry.addMapping("$FULL_PATH/api-docs/**")
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "HEAD", "OPTIONS")
     }
 
     override fun addInterceptors(registry: InterceptorRegistry) {

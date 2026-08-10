@@ -10,7 +10,9 @@ import javax.servlet.http.HttpServletResponse
 
 private const val START_TIME_ATTR = "com.fcfb.arceus.requestStartTime"
 private const val ANONYMOUS_PRINCIPAL = "anonymousUser"
+private const val CLIENT_NAME_HEADER = "X-Client-Name"
 private val EXCLUDED_ROLES = setOf("ROLE_SERVICE", "ROLE_WEBSITE")
+private val EXCLUDED_CLIENT_NAMES = setOf("fcfb-website")
 private val SENSITIVE_PARAM_KEYS = listOf("token", "code", "secret", "password", "key", "number")
 
 @Component
@@ -35,6 +37,7 @@ class RequestLoggingInterceptor : HandlerInterceptor {
         val auth = SecurityContextHolder.getContext().authentication
         val role = auth?.authorities?.firstOrNull()?.authority ?: "-"
         if (role in EXCLUDED_ROLES) return
+        if (request.getHeader(CLIENT_NAME_HEADER) in EXCLUDED_CLIENT_NAMES) return
 
         val start = request.getAttribute(START_TIME_ATTR) as? Long
         val durationMs = if (start != null) System.currentTimeMillis() - start else -1

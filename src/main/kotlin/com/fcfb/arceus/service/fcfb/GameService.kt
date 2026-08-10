@@ -1110,10 +1110,10 @@ class GameService(
     }
 
     fun runCoinToss(
-        gameId: String,
+        gameId: Int,
         coinTossCall: CoinTossCall,
     ): Game {
-        val game = getGameById(gameId.toInt())
+        val game = getGameById(gameId)
 
         try {
             val coinFlip = Random().nextInt(2)
@@ -1152,10 +1152,10 @@ class GameService(
     }
 
     fun makeCoinTossChoice(
-        gameId: String,
+        gameId: Int,
         coinTossChoice: CoinTossChoice,
     ): Game {
-        val game = getGameById(gameId.toInt())
+        val game = getGameById(gameId)
 
         try {
             game.coinTossChoice = coinTossChoice
@@ -1191,10 +1191,10 @@ class GameService(
     }
 
     fun makeOvertimeCoinTossChoice(
-        gameId: String,
+        gameId: Int,
         coinTossChoice: OvertimeCoinTossChoice,
     ): Game {
-        val game = getGameById(gameId.toInt())
+        val game = getGameById(gameId)
 
         try {
             game.overtimeCoinTossChoice = coinTossChoice
@@ -1638,7 +1638,7 @@ class GameService(
 
     fun findExpiredTimers() =
         gameRepository.findExpiredTimers().ifEmpty {
-            Logger.info("No games found with expired timers")
+            Logger.debug("No games found with expired timers")
             emptyList()
         }
 

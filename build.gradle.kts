@@ -6,6 +6,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.6"
     id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
     kotlin("jvm") version "2.0.21"
+    kotlin("plugin.spring") version "2.0.21"
     application
 }
 
@@ -68,6 +69,7 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-impl:0.11.5")
     implementation("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("ml.dmlc:xgboost4j_2.13:3.0.4")
+    implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("io.mockk:mockk:1.13.5")

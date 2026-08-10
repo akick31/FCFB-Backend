@@ -19,4 +19,6 @@ class GameWriteupService(
             "No message found"
         }
     }
+
+    fun getDistinctScenarios(): List<String> = gameWriteupRepository.findDistinctScenarios()
 }

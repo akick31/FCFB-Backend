@@ -98,7 +98,8 @@ class NewSignupControllerTest {
         } returns Team()
 
         mockMvc.perform(
-            post("/api/v1/arceus/new_signups/1/hire")
+            post("/api/v1/arceus/new_signups/hire")
+                .param("id", "1")
                 .param("team", "team1")
                 .param("coachPosition", "HEAD_COACH")
                 .param("processedBy", "admin"),

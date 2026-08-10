@@ -60,8 +60,6 @@ class SeasonStatsService(
     fun generateAllSeasonStats() {
         Logger.info("Starting generation of all season stats")
 
-        seasonStatsRepository.deleteAll()
-
         val allGameStats = filterRegularSeasonGames(filterOutScrimmageGames(gameStatsRepository.findAll().toList()))
         val gameStatsByGameId = allGameStats.groupBy { it.gameId }
         val gameStatsByTeamSeason = allGameStats.groupBy { "${it.team}_${it.season}" }
@@ -76,7 +74,14 @@ class SeasonStatsService(
             val conference = teamSeasonConferenceService.getConference(team, season) ?: teamsByName[team]?.conference
             val seasonStats =
                 aggregateGameStatsToSeasonStats(teamGameStats, team, season, gameStatsByGameId, conference)
+            seasonStatsRepository.findByTeamAndSeasonNumber(team, season)?.let { seasonStats.id = it.id }
             seasonStatsRepository.save(seasonStats)
+        }
+
+        val staleSeasonStats =
+            seasonStatsRepository.findAll().filterNot { "${it.team}_${it.seasonNumber}" in gameStatsByTeamSeason.keys }
+        if (staleSeasonStats.isNotEmpty()) {
+            seasonStatsRepository.deleteAll(staleSeasonStats)
         }
 
         Logger.info("Completed generation of all season stats")
@@ -88,8 +93,6 @@ class SeasonStatsService(
     ) {
         Logger.info("Generating season stats for $team in season $seasonNumber")
 
-        seasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
-
         val teamGameStats =
             filterRegularSeasonGames(
                 filterOutScrimmageGames(
@@ -100,6 +103,7 @@ class SeasonStatsService(
 
         if (teamGameStats.isEmpty()) {
             Logger.warn("No game stats found for $team in season $seasonNumber")
+            seasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
             return
         }
 
@@ -113,6 +117,7 @@ class SeasonStatsService(
 
         val seasonStats =
             aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber, gameStatsByGameId, conference)
+        seasonStatsRepository.findByTeamAndSeasonNumber(team, seasonNumber)?.let { seasonStats.id = it.id }
 
         seasonStatsRepository.save(seasonStats)
         Logger.info("Completed generating season stats for $team in season $seasonNumber")

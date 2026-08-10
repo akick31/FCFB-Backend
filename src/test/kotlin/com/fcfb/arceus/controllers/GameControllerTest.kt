@@ -163,7 +163,7 @@ class GameControllerTest {
 
     @Test
     fun `runCoinToss should return updated game`() {
-        val gameId = "1"
+        val gameId = 1
         val coinTossCall = CoinTossCall.HEADS
         val mockGame = mockk<Game>()
         every { gameService.runCoinToss(gameId, coinTossCall) } returns mockGame
@@ -176,7 +176,7 @@ class GameControllerTest {
 
     @Test
     fun `makeCoinTossChoice should return updated game`() {
-        val gameId = "1"
+        val gameId = 1
         val coinTossChoice = CoinTossChoice.RECEIVE
         val mockGame = mockk<Game>()
         every { gameService.makeCoinTossChoice(gameId, coinTossChoice) } returns mockGame
@@ -189,7 +189,7 @@ class GameControllerTest {
 
     @Test
     fun `makeOvertimeCoinTossChoice should return updated game`() {
-        val gameId = "1"
+        val gameId = 1
         val coinTossChoice = OvertimeCoinTossChoice.DEFENSE
         val mockGame = mockk<Game>()
         every { gameService.makeOvertimeCoinTossChoice(gameId, coinTossChoice) } returns mockGame

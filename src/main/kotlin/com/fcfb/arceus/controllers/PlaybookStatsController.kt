@@ -4,6 +4,7 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.service.fcfb.PlaybookStatsService
 import com.fcfb.arceus.service.fcfb.PostseasonPlaybookStatsService
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -20,6 +21,7 @@ class PlaybookStatsController(
     private val playbookStatsService: PlaybookStatsService,
     private val postseasonPlaybookStatsService: PostseasonPlaybookStatsService,
 ) {
+    @Operation(summary = "List playbook stats")
     @GetMapping
     fun getFilteredPlaybookStats(
         @RequestParam(required = false) offensivePlaybook: OffensivePlaybook?,
@@ -33,9 +35,11 @@ class PlaybookStatsController(
         pageable = pageable,
     )
 
+    @Operation(summary = "Generate playbook stats")
     @PostMapping("/generate/all")
     fun generateAll() = playbookStatsService.generateAllPlaybookStats()
 
+    @Operation(summary = "List postseason playbook stats")
     @GetMapping("/postseason")
     fun getFilteredPostseasonPlaybookStats(
         @RequestParam(required = false) offensivePlaybook: OffensivePlaybook?,
@@ -49,6 +53,7 @@ class PlaybookStatsController(
         pageable = pageable,
     )
 
+    @Operation(summary = "Generate postseason playbook stats")
     @PostMapping("/postseason/generate/all")
     fun generateAllPostseason() = postseasonPlaybookStatsService.generateAllPostseasonPlaybookStats()
 }
