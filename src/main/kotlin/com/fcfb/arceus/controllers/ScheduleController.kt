@@ -10,6 +10,7 @@ import com.fcfb.arceus.dto.response.OocGenerationResult
 import com.fcfb.arceus.dto.response.ScheduleGenJob
 import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.dto.response.ScheduleValidationResult
+import com.fcfb.arceus.model.Bowl
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.service.fcfb.ScheduleService
 import io.swagger.v3.oas.annotations.Operation
@@ -36,11 +37,11 @@ class ScheduleController(
         @RequestParam("team") team: String,
     ) = scheduleService.getTeamOpponent(team)
 
-    @Operation(summary = "Get saved bowl venue")
-    @GetMapping("/bowl-venue")
-    fun getBowlVenue(
+    @Operation(summary = "Get saved bowl info")
+    @GetMapping("/bowl")
+    fun getBowl(
         @RequestParam("name") name: String,
-    ): ResponseEntity<String?> = ResponseEntity.ok(scheduleService.getBowlVenue(name))
+    ): ResponseEntity<Bowl?> = ResponseEntity.ok(scheduleService.getBowl(name))
 
     @Operation(summary = "Get team season schedule")
     @GetMapping("/season", params = ["team"])

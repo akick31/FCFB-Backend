@@ -11,10 +11,9 @@ import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
 import com.fcfb.arceus.dto.response.ScheduleValidationResult
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
-import com.fcfb.arceus.model.BowlVenue
+import com.fcfb.arceus.model.Bowl
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.repositories.BowlVenueRepository
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.TeamRepository
@@ -35,7 +34,8 @@ open class ScheduleService(
     private val scheduleRepository: ScheduleRepository,
     private val gameRepository: GameRepository,
     private val teamRepository: TeamRepository,
-    private val bowlVenueRepository: BowlVenueRepository,
+    private val bowlService: BowlService,
+    private val venueService: VenueService,
     private val conferenceService: ConferenceService,
     private val conferenceScheduleGenerationService: ConferenceScheduleGenerationService,
     private val conferenceRulesService: ConferenceRulesService,
@@ -51,13 +51,12 @@ open class ScheduleService(
     private fun resolveNeutralSite(entry: ScheduleEntry): Boolean = entry.gameType in NEUTRAL_SITE_GAME_TYPES || entry.neutralSite
 
     private fun saveVenueDefault(entry: ScheduleEntry) {
-        val venue = entry.venue?.takeIf { it.isNotBlank() } ?: return
+        val venue = entry.venue?.trim()?.takeIf { it.isNotBlank() }
+        if (venue != null) venueService.findOrCreateByName(venue)
         when (entry.gameType) {
-            GameType.BOWL -> {
-                val name = entry.postseasonGameName?.trim()?.takeIf { it.isNotBlank() } ?: return
-                bowlVenueRepository.save(BowlVenue(name, venue))
-            }
+            GameType.BOWL -> bowlService.upsertPreGame(entry)
             GameType.CONFERENCE_CHAMPIONSHIP -> {
+                if (venue == null) return
                 val conferenceCode = teamRepository.getTeamByName(entry.homeTeam)?.conference ?: return
                 conferenceService.updateChampionshipVenue(conferenceCode, venue)
             }
@@ -65,7 +64,7 @@ open class ScheduleService(
         }
     }
 
-    fun getBowlVenue(name: String): String? = bowlVenueRepository.findById(name.trim()).orElse(null)?.venue
+    fun getBowl(name: String): Bowl? = bowlService.getByName(name)
 
     fun getGamesToStartBySeasonAndWeek(
         season: Int,
@@ -91,6 +90,14 @@ open class ScheduleService(
             gameInSchedule.homeScore = game.homeScore
             gameInSchedule.awayScore = game.awayScore
             scheduleRepository.save(gameInSchedule)
+            if (gameInSchedule.gameType == GameType.BOWL) {
+                try {
+                    game.venue?.trim()?.takeIf { it.isNotBlank() }?.let { venueService.findOrCreateByName(it) }
+                    bowlService.recordResult(gameInSchedule, game)
+                } catch (e: Exception) {
+                    Logger.error("Unable to record bowl result for game ${game.gameId}", e)
+                }
+            }
             if (checkIfWeekIsOver(game.season ?: 0, game.week ?: 0)) {
                 seasonService.incrementWeek()
             }

@@ -110,6 +110,7 @@ internal val ADMIN_ONLY_DELETE_PATHS =
         "$FULL_PATH/team",
         "$FULL_PATH/user",
         "$FULL_PATH/new_signups",
+        "$FULL_PATH/venue/*",
     )
 
 internal val PRIVILEGED_POST_PATHS =
