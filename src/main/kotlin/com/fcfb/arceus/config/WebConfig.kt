@@ -15,6 +15,7 @@ import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessag
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
@@ -227,10 +228,7 @@ open class WebConfig(
             .anyRequest().authenticated()
             .and()
             .sessionManagement()
-            .invalidSessionUrl("/invalidSession")
-            .maximumSessions(1)
-            .maxSessionsPreventsLogin(false)
-            .expiredUrl("/sessionExpired")
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
     }
 }
 
