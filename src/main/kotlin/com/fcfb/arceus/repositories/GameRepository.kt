@@ -174,4 +174,18 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
         nativeQuery = true,
     )
     fun getGamesBySeason(season: Int): List<Game>
+
+    @Query(
+        value =
+            "SELECT * FROM game " +
+                "WHERE season = :season " +
+                "AND week <= :week " +
+                "AND game_status = 'FINAL' " +
+                "AND game_type != 'SCRIMMAGE'",
+        nativeQuery = true,
+    )
+    fun getFinalGamesThroughWeek(
+        season: Int,
+        week: Int,
+    ): List<Game>
 }

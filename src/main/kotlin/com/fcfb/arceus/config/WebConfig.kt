@@ -83,6 +83,8 @@ internal val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/playbook-stats/generate/all",
         "$FULL_PATH/playbook-stats/postseason/generate/all",
         "$FULL_PATH/ranking",
+        "$FULL_PATH/ranking-metric/compute",
+        "$FULL_PATH/ranking-metric/backfill",
         "$FULL_PATH/records/generate/all",
         "$FULL_PATH/records/generate/teams-and-conferences",
         "$FULL_PATH/season-stats/generate/all",
