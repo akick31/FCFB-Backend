@@ -495,8 +495,8 @@ class RankingMetricService(
         const val PYTHAGOREAN_EXPONENT = 2.37
         const val BASE_EQUIVALENT_WINS_WEIGHT = 0.65
         const val BASE_WIN_PCT_WEIGHT = 0.35
-        const val NORMAL_PLAY_DIFF_WEIGHT = 0.8
-        const val SPECIAL_TEAMS_DIFF_WEIGHT = 0.2
+        const val NORMAL_PLAY_DIFF_WEIGHT = 0.95
+        const val SPECIAL_TEAMS_DIFF_WEIGHT = 0.05
         const val POWER_RATING_BASE_WEIGHT = 0.9
         const val POWER_RATING_DIFFERENTIAL_WEIGHT = 0.1
         const val ASR_REGULARIZATION = 0.1
