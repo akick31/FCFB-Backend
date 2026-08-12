@@ -9,6 +9,7 @@ import com.fcfb.arceus.model.RankingMetric
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
+import com.fcfb.arceus.repositories.RankingMetricBatchRepository
 import com.fcfb.arceus.repositories.RankingMetricRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.util.InvalidRankingMetricException
@@ -19,11 +20,13 @@ import org.springframework.stereotype.Service
 @Service
 class RankingMetricService(
     private val rankingMetricRepository: RankingMetricRepository,
+    private val rankingMetricBatchRepository: RankingMetricBatchRepository,
     private val gameRepository: GameRepository,
     private val gameStatsRepository: GameStatsRepository,
     private val teamRepository: TeamRepository,
+    private val teamResumeMetricService: TeamResumeMetricService,
 ) {
-    private data class TeamSeasonAggregate(
+    internal data class TeamSeasonAggregate(
         val teamId: Int,
         val gamesPlayed: Int,
         val wins: Int,
@@ -46,17 +49,25 @@ class RankingMetricService(
         val teamsByName = teamRepository.findAll().mapNotNull { team -> team.name?.let { it to team } }.toMap()
         val games = gameRepository.getFinalGamesThroughWeek(season, week)
         val aggregates = buildAggregates(games, teamsByName)
+        val rows = mutableListOf<RankingMetric>()
 
         val crossTeamTypes =
-            setOf(RankingMetricType.POWER_RATING, RankingMetricType.COLLEY_MATRIX, RankingMetricType.ASR, RankingMetricType.COMPOSITE)
+            setOf(
+                RankingMetricType.POWER_RATING,
+                RankingMetricType.COLLEY_MATRIX,
+                RankingMetricType.ASR,
+                RankingMetricType.COMPOSITE,
+                RankingMetricType.ADJUSTED_POINTS_FOR,
+                RankingMetricType.ADJUSTED_POINTS_AGAINST,
+                RankingMetricType.ADJUSTED_NET_POINTS,
+            )
         val simpleTypes = RankingMetricType.values().filter { it.implemented && it !in crossTeamTypes }
         val metricValuesByType = mutableMapOf<RankingMetricType, Map<Int, Double>>()
         simpleTypes.forEach { type ->
-            rankingMetricRepository.deleteBySeasonWeekAndMetricType(season, week, type.name)
             val values = aggregates.mapValues { (_, aggregate) -> calculate(type, aggregate) }
             values.forEach { (teamId, value) ->
                 val aggregate = aggregates.getValue(teamId)
-                rankingMetricRepository.save(RankingMetric(season, week, type, teamId, value, aggregate.wins, aggregate.losses))
+                rows.add(RankingMetric(season, week, type, teamId, value, aggregate.wins, aggregate.losses))
             }
             metricValuesByType[type] = values
         }
@@ -65,18 +76,39 @@ class RankingMetricService(
 
         val powerRatings = calculatePowerRatings(season, week, aggregates, teamsByName)
         metricValuesByType[RankingMetricType.POWER_RATING] = powerRatings
-        saveCrossTeamMetric(season, week, RankingMetricType.POWER_RATING, powerRatings, aggregates, computedTypes)
+        saveCrossTeamMetric(season, week, RankingMetricType.POWER_RATING, powerRatings, aggregates, computedTypes, rows)
 
         val colleyRatings = calculateColleyRatings(games, aggregates, teamsByName)
         metricValuesByType[RankingMetricType.COLLEY_MATRIX] = colleyRatings
-        saveCrossTeamMetric(season, week, RankingMetricType.COLLEY_MATRIX, colleyRatings, aggregates, computedTypes)
+        saveCrossTeamMetric(season, week, RankingMetricType.COLLEY_MATRIX, colleyRatings, aggregates, computedTypes, rows)
 
         val asrRatings = calculateAsrRatings(games, aggregates, teamsByName)
         metricValuesByType[RankingMetricType.ASR] = asrRatings
-        saveCrossTeamMetric(season, week, RankingMetricType.ASR, asrRatings, aggregates, computedTypes)
+        saveCrossTeamMetric(season, week, RankingMetricType.ASR, asrRatings, aggregates, computedTypes, rows)
 
         val compositeRatings = calculateCompositeRatings(metricValuesByType)
-        saveCrossTeamMetric(season, week, RankingMetricType.COMPOSITE, compositeRatings, aggregates, computedTypes)
+        saveCrossTeamMetric(season, week, RankingMetricType.COMPOSITE, compositeRatings, aggregates, computedTypes, rows)
+
+        val adjustedPointsForRatings = calculateAdjustedPointsForRatings(games, aggregates, teamsByName)
+        saveCrossTeamMetric(season, week, RankingMetricType.ADJUSTED_POINTS_FOR, adjustedPointsForRatings, aggregates, computedTypes, rows)
+
+        val adjustedPointsAgainstRatings = calculateAdjustedPointsAgainstRatings(games, aggregates, teamsByName)
+        saveCrossTeamMetric(
+            season,
+            week,
+            RankingMetricType.ADJUSTED_POINTS_AGAINST,
+            adjustedPointsAgainstRatings,
+            aggregates,
+            computedTypes,
+            rows,
+        )
+
+        saveCrossTeamMetric(season, week, RankingMetricType.ADJUSTED_NET_POINTS, asrRatings, aggregates, computedTypes, rows)
+
+        rankingMetricRepository.deleteBySeasonAndWeek(season, week)
+        rankingMetricBatchRepository.batchInsert(rows)
+
+        teamResumeMetricService.computeAndPersist(season, week, games, aggregates, teamsByName, compositeRatings)
 
         return RankingMetricComputeResult(season, week, computedTypes, aggregates.size)
     }
@@ -88,14 +120,12 @@ class RankingMetricService(
         values: Map<Int, Double>,
         aggregates: Map<Int, TeamSeasonAggregate>,
         computedTypes: MutableList<String>,
+        rows: MutableList<RankingMetric>,
     ) {
         if (values.isEmpty()) return
-        rankingMetricRepository.deleteBySeasonWeekAndMetricType(season, week, type.name)
         values.forEach { (teamId, value) ->
             val aggregate = aggregates[teamId]
-            rankingMetricRepository.save(
-                RankingMetric(season, week, type, teamId, value, aggregate?.wins, aggregate?.losses),
-            )
+            rows.add(RankingMetric(season, week, type, teamId, value, aggregate?.wins, aggregate?.losses))
         }
         computedTypes.add(type.name)
     }
@@ -279,13 +309,15 @@ class RankingMetricService(
     }
 
     /**
-     * SRS-style rating (r_i - avg(opponent ratings) = MOV_i), same family as Sagarin/Massey.
+     * SRS-style rating (r_i - avg(opponent ratings) = perGameValue_i), same family as Sagarin/Massey.
      * Ridge term on the diagonal keeps the system solvable on a sparse/disconnected early-season schedule.
+     * Shared by ASR (net margin) and the aPPf/aPPa splits (points-for-only / points-against-only).
      */
-    private fun calculateAsrRatings(
+    private fun calculateAdjustedScheduleRatings(
         games: List<Game>,
         aggregates: Map<Int, TeamSeasonAggregate>,
         teamsByName: Map<String, Team>,
+        perGameValue: (TeamSeasonAggregate) -> Double,
     ): Map<Int, Double> {
         val teamIds = aggregates.keys.sorted()
         val n = teamIds.size
@@ -309,15 +341,38 @@ class RankingMetricService(
                     if (row == col) 1.0 + ASR_REGULARIZATION else -(gamesBetween[row][col].toDouble() / gamesPlayed)
                 }
             }
-        val b =
-            DoubleArray(n) { row ->
-                val aggregate = aggregates.getValue(teamIds[row])
-                calculateMarginOfVictory(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
-            }
+        val b = DoubleArray(n) { row -> perGameValue(aggregates.getValue(teamIds[row])) }
 
         val ratings = LinearAlgebraUtils.solve(matrix, b)
         return teamIds.indices.associate { index -> teamIds[index] to ratings[index] }
     }
+
+    private fun calculateAsrRatings(
+        games: List<Game>,
+        aggregates: Map<Int, TeamSeasonAggregate>,
+        teamsByName: Map<String, Team>,
+    ): Map<Int, Double> =
+        calculateAdjustedScheduleRatings(games, aggregates, teamsByName) {
+            calculateMarginOfVictory(it.pointsFor, it.pointsAgainst, it.gamesPlayed)
+        }
+
+    private fun calculateAdjustedPointsForRatings(
+        games: List<Game>,
+        aggregates: Map<Int, TeamSeasonAggregate>,
+        teamsByName: Map<String, Team>,
+    ): Map<Int, Double> =
+        calculateAdjustedScheduleRatings(games, aggregates, teamsByName) {
+            calculateScoringOffense(it.pointsFor, it.gamesPlayed)
+        }
+
+    private fun calculateAdjustedPointsAgainstRatings(
+        games: List<Game>,
+        aggregates: Map<Int, TeamSeasonAggregate>,
+        teamsByName: Map<String, Team>,
+    ): Map<Int, Double> =
+        calculateAdjustedScheduleRatings(games, aggregates, teamsByName) {
+            calculateScoringDefense(it.pointsAgainst, it.gamesPlayed)
+        }
 
     /** Poll-of-polls, mirroring the BCS composite: average of every other metric normalized to 0-100 first so raw units don't dominate. */
     private fun calculateCompositeRatings(metricValuesByType: Map<RankingMetricType, Map<Int, Double>>): Map<Int, Double> {
