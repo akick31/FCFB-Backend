@@ -9,4 +9,9 @@ object AuthContext {
         val authorities = SecurityContextHolder.getContext().authentication?.authorities ?: return false
         return authorities.any { it.authority == "ROLE_ADMIN" || it.authority == "ROLE_CONFERENCE_COMMISSIONER" }
     }
+
+    fun isFullAdmin(): Boolean {
+        val authorities = SecurityContextHolder.getContext().authentication?.authorities ?: return false
+        return authorities.any { it.authority == "ROLE_ADMIN" }
+    }
 }

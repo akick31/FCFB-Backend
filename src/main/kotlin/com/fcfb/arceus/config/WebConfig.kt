@@ -10,9 +10,12 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.http.converter.HttpMessageConverter
+import org.springframework.http.converter.json.KotlinSerializationJsonHttpMessageConverter
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
+import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
@@ -80,6 +83,8 @@ internal val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/playbook-stats/generate/all",
         "$FULL_PATH/playbook-stats/postseason/generate/all",
         "$FULL_PATH/ranking",
+        "$FULL_PATH/ranking-metric/compute",
+        "$FULL_PATH/ranking-metric/backfill",
         "$FULL_PATH/records/generate/all",
         "$FULL_PATH/records/generate/teams-and-conferences",
         "$FULL_PATH/season-stats/generate/all",
@@ -108,6 +113,7 @@ internal val ADMIN_ONLY_DELETE_PATHS =
         "$FULL_PATH/team",
         "$FULL_PATH/user",
         "$FULL_PATH/new_signups",
+        "$FULL_PATH/venue/*",
     )
 
 internal val PRIVILEGED_POST_PATHS =
@@ -224,10 +230,7 @@ open class WebConfig(
             .anyRequest().authenticated()
             .and()
             .sessionManagement()
-            .invalidSessionUrl("/invalidSession")
-            .maximumSessions(1)
-            .maxSessionsPreventsLogin(false)
-            .expiredUrl("/sessionExpired")
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
     }
 }
 
@@ -250,5 +253,9 @@ open class MvcConfig(
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(requestLoggingInterceptor)
             .excludePathPatterns("/actuator/**", "/**/health")
+    }
+
+    override fun extendMessageConverters(converters: MutableList<HttpMessageConverter<*>>) {
+        converters.removeIf { it is KotlinSerializationJsonHttpMessageConverter }
     }
 }

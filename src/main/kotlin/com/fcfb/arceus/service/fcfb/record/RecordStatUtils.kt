@@ -108,6 +108,8 @@ class RecordStatUtils(
             Stats.Q4_SCORE,
             Stats.OT_SCORE,
             Stats.SCORE,
+            Stats.LARGEST_SPREAD,
+            Stats.LARGEST_UPSET,
         )
 
     fun getStatValue(
@@ -199,6 +201,8 @@ class RecordStatUtils(
 
                 Stats.LARGEST_LEAD -> "largestLead"
                 Stats.LARGEST_DEFICIT -> "largestDeficit"
+                Stats.LARGEST_SPREAD -> "favoredMargin"
+                Stats.LARGEST_UPSET -> "upsetMargin"
 
                 Stats.RED_ZONE_ATTEMPTS -> "redZoneAttempts"
                 Stats.RED_ZONE_SUCCESSES -> "redZoneSuccesses"

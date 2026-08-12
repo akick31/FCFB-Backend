@@ -54,4 +54,13 @@ class ConferenceService(
         conference.active = active
         return conferenceRepository.save(conference)
     }
+
+    fun updateChampionshipVenue(
+        code: String,
+        venue: String,
+    ): Conference {
+        val conference = requireExists(code)
+        conference.championshipVenue = venue
+        return conferenceRepository.save(conference)
+    }
 }

@@ -91,4 +91,12 @@ class Schedule {
     @Basic
     @Column(name = "postseason_game_logo")
     var postseasonGameLogo: String? = null
+
+    @Basic
+    @Column(name = "neutral_site", columnDefinition = "tinyint(1)")
+    var neutralSite: Boolean = false
+
+    @Basic
+    @Column(name = "venue")
+    var venue: String? = null
 }

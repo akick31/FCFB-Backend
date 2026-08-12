@@ -5,6 +5,7 @@ import com.fcfb.arceus.dto.response.ApiKeyResponse
 import com.fcfb.arceus.dto.response.UserDTO
 import com.fcfb.arceus.dto.response.UserValidationResponse
 import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
@@ -292,6 +293,13 @@ class UserService(
 
     fun updateUserAsRequester(user: UserDTO): UserDTO {
         requireSelfOrAdmin(user.id)
+        if (!AuthContext.isFullAdmin()) {
+            val commissionerManageableRoles = setOf(UserRole.USER, UserRole.CONFERENCE_COMMISSIONER)
+            val existingUser = getUserDTOById(user.id)
+            if (existingUser.role !in commissionerManageableRoles || user.role !in commissionerManageableRoles) {
+                throw UserForbiddenException()
+            }
+        }
         return updateUser(user)
     }
 

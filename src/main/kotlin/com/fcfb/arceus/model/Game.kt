@@ -356,6 +356,16 @@ class Game {
     @JsonProperty("postseason_game_name")
     var postseasonGameName: String? = null
 
+    @Basic
+    @Column(name = "neutral_site", columnDefinition = "tinyint(1)")
+    @JsonProperty("neutral_site")
+    var neutralSite: Boolean = false
+
+    @Basic
+    @Column(name = "venue")
+    @JsonProperty("venue")
+    var venue: String? = null
+
     constructor(
         homeTeam: String,
         awayTeam: String,
@@ -418,6 +428,8 @@ class Game {
         awayVegasSpread: Double? = null,
         postseasonGameLogo: String? = null,
         postseasonGameName: String? = null,
+        neutralSite: Boolean = false,
+        venue: String? = null,
     ) {
         this.homeTeam = homeTeam
         this.awayTeam = awayTeam
@@ -480,6 +492,8 @@ class Game {
         this.awayVegasSpread = awayVegasSpread
         this.postseasonGameLogo = postseasonGameLogo
         this.postseasonGameName = postseasonGameName
+        this.neutralSite = neutralSite
+        this.venue = venue
     }
 
     constructor()

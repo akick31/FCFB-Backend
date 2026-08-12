@@ -214,6 +214,8 @@ class GameService(
                             awayVegasSpread = vegasOdds.awaySpread,
                             postseasonGameLogo = startRequest.postseasonGameLogo,
                             postseasonGameName = startRequest.postseasonGameName,
+                            neutralSite = startRequest.neutralSite,
+                            venue = startRequest.venue,
                         ),
                     )
                 }
@@ -669,6 +671,8 @@ class GameService(
                             game.gameType,
                             game.postseasonGameLogo,
                             game.postseasonGameName,
+                            game.neutralSite,
+                            game.venue,
                         ),
                         week,
                     )
@@ -715,6 +719,8 @@ class GameService(
                         gameType = game.gameType,
                         postseasonGameLogo = game.postseasonGameLogo,
                         postseasonGameName = game.postseasonGameName,
+                        neutralSite = game.neutralSite,
+                        venue = game.venue,
                         error = errorMsg,
                     ),
                 )
@@ -816,6 +822,8 @@ class GameService(
                             failed.gameType,
                             failed.postseasonGameLogo,
                             failed.postseasonGameName,
+                            failed.neutralSite,
+                            failed.venue,
                         ),
                         week,
                     )
@@ -858,6 +866,8 @@ class GameService(
                         gameType = failed.gameType,
                         postseasonGameLogo = failed.postseasonGameLogo,
                         postseasonGameName = failed.postseasonGameName,
+                        neutralSite = failed.neutralSite,
+                        venue = failed.venue,
                         error = errorMsg,
                     ),
                 )

@@ -15,4 +15,6 @@ data class StartRequest(
     @JsonProperty("gameType") val gameType: GameType,
     @JsonProperty("postseasonGameLogo") val postseasonGameLogo: String? = null,
     @JsonProperty("postseasonGameName") val postseasonGameName: String? = null,
+    @JsonProperty("neutralSite") val neutralSite: Boolean = false,
+    @JsonProperty("venue") val venue: String? = null,
 )

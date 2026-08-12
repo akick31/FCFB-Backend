@@ -177,6 +177,18 @@ class RankingsNotUploadedException(season: Int, week: Int) : Exception(
     }
 }
 
+class MetricNotImplementedException(metricType: String) : Exception("Metric type not yet implemented: $metricType") {
+    override fun toString(): String {
+        return "MetricNotImplementedException: ${super.message}"
+    }
+}
+
+class InvalidRankingMetricException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidRankingMetricException: ${super.message}"
+    }
+}
+
 class InvalidConferenceException(message: String) : Exception(message) {
     override fun toString(): String {
         return "InvalidConferenceException: ${super.message}"

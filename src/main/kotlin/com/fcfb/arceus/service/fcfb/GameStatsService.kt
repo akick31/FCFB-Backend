@@ -393,6 +393,10 @@ class GameStatsService(
             stats.largestLead = GameStatsCalculator.calculateLargestLeadForAway(allPlays)
             stats.largestDeficit = GameStatsCalculator.calculateLargestDeficitForAway(allPlays)
         }
+        val teamSpread = if (teamSide == TeamSide.HOME) game.homeVegasSpread else game.awayVegasSpread
+        val teamWon = if (teamSide == TeamSide.HOME) game.homeScore > game.awayScore else game.awayScore > game.homeScore
+        stats.favoredMargin = teamSpread?.let { -it }
+        stats.upsetMargin = if (teamWon && teamSpread != null && teamSpread > 0) teamSpread else 0.0
         stats.passTouchdowns = GameStatsCalculator.calculatePassTouchdowns(allOffensivePlays)
         stats.rushTouchdowns = GameStatsCalculator.calculateRushTouchdowns(allOffensivePlays)
         stats.redZoneAttempts = GameStatsCalculator.calculateRedZoneAttempts(allPlays, teamSide)
