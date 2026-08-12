@@ -89,8 +89,6 @@ class RankingMetricService(
         val compositeRatings = calculateCompositeRatings(metricValuesByType)
         saveCrossTeamMetric(season, week, RankingMetricType.COMPOSITE, compositeRatings, aggregates, computedTypes, rows)
 
-        // Adjusted points-for/against/net are informational SRS-style splits of ASR, computed after Composite
-        // so they never feed back into it (Composite already blends MARGIN_OF_VICTORY/SCORING_OFFENSE/SCORING_DEFENSE).
         val adjustedPointsForRatings = calculateAdjustedPointsForRatings(games, aggregates, teamsByName)
         saveCrossTeamMetric(season, week, RankingMetricType.ADJUSTED_POINTS_FOR, adjustedPointsForRatings, aggregates, computedTypes, rows)
 
@@ -105,7 +103,6 @@ class RankingMetricService(
             rows,
         )
 
-        // aPPn is the same schedule-adjusted net margin as ASR, stored under its own type for Rice Sheet's aPPf/aPPa/aPPn trio.
         saveCrossTeamMetric(season, week, RankingMetricType.ADJUSTED_NET_POINTS, asrRatings, aggregates, computedTypes, rows)
 
         rankingMetricRepository.deleteBySeasonAndWeek(season, week)

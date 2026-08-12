@@ -13,6 +13,8 @@ data class TeamResumeMetricResponse(
     @JsonProperty("conferenceLosses") val conferenceLosses: Int,
     @JsonProperty("q1Wins") val q1Wins: Int,
     @JsonProperty("q1Losses") val q1Losses: Int,
+    @JsonProperty("q2Wins") val q2Wins: Int,
+    @JsonProperty("q2Losses") val q2Losses: Int,
     @JsonProperty("thWins") val thWins: Int,
     @JsonProperty("thLosses") val thLosses: Int,
     @JsonProperty("q4Wins") val q4Wins: Int,

@@ -21,6 +21,8 @@ class TeamResumeMetricService(
         var conferenceLosses: Int = 0,
         var q1Wins: Int = 0,
         var q1Losses: Int = 0,
+        var q2Wins: Int = 0,
+        var q2Losses: Int = 0,
         var thWins: Int = 0,
         var thLosses: Int = 0,
         var q4Wins: Int = 0,
@@ -39,7 +41,7 @@ class TeamResumeMetricService(
 
     /**
      * Opponent-quality buckets (quartile/T25/T50/T100) are evaluated against each opponent's Composite rank
-     * for THIS week, not the week the game was played — avoids the circularity of a team's rank depending on
+     * for THIS week, not the week the game was played: avoids the circularity of a team's rank depending on
      * a game that's also used to classify that same game, and matches how NCAA NET quadrants work.
      */
     internal fun computeAndPersist(
@@ -82,8 +84,9 @@ class TeamResumeMetricService(
 
             when {
                 opponentRank <= quartileSize -> if (won) resume.q1Wins++ else resume.q1Losses++
-                opponentRank > 2 * quartileSize && opponentRank <= 3 * quartileSize -> if (won) resume.thWins++ else resume.thLosses++
-                opponentRank > 3 * quartileSize -> if (won) resume.q4Wins++ else resume.q4Losses++
+                opponentRank <= 2 * quartileSize -> if (won) resume.q2Wins++ else resume.q2Losses++
+                opponentRank <= 3 * quartileSize -> if (won) resume.thWins++ else resume.thLosses++
+                else -> if (won) resume.q4Wins++ else resume.q4Losses++
             }
             if (opponentRank <= 25) {
                 if (won) resume.t25Wins++ else resume.t25Losses++
@@ -117,6 +120,8 @@ class TeamResumeMetricService(
                     conferenceLosses = resume.conferenceLosses,
                     q1Wins = resume.q1Wins,
                     q1Losses = resume.q1Losses,
+                    q2Wins = resume.q2Wins,
+                    q2Losses = resume.q2Losses,
                     thWins = resume.thWins,
                     thLosses = resume.thLosses,
                     q4Wins = resume.q4Wins,
@@ -156,6 +161,8 @@ class TeamResumeMetricService(
                 conferenceLosses = metric.conferenceLosses,
                 q1Wins = metric.q1Wins,
                 q1Losses = metric.q1Losses,
+                q2Wins = metric.q2Wins,
+                q2Losses = metric.q2Losses,
                 thWins = metric.thWins,
                 thLosses = metric.thLosses,
                 q4Wins = metric.q4Wins,

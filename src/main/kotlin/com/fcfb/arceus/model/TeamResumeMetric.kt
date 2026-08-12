@@ -53,6 +53,14 @@ class TeamResumeMetric {
     var q1Losses: Int = 0
 
     @Basic
+    @Column(name = "q2_wins")
+    var q2Wins: Int = 0
+
+    @Basic
+    @Column(name = "q2_losses")
+    var q2Losses: Int = 0
+
+    @Basic
     @Column(name = "th_wins")
     var thWins: Int = 0
 
@@ -110,6 +118,8 @@ class TeamResumeMetric {
         conferenceLosses: Int,
         q1Wins: Int,
         q1Losses: Int,
+        q2Wins: Int,
+        q2Losses: Int,
         thWins: Int,
         thLosses: Int,
         q4Wins: Int,
@@ -132,6 +142,8 @@ class TeamResumeMetric {
         this.conferenceLosses = conferenceLosses
         this.q1Wins = q1Wins
         this.q1Losses = q1Losses
+        this.q2Wins = q2Wins
+        this.q2Losses = q2Losses
         this.thWins = thWins
         this.thLosses = thLosses
         this.q4Wins = q4Wins
