@@ -89,4 +89,19 @@ interface RankingMetricRepository : CrudRepository<RankingMetric, Int> {
         week: Int,
         metricType: String,
     )
+
+    @Modifying
+    @Transactional
+    @Query(
+        value = """
+            DELETE FROM ranking_metric
+            WHERE season = :season
+            AND week = :week
+        """,
+        nativeQuery = true,
+    )
+    fun deleteBySeasonAndWeek(
+        season: Int,
+        week: Int,
+    )
 }
