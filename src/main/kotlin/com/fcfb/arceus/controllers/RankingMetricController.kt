@@ -53,4 +53,10 @@ class RankingMetricController(
     fun backfill(
         @RequestParam("season") season: Int,
     ): ResponseEntity<List<RankingMetricComputeResult>> = ResponseEntity.ok(rankingMetricService.backfillSeason(season))
+
+    @Operation(summary = "Get every week with at least one completed game for a season")
+    @GetMapping("/valid-weeks")
+    fun getValidWeeks(
+        @RequestParam("season") season: Int,
+    ): ResponseEntity<List<Int>> = ResponseEntity.ok(rankingMetricService.getValidWeeks(season))
 }

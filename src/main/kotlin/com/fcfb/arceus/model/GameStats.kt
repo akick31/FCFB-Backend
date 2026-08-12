@@ -256,6 +256,12 @@ class GameStats(
     @Column(name = "largest_deficit")
     var largestDeficit: Int = 0,
     @Basic
+    @Column(name = "favored_margin")
+    var favoredMargin: Double? = null,
+    @Basic
+    @Column(name = "upset_margin")
+    var upsetMargin: Double? = null,
+    @Basic
     @Column(name = "pass_touchdowns")
     var passTouchdowns: Int = 0,
     @Basic
