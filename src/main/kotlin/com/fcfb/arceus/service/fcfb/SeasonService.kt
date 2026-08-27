@@ -53,6 +53,7 @@ class SeasonService(
         pendingSeason.startDate = now
         pendingSeason.currentSeason = true
         teamService.resetWinsAndLosses()
+        teamService.resetRankings()
         userService.resetAllDelayOfGameInstances()
         seasonRepository.save(pendingSeason)
         teamSeasonConferenceService.snapshotSeason(pendingSeason.seasonNumber)

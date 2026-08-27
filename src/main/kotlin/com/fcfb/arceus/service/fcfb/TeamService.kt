@@ -498,6 +498,11 @@ class TeamService(
 
     fun resetWinsAndLosses() = teamRepository.resetWinsAndLosses()
 
+    fun resetRankings() {
+        teamRepository.clearCoachesPollRankings()
+        teamRepository.clearPlayoffCommitteeRankings()
+    }
+
     private fun usePlayoffRanking() = teamRepository.usePlayoffRanking() == 1
 
     private fun getPlayoffRankingById(id: Int) = teamRepository.getPlayoffRankingById(id)
