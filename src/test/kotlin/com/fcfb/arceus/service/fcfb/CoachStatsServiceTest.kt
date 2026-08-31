@@ -101,6 +101,40 @@ class CoachStatsServiceTest {
     }
 
     @Test
+    fun `getCoachStats attributes a team's entire history when the team has no transaction log entries at all`() {
+        // Original team assignment predates the transaction log system entirely - there
+        // are no HIRED/FIRED rows for this team, but the coach's current team is still
+        // known from the User row itself.
+        currentUser.team = "Wyoming"
+        every { coachTransactionLogRepository.getEntireCoachTransactionLog() } returns emptyList()
+
+        val game =
+            Game().apply {
+                gameId = 7
+                homeTeam = "Wyoming"
+                awayTeam = "Air Force"
+                gameType = GameType.CONFERENCE_GAME
+                timestamp = "2023-09-01 12:00:00"
+            }
+        every { gameRepository.findByHomeTeam("Wyoming") } returns listOf(game)
+        every { gameRepository.findByAwayTeam("Wyoming") } returns emptyList()
+
+        val gameStats = GameStats(gameId = 7, team = "Wyoming", season = 10, week = 1)
+        every { gameStatsRepository.findByTeam("Wyoming") } returns listOf(gameStats)
+        every { gameStatsRepository.findByGameIdIn(setOf(7)) } returns listOf(gameStats)
+
+        val seasonStats = mockk<SeasonStats>()
+        every {
+            seasonStatsService.aggregateGameStatsToSeasonStats(any(), "Wyoming", 10, any(), null)
+        } returns seasonStats
+
+        val result = coachStatsService.getCoachStats("cyclone_puffin")
+
+        assertEquals(1, result.size)
+        assertTrue(result.contains(seasonStats))
+    }
+
+    @Test
     fun `getCoachStats returns empty when neither discord id nor username history match`() {
         every { coachTransactionLogRepository.getEntireCoachTransactionLog() } returns
             listOf(
