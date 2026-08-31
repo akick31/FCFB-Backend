@@ -7,6 +7,7 @@ import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.service.log.UsernameHistoryService
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.UserForbiddenException
@@ -26,6 +27,7 @@ class UserServiceTest {
     private val encryptionUtils: EncryptionUtils = mockk()
     private val dtoConverter: DTOConverter = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
+    private val usernameHistoryService: UsernameHistoryService = mockk()
     private lateinit var userService: UserService
 
     private val ownerUser =
@@ -67,10 +69,11 @@ class UserServiceTest {
 
     @BeforeEach
     fun setup() {
-        userService = UserService(userRepository, encryptionUtils, dtoConverter, passwordEncoder)
+        userService = UserService(userRepository, encryptionUtils, dtoConverter, passwordEncoder, usernameHistoryService)
         every { userRepository.getById(1L) } returns ownerUser
         every { userRepository.save(any()) } returns ownerUser
         every { dtoConverter.convertToUserDTO(any()) } returns ownerUserDTO
+        every { usernameHistoryService.recordUsernameChange(any(), any()) } returns Unit
     }
 
     @AfterEach

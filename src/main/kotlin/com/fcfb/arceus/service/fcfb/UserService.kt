@@ -9,6 +9,7 @@ import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.service.log.UsernameHistoryService
 import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.DiscordAlreadyLinkedException
@@ -32,6 +33,7 @@ class UserService(
     private val encryptionUtils: EncryptionUtils,
     private val dtoConverter: DTOConverter,
     private val passwordEncoder: PasswordEncoder,
+    private val usernameHistoryService: UsernameHistoryService,
 ) {
     fun updateUserWinsAndLosses(game: Game) {
         val homeUsers =
@@ -213,12 +215,25 @@ class UserService(
     ): UserDTO {
         requireSelfOrAdmin(id)
         val user = getUserById(id)
+        if (user.username != username) {
+            usernameHistoryService.recordUsernameChange(id, user.username)
+        }
         user.apply {
             this.username = username
         }
         saveUser(user)
         return dtoConverter.convertToUserDTO(user)
     }
+
+    fun addHistoricalUsername(
+        id: Long,
+        username: String,
+    ) {
+        requireSelfOrAdmin(id)
+        usernameHistoryService.recordUsernameChange(id, username)
+    }
+
+    fun getUsernameHistory(id: Long): List<String> = usernameHistoryService.getHistoricalUsernames(id)
 
     fun updateEmail(
         id: Long,

@@ -7,6 +7,7 @@ import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Record
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
+import com.fcfb.arceus.repositories.UserRepository
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.POSTSEASON_START_WEEK
 import org.springframework.stereotype.Service
@@ -16,6 +17,7 @@ class SeasonRecordService(
     private val recordRepository: RecordRepository,
     private val gameStatsRepository: GameStatsRepository,
     private val recordStatUtils: RecordStatUtils,
+    private val userRepository: UserRepository,
 ) {
     private data class TeamSeason(val team: String, val season: Int, val value: Double)
 
@@ -169,14 +171,27 @@ class SeasonRecordService(
     private fun getCoachForSeasonRecord(gameStatsList: List<GameStats>): String? {
         if (gameStatsList.isEmpty()) return null
 
-        val coachGameCounts = mutableMapOf<String, Int>()
+        val gameCounts = mutableMapOf<String, Int>()
+        val displayNameByKey = mutableMapOf<String, String>()
 
         for (gameStats in gameStatsList) {
-            gameStats.coaches?.forEach { coach ->
-                coachGameCounts[coach] = coachGameCounts.getOrDefault(coach, 0) + 1
+            val discordIds = gameStats.coachDiscordIds
+            val names = gameStats.coaches
+            if (!discordIds.isNullOrEmpty()) {
+                discordIds.forEachIndexed { index, discordId ->
+                    gameCounts[discordId] = gameCounts.getOrDefault(discordId, 0) + 1
+                    names?.getOrNull(index)?.let { displayNameByKey[discordId] = it }
+                }
+            } else {
+                names?.forEach { name ->
+                    gameCounts[name] = gameCounts.getOrDefault(name, 0) + 1
+                }
             }
         }
 
-        return coachGameCounts.maxByOrNull { it.value }?.key
+        val winningKey = gameCounts.maxByOrNull { it.value }?.key ?: return null
+        return userRepository.findByDiscordId(winningKey)?.username
+            ?: displayNameByKey[winningKey]
+            ?: winningKey
     }
 }

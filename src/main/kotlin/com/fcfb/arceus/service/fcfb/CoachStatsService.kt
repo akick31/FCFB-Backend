@@ -5,10 +5,13 @@ import com.fcfb.arceus.enums.user.TransactionType
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.SeasonStats
+import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.CoachTransactionLogRepository
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.service.log.UsernameHistoryService
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
@@ -21,6 +24,8 @@ class CoachStatsService(
     private val teamRepository: TeamRepository,
     private val coachTransactionLogRepository: CoachTransactionLogRepository,
     private val seasonStatsService: SeasonStatsService,
+    private val userRepository: UserRepository,
+    private val usernameHistoryService: UsernameHistoryService,
 ) {
     private data class Stint(
         val team: String,
@@ -33,7 +38,10 @@ class CoachStatsService(
     private val minimumStintLength: Duration = Duration.ofDays(14)
 
     fun getCoachStats(coach: String): List<SeasonStats> {
-        val stints = buildStints(coach).filter { it.end == null || Duration.between(it.start, it.end) >= minimumStintLength }
+        val user = userRepository.findByUsername(coach)
+        val discordId = user?.discordId
+        val coachNames = resolveCoachNames(coach, user)
+        val stints = buildStints(discordId, coachNames).filter { it.end == null || Duration.between(it.start, it.end) >= minimumStintLength }
         if (stints.isEmpty()) {
             return emptyList()
         }
@@ -84,10 +92,25 @@ class CoachStatsService(
         (gameRepository.findByHomeTeam(team) + gameRepository.findByAwayTeam(team))
             .filter { it.gameType != GameType.SCRIMMAGE }
 
-    private fun buildStints(coach: String): List<Stint> {
+    private fun resolveCoachNames(
+        coach: String,
+        user: User?,
+    ): Set<String> {
+        val historicalNames = user?.let { usernameHistoryService.getHistoricalUsernames(it.id) } ?: emptyList()
+        return (historicalNames + coach).toSet()
+    }
+
+    private fun buildStints(
+        discordId: String?,
+        coachNames: Set<String>,
+    ): List<Stint> {
         val entries =
             coachTransactionLogRepository.getEntireCoachTransactionLog()
-                .filter { (it.coach ?: emptyList()).contains(coach) }
+                .filter { entry ->
+                    val matchesDiscordId = discordId != null && (entry.coachDiscordIds ?: emptyList()).contains(discordId)
+                    val matchesName = (entry.coach ?: emptyList()).any { name -> coachNames.contains(name) }
+                    matchesDiscordId || matchesName
+                }
                 .mapNotNull { entry -> parseTransactionDate(entry.transactionDate)?.let { entry to it } }
                 .sortedBy { it.second }
 

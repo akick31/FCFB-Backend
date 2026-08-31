@@ -229,9 +229,9 @@ class PlayService(
             throw PlayNotFoundException("No plays found for game $gameId")
         }
 
-    fun getAllPlaysByDiscordTag(discordTag: String) =
-        playRepository.getAllPlaysByDiscordTag(discordTag).ifEmpty {
-            throw PlayNotFoundException("No plays found for user $discordTag")
+    fun getAllPlaysByDiscordId(discordId: String) =
+        playRepository.getAllPlaysByDiscordId(discordId).ifEmpty {
+            throw PlayNotFoundException("No plays found for user $discordId")
         }
 
     fun updatePlay(play: Play): Play {

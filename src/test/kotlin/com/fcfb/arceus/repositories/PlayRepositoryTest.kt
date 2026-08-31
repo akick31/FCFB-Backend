@@ -164,14 +164,14 @@ class PlayRepositoryTest {
     }
 
     @Test
-    fun `test getAllPlaysByDiscordTag`() {
+    fun `test getAllPlaysByDiscordId`() {
         val play1 = createTestPlay(playId = 1, offensiveSubmitter = "coach#1234")
         val play2 = createTestPlay(playId = 2, defensiveSubmitter = "coach#1234")
         val plays = listOf(play1, play2)
 
-        every { playRepository.getAllPlaysByDiscordTag("coach#1234") } returns plays
+        every { playRepository.getAllPlaysByDiscordId("111222333") } returns plays
 
-        val foundPlays = playRepository.getAllPlaysByDiscordTag("coach#1234")
+        val foundPlays = playRepository.getAllPlaysByDiscordId("111222333")
 
         assertEquals(2, foundPlays.size)
         assertTrue(foundPlays.any { it.offensiveSubmitter == "coach#1234" })

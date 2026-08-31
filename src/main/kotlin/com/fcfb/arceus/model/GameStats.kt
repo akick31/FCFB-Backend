@@ -39,6 +39,10 @@ class GameStats(
     @Column(name = "coaches", columnDefinition = "longtext")
     @JsonProperty("coaches")
     var coaches: List<String>? = listOf(),
+    @Type(type = "json")
+    @Column(name = "coach_discord_ids", columnDefinition = "longtext")
+    @JsonProperty("coach_discord_ids")
+    var coachDiscordIds: List<String>? = listOf(),
     @Basic
     @Column(name = "offensive_playbook")
     var offensivePlaybook: OffensivePlaybook? = null,

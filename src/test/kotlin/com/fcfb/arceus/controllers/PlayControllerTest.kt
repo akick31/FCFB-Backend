@@ -121,11 +121,11 @@ class PlayControllerTest {
     }
 
     @Test
-    fun `should get all plays by discord tag`() {
+    fun `should get all plays by discord id`() {
         val play = createSamplePlay()
-        every { playService.getAllPlaysByDiscordTag("coachA#1234") } returns listOf(play)
+        every { playService.getAllPlaysByDiscordId("111222333") } returns listOf(play)
 
-        mockMvc.perform(get("/api/v1/arceus/play/all/user").param("discordTag", "coachA#1234"))
+        mockMvc.perform(get("/api/v1/arceus/play/all/user").param("discordId", "111222333"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$[0].offensiveSubmitter").value("coachA"))
     }

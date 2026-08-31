@@ -68,6 +68,19 @@ class UserController(
         @RequestParam newUsername: String,
     ): UserDTO = userService.updateUsername(id, newUsername)
 
+    @Operation(summary = "Get a user's past usernames")
+    @GetMapping("/username-history")
+    fun getUsernameHistory(
+        @RequestParam userId: Long,
+    ): List<String> = userService.getUsernameHistory(userId)
+
+    @Operation(summary = "Record a past username for a user (backfill for renames that predate history tracking)")
+    @PostMapping("/username-history")
+    fun addHistoricalUsername(
+        @RequestParam userId: Long,
+        @RequestParam username: String,
+    ) = userService.addHistoricalUsername(userId, username)
+
     @Operation(summary = "Update password")
     @PutMapping("/update/password")
     fun updateUserPassword(
