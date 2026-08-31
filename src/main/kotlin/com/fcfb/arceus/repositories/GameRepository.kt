@@ -128,6 +128,8 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
 
     fun findByAwayTeam(awayTeam: String): List<Game>
 
+    fun findBySeason(season: Int): List<Game>
+
     fun findByGameStatus(gameStatus: GameStatus): List<Game>
 
     fun findByGameType(gameType: GameType): List<Game>

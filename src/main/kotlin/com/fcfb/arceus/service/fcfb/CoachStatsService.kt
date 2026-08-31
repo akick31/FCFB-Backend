@@ -41,11 +41,20 @@ class CoachStatsService(
         val user = userRepository.findByUsername(coach)
         val discordId = user?.discordId
         val coachNames = resolveCoachNames(coach, user)
-        val stints =
-            buildStints(
-                discordId,
-                coachNames,
-            ).filter { it.end == null || Duration.between(it.start, it.end) >= minimumStintLength }
+        val rawStints = buildStints(discordId, coachNames).toMutableList()
+
+        // A coach's current team can be entirely absent from the transaction log (e.g. an
+        // original team assignment that predates the log itself). In that case there's no
+        // competing claim on that team's history, so treat their whole tenure as one open stint.
+        val currentTeam = user?.team
+        if (currentTeam != null && rawStints.none { it.team == currentTeam }) {
+            val teamHasAnyLogEntry = coachTransactionLogRepository.getEntireCoachTransactionLog().any { it.team == currentTeam }
+            if (!teamHasAnyLogEntry) {
+                rawStints.add(Stint(currentTeam, LocalDateTime.MIN, null))
+            }
+        }
+
+        val stints = rawStints.filter { it.end == null || Duration.between(it.start, it.end) >= minimumStintLength }
         if (stints.isEmpty()) {
             return emptyList()
         }
