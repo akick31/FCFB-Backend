@@ -70,7 +70,10 @@ class DelayOfGameMonitor(
                 gameService.endDOGOutGame(updatedGame, delayOfGameInstances)
             }
             val allPlays = playRepository.getAllPlaysByGameId(updatedGame.gameId)
-            gameStatsService.updateGameStats(updatedGame, allPlays)
+            val (homeStats, awayStats) = gameStatsService.updateGameStats(updatedGame, allPlays)
+            if (isDelayOfGameOut) {
+                gameStatsService.reconcileForfeitScore(updatedGame, homeStats, awayStats)
+            }
             discordService.notifyDelayOfGame(updatedGame, isDelayOfGameOut)
             Logger.info("A delay of game for game ${game.gameId} has been processed")
         }
