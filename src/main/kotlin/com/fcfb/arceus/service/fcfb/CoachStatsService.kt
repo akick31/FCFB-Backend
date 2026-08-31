@@ -41,7 +41,11 @@ class CoachStatsService(
         val user = userRepository.findByUsername(coach)
         val discordId = user?.discordId
         val coachNames = resolveCoachNames(coach, user)
-        val stints = buildStints(discordId, coachNames).filter { it.end == null || Duration.between(it.start, it.end) >= minimumStintLength }
+        val stints =
+            buildStints(
+                discordId,
+                coachNames,
+            ).filter { it.end == null || Duration.between(it.start, it.end) >= minimumStintLength }
         if (stints.isEmpty()) {
             return emptyList()
         }

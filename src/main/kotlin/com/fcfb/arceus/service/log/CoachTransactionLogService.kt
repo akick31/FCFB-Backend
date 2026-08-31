@@ -2,8 +2,8 @@ package com.fcfb.arceus.service.log
 
 import com.fcfb.arceus.model.CoachTransactionLog
 import com.fcfb.arceus.repositories.CoachTransactionLogRepository
-import com.fcfb.arceus.repositories.UsernameHistoryRepository
 import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.repositories.UsernameHistoryRepository
 import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.UserForbiddenException
 import org.springframework.stereotype.Component
