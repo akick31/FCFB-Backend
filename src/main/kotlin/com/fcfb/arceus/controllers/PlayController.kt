@@ -82,9 +82,9 @@ class PlayController(
 
     @Operation(summary = "List user's plays")
     @GetMapping("/all/user")
-    fun getAllPlaysByDiscordTag(
-        @RequestParam("discordTag") discordTag: String,
-    ) = playService.getAllPlaysByDiscordTag(discordTag)
+    fun getAllPlaysByDiscordId(
+        @RequestParam("discordId") discordId: String,
+    ) = playService.getAllPlaysByDiscordId(discordId)
 
     @Operation(summary = "Delay of game counts")
     @GetMapping("/delay-of-game")

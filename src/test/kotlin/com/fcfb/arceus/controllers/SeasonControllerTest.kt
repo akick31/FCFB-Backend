@@ -79,6 +79,7 @@ class SeasonControllerTest {
         every { scheduleValidationService.validateSchedule(12) } returns
             ScheduleValidationResult(valid = true, incompleteTeams = emptyList())
         every { teamService.resetWinsAndLosses() } returns Unit
+        every { teamService.resetRankings() } returns Unit
         every { userService.resetAllDelayOfGameInstances() } returns Unit
         every { seasonRepository.save(any()) } returns pendingSeason
         every { offseasonService.endOffseason(any()) } returns Unit

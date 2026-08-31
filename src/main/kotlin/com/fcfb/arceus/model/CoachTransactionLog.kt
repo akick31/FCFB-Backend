@@ -37,6 +37,10 @@ class CoachTransactionLog {
     @Column(name = "coach", nullable = false, columnDefinition = "longtext")
     var coach: MutableList<String>? = mutableListOf()
 
+    @Type(type = "json")
+    @Column(name = "coach_discord_ids", columnDefinition = "longtext")
+    var coachDiscordIds: MutableList<String>? = mutableListOf()
+
     @Enumerated(EnumType.STRING)
     @Basic
     @Column(name = "transaction", nullable = false)
@@ -57,6 +61,7 @@ class CoachTransactionLog {
         transaction: TransactionType,
         transactionDate: String,
         processedBy: String,
+        coachDiscordIds: MutableList<String>? = mutableListOf(),
     ) {
         this.team = team
         this.position = position
@@ -64,6 +69,7 @@ class CoachTransactionLog {
         this.transaction = transaction
         this.transactionDate = transactionDate
         this.processedBy = processedBy
+        this.coachDiscordIds = coachDiscordIds
     }
 
     constructor()

@@ -239,6 +239,9 @@ class TeamService(
     ): Team {
         val existingTeam = getTeamByName(team)
         val user = userService.getUserDTOByDiscordId(discordId)
+        if (user.team != null && user.team != existingTeam.name) {
+            fireSingleCoach(user.team, discordId, user.position, processedBy)
+        }
         user.team = existingTeam.name
         when (coachPosition) {
             CoachPosition.HEAD_COACH -> {
@@ -339,6 +342,7 @@ class TeamService(
                     TransactionType.HIRED,
                     ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
                     processedBy,
+                    mutableListOf(discordId),
                 ),
             )
         }
@@ -388,6 +392,7 @@ class TeamService(
                     TransactionType.HIRED_INTERIM,
                     ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
                     processedBy,
+                    mutableListOf(discordId),
                 ),
             )
         }
@@ -416,6 +421,7 @@ class TeamService(
                 TransactionType.FIRED,
                 ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
                 processedBy,
+                coachDiscordIds.toMutableList(),
             ),
         )
         existingTeam.coachUsernames = null
@@ -458,6 +464,7 @@ class TeamService(
                 TransactionType.FIRED,
                 ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
                 processedBy,
+                mutableListOf(discordId),
             ),
         )
 
@@ -497,6 +504,11 @@ class TeamService(
     }
 
     fun resetWinsAndLosses() = teamRepository.resetWinsAndLosses()
+
+    fun resetRankings() {
+        teamRepository.clearCoachesPollRankings()
+        teamRepository.clearPlayoffCommitteeRankings()
+    }
 
     private fun usePlayoffRanking() = teamRepository.usePlayoffRanking() == 1
 
