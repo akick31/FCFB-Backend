@@ -1304,6 +1304,14 @@ class GameService(
         return game
     }
 
+    fun resetDelayOfGameTimer(gameId: Int): Game {
+        val game = getGameById(gameId)
+        game.gameTimer = calculateDelayOfGameTimer()
+        game.gameWarning = GameWarning.NONE
+        saveGame(game)
+        return game
+    }
+
     fun updateGame(game: Game): Game {
         val existingGame = getGameById(game.gameId)
 

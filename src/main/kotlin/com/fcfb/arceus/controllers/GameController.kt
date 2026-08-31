@@ -172,6 +172,16 @@ class GameController(
         @RequestParam("gameId") gameId: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.updateLastMessageTimestamp(gameId))
 
+    @Operation(
+        summary =
+            "Reset the delay of game timer without recording a play, " +
+                "for use when a Discord notification failed to send",
+    )
+    @PutMapping("/reset-delay-of-game-timer")
+    fun resetDelayOfGameTimer(
+        @RequestParam("gameId") gameId: Int,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.resetDelayOfGameTimer(gameId))
+
     @Operation(summary = "Get game by request message ID")
     @GetMapping("/request-message")
     fun getGameByRequestMessageId(
