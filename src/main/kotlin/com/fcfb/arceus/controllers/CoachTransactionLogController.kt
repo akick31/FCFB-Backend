@@ -6,9 +6,7 @@ import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @CrossOrigin(origins = ["*"])
@@ -22,21 +20,5 @@ class CoachTransactionLogController(
     fun getEntireCoachTransactionLog(): ResponseEntity<List<CoachTransactionLog>> =
         ResponseEntity.ok(
             coachTransactionLogService.getEntireCoachTransactionLog(),
-        )
-
-    @Operation(summary = "Backfill coach_discord_ids on existing transaction log rows")
-    @PostMapping("/backfill-discord-ids")
-    fun backfillDiscordIds(): ResponseEntity<Int> =
-        ResponseEntity.ok(
-            coachTransactionLogService.backfillDiscordIds(),
-        )
-
-    @Operation(summary = "Backfill a HIRED entry for teams with no log entry before their earliest tracked game in a season")
-    @PostMapping("/backfill-pre-log-hires")
-    fun backfillPreLogHires(
-        @RequestParam season: Int,
-    ): ResponseEntity<Int> =
-        ResponseEntity.ok(
-            coachTransactionLogService.backfillPreLogHires(season),
         )
 }

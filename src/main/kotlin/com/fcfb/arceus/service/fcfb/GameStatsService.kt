@@ -261,6 +261,28 @@ class GameStatsService(
 
     fun saveGameStats(gameStats: GameStats) = gameStatsRepository.save(gameStats)
 
+    /**
+     * A delay-of-game forfeit bumps `game.homeScore`/`awayScore` directly with no backing play,
+     * so it never flows into the per-quarter GameStats breakdown. Call after updateGameStats()
+     * to fold any such gap into `otScore` so quarter totals still sum to the final score.
+     */
+    fun reconcileForfeitScore(
+        game: Game,
+        homeStats: GameStats,
+        awayStats: GameStats,
+    ) {
+        val homeGap = game.homeScore - (homeStats.q1Score + homeStats.q2Score + homeStats.q3Score + homeStats.q4Score + homeStats.otScore)
+        if (homeGap > 0) {
+            homeStats.otScore += homeGap
+            saveGameStats(homeStats)
+        }
+        val awayGap = game.awayScore - (awayStats.q1Score + awayStats.q2Score + awayStats.q3Score + awayStats.q4Score + awayStats.otScore)
+        if (awayGap > 0) {
+            awayStats.otScore += awayGap
+            saveGameStats(awayStats)
+        }
+    }
+
     fun getGameStatsByIdAndTeam(
         gameId: Int,
         team: String,
@@ -449,7 +471,7 @@ class GameStatsService(
             if (play.quarter == 4) {
                 stats.q4Score = GameStatsCalculator.calculateQuarterScore(play, stats.q4Score, teamSide)
             }
-            if (play.quarter == 5) {
+            if (play.quarter >= 5) {
                 stats.otScore = GameStatsCalculator.calculateQuarterScore(play, stats.otScore, teamSide)
             }
         }

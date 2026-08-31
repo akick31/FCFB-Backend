@@ -171,6 +171,7 @@ class GameSpecificationService(
                 listOf(
                     org.springframework.data.domain.Sort.Order.desc("season"),
                     org.springframework.data.domain.Sort.Order.desc("week"),
+                    org.springframework.data.domain.Sort.Order.desc("lastMessageTimestamp"),
                     org.springframework.data.domain.Sort.Order.desc("gameId"),
                 )
         }

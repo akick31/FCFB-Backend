@@ -71,8 +71,6 @@ internal val ADMIN_ONLY_GET_PATHS = arrayOf("$FULL_PATH/new_signups")
 
 internal val ADMIN_ONLY_POST_PATHS =
     arrayOf(
-        "$FULL_PATH/coach_transaction_log/backfill-discord-ids",
-        "$FULL_PATH/coach_transaction_log/backfill-pre-log-hires",
         "$FULL_PATH/conference",
         "$FULL_PATH/conference-stats/generate/all",
         "$FULL_PATH/conference-stats/postseason/generate/all",
