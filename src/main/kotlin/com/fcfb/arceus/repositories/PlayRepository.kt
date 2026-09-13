@@ -49,6 +49,15 @@ interface PlayRepository : CrudRepository<Play, Int> {
     fun getPreviousPlay(gameId: Int): Play?
 
     @Query(
+        value = "SELECT * FROM play WHERE game_id = ? AND play_id < ? AND play_finished = true ORDER BY play_id DESC LIMIT 1",
+        nativeQuery = true,
+    )
+    fun getPlayImmediatelyBefore(
+        gameId: Int,
+        playId: Int,
+    ): Play?
+
+    @Query(
         value = "SELECT COUNT(*) FROM play WHERE game_id = :gameId AND result = 'DELAY OF GAME ON HOME TEAM'",
         nativeQuery = true,
     )
