@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.animation
 
+import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import org.springframework.stereotype.Component
@@ -17,7 +18,7 @@ class OverlayPainter {
         homeTeam: Team,
         awayTeam: Team,
     ): List<BufferedImage> {
-        val label = labelFor(overlay) ?: return frames
+        val label = labelFor(overlay, play) ?: return frames
         val overlayFrameCount = minOf(OVERLAY_FRAME_COUNT, frames.size)
         return frames.mapIndexed { index, frame ->
             if (index >= frames.size - overlayFrameCount) stampLabel(frame, label) else frame
@@ -30,33 +31,51 @@ class OverlayPainter {
     ): BufferedImage {
         val g = frame.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        g.font = Font("Arial", Font.BOLD, 22)
-        g.color = Color.YELLOW
-        val width = g.fontMetrics.stringWidth(label)
-        g.drawString(label, (frame.width - width) / 2, 30)
+        g.font = Font("Arial", Font.BOLD, TEXT_SIZE)
+        val metrics = g.fontMetrics
+        val width = metrics.stringWidth(label)
+        val x = (frame.width - width) / 2
+        val y = frame.height / 2 + metrics.ascent / 2
+
+        g.color = Color(0, 0, 0, 140)
+        g.fillRect(
+            x - BACKGROUND_PADDING,
+            y - metrics.ascent - BACKGROUND_PADDING / 2,
+            width + BACKGROUND_PADDING * 2,
+            metrics.ascent + metrics.descent + BACKGROUND_PADDING,
+        )
+
+        g.color = Color.WHITE
+        g.drawString(label, x, y)
         g.dispose()
         return frame
     }
 
-    private fun labelFor(overlay: OverlayType): String? =
+    private fun labelFor(
+        overlay: OverlayType,
+        play: Play,
+    ): String? =
         when (overlay) {
-            OverlayType.TOUCHDOWN_FLASH -> "TOUCHDOWN"
+            OverlayType.TOUCHDOWN_FLASH -> "TOUCHDOWN!"
             OverlayType.FIRST_DOWN_MARKER -> "FIRST DOWN"
             OverlayType.TURNOVER_FLAG -> "TURNOVER"
-            OverlayType.SAFETY_FLASH -> "SAFETY"
-            OverlayType.KICK_GOOD -> "GOOD"
+            OverlayType.SAFETY_FLASH -> "SAFETY!"
+            OverlayType.KICK_GOOD -> if (play.playCall == PlayCall.FIELD_GOAL) "FIELD GOAL IS GOOD!" else "EXTRA POINT IS GOOD!"
             OverlayType.KICK_NO_GOOD -> "NO GOOD"
             OverlayType.KICK_BLOCKED -> "BLOCKED"
             OverlayType.MUFFED_BOUNCE -> "MUFFED"
-            OverlayType.TWO_POINT_SUCCESS -> "GOOD"
+            OverlayType.TWO_POINT_SUCCESS -> "TWO-POINT CONVERSION GOOD!"
             OverlayType.TWO_POINT_FAILED -> "NO GOOD"
             OverlayType.SPIKE_ICON -> "SPIKE"
             OverlayType.KNEEL_ICON -> "KNEEL"
-            OverlayType.DEAD_PLAY -> null
+            OverlayType.DEFENSE_TWO_POINT_RETURN -> "DEFENSIVE TWO-POINT!"
+            OverlayType.DEAD_PLAY -> "TIME EXPIRED"
             OverlayType.NONE -> null
         }
 
     companion object {
         private const val OVERLAY_FRAME_COUNT = 3
+        private const val TEXT_SIZE = 56
+        private const val BACKGROUND_PADDING = 16
     }
 }

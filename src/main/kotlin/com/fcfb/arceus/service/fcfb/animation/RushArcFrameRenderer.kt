@@ -1,10 +1,11 @@
 package com.fcfb.arceus.service.fcfb.animation
 
+import com.fcfb.arceus.enums.team.DefensivePlaybook
+import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage
-import kotlin.math.sin
 
 @Component
 class RushArcFrameRenderer : PlayAnimationFrameRenderer {
@@ -14,17 +15,21 @@ class RushArcFrameRenderer : PlayAnimationFrameRenderer {
         endAbs: Int,
         homeTeam: Team,
         awayTeam: Team,
+        offensivePlaybook: OffensivePlaybook,
+        defensivePlaybook: DefensivePlaybook,
     ): List<BufferedImage> {
         val centerY = FieldBackgroundPainter.HEIGHT / 2
+        val firstDownAbs = firstDownAbsFor(play, startAbs)
         return animationTimeline().map { t ->
             val abs = startAbs + (endAbs - startAbs) * t
             val x = FieldCoordinateMapper.toPixelX(Math.round(abs), FieldBackgroundPainter.WIDTH, FieldBackgroundPainter.MARGIN)
-            val y = centerY - (RUSH_HUMP * sin(Math.PI * t)).toInt()
-            FieldBackgroundPainter.paint(homeTeam, awayTeam).also { FieldBackgroundPainter.drawBall(it, x, y) }
+            FieldBackgroundPainter.paint(homeTeam, awayTeam).also {
+                if (shouldDrawScrimmageLines(play.playCall)) {
+                    FieldBackgroundPainter.drawScrimmageLines(it, startAbs, firstDownAbs)
+                }
+                PlayerFormationPainter.draw(it, play, startAbs, x, centerY, t, offensivePlaybook, defensivePlaybook)
+                FieldBackgroundPainter.drawBall(it, x, centerY)
+            }
         }
-    }
-
-    companion object {
-        private const val RUSH_HUMP = 8
     }
 }

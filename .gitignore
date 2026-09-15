@@ -47,3 +47,6 @@ build/
 
 ### Claude Code ###
 .claude/
+
+### Animation previews ###
+/animation-previews/

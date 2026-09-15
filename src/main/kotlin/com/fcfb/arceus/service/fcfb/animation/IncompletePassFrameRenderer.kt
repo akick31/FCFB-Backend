@@ -10,7 +10,7 @@ import kotlin.math.abs
 import kotlin.math.sin
 
 @Component
-class PassArcFrameRenderer : PlayAnimationFrameRenderer {
+class IncompletePassFrameRenderer : PlayAnimationFrameRenderer {
     override fun renderFrames(
         play: Play,
         startAbs: Int,
@@ -22,25 +22,22 @@ class PassArcFrameRenderer : PlayAnimationFrameRenderer {
     ): List<BufferedImage> {
         val centerY = FieldBackgroundPainter.HEIGHT / 2
         val firstDownAbs = firstDownAbsFor(play, startAbs)
-        val totalDistance = endAbs - startAbs
-        val direction = if (totalDistance >= 0) 1 else -1
-        val catchAbs = if (abs(totalDistance) <= CATCH_CAP) endAbs else startAbs + direction * CATCH_CAP
-        val hasBreakawayRun = catchAbs != endAbs
-
         return animationTimeline().map { t ->
-            val (abs, y) =
-                if (!hasBreakawayRun) {
-                    val a = startAbs + (endAbs - startAbs) * t
-                    a to centerY - (PASS_ARC_HEIGHT * sin(Math.PI * t)).toInt()
-                } else if (t <= THROW_PORTION) {
-                    val progress = t / THROW_PORTION
-                    val a = startAbs + (catchAbs - startAbs) * progress
-                    a to centerY - (PASS_ARC_HEIGHT * sin(Math.PI * progress)).toInt()
-                } else {
-                    val progress = (t - THROW_PORTION) / (1f - THROW_PORTION)
-                    (catchAbs + (endAbs - catchAbs) * progress) to centerY
-                }
-            val x = FieldCoordinateMapper.toPixelX(Math.round(abs), FieldBackgroundPainter.WIDTH, FieldBackgroundPainter.MARGIN)
+            val flightT = (t / FLIGHT_PORTION).coerceAtMost(1f)
+            val flightAbs = startAbs + (endAbs - startAbs) * flightT
+            val baseX = FieldCoordinateMapper.toPixelX(Math.round(flightAbs), FieldBackgroundPainter.WIDTH, FieldBackgroundPainter.MARGIN)
+
+            val y: Int
+            val x: Int
+            if (t < FLIGHT_PORTION) {
+                y = centerY - (PASS_ARC_HEIGHT * sin(Math.PI * flightT)).toInt()
+                x = baseX
+            } else {
+                val bounceT = (t - FLIGHT_PORTION) / (1f - FLIGHT_PORTION)
+                val decay = 1f - bounceT
+                y = centerY - (BOUNCE_AMPLITUDE * decay * abs(sin(bounceT * BOUNCE_CYCLES * Math.PI))).toInt()
+                x = baseX + (JITTER_AMPLITUDE * decay * sin(bounceT * JITTER_CYCLES * 2 * Math.PI)).toInt()
+            }
             FieldBackgroundPainter.paint(homeTeam, awayTeam).also {
                 FieldBackgroundPainter.drawScrimmageLines(it, startAbs, firstDownAbs)
                 PlayerFormationPainter.draw(it, play, startAbs, x, y, t, offensivePlaybook, defensivePlaybook)
@@ -50,8 +47,11 @@ class PassArcFrameRenderer : PlayAnimationFrameRenderer {
     }
 
     companion object {
+        private const val FLIGHT_PORTION = 0.6f
         private const val PASS_ARC_HEIGHT = 110
-        private const val CATCH_CAP = 15
-        private const val THROW_PORTION = 0.5f
+        private const val BOUNCE_AMPLITUDE = 40
+        private const val BOUNCE_CYCLES = 3.0
+        private const val JITTER_AMPLITUDE = 20
+        private const val JITTER_CYCLES = 4.0
     }
 }

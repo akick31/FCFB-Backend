@@ -17,7 +17,8 @@ class AnimatedGifEncoder {
     fun encode(
         frames: List<BufferedImage>,
         paletteColors: List<Color>,
-        frameDelayCentiseconds: Int = 10,
+        frameDelayCentiseconds: Int = 32,
+        finalFrameHoldCentiseconds: Int = 1000,
         loopCount: Int = 0,
     ): ByteArray {
         require(frames.isNotEmpty()) { "Cannot encode an animated GIF with no frames" }
@@ -34,7 +35,8 @@ class AnimatedGifEncoder {
         writer.prepareWriteSequence(null)
         indexedFrames.forEachIndexed { index, frame ->
             val frameMetadata = writer.getDefaultImageMetadata(typeSpecifier, writer.defaultWriteParam)
-            configureFrameDelay(frameMetadata, frameDelayCentiseconds)
+            val delay = if (index == indexedFrames.lastIndex) finalFrameHoldCentiseconds else frameDelayCentiseconds
+            configureFrameDelay(frameMetadata, delay)
             if (index == 0) {
                 configureLoopCount(frameMetadata, loopCount)
             }

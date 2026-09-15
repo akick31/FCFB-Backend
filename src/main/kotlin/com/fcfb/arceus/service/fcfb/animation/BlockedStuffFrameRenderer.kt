@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage
 import kotlin.math.sin
 
 @Component
-class KickArcFrameRenderer : PlayAnimationFrameRenderer {
+class BlockedStuffFrameRenderer : PlayAnimationFrameRenderer {
     override fun renderFrames(
         play: Play,
         startAbs: Int,
@@ -22,21 +22,22 @@ class KickArcFrameRenderer : PlayAnimationFrameRenderer {
         val centerY = FieldBackgroundPainter.HEIGHT / 2
         val firstDownAbs = firstDownAbsFor(play, startAbs)
         return animationTimeline().map { t ->
-            val abs = startAbs + (endAbs - startAbs) * t
+            val advance = if (t <= DEFLECTION_POINT) t / DEFLECTION_POINT else 1f
+            val abs = startAbs + (endAbs - startAbs) * DEFLECTION_ADVANCE * advance
             val x = FieldCoordinateMapper.toPixelX(Math.round(abs), FieldBackgroundPainter.WIDTH, FieldBackgroundPainter.MARGIN)
-            val y = centerY - (KICK_ARC_HEIGHT * sin(Math.PI * t)).toInt()
+            val deflectionProgress = ((t - DEFLECTION_POINT) / (1f - DEFLECTION_POINT)).coerceIn(0f, 1f)
+            val y = centerY - (DEFLECTION_HEIGHT * sin(Math.PI * deflectionProgress)).toInt()
             FieldBackgroundPainter.paint(homeTeam, awayTeam).also {
-                if (shouldDrawScrimmageLines(play.playCall)) {
-                    FieldBackgroundPainter.drawScrimmageLines(it, startAbs, firstDownAbs)
-                }
+                FieldBackgroundPainter.drawScrimmageLines(it, startAbs, firstDownAbs)
                 PlayerFormationPainter.draw(it, play, startAbs, x, y, t, offensivePlaybook, defensivePlaybook)
-                FieldBackgroundPainter.drawSpiralingBall(it, x, y, t * SPIN_CYCLES)
+                FieldBackgroundPainter.drawBall(it, x, y)
             }
         }
     }
 
     companion object {
-        private const val KICK_ARC_HEIGHT = 170
-        private const val SPIN_CYCLES = 6f
+        private const val DEFLECTION_POINT = 0.3f
+        private const val DEFLECTION_ADVANCE = 0.4f
+        private const val DEFLECTION_HEIGHT = 50
     }
 }

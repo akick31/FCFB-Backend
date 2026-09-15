@@ -49,10 +49,10 @@ interface PlayRepository : CrudRepository<Play, Int> {
     fun getPreviousPlay(gameId: Int): Play?
 
     @Query(
-        value = "SELECT * FROM play WHERE game_id = ? AND play_id < ? AND play_finished = true ORDER BY play_id DESC LIMIT 1",
+        value = "SELECT * FROM play WHERE game_id = ? AND play_id > ? AND play_finished = true ORDER BY play_id ASC LIMIT 1",
         nativeQuery = true,
     )
-    fun getPlayImmediatelyBefore(
+    fun getPlayImmediatelyAfter(
         gameId: Int,
         playId: Int,
     ): Play?

@@ -224,10 +224,10 @@ class PlayService(
 
     fun getCurrentPlayOrNull(gameId: Int) = playRepository.getCurrentPlay(gameId)
 
-    fun getPlayImmediatelyBeforeOrNull(
+    fun getPlayImmediatelyAfterOrNull(
         gameId: Int,
         playId: Int,
-    ) = playRepository.getPlayImmediatelyBefore(gameId, playId)
+    ) = playRepository.getPlayImmediatelyAfter(gameId, playId)
 
     fun getAllPlaysByGameId(gameId: Int) =
         playRepository.getAllPlaysByGameId(gameId).ifEmpty {
