@@ -42,10 +42,13 @@ object FieldBackgroundPainter {
     fun paint(
         homeTeam: Team,
         awayTeam: Team,
+        zoom: Float = 1f,
     ): BufferedImage {
-        val image = BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB)
+        val image = BufferedImage((WIDTH * zoom).toInt(), (HEIGHT * zoom).toInt(), BufferedImage.TYPE_INT_RGB)
         val g = image.createGraphics()
+        g.scale(zoom.toDouble(), zoom.toDouble())
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
 
         g.color = TURF_COLOR
         g.fillRect(0, 0, WIDTH, HEIGHT)
@@ -92,8 +95,10 @@ object FieldBackgroundPainter {
         image: BufferedImage,
         losAbs: Int,
         firstDownAbs: Int,
+        zoom: Float = 1f,
     ) {
         val g = image.createGraphics()
+        g.scale(zoom.toDouble(), zoom.toDouble())
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         g.stroke = BasicStroke(4f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)
 
@@ -134,17 +139,21 @@ object FieldBackgroundPainter {
         x: Int,
         y: Int,
         spinProgress: Float,
+        scale: Float = 1f,
     ) {
         val g = image.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        val halfWidth = (12 * scale).toInt()
+        val halfHeight = (8 * scale).toInt()
         g.color = BALL_COLOR
-        g.fillOval(x - 12, y - 8, 24, 16)
+        g.fillOval(x - halfWidth, y - halfHeight, halfWidth * 2, halfHeight * 2)
 
         val angle = spinProgress * 2 * PI
-        val laceX1 = x - 6 * cos(angle).toFloat()
-        val laceY1 = y - 6 * sin(angle).toFloat() * 0.5f
-        val laceX2 = x + 6 * cos(angle).toFloat()
-        val laceY2 = y + 6 * sin(angle).toFloat() * 0.5f
+        val laceLength = halfWidth / 2f
+        val laceX1 = x - laceLength * cos(angle).toFloat()
+        val laceY1 = y - laceLength * sin(angle).toFloat() * 0.5f
+        val laceX2 = x + laceLength * cos(angle).toFloat()
+        val laceY2 = y + laceLength * sin(angle).toFloat() * 0.5f
         g.color = LINE_COLOR
         g.drawLine(laceX1.toInt(), laceY1.toInt(), laceX2.toInt(), laceY2.toInt())
         g.dispose()

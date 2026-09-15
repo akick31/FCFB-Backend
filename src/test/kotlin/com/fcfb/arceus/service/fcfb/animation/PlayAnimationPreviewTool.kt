@@ -14,12 +14,8 @@ import java.awt.Color
 import java.io.File
 
 /**
- * Renders sample GIFs straight through the real rendering pipeline (classifiers, renderers,
- * overlay painter, encoder) without a database or Spring context — for visually spot-checking
- * animation output on demand. Fetches the home team logo over the network for the wall-tiling
- * and midfield-logo previews, so this one test does hit the network; not `@Disabled` since it's
- * still safe to run as part of the normal suite, just meant to be run directly with `--tests`
- * to regenerate preview GIFs.
+ * Renders sample GIFs straight through the real rendering pipeline without a database or Spring
+ * context, for visually spot-checking animation output. Fetches the home team logo over the network.
  */
 class PlayAnimationPreviewTool {
     private val homeTeam =
@@ -41,147 +37,73 @@ class PlayAnimationPreviewTool {
     private val overlayClassifier = PlayOutcomeOverlayClassifier()
     private val overlayPainter = OverlayPainter()
     private val encoder = AnimatedGifEncoder()
-
-    private val renderers =
-        mapOf(
-            ShapeFamily.RUSH_ARC to RushArcFrameRenderer(),
-            ShapeFamily.PASS_ARC to PassArcFrameRenderer(),
-            ShapeFamily.INCOMPLETE_PASS to IncompletePassFrameRenderer(),
-            ShapeFamily.KICK_ARC to KickArcFrameRenderer(),
-            ShapeFamily.RETURN_ZIGZAG to ReturnZigzagFrameRenderer(),
-            ShapeFamily.STATIC_SNAP to StaticSnapFrameRenderer(),
-            ShapeFamily.ONSIDE_SCRAMBLE to OnsideScrambleFrameRenderer(),
-            ShapeFamily.BLOCKED_STUFF to BlockedStuffFrameRenderer(),
-            ShapeFamily.FIELD_GOAL_ATTEMPT to FieldGoalAttemptFrameRenderer(),
-            ShapeFamily.KICKOFF_RETURN to KickoffReturnFrameRenderer(),
-        )
+    private val overheadRenderer = OverheadPlayFrameRenderer(classifier)
+    private val fieldGoalRenderer = FieldGoalAttemptFrameRenderer()
 
     @Test
     fun generatePreviews() {
         val outputDir = File("animation-previews")
+        outputDir.deleteRecursively()
         outputDir.mkdirs()
 
-        val scenarios =
-            listOf(
-                "run-short-gain" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 30, playCall = PlayCall.RUN, actualResult = ActualResult.GAIN, yards = 6)
-                        .withEnd(36),
-                "run-for-loss" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 40, playCall = PlayCall.RUN, actualResult = ActualResult.LOSS, yards = -3)
-                        .withEnd(37),
-                "pass-touchdown-deep-throw" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 20, playCall = PlayCall.PASS, actualResult = ActualResult.TOUCHDOWN, yards = 20)
-                        .withEnd(50),
-                "pass-incomplete" to
-                    buildPlay(
-                        possession = TeamSide.HOME,
-                        ballLocation = 50,
-                        playCall = PlayCall.PASS,
-                        actualResult = ActualResult.NO_GAIN,
-                        result = Scenario.INCOMPLETE,
-                        yards = 0,
-                    ).withEnd(50),
-                "kickoff-return" to
-                    buildPlay(
-                        possession = TeamSide.HOME,
-                        ballLocation = 35,
-                        playCall = PlayCall.KICKOFF_NORMAL,
-                        actualResult = ActualResult.KICKOFF,
-                        yards = 20,
-                    ).withEnd(80),
-                "kickoff-return-touchdown" to
-                    buildPlay(
-                        possession = TeamSide.HOME,
-                        ballLocation = 35,
-                        playCall = PlayCall.KICKOFF_NORMAL,
-                        actualResult = ActualResult.RETURN_TOUCHDOWN,
-                        yards = 65,
-                    ).withEnd(50),
-                "kickoff-touchback" to
-                    buildPlay(
-                        possession = TeamSide.HOME,
-                        ballLocation = 35,
-                        playCall = PlayCall.KICKOFF_NORMAL,
-                        actualResult = ActualResult.KICKOFF,
-                        result = Scenario.TOUCHBACK,
-                        yards = 0,
-                    ).withEnd(25),
-                "punt-with-return" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 40, playCall = PlayCall.PUNT, actualResult = ActualResult.PUNT, yards = 35)
-                        .withEnd(55),
-                "punt-blocked" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 40, playCall = PlayCall.PUNT, actualResult = ActualResult.BLOCKED, yards = 2)
-                        .withEnd(42),
-                "field-goal-good" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 75, playCall = PlayCall.FIELD_GOAL, actualResult = ActualResult.GOOD, yards = 0)
-                        .withEnd(75),
-                "field-goal-long" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 40, playCall = PlayCall.FIELD_GOAL, actualResult = ActualResult.GOOD, yards = 0)
-                        .withEnd(40),
-                "field-goal-no-good" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 75, playCall = PlayCall.FIELD_GOAL, actualResult = ActualResult.NO_GOOD, yards = 0)
-                        .withEnd(75),
-                "field-goal-blocked" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 75, playCall = PlayCall.FIELD_GOAL, actualResult = ActualResult.BLOCKED, yards = 0)
-                        .withEnd(75),
-                "pat-good" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 97, playCall = PlayCall.PAT, actualResult = ActualResult.GOOD, yards = 0)
-                        .withEnd(97),
-                "turnover" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 50, playCall = PlayCall.PASS, actualResult = ActualResult.TURNOVER, yards = 0)
-                        .withEnd(48),
-                "pick-six" to
-                    buildPlay(
-                        possession = TeamSide.HOME,
-                        ballLocation = 45,
-                        playCall = PlayCall.PASS,
-                        actualResult = ActualResult.TURNOVER_TOUCHDOWN,
-                        yards = 0,
-                    ).withEnd(45),
-                "safety" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 2, playCall = PlayCall.RUN, actualResult = ActualResult.SAFETY, yards = -2)
-                        .withEnd(0),
-                "onside-kick-recovery" to
-                    buildPlay(
-                        possession = TeamSide.HOME,
-                        ballLocation = 35,
-                        playCall = PlayCall.KICKOFF_ONSIDE,
-                        actualResult = ActualResult.SUCCESSFUL_ONSIDE,
-                        yards = 7,
-                    ).withEnd(42),
-                "formation-flexbone-vs-335" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 30, playCall = PlayCall.RUN, actualResult = ActualResult.GAIN, yards = 4)
-                        .withEnd(34, OffensivePlaybook.FLEXBONE, DefensivePlaybook.THREE_THREE_FIVE),
-                "formation-spread-sack" to
-                    buildPlay(possession = TeamSide.HOME, ballLocation = 30, playCall = PlayCall.PASS, actualResult = ActualResult.LOSS, yards = -7)
-                        .withEnd(23, OffensivePlaybook.SPREAD, DefensivePlaybook.THREE_FOUR),
-            )
-
-        scenarios.forEach { (name, play) ->
-            val bytes = renderGif(play)
+        scenarios().forEach { (name, preview) ->
+            val bytes = renderGif(preview)
             File(outputDir, "$name.gif").writeBytes(bytes)
             assertTrue(bytes.isNotEmpty(), "Expected non-empty GIF bytes for scenario '$name'")
         }
     }
 
-    private fun renderGif(play: PlayWithEnd): ByteArray {
-        val startAbs = FieldCoordinateMapper.toAbsoluteFieldPosition(play.play.ballLocation, play.play.possession)
+    private fun scenarios(): List<Pair<String, Preview>> =
+        listOf(
+            "run-pro-short-gain" to play(TeamSide.HOME, 30, PlayCall.RUN, ActualResult.GAIN).endingAt(36),
+            "run-flexbone-vs-335" to
+                play(TeamSide.HOME, 30, PlayCall.RUN, ActualResult.FIRST_DOWN)
+                    .endingAt(42, OffensivePlaybook.FLEXBONE, DefensivePlaybook.THREE_THREE_FIVE),
+            "run-for-loss" to play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.LOSS).endingAt(37),
+            "run-touchdown-away" to
+                play(TeamSide.AWAY, 88, PlayCall.RUN, ActualResult.TOUCHDOWN)
+                    .endingAt(0, OffensivePlaybook.SPREAD, DefensivePlaybook.FOUR_FOUR),
+            "run-fumble" to play(TeamSide.HOME, 45, PlayCall.RUN, ActualResult.TURNOVER).endingAt(49),
+            "safety" to play(TeamSide.HOME, 2, PlayCall.RUN, ActualResult.SAFETY).endingAt(0),
+            "pass-short-completion" to play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN).endingAt(38, OffensivePlaybook.WEST_COAST),
+            "pass-deep-touchdown" to
+                play(TeamSide.HOME, 20, PlayCall.PASS, ActualResult.TOUCHDOWN)
+                    .endingAt(0, OffensivePlaybook.AIR_RAID, DefensivePlaybook.THREE_FOUR),
+            "pass-incomplete" to
+                play(TeamSide.HOME, 50, PlayCall.PASS, ActualResult.NO_GAIN, Scenario.INCOMPLETE)
+                    .endingAt(50, OffensivePlaybook.SPREAD),
+            "pass-sack" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.LOSS)
+                    .endingAt(23, OffensivePlaybook.SPREAD, DefensivePlaybook.THREE_FOUR),
+            "pass-interception" to play(TeamSide.HOME, 50, PlayCall.PASS, ActualResult.TURNOVER).endingAt(55),
+            "pass-pick-six" to
+                play(TeamSide.HOME, 45, PlayCall.PASS, ActualResult.TURNOVER_TOUCHDOWN)
+                    .endingAt(0, OffensivePlaybook.AIR_RAID),
+            "kneel" to play(TeamSide.HOME, 40, PlayCall.KNEEL, ActualResult.KNEEL).endingAt(38),
+            "spike" to play(TeamSide.HOME, 60, PlayCall.SPIKE, ActualResult.SPIKE).endingAt(60),
+            "punt-with-return" to play(TeamSide.HOME, 30, PlayCall.PUNT, ActualResult.PUNT).endingAt(68),
+            "punt-return-touchdown" to play(TeamSide.HOME, 30, PlayCall.PUNT, ActualResult.PUNT_RETURN_TOUCHDOWN).endingAt(0),
+            "punt-blocked" to play(TeamSide.HOME, 40, PlayCall.PUNT, ActualResult.BLOCKED).endingAt(28),
+            "kickoff-return" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF).endingAt(72),
+            "kickoff-return-touchdown" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.RETURN_TOUCHDOWN).endingAt(0),
+            "kickoff-touchback" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, Scenario.TOUCHBACK).endingAt(75),
+            "onside-kick-recovered" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_ONSIDE, ActualResult.SUCCESSFUL_ONSIDE).endingAt(46),
+            "field-goal-good" to play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(75),
+            "field-goal-no-good" to play(TeamSide.HOME, 60, PlayCall.FIELD_GOAL, ActualResult.NO_GOOD).endingAt(60),
+        )
+
+    private fun renderGif(preview: Preview): ByteArray {
+        val play = preview.play
+        val startAbs = FieldCoordinateMapper.toAbsoluteFieldPosition(play.ballLocation, play.possession)
         val endAbs =
-            if (play.play.actualResult == ActualResult.SAFETY) {
-                ownGoalTargetFor(play.play.possession)
-            } else {
-                scoringTeamOrNull(play.play)?.let { endZoneTargetFor(it) } ?: play.fallbackEndAbs
+            when {
+                play.actualResult == ActualResult.SAFETY -> if (play.possession == TeamSide.HOME) -5 else 105
+                else -> scoringTeamOrNull(play)?.let { if (it == TeamSide.HOME) 105 else -5 } ?: preview.endAbs
             }
-
-        val shapeFamily = classifier.classifyShape(play.play)
-        val overlay = overlayClassifier.classifyOverlay(play.play)
-
-        val renderer = renderers.getValue(shapeFamily)
-        val frames =
-            renderer.renderFrames(play.play, startAbs, endAbs, homeTeam, awayTeam, play.offensivePlaybook, play.defensivePlaybook)
-        val decoratedFrames = overlayPainter.applyOverlay(frames, overlay, play.play, homeTeam, awayTeam)
-
-        return encoder.encode(decoratedFrames, buildPalette())
+        val renderer = if (classifier.classify(play) == AnimatedPlayType.FIELD_GOAL) fieldGoalRenderer else overheadRenderer
+        val frames = renderer.renderFrames(play, startAbs, endAbs, homeTeam, awayTeam, preview.offensivePlaybook, preview.defensivePlaybook)
+        val decoratedFrames = overlayPainter.applyOverlay(frames, overlayClassifier.classifyOverlay(play), play, homeTeam, awayTeam)
+        return encoder.encode(decoratedFrames, palette())
     }
 
     private fun scoringTeamOrNull(play: Play): TeamSide? =
@@ -193,11 +115,7 @@ class PlayAnimationPreviewTool {
             else -> null
         }
 
-    private fun endZoneTargetFor(scoringTeam: TeamSide): Int = if (scoringTeam == TeamSide.HOME) 105 else -5
-
-    private fun ownGoalTargetFor(possessor: TeamSide): Int = if (possessor == TeamSide.HOME) -5 else 105
-
-    private fun buildPalette(): List<Color> =
+    private fun palette(): List<Color> =
         listOf(
             FieldBackgroundPainter.TURF_COLOR,
             FieldBackgroundPainter.LINE_COLOR,
@@ -211,41 +129,39 @@ class PlayAnimationPreviewTool {
             GoalPostScenePainter.SKY_COLOR,
             GoalPostScenePainter.POST_COLOR,
             GoalPostScenePainter.DEFENDER_COLOR,
+            GoalPostScenePainter.NET_COLOR,
         ) + GoalPostScenePainter.FAN_COLORS + GoalPostScenePainter.STAND_SHADES
 
-    private fun buildPlay(
+    private fun play(
         possession: TeamSide,
         ballLocation: Int,
         playCall: PlayCall,
         actualResult: ActualResult,
-        yards: Int,
         result: Scenario? = null,
-    ): Play {
-        val play = Play()
-        play.playId = nextPlayId++
-        play.gameId = 1
-        play.possession = possession
-        play.ballLocation = ballLocation
-        play.down = 1
-        play.yardsToGo = 10
-        play.playCall = playCall
-        play.result = result
-        play.actualResult = actualResult
-        play.yards = yards
-        play.homeTeam = homeTeam.name.orEmpty()
-        play.awayTeam = awayTeam.name.orEmpty()
-        return play
-    }
+    ): Play =
+        Play().apply {
+            playId = nextPlayId++
+            gameId = 1
+            this.possession = possession
+            this.ballLocation = ballLocation
+            down = 1
+            yardsToGo = 10
+            this.playCall = playCall
+            this.result = result
+            this.actualResult = actualResult
+            homeTeam = this@PlayAnimationPreviewTool.homeTeam.name.orEmpty()
+            awayTeam = this@PlayAnimationPreviewTool.awayTeam.name.orEmpty()
+        }
 
-    private fun Play.withEnd(
-        fallbackEndAbs: Int,
+    private fun Play.endingAt(
+        endAbs: Int,
         offensivePlaybook: OffensivePlaybook = OffensivePlaybook.PRO,
         defensivePlaybook: DefensivePlaybook = DefensivePlaybook.FOUR_THREE,
-    ) = PlayWithEnd(this, fallbackEndAbs, offensivePlaybook, defensivePlaybook)
+    ) = Preview(this, endAbs, offensivePlaybook, defensivePlaybook)
 
-    private data class PlayWithEnd(
+    private data class Preview(
         val play: Play,
-        val fallbackEndAbs: Int,
+        val endAbs: Int,
         val offensivePlaybook: OffensivePlaybook,
         val defensivePlaybook: DefensivePlaybook,
     )

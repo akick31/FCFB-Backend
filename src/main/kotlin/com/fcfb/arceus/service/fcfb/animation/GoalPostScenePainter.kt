@@ -137,7 +137,12 @@ object GoalPostScenePainter {
 
         val wallColor = FieldBackgroundPainter.parseColor(homeTeam.secondaryColor)
         g.color = wallColor
-        g.fillRect(0, layout.mapY(REFERENCE_WALL_TOP_Y), FieldBackgroundPainter.WIDTH, layout.endZoneTopY - layout.mapY(REFERENCE_WALL_TOP_Y))
+        g.fillRect(
+            0,
+            layout.mapY(REFERENCE_WALL_TOP_Y),
+            FieldBackgroundPainter.WIDTH,
+            layout.endZoneTopY - layout.mapY(REFERENCE_WALL_TOP_Y),
+        )
         drawWallLogos(g, homeTeam, layout)
 
         drawNet(g, layout)

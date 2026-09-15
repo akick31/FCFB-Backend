@@ -17,7 +17,7 @@ class AnimatedGifEncoder {
     fun encode(
         frames: List<BufferedImage>,
         paletteColors: List<Color>,
-        frameDelayCentiseconds: Int = 32,
+        frameDelayCentiseconds: Int = 12,
         finalFrameHoldCentiseconds: Int = 1000,
         loopCount: Int = 0,
     ): ByteArray {

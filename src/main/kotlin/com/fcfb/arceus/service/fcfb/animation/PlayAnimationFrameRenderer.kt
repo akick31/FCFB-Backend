@@ -20,9 +20,9 @@ interface PlayAnimationFrameRenderer {
     ): List<BufferedImage>
 }
 
-internal const val LEAD_IN_FRAME_COUNT = 5
-internal const val MOTION_FRAME_COUNT = 10
-internal const val HOLD_FRAME_COUNT = 3
+internal const val LEAD_IN_FRAME_COUNT = 8
+internal const val MOTION_FRAME_COUNT = 26
+internal const val HOLD_FRAME_COUNT = 4
 
 internal fun animationTimeline(): List<Float> =
     List(LEAD_IN_FRAME_COUNT) { 0f } +

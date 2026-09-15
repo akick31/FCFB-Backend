@@ -1,29 +1,21 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.service.fcfb.animation.AnimatedGifEncoder
-import com.fcfb.arceus.service.fcfb.animation.BlockedStuffFrameRenderer
+import com.fcfb.arceus.service.fcfb.animation.AnimatedPlayType
 import com.fcfb.arceus.service.fcfb.animation.FieldBackgroundPainter
 import com.fcfb.arceus.service.fcfb.animation.FieldCoordinateMapper
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalAttemptFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.GoalPostScenePainter
-import com.fcfb.arceus.service.fcfb.animation.IncompletePassFrameRenderer
-import com.fcfb.arceus.service.fcfb.animation.KickArcFrameRenderer
-import com.fcfb.arceus.service.fcfb.animation.KickoffReturnFrameRenderer
-import com.fcfb.arceus.service.fcfb.animation.OnsideScrambleFrameRenderer
+import com.fcfb.arceus.service.fcfb.animation.OverheadPlayFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.OverlayPainter
-import com.fcfb.arceus.service.fcfb.animation.PassArcFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.PlayAnimationClassifier
-import com.fcfb.arceus.service.fcfb.animation.PlayAnimationFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.PlayOutcomeOverlayClassifier
-import com.fcfb.arceus.service.fcfb.animation.ReturnZigzagFrameRenderer
-import com.fcfb.arceus.service.fcfb.animation.RushArcFrameRenderer
-import com.fcfb.arceus.service.fcfb.animation.ShapeFamily
-import com.fcfb.arceus.service.fcfb.animation.StaticSnapFrameRenderer
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -40,16 +32,8 @@ class PlayAnimationService(
     private val playOutcomeOverlayClassifier: PlayOutcomeOverlayClassifier,
     private val overlayPainter: OverlayPainter,
     private val animatedGifEncoder: AnimatedGifEncoder,
-    private val rushArcFrameRenderer: RushArcFrameRenderer,
-    private val passArcFrameRenderer: PassArcFrameRenderer,
-    private val incompletePassFrameRenderer: IncompletePassFrameRenderer,
-    private val kickArcFrameRenderer: KickArcFrameRenderer,
-    private val returnZigzagFrameRenderer: ReturnZigzagFrameRenderer,
-    private val staticSnapFrameRenderer: StaticSnapFrameRenderer,
-    private val onsideScrambleFrameRenderer: OnsideScrambleFrameRenderer,
-    private val blockedStuffFrameRenderer: BlockedStuffFrameRenderer,
+    private val overheadPlayFrameRenderer: OverheadPlayFrameRenderer,
     private val fieldGoalAttemptFrameRenderer: FieldGoalAttemptFrameRenderer,
-    private val kickoffReturnFrameRenderer: KickoffReturnFrameRenderer,
 ) {
     fun getPlayAnimationByPlayId(playId: Int): ResponseEntity<ByteArray> {
         val play = playService.getPlayById(playId)
@@ -58,22 +42,15 @@ class PlayAnimationService(
         val game = gameService.getGameById(play.gameId)
 
         val startAbs = FieldCoordinateMapper.toAbsoluteFieldPosition(play.ballLocation, play.possession)
-        val endAbs =
-            if (play.actualResult == ActualResult.SAFETY) {
-                ownGoalTargetFor(play.possession)
-            } else {
-                scoringTeamOrNull(play)?.let { endZoneTargetFor(it) } ?: resolveEndAbsolutePosition(play, game)
-            }
+        val endAbs = resultSpot(play, game, startAbs)
 
         val offensivePlaybook = if (play.possession == TeamSide.HOME) game.homeOffensivePlaybook else game.awayOffensivePlaybook
         val defensivePlaybook = if (play.possession == TeamSide.HOME) game.awayDefensivePlaybook else game.homeDefensivePlaybook
 
-        val shapeFamily = playAnimationClassifier.classifyShape(play)
+        val isFieldGoal = playAnimationClassifier.classify(play) == AnimatedPlayType.FIELD_GOAL
+        val renderer = if (isFieldGoal) fieldGoalAttemptFrameRenderer else overheadPlayFrameRenderer
+        val frames = renderer.renderFrames(play, startAbs, endAbs, homeTeam, awayTeam, offensivePlaybook, defensivePlaybook)
         val overlay = playOutcomeOverlayClassifier.classifyOverlay(play)
-
-        val frames =
-            frameRendererFor(shapeFamily)
-                .renderFrames(play, startAbs, endAbs, homeTeam, awayTeam, offensivePlaybook, defensivePlaybook)
         val decoratedFrames = overlayPainter.applyOverlay(frames, overlay, play, homeTeam, awayTeam)
 
         val gifBytes = animatedGifEncoder.encode(decoratedFrames, buildPalette(homeTeam, awayTeam))
@@ -84,6 +61,20 @@ class PlayAnimationService(
                 contentLength = gifBytes.size.toLong()
             }
         return ResponseEntity(gifBytes, headers, HttpStatus.OK)
+    }
+
+    private fun resultSpot(
+        play: Play,
+        game: Game,
+        startAbs: Int,
+    ): Int {
+        val twoPoint = play.playCall == PlayCall.TWO_POINT
+        return when {
+            play.actualResult == ActualResult.SAFETY -> ownGoalTargetFor(play.possession)
+            twoPoint && play.actualResult == ActualResult.SUCCESS -> endZoneTargetFor(play.possession)
+            twoPoint && play.actualResult == ActualResult.FAILED -> startAbs + if (play.possession == TeamSide.HOME) 1 else -1
+            else -> scoringTeamOrNull(play)?.let { endZoneTargetFor(it) } ?: resolveEndAbsolutePosition(play, game)
+        }
     }
 
     /**
@@ -117,30 +108,14 @@ class PlayAnimationService(
             else -> null
         }
 
-    private fun endZoneTargetFor(scoringTeam: TeamSide): Int =
-        if (scoringTeam == TeamSide.HOME) 100 + END_ZONE_CENTER else -END_ZONE_CENTER
+    private fun endZoneTargetFor(scoringTeam: TeamSide): Int = if (scoringTeam == TeamSide.HOME) 100 + END_ZONE_CENTER else -END_ZONE_CENTER
 
     /**
      * A safety is scored by the defense, but the ball ends up in the tackled OFFENSE's own end
      * zone — the opposite direction from [endZoneTargetFor], which targets the scoring team's
      * opponent's goal.
      */
-    private fun ownGoalTargetFor(possessor: TeamSide): Int =
-        if (possessor == TeamSide.HOME) -END_ZONE_CENTER else 100 + END_ZONE_CENTER
-
-    private fun frameRendererFor(shapeFamily: ShapeFamily): PlayAnimationFrameRenderer =
-        when (shapeFamily) {
-            ShapeFamily.RUSH_ARC -> rushArcFrameRenderer
-            ShapeFamily.PASS_ARC -> passArcFrameRenderer
-            ShapeFamily.INCOMPLETE_PASS -> incompletePassFrameRenderer
-            ShapeFamily.KICK_ARC -> kickArcFrameRenderer
-            ShapeFamily.RETURN_ZIGZAG -> returnZigzagFrameRenderer
-            ShapeFamily.STATIC_SNAP -> staticSnapFrameRenderer
-            ShapeFamily.ONSIDE_SCRAMBLE -> onsideScrambleFrameRenderer
-            ShapeFamily.BLOCKED_STUFF -> blockedStuffFrameRenderer
-            ShapeFamily.FIELD_GOAL_ATTEMPT -> fieldGoalAttemptFrameRenderer
-            ShapeFamily.KICKOFF_RETURN -> kickoffReturnFrameRenderer
-        }
+    private fun ownGoalTargetFor(possessor: TeamSide): Int = if (possessor == TeamSide.HOME) -END_ZONE_CENTER else 100 + END_ZONE_CENTER
 
     private fun buildPalette(
         homeTeam: Team,
