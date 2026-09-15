@@ -16,6 +16,9 @@ lib/
 *.png
 !src/main/resources/images/email/*.png
 
+### Generated animation previews ###
+/animation-previews/
+
 ### STS ###
 .apt_generated
 .classpath
