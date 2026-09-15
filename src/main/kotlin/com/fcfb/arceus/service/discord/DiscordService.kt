@@ -63,15 +63,17 @@ class DiscordService(
     fun notifyWarning(
         game: Game,
         instance: Int,
-    ) {
+    ): Boolean {
         val discordBotUrl = "$discordBotUrl/delay_of_game_warning?instance=$instance"
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
         val requestEntity = HttpEntity(game, headers)
-        try {
+        return try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
+            true
         } catch (e: Exception) {
             Logger.error("There was an error notifying the delay of game  warning for ${game.gameId}: " + e.message)
+            false
         }
     }
 
