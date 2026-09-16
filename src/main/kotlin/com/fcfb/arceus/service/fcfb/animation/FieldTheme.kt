@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb.animation
 
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.TeamUniform
 import java.awt.Color
 
 /**
@@ -17,7 +18,16 @@ data class FieldTheme(
     val turf: Color = FieldBackgroundPainter.TURF_COLOR,
     val homeConferenceLogoUrl: String? = null,
     val awayConferenceLogoUrl: String? = null,
+    val homeUniform: TeamUniform? = null,
+    val awayUniform: TeamUniform? = null,
 ) {
+    /** What both teams wore the week this game was played, falling back to their current colors when nothing was stored. */
+    fun uniforms(): Pair<Uniform, Uniform> = Uniforms.forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
+
+    fun homeLogoUrl(): String? = homeUniform?.logoUrl ?: homeTeam.scorebugLogo
+
+    fun awayLogoUrl(): String? = awayUniform?.logoUrl ?: awayTeam.scorebugLogo
+
     /** The team whose end zone sits on the left of the frame, which swaps when the field is flipped. */
     fun leftSide(): TeamSide = if (flipped) TeamSide.AWAY else TeamSide.HOME
 

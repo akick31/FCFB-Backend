@@ -30,6 +30,7 @@ import kotlin.math.pow
  */
 internal object FumbleRecovery {
     private const val LOOSE_BALL_TIME = 0.2f
+    private const val RETURNED_LOOSE_BALL_TIME = 0.1f
     private const val SQUIRT_BACK = 2.5f
     private const val SQUIRT_WIDE = 1.5f
     private const val HOPS = 4
@@ -46,7 +47,7 @@ internal object FumbleRecovery {
     private const val ESCORT_RADIUS = 4f
     private const val CHASE_TACKLERS = 2
     private const val LATEST_FUMBLE_AT = 0.6f
-    private const val RETURNED_FUMBLE_AT = 0.45f
+    private const val RETURNED_FUMBLE_AT = 0.24f
     private const val CALLOUT_LINGER = 0.1f
     private const val CALLOUT_TEXT = "FUMBLE!"
     private const val SCOOP_TO_STRIDE = 0.06f
@@ -69,9 +70,9 @@ internal object FumbleRecovery {
         fumbleSpot: FieldPoint,
     ): Choreography {
         val returnDirection = -context.forward
-        val recoverAt = fumbleAt + LOOSE_BALL_TIME
-        val recoverySpot = recoverySpot(context, fumbleSpot.lateral + context.side * SQUIRT_WIDE)
         val returned = isReturned(context)
+        val recoverAt = fumbleAt + if (returned) RETURNED_LOOSE_BALL_TIME else LOOSE_BALL_TIME
+        val recoverySpot = recoverySpot(context, fumbleSpot.lateral + context.side * SQUIRT_WIDE)
         val scores = context.play.actualResult in DEFENSIVE_SCORES
         val returnEnd = FieldPoint(context.endSpot, recoverySpot.lateral + if (returned) context.side * RETURN_WIDTH else 0f)
         val returnAt = minOf(SCORE_AT, recoverAt + SCOOP_TO_STRIDE + carryTime(recoverySpot.distanceTo(returnEnd)))

@@ -95,4 +95,6 @@ tasks.withType<Javadoc> {
 
 tasks.test {
     useJUnitPlatform()
+    // The animation preview tools render every scenario in one JVM, holding hundreds of full-size frames at a time.
+    maxHeapSize = "3g"
 }

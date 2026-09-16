@@ -38,7 +38,7 @@ class PlayAnimationPreviewTool {
     private val classifier = PlayAnimationClassifier()
     private val overlayClassifier = PlayOutcomeOverlayClassifier()
     private val overlayPainter = OverlayPainter()
-    private val encoder = AnimatedGifEncoder()
+    private val encoder = AnimationFitter(AnimatedGifEncoder())
     private val overheadRenderer = OverheadPlayFrameRenderer(classifier)
     private val fieldGoalRenderer = FieldGoalAttemptFrameRenderer()
 
@@ -98,6 +98,12 @@ class PlayAnimationPreviewTool {
             "pass-deep-touchdown" to
                 play(TeamSide.HOME, 20, PlayCall.PASS, ActualResult.TOUCHDOWN)
                     .endingAt(0, OffensivePlaybook.AIR_RAID, DefensivePlaybook.THREE_FOUR),
+            "pass-deep-contested" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.FIRST_DOWN, forcedPlayId = CONTESTED_PLAY_ID)
+                    .endingAt(85, OffensivePlaybook.AIR_RAID),
+            "pass-short-broken-big-gain" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.FIRST_DOWN, forcedPlayId = RUN_DOWN_PLAY_ID)
+                    .endingAt(85, OffensivePlaybook.WEST_COAST),
             "pass-incomplete" to
                 play(TeamSide.HOME, 50, PlayCall.PASS, ActualResult.NO_GAIN, Scenario.INCOMPLETE)
                     .endingAt(50, OffensivePlaybook.SPREAD),
@@ -108,6 +114,7 @@ class PlayAnimationPreviewTool {
             "pass-pick-six" to
                 play(TeamSide.HOME, 45, PlayCall.PASS, ActualResult.TURNOVER_TOUCHDOWN)
                     .endingAt(0, OffensivePlaybook.AIR_RAID),
+            "delay-of-game" to play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.DELAY_OF_GAME).endingAt(35),
             "kneel" to play(TeamSide.HOME, 40, PlayCall.KNEEL, ActualResult.KNEEL).endingAt(38),
             "spike" to play(TeamSide.HOME, 60, PlayCall.SPIKE, ActualResult.SPIKE).endingAt(60),
             "punt-with-return" to play(TeamSide.HOME, 30, PlayCall.PUNT, ActualResult.PUNT).endingAt(68),
@@ -153,7 +160,7 @@ class PlayAnimationPreviewTool {
                 preview.defensivePlaybook,
             )
         val decoratedFrames = overlayPainter.applyOverlay(frames, overlayClassifier.classifyOverlay(play), play, homeTeam, awayTeam)
-        return encoder.encode(decoratedFrames, AnimationPalette.forTheme(themeFor(preview.style)))
+        return encoder.fit(decoratedFrames, AnimationPalette.forTheme(themeFor(preview.style)))
     }
 
     private fun scoringTeamOrNull(play: Play): TeamSide? =
@@ -171,9 +178,10 @@ class PlayAnimationPreviewTool {
         playCall: PlayCall,
         actualResult: ActualResult,
         result: Scenario? = null,
+        forcedPlayId: Int? = null,
     ): Play =
         Play().apply {
-            playId = nextPlayId++
+            playId = forcedPlayId ?: nextPlayId++
             gameId = 1
             this.possession = possession
             this.ballLocation = ballLocation
@@ -246,6 +254,10 @@ class PlayAnimationPreviewTool {
     private companion object {
         var nextPlayId = 1
         const val HELMET_PREVIEW_SIZE = 256
+
+        /** Chosen so one preview takes the contested deep catch branch and the other the caught-short, run-down branch. */
+        const val CONTESTED_PLAY_ID = 902
+        const val RUN_DOWN_PLAY_ID = 900
         const val PLAYOFF_LOGO =
             "https://am-prod-client-files.ppub-tmaws.io/cfbplayoff/s3fs-public/" +
                 "CFP%20Symbol%20Gold%20PMS%20Dark%20BG.PNG"

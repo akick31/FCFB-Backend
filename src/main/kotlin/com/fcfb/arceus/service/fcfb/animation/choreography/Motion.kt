@@ -6,12 +6,15 @@ import kotlin.math.sin
 
 internal const val SNAP_END = 0.07f
 internal const val SCORE_AT = 0.92f
-private const val CARRY_AHEAD = 0.9f
-private const val CARRY_BELOW = 0.8f
+private const val CARRY_AHEAD = 0.45f
+private const val CARRY_BELOW = 0.3f
 private const val SHOTGUN_SNAP_HEIGHT = 1.2f
 private const val UNDER_CENTER_SNAP_HEIGHT = 0.2f
 
-private const val CARRIER_YARDS_PER_MOTION = 55f
+/** Under center the exchange is hand to hand, so the ball is in the quarterback's hands almost as he turns to drop. */
+internal const val UNDER_CENTER_SNAP_SPEED = 0.25f
+
+private const val CARRIER_YARDS_PER_MOTION = 58f
 
 /** How much of the motion phase a ball carrier needs to cover [yards], so long runs take proportionally longer. */
 internal fun carryTime(yards: Float): Float = abs(yards) / CARRIER_YARDS_PER_MOTION
@@ -59,6 +62,7 @@ internal fun snapBall(
     hands: FieldPoint,
     shotgun: Boolean,
 ): BallState {
-    val fraction = segment(progress, 0f, SNAP_END)
+    val exchange = if (shotgun) SNAP_END else SNAP_END * UNDER_CENTER_SNAP_SPEED
+    val fraction = segment(progress, 0f, exchange)
     return BallState(center.lerp(hands, fraction), arc(fraction, if (shotgun) SHOTGUN_SNAP_HEIGHT else UNDER_CENTER_SNAP_HEIGHT))
 }

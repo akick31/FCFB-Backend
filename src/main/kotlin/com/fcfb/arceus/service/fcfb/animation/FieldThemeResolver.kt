@@ -4,6 +4,7 @@ import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.TeamUniform
 import com.fcfb.arceus.repositories.ConferenceRepository
 import com.fcfb.arceus.repositories.GameRepository
 import org.springframework.stereotype.Component
@@ -19,6 +20,8 @@ class FieldThemeResolver(
         game: Game,
         homeTeam: Team,
         awayTeam: Team,
+        homeUniform: TeamUniform? = null,
+        awayUniform: TeamUniform? = null,
     ): FieldTheme {
         val style =
             when (game.gameType) {
@@ -43,6 +46,8 @@ class FieldThemeResolver(
             turf = homeFieldTurf(style, homeTeam),
             homeConferenceLogoUrl = if (style == FieldStyle.BOWL) conferenceLogo(homeTeam) else null,
             awayConferenceLogoUrl = if (style == FieldStyle.BOWL) conferenceLogo(awayTeam) else null,
+            homeUniform = homeUniform,
+            awayUniform = awayUniform,
         )
     }
 

@@ -23,9 +23,11 @@ object FieldBackgroundPainter {
     private const val BOTTOM_NUMBER_Y = 386
     private const val DIGIT_GAP = 4
     private const val CONFERENCE_LOGO_YARD = 25
-    private const val CONFERENCE_LOGO_SIZE = 64
+    private const val CONFERENCE_LOGO_SIZE = 48
     private const val MIDFIELD_LOGO_HEIGHT = 116f
     private const val MIDFIELD_LOGO_MAX_WIDTH = 300f
+    private const val CONFERENCE_MIDFIELD_LOGO_HEIGHT = 84f
+    private const val CONFERENCE_MIDFIELD_LOGO_MAX_WIDTH = 220f
     private const val OOB_STROKE_WIDTH = 6f
     private const val BACK_LINE_INSET = 3
     private const val END_ZONE_OUTLINE_WIDTH = 2
@@ -33,7 +35,7 @@ object FieldBackgroundPainter {
     private const val END_ZONE_LOGO_GAP = 8
     private const val BALL_HALF_LENGTH = 12f
     private const val BALL_HALF_WIDTH = 7.5f
-    private const val LACE_LENGTH_FRACTION = 0.45f
+    private const val LACE_LENGTH_FRACTION = 0.6f
     private const val STITCH_HEIGHT_FRACTION = 0.38f
     private const val STITCHES = 2
     private const val SPIRAL_LACE_TRAVEL = 0.55f
@@ -99,36 +101,45 @@ object FieldBackgroundPainter {
 
         val midX = FieldCoordinateMapper.toPixelX(50, WIDTH, MARGIN)
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-        LogoLoader.load(theme.centerLogoUrl)?.let { logo -> drawMidfieldLogo(g, logo, midX) }
+        LogoLoader.load(theme.centerLogoUrl)?.let { logo -> drawMidfieldLogo(g, logo, midX, theme.style) }
         drawConferenceLogos(g, theme)
 
         g.dispose()
         return image
     }
 
-    /** Bowls paint each team's conference logo on that team's own 25, out between the hash marks and the sideline. */
+    /** Bowls paint each team's conference logo on that team's own 25, between the hash marks and the sideline, on opposite sides. */
     private fun drawConferenceLogos(
         g: Graphics2D,
         theme: FieldTheme,
     ) {
         if (theme.style != FieldStyle.BOWL) return
-        val y = HEIGHT / 2 - (HASH_OFFSET + (HEIGHT / 2 - OOB_INSET - HASH_OFFSET) / 2)
+        val offset = HASH_OFFSET + (HEIGHT / 2 - OOB_INSET - HASH_OFFSET) / 2
         LogoLoader.load(theme.conferenceLogoOf(theme.leftSide()))?.let {
-            LogoFit.draw(g, it, FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN), y, CONFERENCE_LOGO_SIZE)
+            val x = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+            LogoFit.draw(g, it, x, HEIGHT / 2 + offset, CONFERENCE_LOGO_SIZE)
         }
         LogoLoader.load(theme.conferenceLogoOf(theme.rightSide()))?.let {
-            LogoFit.draw(g, it, FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN), y, CONFERENCE_LOGO_SIZE)
+            val x = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+            LogoFit.draw(g, it, x, HEIGHT / 2 - offset, CONFERENCE_LOGO_SIZE)
         }
     }
 
-    /** Midfield logos run slightly past both hash marks across the field, however wide the logo is. */
+    /**
+     * Midfield logos run slightly past both hash marks across the field, however wide the logo is. Conference marks are
+     * dense wordmarks that overpower the field at that size, so a championship logo stays inside the hashes.
+     */
     private fun drawMidfieldLogo(
         g: Graphics2D,
         logo: BufferedImage,
         centerX: Int,
+        style: FieldStyle,
     ) {
+        val conference = style == FieldStyle.CONFERENCE_CHAMPIONSHIP
+        val targetHeight = if (conference) CONFERENCE_MIDFIELD_LOGO_HEIGHT else MIDFIELD_LOGO_HEIGHT
+        val maxWidth = if (conference) CONFERENCE_MIDFIELD_LOGO_MAX_WIDTH else MIDFIELD_LOGO_MAX_WIDTH
         val aspect = logo.width.toFloat() / logo.height
-        val width = minOf(MIDFIELD_LOGO_HEIGHT * aspect, MIDFIELD_LOGO_MAX_WIDTH)
+        val width = minOf(targetHeight * aspect, maxWidth)
         val height = width / aspect
         g.drawImage(logo, (centerX - width / 2).toInt(), (HEIGHT / 2 - height / 2).toInt(), width.toInt(), height.toInt(), null)
     }
@@ -228,8 +239,9 @@ object FieldBackgroundPainter {
             val seamHalf = halfLength * LACE_LENGTH_FRACTION
             val stitchHalf = halfWidth * STITCH_HEIGHT_FRACTION
             g.color = LINE_COLOR
-            g.stroke = BasicStroke(maxOf(1f, scale * 1.2f))
+            g.stroke = BasicStroke(maxOf(1.4f, scale * 1.7f))
             g.draw(Line2D.Float(-seamHalf, seamY, seamHalf, seamY))
+            g.stroke = BasicStroke(maxOf(1f, scale * 1.2f))
             for (stitch in -STITCHES..STITCHES) {
                 val stitchX = stitch * seamHalf / (STITCHES + 0.5f)
                 g.draw(Line2D.Float(stitchX, seamY - stitchHalf, stitchX, seamY + stitchHalf))

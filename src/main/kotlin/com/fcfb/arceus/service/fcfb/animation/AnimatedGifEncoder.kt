@@ -24,7 +24,6 @@ class AnimatedGifEncoder {
         require(frames.isNotEmpty()) { "Cannot encode an animated GIF with no frames" }
 
         val colorModel = buildColorModel(paletteColors)
-        val indexedFrames = frames.map { toIndexed(it, colorModel) }
         val typeSpecifier = ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(frames[0].width, frames[0].height))
 
         val writer = ImageIO.getImageWritersBySuffix("gif").next()
@@ -33,14 +32,14 @@ class AnimatedGifEncoder {
         writer.output = imageOutputStream
 
         writer.prepareWriteSequence(null)
-        indexedFrames.forEachIndexed { index, frame ->
+        frames.forEachIndexed { index, frame ->
             val frameMetadata = writer.getDefaultImageMetadata(typeSpecifier, writer.defaultWriteParam)
-            val delay = if (index == indexedFrames.lastIndex) finalFrameHoldCentiseconds else frameDelayCentiseconds
+            val delay = if (index == frames.lastIndex) finalFrameHoldCentiseconds else frameDelayCentiseconds
             configureFrameDelay(frameMetadata, delay)
             if (index == 0) {
                 configureLoopCount(frameMetadata, loopCount)
             }
-            writer.writeToSequence(IIOImage(frame, null, frameMetadata), null)
+            writer.writeToSequence(IIOImage(toIndexed(frame, colorModel), null, frameMetadata), null)
         }
         writer.endWriteSequence()
         imageOutputStream.close()
@@ -57,6 +56,7 @@ class AnimatedGifEncoder {
         return IndexColorModel(8, size, reds, greens, blues)
     }
 
+    /** Converted one frame at a time inside the write loop: holding a second copy of every frame exhausts the heap on long plays. */
     private fun toIndexed(
         source: BufferedImage,
         colorModel: IndexColorModel,

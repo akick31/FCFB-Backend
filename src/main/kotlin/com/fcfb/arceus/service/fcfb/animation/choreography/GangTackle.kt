@@ -7,7 +7,20 @@ object GangTackle {
     private const val TRAIL_SPEED_FACTOR = 0.8f
     private const val ARRIVAL_MARGIN = 1.3f
     private const val MIN_CHASE_TIME = 0.05f
-    private const val MAX_CHASE_SPEED = 38f
+
+    /**
+     * A gunner releases at the snap and covers about 50 yards while the returner stands waiting for the catch, which needs
+     * roughly 90 of these units. Anything lower leaves him short and the returner stops untouched.
+     */
+    private const val MAX_CHASE_SPEED = 95f
+    private const val CHASE_PACE_FACTOR = 0.9f
+
+    /** How fast the carrier is covering ground, so a breakaway is chased at nearly his pace instead of walking speed. */
+    private fun carrierPace(
+        carrier: Track,
+        reactAt: Float,
+        tackleAt: Float,
+    ): Float = carrier.at(reactAt).distanceTo(carrier.at(tackleAt)) / maxOf(tackleAt - reactAt, MIN_CHASE_TIME)
 
     /** Tacklers run as fast as they need to reach the carrier when he goes down, so a carrier never stands waiting to be hit. */
     private fun arrivalSpeed(
@@ -15,10 +28,14 @@ object GangTackle {
         carrier: Track,
         tackleAt: Float,
         reactAt: Float,
-    ): Float =
-        (from.distanceTo(carrier.at(tackleAt)) / maxOf(tackleAt - reactAt, MIN_CHASE_TIME) * ARRIVAL_MARGIN).coerceAtMost(
-            MAX_CHASE_SPEED,
-        )
+        ownSpeed: Float,
+    ): Float {
+        val needed = from.distanceTo(carrier.at(tackleAt)) / maxOf(tackleAt - reactAt, MIN_CHASE_TIME) * ARRIVAL_MARGIN
+        return needed.coerceAtMost(MAX_CHASE_SPEED * positionFactor(ownSpeed))
+    }
+
+    /** A lineman never runs a receiver down, so every pursuit ceiling scales with what that position can actually do. */
+    private fun positionFactor(ownSpeed: Float): Float = ownSpeed / Pursuit.COVERAGE_SPEED
 
     fun converge(
         before: List<Track>,
@@ -34,22 +51,46 @@ object GangTackle {
         val tacklerIds = Pursuit.closest(reactPositions, candidates, carrier.at(tackleAt), tacklers)
         return before.indices.map { index ->
             val slot = tacklerIds.indexOf(index)
-            if (slot >= 0) {
-                val arrivalSpeed = arrivalSpeed(reactPositions[index], carrier, tackleAt, reactAt(index))
-                Pursuit.chase(
-                    before[index],
-                    reactAt(index),
-                    maxOf(speed(index), arrivalSpeed),
-                    Pursuit.tackle(carrier, direction, slot, tackleAt),
-                )
-            } else {
-                Pursuit.chase(
-                    before[index],
-                    reactAt(index),
-                    speed(index) * TRAIL_SPEED_FACTOR,
-                    Pursuit.trail(carrier, TRAIL_RADIUS + (index % 3) * TRAIL_STEP),
-                )
-            }
+            val chased =
+                if (slot >= 0) {
+                    val arrivalSpeed = arrivalSpeed(reactPositions[index], carrier, tackleAt, reactAt(index), speed(index))
+                    Pursuit.chase(
+                        before[index],
+                        reactAt(index),
+                        maxOf(speed(index), arrivalSpeed),
+                        Pursuit.tackle(carrier, direction, slot, tackleAt),
+                    )
+                } else {
+                    Pursuit.chase(
+                        before[index],
+                        reactAt(index),
+                        trailSpeed(index, speed, carrier, reactAt(index), tackleAt),
+                        closingTarget(carrier),
+                    )
+                }
+            switchAt(tackleAt, chased, hold(chased.at(tackleAt)))
         }
+    }
+
+    /**
+     * Everyone runs at the ball carrier himself. Holding a fixed trailing radius made pursuit look like it was heading
+     * downfield on its own rather than converging on him; the speed differences alone are what string the chase out.
+     */
+    private fun closingTarget(carrier: Track): PursuitTarget = Pursuit.pursue(carrier)
+
+    /**
+     * Everyone chases at a share of the carrier's own pace, scaled by what their position can do, so a lineman still runs
+     * the play out instead of standing still while staying well behind the backs and defensive backs.
+     */
+    private fun trailSpeed(
+        index: Int,
+        speed: (Int) -> Float,
+        carrier: Track,
+        reactAt: Float,
+        tackleAt: Float,
+    ): Float {
+        val trail = speed(index) * TRAIL_SPEED_FACTOR
+        val paced = carrierPace(carrier, reactAt, tackleAt) * CHASE_PACE_FACTOR * positionFactor(speed(index))
+        return maxOf(trail, paced)
     }
 }

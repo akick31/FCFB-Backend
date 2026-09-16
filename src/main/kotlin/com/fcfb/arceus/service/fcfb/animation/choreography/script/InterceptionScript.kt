@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
@@ -27,9 +28,11 @@ class InterceptionScript : PlayScript {
         val forward = context.forward
         val returnDirection = -forward
         val defenseScores = context.play.actualResult != ActualResult.TURNOVER
-        val targetIndex = concept.target(deep = true)
+        val random = PlayRandom(context.play)
+        val targetIndex = concept.target(deep = true, random = random)
 
-        val nominal = context.lineOfScrimmage + forward * INTERCEPTION_DEPTH
+        val pickDepth = random.between(MIN_PICK_DEPTH, MAX_PICK_DEPTH)
+        val nominal = context.lineOfScrimmage + forward * pickDepth
         val returnWouldOvershoot = !defenseScores && (context.endSpot - nominal) * returnDirection < 0f
         val catchAlong = (if (returnWouldOvershoot) context.endSpot + forward * SHORT_RETURN else nominal).coerceIn(1f, 99f)
         val catchPoint = FieldPoint(catchAlong, scene.offense[targetIndex].lateral * 0.6f)
@@ -56,29 +59,26 @@ class InterceptionScript : PlayScript {
                 ),
                 carrierOf(returnBall, returnDirection),
             )
+        val returnPace = catchPoint.distanceTo(endPoint) / maxOf(returnAt - catchAt, MIN_RETURN_TIME)
+        val escortSpeed = returnPace * ESCORT_PACE
         val defense =
             before.mapIndexed { index, track ->
                 if (index == interceptorIndex) {
                     interceptor
                 } else {
-                    Pursuit.chase(
-                        track,
-                        catchAt + ESCORT_DELAY,
-                        Pursuit.LINEBACKER_SPEED,
-                        Pursuit.trail(interceptor, ESCORT_RADIUS + index % 3),
-                    )
+                    Pursuit.chase(track, catchAt + ESCORT_DELAY, escortSpeed, Pursuit.trail(interceptor, ESCORT_RADIUS + index % 3))
                 }
             }
         val offense =
             GangTackle.converge(
                 before = routes,
-                candidates = routes.indices.filter { it !in OffensiveAlignments.LINEMEN },
+                candidates = routes.indices.toList(),
                 carrier = interceptor,
                 direction = returnDirection,
                 tackleAt = returnAt,
                 tacklers = if (defenseScores) 0 else 2,
                 reactAt = { catchAt },
-                speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED * 0.6f else Pursuit.DEFENSIVE_BACK_SPEED },
+                speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED else Pursuit.DEFENSIVE_BACK_SPEED },
             )
 
         val held = concept.heldBall(quarterback)
@@ -90,15 +90,22 @@ class InterceptionScript : PlayScript {
                     else -> BallState(returnBall.at(progress))
                 }
             }
-        return Choreography(offense, defense, ball)
+        return Choreography(offense, defense, ball, facingLocked = CompletedPassScript.facingLocked(scene))
     }
 
     companion object {
-        private const val INTERCEPTION_DEPTH = 11f
+        /**
+         * Where the ball is picked off varies from a screen jumped at the line to a deep ball taken over the top. The
+         * return still ends exactly on the play's real end spot, so only the catch point moves.
+         */
+        private const val MIN_PICK_DEPTH = 1f
+        private const val MAX_PICK_DEPTH = 24f
         private const val SHORT_RETURN = 4f
         private const val JUMP_ROUTE = 0.18f
         private const val ESCORT_DELAY = 0.05f
         private const val ESCORT_RADIUS = 4f
         private const val CATCH_TO_STRIDE = 0.08f
+        private const val MIN_RETURN_TIME = 0.05f
+        private const val ESCORT_PACE = 0.85f
     }
 }

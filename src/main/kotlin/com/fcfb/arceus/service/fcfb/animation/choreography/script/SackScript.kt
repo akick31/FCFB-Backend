@@ -2,7 +2,9 @@ package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
 import com.fcfb.arceus.service.fcfb.animation.choreography.DefensiveReaction
+import com.fcfb.arceus.service.fcfb.animation.choreography.DownfieldEscort
 import com.fcfb.arceus.service.fcfb.animation.choreography.FieldPoint
+import com.fcfb.arceus.service.fcfb.animation.choreography.OffensiveAlignments
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.Pursuit
@@ -17,7 +19,16 @@ class SackScript : PlayScript {
         val forward = context.forward
         val sackSpot = FieldPoint(context.endSpot, context.side) - carryOffset(forward)
         val quarterback = concept.quarterback(HOLD_BALL_UNTIL to concept.setPoint, SACK_AT to sackSpot)
-        val offense = concept.offense(quarterback, emptyMap())
+        val blocking = concept.offense(quarterback, emptyMap())
+        val offense =
+            DownfieldEscort.follow(
+                before = blocking,
+                carrier = quarterback,
+                from = PROTECT_FROM,
+                until = SACK_AT,
+                exclude = setOf(scene.offensiveAlignment.quarterback) + scene.offensiveAlignment.receivers,
+                speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED else Pursuit.DEFENSIVE_BACK_SPEED },
+            )
         val before = DefensiveReaction.before(context, scene, offense, dropping = true)
         val rushers = scene.defensiveAlignment.linemen.sortedByDescending { abs(scene.defense[it].lateral) }.take(RUSHER_COUNT)
         val defense =
@@ -29,10 +40,16 @@ class SackScript : PlayScript {
                     track
                 }
             }
-        return Choreography(offense, defense, concept.heldBall(quarterback))
+        return Choreography(
+            offense,
+            defense,
+            concept.heldBall(quarterback),
+            facingLocked = CompletedPassScript.facingLocked(scene),
+        )
     }
 
     companion object {
+        private const val PROTECT_FROM = 0.3f
         private const val HOLD_BALL_UNTIL = 0.42f
         private const val SACK_AT = 0.62f
         private const val BEAT_BLOCK_AT = 0.25f

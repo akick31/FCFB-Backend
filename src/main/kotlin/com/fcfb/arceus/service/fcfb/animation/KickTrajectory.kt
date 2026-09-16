@@ -24,23 +24,29 @@ class KickTrajectory(
     private val startYards = layout.lineOfScrimmageYards + GoalPostScenePainter.HOLD_DEPTH_YARDS
     private val farPixelsPerYard = (layout.endZoneTopY - layout.crossbarY) / GoalPostScenePainter.CROSSBAR_HEIGHT_YARDS
 
+    /** A chip shot reaches the posts far sooner than a long attempt, so the flight ends in proportion to the distance. */
+    val arrival: Float =
+        ((startYards + GoalPostScenePainter.END_ZONE_DEPTH_YARDS) / ARRIVAL_REFERENCE_YARDS * BASE_ARRIVAL)
+            .coerceIn(MIN_ARRIVAL, MAX_ARRIVAL)
+
     /** [flight] runs from the moment of the kick (0) to the end of the animation (1). */
     fun at(flight: Float): KickPoint {
-        val depth = 1f - (1f - (flight / ARRIVAL).coerceAtMost(1f)).pow(DECELERATION)
+        val depth = 1f - (1f - (flight / arrival).coerceAtMost(1f)).pow(DECELERATION)
+        val settle = maxOf(SETTLED, arrival + MIN_SETTLE_TIME)
         return when (outcome) {
             KickOutcome.GOOD, KickOutcome.WIDE, KickOutcome.DOINK_IN ->
-                if (flight < ARRIVAL) airborne(depth, PEAK_DEPTH, APEX_YARDS) else dropBehindPosts(segment(flight, ARRIVAL, SETTLED))
+                if (flight < arrival) airborne(depth, PEAK_DEPTH, APEX_YARDS) else dropBehindPosts(segment(flight, arrival, settle))
             KickOutcome.DOINK ->
-                if (flight < ARRIVAL) airborne(depth, PEAK_DEPTH, APEX_YARDS) else deflection(segment(flight, ARRIVAL, SETTLED))
+                if (flight < arrival) airborne(depth, PEAK_DEPTH, APEX_YARDS) else deflection(segment(flight, arrival, settle))
             KickOutcome.SHORT ->
-                if (flight < ARRIVAL) {
+                if (flight < arrival) {
                     airborne(
                         depth * SHORT_LANDING,
                         SHORT_LANDING / 2,
                         SHORT_APEX_YARDS,
                     )
                 } else {
-                    roll(segment(flight, ARRIVAL, SETTLED))
+                    roll(segment(flight, arrival, settle))
                 }
         }
     }
@@ -57,12 +63,13 @@ class KickTrajectory(
         return KickPoint(x, ground - heightYards * pixelsPerYard, ground, startScale + (endScale - startScale) * depth)
     }
 
-    /** Past the end line the ball keeps drifting the same way and falls to the ground behind the posts. */
+    /** Past the posts the ball carries on, lands on the turf behind them, and rolls clear of the post rather than onto it. */
     private fun dropBehindPosts(progress: Float): KickPoint {
         val passing = airborne(1f, PEAK_DEPTH, APEX_YARDS)
-        val restY = layout.endZoneTopY - BEHIND_POSTS_PIXELS * layout.scale
+        val restY = layout.groundY(-GoalPostScenePainter.END_ZONE_DEPTH_YARDS * BEHIND_POSTS_LANDING_DEPTH)
         val kickedIn = if (outcome == KickOutcome.DOINK_IN) -DOINK_IN_KICK else BEHIND_POSTS_DRIFT
-        val x = passing.x + (targetX - start.first) * kickedIn * progress
+        val away = if (passing.x < GoalPostScenePainter.CENTER_X) -1f else 1f
+        val x = passing.x + (targetX - start.first) * kickedIn * progress + away * BEHIND_POSTS_ROLL * layout.scale * progress
         val fall = (progress / DROP_FALL).coerceAtMost(1f)
         val settle = segment(progress, DROP_FALL, 1f)
         val hop = abs(sin(settle * DROP_BOUNCES * PI)).toFloat() * DROP_HOP * layout.scale * (1f - settle).pow(2)
@@ -90,7 +97,11 @@ class KickTrajectory(
     }
 
     companion object {
-        const val ARRIVAL = 0.62f
+        private const val BASE_ARRIVAL = 0.62f
+        private const val ARRIVAL_REFERENCE_YARDS = 45f
+        private const val MIN_ARRIVAL = 0.26f
+        private const val MAX_ARRIVAL = 0.72f
+        private const val MIN_SETTLE_TIME = 0.2f
         private const val SETTLED = 0.92f
         private const val DECELERATION = 1.3f
         private const val PEAK_DEPTH = 0.6f
@@ -103,8 +114,9 @@ class KickTrajectory(
         private const val NEAR_HEIGHT_FACTOR = 2.5f
         private const val LATERAL_BREAK = 2.4f
         private const val MIN_END_BALL_SCALE = 0.7f
-        private const val BEHIND_POSTS_PIXELS = 6f
+        private const val BEHIND_POSTS_LANDING_DEPTH = 0.98f
         private const val BEHIND_POSTS_DRIFT = 0.15f
+        private const val BEHIND_POSTS_ROLL = 26f
         private const val DOINK_IN_KICK = 0.55f
         private const val BEHIND_POSTS_SCALE = 0.9f
         private const val DROP_FALL = 0.45f

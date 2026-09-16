@@ -76,6 +76,7 @@ class GameService(
     private val discordService: DiscordService,
     private val userService: UserService,
     private val gameStatsService: GameStatsService,
+    private val teamUniformService: TeamUniformService,
     private val seasonService: SeasonService,
     private val scheduleService: ScheduleService,
     private val gameSpecificationService: GameSpecificationService,
@@ -229,6 +230,7 @@ class GameService(
                 gameRepository.save(newGame)
             }
             gameStatsService.createGameStats(newGame)
+            teamUniformService.snapshot(newGame)
 
             Logger.info(
                 "Game started.\n" +
@@ -360,6 +362,7 @@ class GameService(
                 gameRepository.save(newGame)
             }
             gameStatsService.createGameStats(newGame)
+            teamUniformService.snapshot(newGame)
 
             Logger.info(
                 "Overtime game started.\n" +

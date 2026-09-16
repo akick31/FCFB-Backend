@@ -17,7 +17,7 @@ class PostseasonFieldPreviewTool {
     private val classifier = PlayAnimationClassifier()
     private val overlayClassifier = PlayOutcomeOverlayClassifier()
     private val overlayPainter = OverlayPainter()
-    private val encoder = AnimatedGifEncoder()
+    private val encoder = AnimationFitter(AnimatedGifEncoder())
     private val overheadRenderer = OverheadPlayFrameRenderer(classifier)
     private val fieldGoalRenderer = FieldGoalAttemptFrameRenderer()
 
@@ -44,7 +44,7 @@ class PostseasonFieldPreviewTool {
         val renderer = if (classifier.classify(play) == AnimatedPlayType.FIELD_GOAL) fieldGoalRenderer else overheadRenderer
         val frames = renderer.renderFrames(play, startAbs, endAbs, theme, OffensivePlaybook.SPREAD, DefensivePlaybook.FOUR_THREE)
         val decorated = overlayPainter.applyOverlay(frames, overlayClassifier.classifyOverlay(play), play, theme.homeTeam, theme.awayTeam)
-        val bytes = encoder.encode(decorated, AnimationPalette.forTheme(theme))
+        val bytes = encoder.fit(decorated, AnimationPalette.forTheme(theme))
         file.writeBytes(bytes)
         assertTrue(bytes.isNotEmpty(), "Expected non-empty GIF bytes for ${file.name}")
     }

@@ -5,13 +5,16 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
 import com.fcfb.arceus.service.fcfb.animation.choreography.DefensiveReaction
+import com.fcfb.arceus.service.fcfb.animation.choreography.DownfieldEscort
 import com.fcfb.arceus.service.fcfb.animation.choreography.FieldPoint
 import com.fcfb.arceus.service.fcfb.animation.choreography.OffensiveAlignments
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayScript
+import com.fcfb.arceus.service.fcfb.animation.choreography.Pursuit
 import com.fcfb.arceus.service.fcfb.animation.choreography.SCORE_AT
 import com.fcfb.arceus.service.fcfb.animation.choreography.SNAP_END
 import com.fcfb.arceus.service.fcfb.animation.choreography.ScrimmageScene
+import com.fcfb.arceus.service.fcfb.animation.choreography.WeavingRun
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryTime
@@ -61,7 +64,10 @@ class RunPlayScript : PlayScript {
             if (runGain > 1f) {
                 val toHole = handoffBall.distanceTo(hole)
                 val holeAt = HANDOFF + (tackleAt - HANDOFF) * toHole / (toHole + hole.distanceTo(runEnd))
-                path(HANDOFF to handoffBall, holeAt to hole, tackleAt to runEnd)
+                val deepest = scene.defense.maxOf { (it.along - context.lineOfScrimmage) * forward }
+                val clearAlong = context.lineOfScrimmage + forward * (deepest + CLEAR_MARGIN)
+                val toDaylight = WeavingRun.between(hole, runEnd, holeAt, tackleAt, side, clearAlong)
+                switchAt(holeAt, path(HANDOFF to handoffBall, holeAt to hole), toDaylight)
             } else {
                 path(HANDOFF to handoffBall, tackleAt to runEnd)
             }
@@ -86,13 +92,24 @@ class RunPlayScript : PlayScript {
                 }
             }
 
+        val runPace = abs(runGain) / maxOf(tackleAt - HANDOFF, MIN_RUN_TIME)
+        val escortSpeed = maxOf(Pursuit.DEFENSIVE_BACK_SPEED, runPace * ESCORT_PACE)
+        val escorted =
+            DownfieldEscort.follow(
+                before = offense,
+                carrier = runner,
+                from = ESCORT_FROM,
+                until = tackleAt,
+                exclude = setOf(runnerIndex, alignment.quarterback),
+                speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED else escortSpeed },
+            )
         val tacklers =
             when {
                 offenseScores -> 0
                 runGain <= 3f -> 3
                 else -> 2
             }
-        val before = DefensiveReaction.before(context, scene, offense, dropping = false)
+        val before = DefensiveReaction.before(context, scene, escorted, dropping = false)
         val defense =
             DefensiveReaction.respond(
                 scene,
@@ -115,12 +132,16 @@ class RunPlayScript : PlayScript {
                     else -> BallState(ballRun.at(progress))
                 }
             }
-        if (!fumble) return Choreography(offense, defense, carried)
-        return FumbleRecovery.choreograph(context, offense, defense, carried, tackleAt, runEnd)
+        if (!fumble) return Choreography(escorted, defense, carried)
+        return FumbleRecovery.choreograph(context, escorted, defense, carried, tackleAt, runEnd)
     }
 
     companion object {
         private const val HANDOFF = 0.2f
+        private const val ESCORT_FROM = 0.3f
+        private const val MIN_RUN_TIME = 0.05f
+        private const val CLEAR_MARGIN = 5f
+        private const val ESCORT_PACE = 0.9f
         private const val FAKE_END = 0.45f
         private const val READ_AT = 0.22f
         private const val STUFFED_AT = 0.5f

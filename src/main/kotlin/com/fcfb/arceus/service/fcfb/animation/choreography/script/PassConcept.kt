@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
+import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.FieldPoint
@@ -8,6 +9,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
 import com.fcfb.arceus.service.fcfb.animation.choreography.SNAP_END
 import com.fcfb.arceus.service.fcfb.animation.choreography.ScrimmageScene
 import com.fcfb.arceus.service.fcfb.animation.choreography.Track
+import com.fcfb.arceus.service.fcfb.animation.choreography.UNDER_CENTER_SNAP_SPEED
 import com.fcfb.arceus.service.fcfb.animation.choreography.arc
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
@@ -33,8 +35,11 @@ internal class PassConcept(
         )
     val release = setPoint + carryOffset(forward)
 
+    /** He turns and drops the instant he has the ball; waiting out the full snap window reads as the quarterback freezing. */
+    private val exchangeEnd = if (alignment.underCenter) SNAP_END * UNDER_CENTER_SNAP_SPEED else SNAP_END
+
     fun quarterback(vararg after: Pair<Float, FieldPoint>): Track =
-        path(0f to quarterbackStart, SNAP_END to quarterbackStart, dropEnd to setPoint, *after)
+        path(0f to quarterbackStart, exchangeEnd to quarterbackStart, dropEnd to setPoint, *after)
 
     fun throwingQuarterback(): Track =
         quarterback(
@@ -57,9 +62,14 @@ internal class PassConcept(
             }
         }
 
-    fun target(deep: Boolean): Int {
-        val sameSide = alignment.receivers.filter { scene.offense[it].lateral * context.side > 0f }.ifEmpty { alignment.receivers }
-        return if (deep) sameSide.maxBy { abs(scene.offense[it].lateral) } else sameSide.minBy { abs(scene.offense[it].lateral) }
+    /** Picked from either side of the formation so the same man is not targeted on every play with the same shape. */
+    fun target(
+        deep: Boolean,
+        random: PlayRandom,
+    ): Int {
+        val ordered = alignment.receivers.sortedBy { abs(scene.offense[it].lateral) }
+        val half = maxOf(1, ordered.size / 2)
+        return random.pick(if (deep) ordered.takeLast(half) else ordered.take(half))
     }
 
     fun routeTo(
@@ -96,7 +106,7 @@ internal class PassConcept(
     ): BallState =
         BallState(
             release.lerp(catchPoint, fraction),
-            arc(fraction, 1.5f + release.distanceTo(catchPoint) * 0.2f),
+            arc(fraction, 1.5f + release.distanceTo(catchPoint) * DEEP_ARC_PER_YARD),
             spinning = true,
         )
 
@@ -116,14 +126,20 @@ internal class PassConcept(
     companion object {
         private const val UNDER_CENTER_DROP_END = 0.28f
         private const val SHOTGUN_DROP_END = 0.2f
-        private const val SET_TIME = 0.06f
+        private const val SET_TIME = 0.03f
         private const val FOLLOW_THROUGH_TIME = 0.08f
         private const val UNDER_CENTER_DROP = 7f
         private const val SHOTGUN_DROP = 1.5f
         private const val PASS_SET = 1.2f
         private const val PROTECTION_DEPTH = 3.5f
         private const val BREAK_TIME = 0.12f
-        private const val BASE_FLIGHT = 0.1f
-        private const val DISTANCE_FLIGHT = 0.16f
+        private const val DEEP_ARC_PER_YARD = 0.42f
+
+        /**
+         * A short throw is a bullet, but a deep ball is arced and has to hang, so the flight grows sharply with distance
+         * rather than staying flat. Both still cover ground faster than any player runs.
+         */
+        private const val BASE_FLIGHT = 0.05f
+        private const val DISTANCE_FLIGHT = 0.24f
     }
 }

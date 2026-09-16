@@ -43,12 +43,15 @@ object ChoreographyPainter {
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
         val view = View(camera, offsetX, offsetY)
-        choreography.defense.forEach { drawHelmet(graphics, view, it, progress, helmets.defense, !helmets.offenseFacesRight) }
-        choreography.offense.forEach { drawHelmet(graphics, view, it, progress, helmets.offense, helmets.offenseFacesRight) }
+        choreography.defense.forEach { drawHelmet(graphics, view, it, progress, helmets.defense, !helmets.offenseFacesRight, false) }
+        choreography.offense.forEachIndexed { index, track ->
+            val locked = index in choreography.facingLocked
+            drawHelmet(graphics, view, track, progress, helmets.offense, helmets.offenseFacesRight, locked)
+        }
 
         val ball = choreography.ball.at(progress)
         val (groundX, groundY) = view.toFrame(ball.position)
-        if (ball.height > SHADOW_MIN_HEIGHT) {
+        if (choreography.showBall && ball.height > SHADOW_MIN_HEIGHT) {
             graphics.color = SHADOW_COLOR
             graphics.fillOval(groundX - SHADOW_WIDTH / 2, groundY - SHADOW_HEIGHT / 2, SHADOW_WIDTH, SHADOW_HEIGHT)
         }
@@ -57,6 +60,7 @@ object ChoreographyPainter {
         val ballY = groundY - (ball.height * HEIGHT_PIXELS_PER_YARD).toInt()
         val angle = flightAngle(choreography.ball, view, progress)
         when {
+            !choreography.showBall -> Unit
             ball.spinning -> FieldBackgroundPainter.drawSpiralingBall(frame, groundX, ballY, progress * SPIN_CYCLES, BALL_SCALE, angle)
             ball.tumbling -> FieldBackgroundPainter.drawTumblingBall(frame, groundX, ballY, progress * TUMBLE_CYCLES, BALL_SCALE, angle)
             else -> FieldBackgroundPainter.drawBall(frame, groundX, ballY, BALL_SCALE)
@@ -75,10 +79,12 @@ object ChoreographyPainter {
         progress: Float,
         sprites: HelmetSprites,
         facesRightAtRest: Boolean,
+        facingLocked: Boolean,
     ) {
         val position = track.at(progress)
         val stride = position.along - track.at(maxOf(0f, progress - FACING_WINDOW)).along
-        val facingRight = if (abs(stride) >= FACING_MIN_STRIDE) stride > 0f else facesRightAtRest
+        val movingFacing = if (abs(stride) >= FACING_MIN_STRIDE) stride > 0f else facesRightAtRest
+        val facingRight = if (facingLocked) facesRightAtRest else movingFacing
         val sprite = sprites.facing(facingRight)
         val (x, y) = view.toFrame(position)
         graphics.drawImage(sprite, x - sprite.width / 2, y - sprite.height / 2, null)

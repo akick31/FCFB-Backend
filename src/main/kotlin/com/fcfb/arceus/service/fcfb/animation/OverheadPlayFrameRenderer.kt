@@ -1,13 +1,17 @@
 package com.fcfb.arceus.service.fcfb.animation
 
+import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.service.fcfb.animation.choreography.Celebration
+import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
 import com.fcfb.arceus.service.fcfb.animation.choreography.ChoreographyPainter
 import com.fcfb.arceus.service.fcfb.animation.choreography.FieldCamera
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayScript
+import com.fcfb.arceus.service.fcfb.animation.choreography.SCORE_AT
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.BlockedKickPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.DeadBallPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.KickoffPlayScript
@@ -19,7 +23,6 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.script.RunPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.SpikePlayScript
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage
-import kotlin.math.abs
 
 @Component
 class OverheadPlayFrameRenderer(
@@ -56,16 +59,33 @@ class OverheadPlayFrameRenderer(
                 offensivePlaybook = offensivePlaybook,
                 defensivePlaybook = defensivePlaybook,
             )
-        val choreography = (scripts[classifier.classify(play)] ?: deadBall).choreograph(context)
+        val scripted = (scripts[classifier.classify(play)] ?: deadBall).choreograph(context)
+        val choreography = if (play.actualResult in CELEBRATED_SCORES) Celebration.after(scripted, SCORE_AT) else scripted
         val helmets = matchupHelmets(play, theme, context.forward)
         val camera = FieldCamera(choreography.ball, lookAhead = context.forward * CAMERA_LOOK_AHEAD, flipped = theme.flipped)
         val field = FieldBackgroundPainter.paint(theme, camera.zoom)
-        if (shouldDrawScrimmageLines(play.playCall)) {
+        if (shouldDrawScrimmageLines(play.playCall) && play.actualResult != ActualResult.DELAY_OF_GAME) {
             FieldBackgroundPainter.drawScrimmageLines(field, startAbs, firstDownAbsFor(play, startAbs), camera.zoom, theme.flipped)
         }
-        val travelYards = abs(context.endSpot - context.lineOfScrimmage)
-        val extraFrames = ((travelYards - LONG_PLAY_YARDS) * EXTRA_FRAMES_PER_YARD).toInt().coerceIn(0, MAX_EXTRA_FRAMES)
-        return animationTimeline(extraFrames).map { progress -> ChoreographyPainter.paint(field, camera, choreography, progress, helmets) }
+        val extraFrames = ((ballTravelYards(choreography) - LONG_PLAY_YARDS) * EXTRA_FRAMES_PER_YARD).toInt().coerceIn(0, MAX_EXTRA_FRAMES)
+        val celebrationFrames = if (play.actualResult in CELEBRATED_SCORES) CELEBRATION_FRAMES else 0
+        return animationTimeline(extraFrames, celebrationFrames, choreography.endsAt)
+            .map { progress -> ChoreographyPainter.paint(field, camera, choreography, progress, helmets) }
+    }
+
+    /**
+     * How far the ball itself travels, which on a return is far longer than the gap between the snap and the end spot.
+     * Sizing the extra frames off the endpoints alone left returns covering their real distance in a fraction of the time.
+     */
+    private fun ballTravelYards(choreography: Choreography): Float {
+        var total = 0f
+        var previous = choreography.ball.at(0f).position
+        for (step in 1..TRAVEL_SAMPLES) {
+            val point = choreography.ball.at(step.toFloat() / TRAVEL_SAMPLES).position
+            total += previous.distanceTo(point)
+            previous = point
+        }
+        return total
     }
 
     private fun matchupHelmets(
@@ -73,18 +93,32 @@ class OverheadPlayFrameRenderer(
         theme: FieldTheme,
         forward: Float,
     ): MatchupHelmets {
-        val (homeColor, awayColor) = HelmetColors.forMatchup(theme.homeTeam, theme.awayTeam)
-        val home = HelmetSprite.render(homeColor, LogoLoader.load(theme.homeTeam.scorebugLogo), HELMET_SIZE)
-        val away = HelmetSprite.render(awayColor, LogoLoader.load(theme.awayTeam.scorebugLogo), HELMET_SIZE)
+        val (homeUniform, awayUniform) = theme.uniforms()
+        val home = HelmetSprite.render(homeUniform.helmet, LogoLoader.load(theme.homeLogoUrl()), HELMET_SIZE)
+        val away = HelmetSprite.render(awayUniform.helmet, LogoLoader.load(theme.awayLogoUrl()), HELMET_SIZE)
         val (offense, defense) = if (play.possession == TeamSide.HOME) home to away else away to home
         return MatchupHelmets(offense, defense, offenseFacesRight = forward > 0f)
     }
 
     companion object {
-        private const val HELMET_SIZE = 34
+        private const val HELMET_SIZE = 37
         private const val LONG_PLAY_YARDS = 20f
         private const val EXTRA_FRAMES_PER_YARD = 0.8f
-        private const val MAX_EXTRA_FRAMES = 36
+        private const val MAX_EXTRA_FRAMES = 96
+        private const val CELEBRATION_FRAMES = 10
+        private const val TRAVEL_SAMPLES = 120
         private const val CAMERA_LOOK_AHEAD = 4f
+        private val CELEBRATED_SCORES =
+            setOf(
+                ActualResult.TOUCHDOWN,
+                ActualResult.TURNOVER_TOUCHDOWN,
+                ActualResult.RETURN_TOUCHDOWN,
+                ActualResult.KICKING_TEAM_TOUCHDOWN,
+                ActualResult.KICK_SIX,
+                ActualResult.PUNT_RETURN_TOUCHDOWN,
+                ActualResult.PUNT_TEAM_TOUCHDOWN,
+                ActualResult.DEFENSE_TWO_POINT,
+                ActualResult.SUCCESS,
+            )
     }
 }

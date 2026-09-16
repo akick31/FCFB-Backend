@@ -9,6 +9,8 @@ enum class OverlayType {
     KICK_NO_GOOD,
     KICK_BLOCKED,
     MUFFED_BOUNCE,
+    TOUCHBACK,
+    FLAG,
     TWO_POINT_SUCCESS,
     TWO_POINT_FAILED,
     DEFENSE_TWO_POINT_RETURN,

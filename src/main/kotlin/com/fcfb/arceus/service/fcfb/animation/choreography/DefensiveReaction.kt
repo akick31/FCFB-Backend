@@ -55,7 +55,7 @@ object DefensiveReaction {
             direction = carrierDirection,
             tackleAt = tackleAt,
             tacklers = tacklers,
-            reactAt = { index -> if (index in alignment.linemen && !linemenCanTackle) tackleAt - LATE_LINEMAN_REACTION else reactAt },
+            reactAt = { index -> if (index in alignment.linemen && !linemenCanTackle) reactAt + LATE_LINEMAN_REACTION else reactAt },
             speed = { index ->
                 when (index) {
                     in alignment.linemen -> Pursuit.LINEMAN_SPEED

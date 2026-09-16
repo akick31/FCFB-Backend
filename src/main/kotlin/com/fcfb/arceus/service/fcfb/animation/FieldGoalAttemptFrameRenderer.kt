@@ -26,7 +26,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
         val layout = GoalPostScenePainter.layoutFor(play)
         val kickingHome = play.possession == TeamSide.HOME
         val targetEndZone = theme.endZoneOf(if (kickingHome) TeamSide.AWAY else TeamSide.HOME)
-        val (homeUniform, awayUniform) = Uniforms.forMatchup(theme.homeTeam, theme.awayTeam)
+        val (homeUniform, awayUniform) = theme.uniforms()
         val (kicking, rushing) = if (kickingHome) homeUniform to awayUniform else awayUniform to homeUniform
 
         val blocked = play.actualResult == ActualResult.BLOCKED
@@ -35,14 +35,14 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
 
         val timeline = animationTimeline()
         val doinked = trajectory?.outcome == KickOutcome.DOINK || trajectory?.outcome == KickOutcome.DOINK_IN
-        val contactFrameIndex = if (doinked) timeline.indexOfFirst { flight(it) >= KickTrajectory.ARRIVAL } else -1
+        val contactFrameIndex = if (doinked && trajectory != null) timeline.indexOfFirst { flight(it) >= trajectory.arrival } else -1
 
         return timeline.mapIndexed { index, t ->
             val scene = GoalPostScenePainter.paint(theme, targetEndZone, layout, midfieldTopOnLeft = kickingHome != theme.flipped)
             FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked)
             if (trajectory != null && t >= FieldGoalUnitPainter.KICK_AT) {
                 drawKick(scene, trajectory.at(flight(t)), flight(t))
-                if (flight(t) >= KickTrajectory.ARRIVAL && trajectory.outcome in PASSES_THE_POSTS) {
+                if (flight(t) >= trajectory.arrival && trajectory.outcome in PASSES_THE_POSTS) {
                     GoalPostScenePainter.drawPost(scene, layout)
                 }
             }

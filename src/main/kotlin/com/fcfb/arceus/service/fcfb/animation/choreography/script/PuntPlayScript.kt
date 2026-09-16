@@ -4,6 +4,7 @@ import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
+import com.fcfb.arceus.service.fcfb.animation.choreography.DownfieldEscort
 import com.fcfb.arceus.service.fcfb.animation.choreography.FieldPoint
 import com.fcfb.arceus.service.fcfb.animation.choreography.GangTackle
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
@@ -59,11 +60,11 @@ class PuntPlayScript : PlayScript {
             GangTackle.converge(
                 before = kickingStarts.mapIndexed { index, start -> if (index == PuntFormation.KICKER) punter else hold(start) },
                 candidates =
-                    if (returnScores || muffed || fairCatch) emptyList() else PuntFormation.GUNNERS + PuntFormation.PERSONAL_PROTECTOR,
+                    if (muffed || fairCatch) emptyList() else PuntFormation.GUNNERS + PuntFormation.PERSONAL_PROTECTOR,
                 carrier = returner,
                 direction = returnDirection,
                 tackleAt = returnAt,
-                tacklers = 2,
+                tacklers = if (returnScores) 0 else 2,
                 reactAt = { index -> if (index in PuntFormation.GUNNERS) GUNNER_RELEASE else KICK_AT },
                 speed = { index -> if (index == PuntFormation.KICKER) PUNTER_SPEED else Pursuit.COVERAGE_SPEED },
             )
@@ -82,7 +83,7 @@ class PuntPlayScript : PlayScript {
             }
 
         val jammerCount = PuntFormation.JAMMERS.size
-        val returnTeam =
+        val blocking =
             returnStarts.mapIndexed { index, start ->
                 val rusher = index < PuntFormation.RUSHERS.size
                 val jammer = !rusher && index < PuntFormation.RUSHERS.size + jammerCount
@@ -102,6 +103,16 @@ class PuntPlayScript : PlayScript {
                 }
             }
 
+        val returnTeam =
+            DownfieldEscort.follow(
+                before = blocking,
+                carrier = returner,
+                from = CATCH_AT,
+                until = returnAt,
+                exclude = setOf(returnerIndex),
+                speed = { Pursuit.DEFENSIVE_BACK_SPEED },
+            )
+
         val snapFrom = context.offenseSpot(0.3f, 0f)
         val kickFrom = punter.at(KICK_AT) + carryOffset(forward)
         val ball =
@@ -114,7 +125,7 @@ class PuntPlayScript : PlayScript {
                     progress < KICK_AT -> BallState(punter.at(progress) + carryOffset(forward))
                     progress < CATCH_AT -> {
                         val fraction = segment(progress, KICK_AT, CATCH_AT)
-                        BallState(kickFrom.lerp(landing, fraction), arc(fraction, PUNT_HEIGHT), spinning = true)
+                        BallState(kickFrom.lerp(landing, fraction), arc(fraction, PUNT_HEIGHT), tumbling = true)
                     }
                     muffed -> {
                         val fraction = segment(progress, CATCH_AT, RECOVER_AT)

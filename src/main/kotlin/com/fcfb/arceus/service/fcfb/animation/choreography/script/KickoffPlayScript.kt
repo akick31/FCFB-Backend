@@ -69,11 +69,11 @@ class KickoffPlayScript : PlayScript {
                     kickingStarts.mapIndexed { index, start ->
                         if (index == 0) path(0f to start, KICK_AT to context.offenseSpot(0.6f, 0f)) else hold(start)
                     },
-                candidates = if (returning && !returnScores) kickingStarts.indices.drop(1) else emptyList(),
+                candidates = if (returning) kickingStarts.indices.drop(1) else emptyList(),
                 carrier = coverageTarget,
                 direction = returnDirection,
                 tackleAt = returnAt,
-                tacklers = 2,
+                tacklers = if (returnScores) 0 else 2,
                 reactAt = { index -> if (index == 0) KICK_AT else RELEASE_AT },
                 speed = { Pursuit.COVERAGE_SPEED },
             )
@@ -93,16 +93,23 @@ class KickoffPlayScript : PlayScript {
 
         val frontCount = FRONT_LINE.size
         val secondCount = SECOND_LINE.size
+        val escortSpeed = catchSpot.distanceTo(endPoint) / maxOf(returnAt - catchAt, MIN_RETURN_TIME) * ESCORT_PACE
         val receivingTeam =
             receivingStarts.mapIndexed { index, start ->
+                val blocking = index < frontCount + secondCount
+                val wallDepth = if (index < frontCount) FRONT_WALL else SECOND_WALL
+                val wallSpread = if (index < frontCount) FRONT_SPREAD else SECOND_SPREAD
+                val wallSpot = FieldPoint(receivingGoal - forward * wallDepth, start.lateral * wallSpread)
+                val wall =
+                    if (blocking) {
+                        path(0f to start, 0.1f to start, WALL_AT to wallSpot)
+                    } else {
+                        path(0f to start, catchAt to start, returnAt to endPoint + FieldPoint(returnDirection * 3f, -side * 2f))
+                    }
                 when {
                     index == returnerIndex -> returner
-                    index < frontCount ->
-                        path(0f to start, 0.1f to start, 0.42f to FieldPoint(receivingGoal - forward * FRONT_WALL, start.lateral * 0.7f))
-                    index < frontCount + secondCount ->
-                        path(0f to start, 0.1f to start, 0.42f to FieldPoint(receivingGoal - forward * SECOND_WALL, start.lateral * 0.8f))
-                    returning -> path(0f to start, catchAt to start, returnAt to endPoint + FieldPoint(returnDirection * 3f, -side * 2f))
-                    else -> hold(start)
+                    !returning -> if (blocking) wall else hold(start)
+                    else -> Pursuit.chase(wall, catchAt, escortSpeed, Pursuit.trail(returner, ESCORT_RADIUS + (index % 3) * ESCORT_STEP))
                 }
             }
 
@@ -145,6 +152,13 @@ class KickoffPlayScript : PlayScript {
         private const val UP_BACK_DEPTH = 6f
         private const val FRONT_WALL = 25f
         private const val SECOND_WALL = 15f
+        private const val FRONT_SPREAD = 0.7f
+        private const val SECOND_SPREAD = 0.8f
+        private const val WALL_AT = 0.42f
+        private const val MIN_RETURN_TIME = 0.05f
+        private const val ESCORT_PACE = 0.85f
+        private const val ESCORT_RADIUS = 4f
+        private const val ESCORT_STEP = 1.5f
         private const val TOUCHBACK_STOP = 20f
         private const val END_ZONE_CENTER = 5f
         private val COVERAGE_LANES = listOf(-22f, -17f, -12f, -7f, -2.5f, 2.5f, 7f, 12f, 17f, 22f)

@@ -33,6 +33,7 @@ class GameServiceTest {
     private val discordService: DiscordService = mockk(relaxed = true)
     private val userService: UserService = mockk(relaxed = true)
     private val gameStatsService: GameStatsService = mockk(relaxed = true)
+    private val teamUniformService: TeamUniformService = mockk(relaxed = true)
     private val seasonService: SeasonService = mockk(relaxed = true)
     private val scheduleService: ScheduleService = mockk(relaxed = true)
     private val gameSpecificationService: GameSpecificationService = mockk(relaxed = true)
@@ -67,6 +68,7 @@ class GameServiceTest {
                 discordService,
                 userService,
                 gameStatsService,
+                teamUniformService,
                 seasonService,
                 scheduleService,
                 gameSpecificationService,

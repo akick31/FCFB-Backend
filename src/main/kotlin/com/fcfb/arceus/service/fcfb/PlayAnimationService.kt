@@ -5,8 +5,8 @@ import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.service.fcfb.animation.AnimatedGifEncoder
 import com.fcfb.arceus.service.fcfb.animation.AnimatedPlayType
+import com.fcfb.arceus.service.fcfb.animation.AnimationFitter
 import com.fcfb.arceus.service.fcfb.animation.AnimationPalette
 import com.fcfb.arceus.service.fcfb.animation.FieldCoordinateMapper
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalAttemptFrameRenderer
@@ -29,10 +29,11 @@ class PlayAnimationService(
     private val playAnimationClassifier: PlayAnimationClassifier,
     private val playOutcomeOverlayClassifier: PlayOutcomeOverlayClassifier,
     private val overlayPainter: OverlayPainter,
-    private val animatedGifEncoder: AnimatedGifEncoder,
+    private val animationFitter: AnimationFitter,
     private val overheadPlayFrameRenderer: OverheadPlayFrameRenderer,
     private val fieldGoalAttemptFrameRenderer: FieldGoalAttemptFrameRenderer,
     private val fieldThemeResolver: FieldThemeResolver,
+    private val teamUniformService: TeamUniformService,
 ) {
     fun getPlayAnimationByPlayId(playId: Int): ResponseEntity<ByteArray> {
         val play = playService.getPlayById(playId)
@@ -48,12 +49,14 @@ class PlayAnimationService(
 
         val isFieldGoal = playAnimationClassifier.classify(play) == AnimatedPlayType.FIELD_GOAL
         val renderer = if (isFieldGoal) fieldGoalAttemptFrameRenderer else overheadPlayFrameRenderer
-        val theme = fieldThemeResolver.resolve(play, game, homeTeam, awayTeam)
+        val homeUniform = teamUniformService.uniformFor(play.homeTeam, game.season, game.week)
+        val awayUniform = teamUniformService.uniformFor(play.awayTeam, game.season, game.week)
+        val theme = fieldThemeResolver.resolve(play, game, homeTeam, awayTeam, homeUniform, awayUniform)
         val frames = renderer.renderFrames(play, startAbs, endAbs, theme, offensivePlaybook, defensivePlaybook)
         val overlay = playOutcomeOverlayClassifier.classifyOverlay(play)
         val decoratedFrames = overlayPainter.applyOverlay(frames, overlay, play, homeTeam, awayTeam)
 
-        val gifBytes = animatedGifEncoder.encode(decoratedFrames, AnimationPalette.forTheme(theme))
+        val gifBytes = animationFitter.fit(decoratedFrames, AnimationPalette.forTheme(theme))
 
         val headers =
             HttpHeaders().apply {
