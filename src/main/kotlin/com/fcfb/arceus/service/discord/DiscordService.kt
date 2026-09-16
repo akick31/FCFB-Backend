@@ -60,6 +60,18 @@ class DiscordService(
         }
     }
 
+    fun notifyGameModeChange(game: Game) {
+        val discordBotUrl = "$discordBotUrl/game_mode"
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.APPLICATION_JSON
+        val requestEntity = HttpEntity(game, headers)
+        try {
+            restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
+        } catch (e: Exception) {
+            Logger.error("There was an error announcing the game mode change for ${game.gameId}: " + e.message)
+        }
+    }
+
     fun notifyWarning(
         game: Game,
         instance: Int,

@@ -16,6 +16,7 @@ import com.fcfb.arceus.enums.team.TeamSide
 import com.vladmihalcea.hibernate.type.json.JsonStringType
 import org.hibernate.annotations.Type
 import org.hibernate.annotations.TypeDef
+import java.time.LocalDateTime
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -310,6 +311,16 @@ class Game {
     @Column(name = "game_mode")
     @JsonProperty("game_mode")
     var gameMode: GameMode? = null
+
+    @Basic
+    @Column(name = "game_mode_set_by")
+    @JsonProperty("game_mode_set_by")
+    var gameModeSetBy: String? = null
+
+    @Basic
+    @Column(name = "game_mode_set_at")
+    @JsonProperty("game_mode_set_at")
+    var gameModeSetAt: LocalDateTime? = null
 
     @Basic
     @Column(name = "overtime_half")
