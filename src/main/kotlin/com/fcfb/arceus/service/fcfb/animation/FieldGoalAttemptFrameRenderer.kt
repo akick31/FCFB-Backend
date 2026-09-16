@@ -3,11 +3,15 @@ package com.fcfb.arceus.service.fcfb.animation
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
+import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import org.springframework.stereotype.Component
+import java.awt.Color
+import java.awt.RenderingHints
+import java.awt.geom.Ellipse2D
 import java.awt.image.BufferedImage
-import kotlin.math.sin
+import java.util.Random
 
 @Component
 class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
@@ -15,105 +19,103 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
         play: Play,
         startAbs: Int,
         endAbs: Int,
-        homeTeam: Team,
-        awayTeam: Team,
+        theme: FieldTheme,
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,
     ): List<BufferedImage> {
         val layout = GoalPostScenePainter.layoutFor(play)
-        val good = play.actualResult == ActualResult.GOOD
+        val kickingHome = play.possession == TeamSide.HOME
+        val targetEndZone = theme.endZoneOf(if (kickingHome) TeamSide.AWAY else TeamSide.HOME)
+        val (homeUniform, awayUniform) = Uniforms.forMatchup(theme.homeTeam, theme.awayTeam)
+        val (kicking, rushing) = if (kickingHome) homeUniform to awayUniform else awayUniform to homeUniform
+
         val blocked = play.actualResult == ActualResult.BLOCKED
-        val missLeft = play.playId % 2 == 0
-        val targetX =
-            when {
-                good || blocked -> GoalPostScenePainter.CENTER_X
-                missLeft -> layout.leftUprightX
-                else -> layout.rightUprightX
-            }
+        val blockSide = if (play.playId % 2 == 0) 1 else -1
+        val trajectory = if (blocked) null else kickTrajectory(play, layout)
 
         val timeline = animationTimeline()
-        val contactFrameIndex = if (good || blocked) -1 else timeline.indexOfFirst { it >= CONTACT_PROGRESS }
+        val doinked = trajectory?.outcome == KickOutcome.DOINK || trajectory?.outcome == KickOutcome.DOINK_IN
+        val contactFrameIndex = if (doinked) timeline.indexOfFirst { flight(it) >= KickTrajectory.ARRIVAL } else -1
 
         return timeline.mapIndexed { index, t ->
-            val scene = GoalPostScenePainter.paint(homeTeam, layout)
-            if (blocked) {
-                GoalPostScenePainter.drawDefender(scene, GoalPostScenePainter.CENTER_X, defenderTopY(t))
+            val scene = GoalPostScenePainter.paint(theme, targetEndZone, layout, midfieldTopOnLeft = kickingHome != theme.flipped)
+            FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked)
+            if (trajectory != null && t >= FieldGoalUnitPainter.KICK_AT) {
+                drawKick(scene, trajectory.at(flight(t)), flight(t))
+                if (flight(t) >= KickTrajectory.ARRIVAL && trajectory.outcome in PASSES_THE_POSTS) {
+                    GoalPostScenePainter.drawPost(scene, layout)
+                }
             }
-            val (x, y, ballScale) = ballPosition(t, targetX, good, blocked, layout)
-            if (y in 0..FieldBackgroundPainter.HEIGHT) {
-                FieldBackgroundPainter.drawBall(scene, x, y, ballScale)
-            }
-            if (contactFrameIndex != -1 && index in contactFrameIndex until contactFrameIndex + DOINK_FRAME_COUNT) {
-                GoalPostScenePainter.drawDoink(scene, targetX, layout.uprightMidY)
+            if (trajectory != null && contactFrameIndex != -1 && index in contactFrameIndex until contactFrameIndex + DOINK_FRAME_COUNT) {
+                GoalPostScenePainter.drawDoink(scene, trajectory.targetX.toInt(), layout.uprightMidY)
             }
             scene
         }
     }
 
-    private fun defenderTopY(t: Float): Int {
-        val distanceFromContact = kotlin.math.abs(t - BLOCK_CONTACT_PROGRESS)
-        val jumpProgress = (1f - (distanceFromContact / DEFENDER_JUMP_WINDOW)).coerceIn(0f, 1f)
-        return (DEFENDER_GROUNDED_TOP_Y - DEFENDER_PEAK_HEIGHT * jumpProgress).toInt()
+    private fun flight(t: Float): Float = segment(t, FieldGoalUnitPainter.KICK_AT, 1f)
+
+    /** Makes land anywhere between the uprights; misses under the long-kick limit are a random doink or a random side wide. */
+    private fun kickTrajectory(
+        play: Play,
+        layout: GoalPostScenePainter.Layout,
+    ): KickTrajectory {
+        val random = Random(play.playId.toLong())
+        val side = if (random.nextBoolean()) 1f else -1f
+        val kickYards = layout.lineOfScrimmageYards + GoalPostScenePainter.HOLD_DEPTH_YARDS + GoalPostScenePainter.END_ZONE_DEPTH_YARDS
+        return when {
+            play.actualResult == ActualResult.GOOD && random.nextFloat() < DOINK_IN_CHANCE ->
+                KickTrajectory(layout, KickOutcome.DOINK_IN, side)
+            play.actualResult == ActualResult.GOOD ->
+                KickTrajectory(layout, KickOutcome.GOOD, (random.nextFloat() * 2f - 1f) * MAX_MAKE_FRACTION)
+            kickYards >= SHORT_KICK_YARDS ->
+                KickTrajectory(layout, KickOutcome.SHORT, side * random.nextFloat() * MAX_SHORT_FRACTION)
+            random.nextFloat() < DOINK_CHANCE -> KickTrajectory(layout, KickOutcome.DOINK, side)
+            else ->
+                KickTrajectory(
+                    layout,
+                    KickOutcome.WIDE,
+                    side * (MIN_WIDE_FRACTION + random.nextFloat() * (MAX_WIDE_FRACTION - MIN_WIDE_FRACTION)),
+                )
+        }
     }
 
-    private fun ballPosition(
-        t: Float,
-        targetX: Int,
-        good: Boolean,
-        blocked: Boolean,
-        layout: GoalPostScenePainter.Layout,
-    ): Triple<Int, Int, Float> {
-        if (good) {
-            if (t <= NET_RISE_PORTION) {
-                val progress = t / NET_RISE_PORTION
-                val eased = sin(progress * Math.PI / 2)
-                val y = GoalPostScenePainter.BASE_Y - (GoalPostScenePainter.BASE_Y - layout.netContactY) * eased
-                val curve = (CURVE_AMOUNT * sin(Math.PI * progress)).toInt()
-                val scale = 1f - (1f - layout.scale) * progress.toFloat()
-                return Triple(GoalPostScenePainter.CENTER_X + curve, y.toInt(), scale)
-            }
-            return Triple(GoalPostScenePainter.CENTER_X, layout.netContactY, layout.scale)
+    private fun drawKick(
+        scene: BufferedImage,
+        point: KickPoint,
+        flight: Float,
+    ) {
+        point.shadowY?.let { shadowY ->
+            val g = scene.createGraphics()
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+            g.color = SHADOW_COLOR
+            val width = SHADOW_WIDTH * point.scale
+            g.fill(Ellipse2D.Float(point.x - width / 2, shadowY - width * SHADOW_FLATTENING / 2, width, width * SHADOW_FLATTENING))
+            g.dispose()
         }
-        if (blocked) {
-            if (t <= BLOCK_CONTACT_PROGRESS) {
-                val progress = t / BLOCK_CONTACT_PROGRESS
-                val y = GoalPostScenePainter.BASE_Y - BLOCKED_BALL_RISE * progress
-                return Triple(GoalPostScenePainter.CENTER_X, y.toInt(), 1f)
-            }
-            val dropProgress = ((t - BLOCK_CONTACT_PROGRESS) / (1f - BLOCK_CONTACT_PROGRESS)).coerceIn(0f, 1f)
-            val y = (GoalPostScenePainter.BASE_Y - BLOCKED_BALL_RISE) + (BLOCKED_BALL_RISE + BLOCKED_BALL_SETTLE) * dropProgress
-            return Triple(GoalPostScenePainter.CENTER_X, y.toInt(), 1f)
-        }
-        if (t <= CONTACT_PROGRESS) {
-            val progress = t / CONTACT_PROGRESS
-            val x = GoalPostScenePainter.CENTER_X + (targetX - GoalPostScenePainter.CENTER_X) * progress
-            val y = GoalPostScenePainter.BASE_Y + (layout.uprightMidY - GoalPostScenePainter.BASE_Y) * progress
-            val scale = 1f - (1f - layout.scale) * progress
-            return Triple(x.toInt(), y.toInt(), scale)
-        }
-        val deflectProgress = ((t - CONTACT_PROGRESS) / (1f - CONTACT_PROGRESS)).coerceIn(0f, 1f)
-        val deflectDirection = if (targetX < GoalPostScenePainter.CENTER_X) -1 else 1
-        val x = targetX + deflectDirection * DEFLECT_DISTANCE * deflectProgress
-        val fall = layout.uprightMidY + DEFLECT_DROP * deflectProgress
-        val bounce = -kotlin.math.abs(BOUNCE_HEIGHT * sin(deflectProgress * BOUNCE_CYCLES * Math.PI)) * (1f - deflectProgress)
-        val y = fall + bounce
-        return Triple(x.toInt(), y.toInt(), layout.scale)
+        FieldBackgroundPainter.drawTumblingBall(
+            scene,
+            point.x.toInt(),
+            point.y.toInt(),
+            flight * TUMBLE_CYCLES,
+            point.scale,
+            angle = -Math.PI / 2,
+        )
     }
 
     companion object {
-        private const val CONTACT_PROGRESS = 0.65f
-        private const val DOINK_FRAME_COUNT = 4
-        private const val NET_RISE_PORTION = 0.55f
-        private const val CURVE_AMOUNT = 45f
-        private const val DEFLECT_DISTANCE = 50f
-        private const val DEFLECT_DROP = 360f
-        private const val BOUNCE_HEIGHT = 50f
-        private const val BOUNCE_CYCLES = 2.5
-        private const val BLOCK_CONTACT_PROGRESS = 0.35f
-        private const val BLOCKED_BALL_RISE = 60f
-        private const val BLOCKED_BALL_SETTLE = 10f
-        private const val DEFENDER_JUMP_WINDOW = 0.35f
-        private const val DEFENDER_PEAK_HEIGHT = 80f
-        private const val DEFENDER_GROUNDED_TOP_Y = GoalPostScenePainter.BASE_Y - 72
+        private const val DOINK_FRAME_COUNT = 6
+        private const val SHORT_KICK_YARDS = 60f
+        private const val DOINK_CHANCE = 0.35f
+        private const val DOINK_IN_CHANCE = 0.15f
+        private val PASSES_THE_POSTS = setOf(KickOutcome.GOOD, KickOutcome.WIDE, KickOutcome.DOINK_IN)
+        private const val MAX_MAKE_FRACTION = 0.75f
+        private const val MAX_SHORT_FRACTION = 0.6f
+        private const val MIN_WIDE_FRACTION = 1.35f
+        private const val MAX_WIDE_FRACTION = 1.9f
+        private const val TUMBLE_CYCLES = 5f
+        private const val SHADOW_WIDTH = 20f
+        private const val SHADOW_FLATTENING = 0.4f
+        private val SHADOW_COLOR = Color(0, 0, 0, 90)
     }
 }

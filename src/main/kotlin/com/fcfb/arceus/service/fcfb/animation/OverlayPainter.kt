@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.animation
 
+import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
@@ -31,7 +32,12 @@ class OverlayPainter {
     ): BufferedImage {
         val g = frame.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        g.font = Font("Arial", Font.BOLD, TEXT_SIZE)
+        var textSize = TEXT_SIZE
+        g.font = Font("Arial", Font.BOLD, textSize)
+        while (textSize > MIN_TEXT_SIZE && g.fontMetrics.stringWidth(label) > frame.width - 4 * BACKGROUND_PADDING) {
+            textSize -= 2
+            g.font = Font("Arial", Font.BOLD, textSize)
+        }
         val metrics = g.fontMetrics
         val width = metrics.stringWidth(label)
         val x = (frame.width - width) / 2
@@ -58,7 +64,7 @@ class OverlayPainter {
         when (overlay) {
             OverlayType.TOUCHDOWN_FLASH -> "TOUCHDOWN!"
             OverlayType.FIRST_DOWN_MARKER -> "FIRST DOWN"
-            OverlayType.TURNOVER_FLAG -> "TURNOVER"
+            OverlayType.TURNOVER_FLAG -> turnoverLabel(play)
             OverlayType.SAFETY_FLASH -> "SAFETY!"
             OverlayType.KICK_GOOD -> if (play.playCall == PlayCall.FIELD_GOAL) "FIELD GOAL IS GOOD!" else "EXTRA POINT IS GOOD!"
             OverlayType.KICK_NO_GOOD -> "NO GOOD"
@@ -73,9 +79,17 @@ class OverlayPainter {
             OverlayType.NONE -> null
         }
 
+    private fun turnoverLabel(play: Play): String =
+        when {
+            play.actualResult == ActualResult.TURNOVER_ON_DOWNS -> "TURNOVER ON DOWNS"
+            play.playCall == PlayCall.PASS -> "INTERCEPTED"
+            else -> "FUMBLE"
+        }
+
     companion object {
         private const val OVERLAY_FRAME_COUNT = 3
         private const val TEXT_SIZE = 56
+        private const val MIN_TEXT_SIZE = 24
         private const val BACKGROUND_PADDING = 16
     }
 }

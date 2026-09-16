@@ -16,6 +16,22 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
     @Query(value = "SELECT * FROM game WHERE game_id =?", nativeQuery = true)
     fun getGameById(gameId: Int): Game?
 
+    @Query(
+        value =
+            "SELECT postseason_game_logo FROM game WHERE game_type IN ('PLAYOFFS', 'NATIONAL_CHAMPIONSHIP') " +
+                "AND postseason_game_logo IS NOT NULL ORDER BY season DESC, game_id DESC LIMIT 1",
+        nativeQuery = true,
+    )
+    fun getLatestPlayoffLogo(): String?
+
+    @Query(
+        value =
+            "SELECT postseason_game_logo FROM game WHERE game_type IN ('PLAYOFFS', 'NATIONAL_CHAMPIONSHIP') " +
+                "AND LOWER(postseason_game_logo) LIKE '%dark%' ORDER BY season DESC, game_id DESC LIMIT 1",
+        nativeQuery = true,
+    )
+    fun getLatestDarkPlayoffLogo(): String?
+
     @Query(value = "SELECT * FROM game WHERE JSON_CONTAINS(request_message_id, ?, '\$')", nativeQuery = true)
     fun getGameByRequestMessageId(requestMessageId: String): Game?
 

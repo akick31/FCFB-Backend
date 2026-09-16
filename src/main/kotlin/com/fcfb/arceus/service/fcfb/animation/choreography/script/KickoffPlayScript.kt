@@ -113,7 +113,7 @@ class KickoffPlayScript : PlayScript {
                     progress < catchAt -> {
                         val fraction = segment(progress, KICK_AT, catchAt)
                         val height = if (squib) bounce(fraction, SQUIB_HEIGHT, 3) else arc(fraction, KICK_HEIGHT)
-                        BallState(kickSpot.lerp(landing, fraction), height, spinning = !squib)
+                        BallState(kickSpot.lerp(landing, fraction), height, tumbling = !squib)
                     }
                     touchback -> {
                         val fraction = segment(progress, catchAt, catchAt + SETTLE_TIME)

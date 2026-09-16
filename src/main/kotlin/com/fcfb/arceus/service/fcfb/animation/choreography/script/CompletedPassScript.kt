@@ -12,6 +12,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.SCORE_AT
 import com.fcfb.arceus.service.fcfb.animation.choreography.ScrimmageScene
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
+import com.fcfb.arceus.service.fcfb.animation.choreography.carryTime
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
@@ -41,7 +42,7 @@ class CompletedPassScript : PlayScript {
         val throwAt = concept.throwAt
         val catchAt = throwAt + concept.flightTime(catchPoint)
         val afterCatch = catchPoint.distanceTo(endPoint)
-        val tackleAt = if (offenseScores) SCORE_AT else minOf(0.9f, catchAt + 0.06f + 0.3f * minOf(afterCatch, 25f) / 25f)
+        val tackleAt = minOf(SCORE_AT, catchAt + CATCH_TO_STRIDE + carryTime(afterCatch))
         val runAfterCatch = path(catchAt to catchPoint, tackleAt to endPoint)
         val receiver =
             switchAt(catchAt, concept.routeTo(targetIndex, catchPoint - carryOffset(forward), catchAt), carrierOf(runAfterCatch, forward))
@@ -84,5 +85,6 @@ class CompletedPassScript : PlayScript {
         private const val BREAKAWAY_CATCH_DEPTH = 15f
         private const val DEEP_CATCH_DEPTH = 12f
         private const val RUN_AFTER_CATCH = 3f
+        private const val CATCH_TO_STRIDE = 0.06f
     }
 }

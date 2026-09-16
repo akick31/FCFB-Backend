@@ -18,7 +18,7 @@ class AnimatedGifEncoder {
         frames: List<BufferedImage>,
         paletteColors: List<Color>,
         frameDelayCentiseconds: Int = 12,
-        finalFrameHoldCentiseconds: Int = 1000,
+        finalFrameHoldCentiseconds: Int = 500,
         loopCount: Int = 0,
     ): ByteArray {
         require(frames.isNotEmpty()) { "Cannot encode an animated GIF with no frames" }

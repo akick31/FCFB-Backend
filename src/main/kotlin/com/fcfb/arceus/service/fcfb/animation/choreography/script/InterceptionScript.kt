@@ -15,6 +15,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.SCORE_AT
 import com.fcfb.arceus.service.fcfb.animation.choreography.ScrimmageScene
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
+import com.fcfb.arceus.service.fcfb.animation.choreography.carryTime
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
@@ -35,15 +36,7 @@ class InterceptionScript : PlayScript {
         val endPoint = FieldPoint(context.endSpot, catchPoint.lateral * 0.5f)
         val throwAt = concept.throwAt
         val catchAt = throwAt + concept.flightTime(catchPoint)
-        val returnAt =
-            if (defenseScores) {
-                SCORE_AT
-            } else {
-                minOf(
-                    0.9f,
-                    catchAt + 0.08f + 0.3f * minOf(catchPoint.distanceTo(endPoint), 30f) / 30f,
-                )
-            }
+        val returnAt = minOf(SCORE_AT, catchAt + CATCH_TO_STRIDE + carryTime(catchPoint.distanceTo(endPoint)))
         val returnBall = path(catchAt to catchPoint, returnAt to endPoint)
 
         val quarterback = concept.throwingQuarterback()
@@ -106,5 +99,6 @@ class InterceptionScript : PlayScript {
         private const val JUMP_ROUTE = 0.18f
         private const val ESCORT_DELAY = 0.05f
         private const val ESCORT_RADIUS = 4f
+        private const val CATCH_TO_STRIDE = 0.08f
     }
 }

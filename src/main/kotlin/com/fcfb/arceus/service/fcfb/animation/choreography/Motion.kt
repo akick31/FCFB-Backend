@@ -11,6 +11,11 @@ private const val CARRY_BELOW = 0.8f
 private const val SHOTGUN_SNAP_HEIGHT = 1.2f
 private const val UNDER_CENTER_SNAP_HEIGHT = 0.2f
 
+private const val CARRIER_YARDS_PER_MOTION = 55f
+
+/** How much of the motion phase a ball carrier needs to cover [yards], so long runs take proportionally longer. */
+internal fun carryTime(yards: Float): Float = abs(yards) / CARRIER_YARDS_PER_MOTION
+
 internal fun path(vararg waypoints: Pair<Float, FieldPoint>): Track = WaypointTrack(waypoints.map { Waypoint(it.first, it.second) })
 
 internal fun hold(point: FieldPoint): Track = Track { point }

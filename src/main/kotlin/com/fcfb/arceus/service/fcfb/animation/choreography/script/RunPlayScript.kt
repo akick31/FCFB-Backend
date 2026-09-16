@@ -14,6 +14,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.SNAP_END
 import com.fcfb.arceus.service.fcfb.animation.choreography.ScrimmageScene
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
+import com.fcfb.arceus.service.fcfb.animation.choreography.carryTime
 import com.fcfb.arceus.service.fcfb.animation.choreography.offsetBy
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.snapBall
@@ -22,13 +23,13 @@ import kotlin.math.abs
 
 class RunPlayScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
+        if (context.play.actualResult == ActualResult.SAFETY) return PitchPlay.choreograph(context)
         val scene = ScrimmageScene.from(context)
         val alignment = scene.offensiveAlignment
         val forward = context.forward
         val side = context.side
         val result = context.play.actualResult
         val fumble = result in FUMBLES
-        val defenseScores = result in DEFENSIVE_SCORES
         val offenseScores = result in OFFENSIVE_SCORES
 
         val runnerIndex = alignment.backs.firstOrNull { scene.offense[it].lateral * side > 0f } ?: alignment.backs.first()
@@ -44,18 +45,14 @@ class RunPlayScript : PlayScript {
             )
 
         val drift = side * minOf(DRIFT_BASE + minOf(abs(context.gain), 12f) * DRIFT_PER_YARD, MAX_DRIFT)
-        val runEnd =
-            when {
-                defenseScores -> context.defenseSpot(FUMBLE_RETURN_GAIN, side * 4f)
-                fumble -> FieldPoint(context.endSpot - forward * FUMBLE_SHORT, drift)
-                else -> FieldPoint(context.endSpot, drift)
-            }
+        val runEnd = if (fumble) FumbleRecovery.fumbleSpot(context, drift) else FieldPoint(context.endSpot, drift)
         val runGain = (runEnd.along - context.lineOfScrimmage) * forward
+        val runTime = if (runGain <= 0f) STUFFED_AT else minOf(SCORE_AT, maxOf(SHORT_RUN_AT, HANDOFF + STRIDE_TIME + carryTime(runGain)))
         val tackleAt =
             when {
                 offenseScores -> SCORE_AT
-                runGain <= 0f -> STUFFED_AT
-                else -> SHORT_RUN_AT + LONG_RUN_EXTRA * minOf(runGain, 25f) / 25f
+                fumble -> minOf(runTime, FumbleRecovery.latestFumbleAt(context))
+                else -> runTime
             }
 
         val handoffBall = mesh + carryOffset(forward)
@@ -119,7 +116,7 @@ class RunPlayScript : PlayScript {
                 }
             }
         if (!fumble) return Choreography(offense, defense, carried)
-        return FumbleRecovery.choreograph(context, offense, defense, carried, tackleAt, runEnd, defenseScores)
+        return FumbleRecovery.choreograph(context, offense, defense, carried, tackleAt, runEnd)
     }
 
     companion object {
@@ -128,7 +125,7 @@ class RunPlayScript : PlayScript {
         private const val READ_AT = 0.22f
         private const val STUFFED_AT = 0.5f
         private const val SHORT_RUN_AT = 0.55f
-        private const val LONG_RUN_EXTRA = 0.33f
+        private const val STRIDE_TIME = 0.12f
         private const val UNDER_CENTER_MESH_DEPTH = 4f
         private const val MESH_WIDTH = 1.2f
         private const val QUARTERBACK_MESH_GAP = 1.6f
@@ -140,11 +137,8 @@ class RunPlayScript : PlayScript {
         private const val DRIFT_PER_YARD = 0.35f
         private const val MAX_DRIFT = 18f
         private const val DRIVE_BLOCK = 2f
-        private const val FUMBLE_SHORT = 1f
-        private const val FUMBLE_RETURN_GAIN = 3f
 
         private val FUMBLES = setOf(ActualResult.TURNOVER, ActualResult.TURNOVER_TOUCHDOWN, ActualResult.DEFENSE_TWO_POINT)
-        private val DEFENSIVE_SCORES = setOf(ActualResult.TURNOVER_TOUCHDOWN, ActualResult.DEFENSE_TWO_POINT)
         private val OFFENSIVE_SCORES = setOf(ActualResult.TOUCHDOWN, ActualResult.SUCCESS)
     }
 }

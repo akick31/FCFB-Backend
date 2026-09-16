@@ -5,13 +5,12 @@ import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.service.fcfb.animation.AnimatedGifEncoder
 import com.fcfb.arceus.service.fcfb.animation.AnimatedPlayType
-import com.fcfb.arceus.service.fcfb.animation.FieldBackgroundPainter
+import com.fcfb.arceus.service.fcfb.animation.AnimationPalette
 import com.fcfb.arceus.service.fcfb.animation.FieldCoordinateMapper
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalAttemptFrameRenderer
-import com.fcfb.arceus.service.fcfb.animation.GoalPostScenePainter
+import com.fcfb.arceus.service.fcfb.animation.FieldThemeResolver
 import com.fcfb.arceus.service.fcfb.animation.OverheadPlayFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.OverlayPainter
 import com.fcfb.arceus.service.fcfb.animation.PlayAnimationClassifier
@@ -21,7 +20,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import java.awt.Color
 
 @Service
 class PlayAnimationService(
@@ -34,6 +32,7 @@ class PlayAnimationService(
     private val animatedGifEncoder: AnimatedGifEncoder,
     private val overheadPlayFrameRenderer: OverheadPlayFrameRenderer,
     private val fieldGoalAttemptFrameRenderer: FieldGoalAttemptFrameRenderer,
+    private val fieldThemeResolver: FieldThemeResolver,
 ) {
     fun getPlayAnimationByPlayId(playId: Int): ResponseEntity<ByteArray> {
         val play = playService.getPlayById(playId)
@@ -49,11 +48,12 @@ class PlayAnimationService(
 
         val isFieldGoal = playAnimationClassifier.classify(play) == AnimatedPlayType.FIELD_GOAL
         val renderer = if (isFieldGoal) fieldGoalAttemptFrameRenderer else overheadPlayFrameRenderer
-        val frames = renderer.renderFrames(play, startAbs, endAbs, homeTeam, awayTeam, offensivePlaybook, defensivePlaybook)
+        val theme = fieldThemeResolver.resolve(play, game, homeTeam, awayTeam)
+        val frames = renderer.renderFrames(play, startAbs, endAbs, theme, offensivePlaybook, defensivePlaybook)
         val overlay = playOutcomeOverlayClassifier.classifyOverlay(play)
         val decoratedFrames = overlayPainter.applyOverlay(frames, overlay, play, homeTeam, awayTeam)
 
-        val gifBytes = animatedGifEncoder.encode(decoratedFrames, buildPalette(homeTeam, awayTeam))
+        val gifBytes = animatedGifEncoder.encode(decoratedFrames, AnimationPalette.forTheme(theme))
 
         val headers =
             HttpHeaders().apply {
@@ -116,26 +116,6 @@ class PlayAnimationService(
      * opponent's goal.
      */
     private fun ownGoalTargetFor(possessor: TeamSide): Int = if (possessor == TeamSide.HOME) -END_ZONE_CENTER else 100 + END_ZONE_CENTER
-
-    private fun buildPalette(
-        homeTeam: Team,
-        awayTeam: Team,
-    ): List<Color> =
-        listOf(
-            FieldBackgroundPainter.TURF_COLOR,
-            FieldBackgroundPainter.LINE_COLOR,
-            FieldBackgroundPainter.BALL_COLOR,
-            FieldBackgroundPainter.LOS_COLOR,
-            FieldBackgroundPainter.FIRST_DOWN_COLOR,
-            Color.BLACK,
-            FieldBackgroundPainter.parseColor(homeTeam.primaryColor),
-            FieldBackgroundPainter.parseColor(awayTeam.primaryColor),
-            FieldBackgroundPainter.parseColor(homeTeam.secondaryColor),
-            GoalPostScenePainter.SKY_COLOR,
-            GoalPostScenePainter.POST_COLOR,
-            GoalPostScenePainter.DEFENDER_COLOR,
-            GoalPostScenePainter.NET_COLOR,
-        ) + GoalPostScenePainter.FAN_COLORS + GoalPostScenePainter.STAND_SHADES
 
     companion object {
         private const val END_ZONE_CENTER = 5

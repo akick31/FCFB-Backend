@@ -2,28 +2,30 @@ package com.fcfb.arceus.service.fcfb.animation.choreography
 
 import com.fcfb.arceus.service.fcfb.animation.FieldBackgroundPainter
 
-/** Broadcast-style view: the field is drawn at [zoom] and a canvas-sized window pans with the ball. */
+/** Broadcast-style view: the field is drawn at [zoom] and a [VIEW_WIDTH] x [VIEW_HEIGHT] window pans with the ball. */
 class FieldCamera(
     private val ball: BallTrack,
     private val lookAhead: Float,
+    private val flipped: Boolean = false,
     val zoom: Float = ZOOM,
 ) {
-    private val maxOffsetX = FieldBackgroundPainter.WIDTH * zoom - FieldBackgroundPainter.WIDTH
-    private val maxOffsetY = FieldBackgroundPainter.HEIGHT * zoom - FieldBackgroundPainter.HEIGHT
+    private val maxOffsetX = FieldBackgroundPainter.WIDTH * zoom - VIEW_WIDTH
+    private val maxOffsetY = FieldBackgroundPainter.HEIGHT * zoom - VIEW_HEIGHT
 
     fun offsetX(progress: Float): Int {
-        val focus = smoothed(progress) { it.along } + lookAhead
-        return (fieldX(focus) - FieldBackgroundPainter.WIDTH / 2f).coerceIn(0f, maxOffsetX).toInt()
+        val focus = smoothed(progress) { it.along } + if (flipped) -lookAhead else lookAhead
+        return (fieldX(focus) - VIEW_WIDTH / 2f).coerceIn(0f, maxOffsetX).toInt()
     }
 
     fun offsetY(progress: Float): Int {
         val focus = smoothed(progress) { it.lateral } * LATERAL_FOLLOW
-        return (fieldY(focus) - FieldBackgroundPainter.HEIGHT / 2f).coerceIn(0f, maxOffsetY).toInt()
+        return (fieldY(focus) - VIEW_HEIGHT / 2f).coerceIn(0f, maxOffsetY).toInt()
     }
 
     fun fieldX(along: Float): Float {
         val playableWidth = FieldBackgroundPainter.WIDTH - 2 * FieldBackgroundPainter.MARGIN
-        return (FieldBackgroundPainter.MARGIN + along * playableWidth / 100f) * zoom
+        val shown = if (flipped) 100f - along else along
+        return (FieldBackgroundPainter.MARGIN + shown * playableWidth / 100f) * zoom
     }
 
     fun fieldY(lateral: Float): Float =
@@ -38,7 +40,10 @@ class FieldCamera(
     }
 
     companion object {
-        const val ZOOM = 1.45f
+        /** Squarer than the full field because phones scale a GIF to screen width, so a narrower frame shows players larger. */
+        const val VIEW_WIDTH = 800
+        const val VIEW_HEIGHT = 560
+        const val ZOOM = 2f
         private const val LATERAL_PIXELS_PER_YARD = 7.2f
         private const val MAX_LATERAL = 25.5f
         private const val LATERAL_FOLLOW = 0.6f
