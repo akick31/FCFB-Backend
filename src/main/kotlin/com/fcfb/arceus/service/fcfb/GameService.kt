@@ -35,6 +35,7 @@ import com.fcfb.arceus.service.specification.GameSpecificationService
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
+import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameWeekJobNotFoundException
 import com.fcfb.arceus.util.InvalidCoinTossChoiceException
@@ -1091,12 +1092,22 @@ class GameService(
         game.waitingOn = if (game.possession == TeamSide.HOME) TeamSide.AWAY else TeamSide.HOME
     }
 
-    fun chewGame(game: Game): Game {
+    fun chewGame(game: Game): Game = setGameMode(game, GameMode.CHEW)
+
+    fun unchewGame(game: Game): Game = setGameMode(game, GameMode.NORMAL)
+
+    private fun setGameMode(
+        game: Game,
+        gameMode: GameMode,
+    ): Game {
         try {
-            game.gameMode = GameMode.CHEW
+            game.gameMode = gameMode
+            game.gameModeSetBy = actingUser()
+            game.gameModeSetAt = LocalDateTime.now()
             saveGame(game)
+            discordService.notifyGameModeChange(game)
             Logger.info(
-                "Game set to chew mode.\n" +
+                "Game set to ${gameMode.description.lowercase()} mode by ${game.gameModeSetBy}.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Game Type: ${game.gameType}\n" +
                     "Game Status: ${game.gameStatus}\n" +
@@ -1110,14 +1121,14 @@ class GameService(
         }
     }
 
-    fun chewAllGames(): List<Game> {
-        val gamesToChew = getAllOngoingGames()
-        val chewedGames = mutableListOf<Game>()
-        for (game in gamesToChew) {
-            chewedGames.add(chewGame(game))
-        }
-        return chewedGames
+    private fun actingUser(): String {
+        val userId = AuthContext.currentUserId() ?: return AuthContext.currentPrincipal()
+        return userService.getUserById(userId).username
     }
+
+    fun chewAllGames(): List<Game> = getAllOngoingGames().map { chewGame(it) }
+
+    fun unchewAllGames(): List<Game> = getAllOngoingGames().map { unchewGame(it) }
 
     fun runCoinToss(
         gameId: Int,
@@ -1622,6 +1633,10 @@ class GameService(
     fun chewGameByPlatformId(channelId: ULong): Game = chewGame(getGameByPlatformId(channelId))
 
     fun chewGameByGameId(gameId: Int): Game = chewGame(getGameById(gameId))
+
+    fun unchewGameByPlatformId(channelId: ULong): Game = unchewGame(getGameByPlatformId(channelId))
+
+    fun unchewGameByGameId(gameId: Int): Game = unchewGame(getGameById(gameId))
 
     fun getFilteredGames(
         filters: List<GameFilter>?,
