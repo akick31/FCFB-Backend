@@ -62,7 +62,8 @@ class RankingMetricService(
                 RankingMetricType.ADJUSTED_POINTS_AGAINST,
                 RankingMetricType.ADJUSTED_NET_POINTS,
             )
-        val simpleTypes = RankingMetricType.values().filter { it.implemented && it !in crossTeamTypes }
+        val simpleTypes = RankingMetricType.values().filter { it.implemented && it !in crossTeamTypes && it !in DIFF_TYPES }
+        val diffAggregates = buildDiffAggregates(season, week, teamsByName)
         val equivalentWins =
             aggregates.mapValues { (_, aggregate) ->
                 calculateEquivalentWins(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
@@ -77,7 +78,17 @@ class RankingMetricService(
 
         val computedTypes = simpleTypes.map { it.name }.toMutableList()
 
-        val powerRatings = calculatePowerRatings(season, week, aggregates, teamsByName)
+        DIFF_TYPES.forEach { type ->
+            diffAggregates.forEach { (teamId, diffAggregate) ->
+                val aggregate = aggregates[teamId] ?: return@forEach
+                rows.add(
+                    RankingMetric(season, week, type, teamId, selectDiff(type, diffAggregate), aggregate.wins, aggregate.losses),
+                )
+            }
+            computedTypes.add(type.name)
+        }
+
+        val powerRatings = calculatePowerRatings(aggregates, diffAggregates)
         saveCrossTeamMetric(season, week, RankingMetricType.POWER_RATING, powerRatings, aggregates, computedTypes, rows)
 
         val colleyRatings = calculateColleyRatings(games, aggregates, teamsByName)
@@ -228,13 +239,22 @@ class RankingMetricService(
         }
     }
 
+    private fun selectDiff(
+        type: RankingMetricType,
+        diffAggregate: TeamDiffAggregate,
+    ): Double =
+        when (type) {
+            RankingMetricType.AVERAGE_OFFENSIVE_DIFF -> diffAggregate.averageOffensiveDiff
+            RankingMetricType.AVERAGE_DEFENSIVE_DIFF -> diffAggregate.averageDefensiveDiff
+            RankingMetricType.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF -> diffAggregate.averageOffensiveSpecialTeamsDiff
+            RankingMetricType.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF -> diffAggregate.averageDefensiveSpecialTeamsDiff
+            else -> throw MetricNotImplementedException(type.name)
+        }
+
     private fun calculatePowerRatings(
-        season: Int,
-        week: Int,
         aggregates: Map<Int, TeamSeasonAggregate>,
-        teamsByName: Map<String, Team>,
+        diffAggregates: Map<Int, TeamDiffAggregate>,
     ): Map<Int, Double> {
-        val diffAggregates = buildDiffAggregates(season, week, teamsByName)
         val teamIds = aggregates.keys.intersect(diffAggregates.keys)
         if (teamIds.isEmpty()) return emptyMap()
 
@@ -514,6 +534,13 @@ class RankingMetricService(
         const val SPECIAL_TEAMS_DIFF_WEIGHT = 0.05
         const val POWER_RATING_BASE_WEIGHT = 0.8
         const val POWER_RATING_DIFFERENTIAL_WEIGHT = 0.2
+        val DIFF_TYPES =
+            listOf(
+                RankingMetricType.AVERAGE_OFFENSIVE_DIFF,
+                RankingMetricType.AVERAGE_DEFENSIVE_DIFF,
+                RankingMetricType.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
+                RankingMetricType.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF,
+            )
         const val ASR_REGULARIZATION = 0.1
         const val MARGIN_CAP = 28
         const val COMPOSITE_COLLEY_WEIGHT = 0.45
