@@ -140,6 +140,15 @@ class PlayAnimationPreviewTool {
             "punt-return-touchdown" to play(TeamSide.HOME, 30, PlayCall.PUNT, ActualResult.PUNT_RETURN_TOUCHDOWN).endingAt(0),
             "punt-blocked" to play(TeamSide.HOME, 40, PlayCall.PUNT, ActualResult.BLOCKED).endingAt(28),
             "kickoff-return" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF).endingAt(72),
+            "kickoff-return-sideline" to
+                play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, forcedPlayId = RETURN_SIDELINE_PLAY_ID)
+                    .endingAt(72),
+            "kickoff-return-middle" to
+                play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, forcedPlayId = RETURN_MIDDLE_PLAY_ID)
+                    .endingAt(72),
+            "kickoff-return-cutback" to
+                play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, forcedPlayId = RETURN_CUTBACK_PLAY_ID)
+                    .endingAt(72),
             "kickoff-return-touchdown" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.RETURN_TOUCHDOWN).endingAt(0),
             "kickoff-touchback" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, Scenario.TOUCHBACK).endingAt(75),
             "onside-kick-recovered" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_ONSIDE, ActualResult.SUCCESSFUL_ONSIDE).endingAt(46),
@@ -290,6 +299,9 @@ class PlayAnimationPreviewTool {
         const val DEEP_SCORE_OPEN_PLAY_ID = 902
         const val DEEP_SCORE_STRIDE_PLAY_ID = 900
         const val HAIL_MARY_PLAY_ID = 900
+        const val RETURN_SIDELINE_PLAY_ID = 901
+        const val RETURN_MIDDLE_PLAY_ID = 911
+        const val RETURN_CUTBACK_PLAY_ID = 900
         const val ONSIDE_ALT_PLAY_ID = 917
         const val PLAYOFF_LOGO =
             "https://am-prod-client-files.ppub-tmaws.io/cfbplayoff/s3fs-public/" +

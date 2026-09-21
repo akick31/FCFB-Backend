@@ -3,6 +3,8 @@ package com.fcfb.arceus.service.fcfb.animation.choreography.script
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.Scenario
+import com.fcfb.arceus.service.fcfb.animation.KickoffReturnLane
+import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
@@ -12,6 +14,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.Pursuit
 import com.fcfb.arceus.service.fcfb.animation.choreography.SCORE_AT
+import com.fcfb.arceus.service.fcfb.animation.choreography.WeavingRun
 import com.fcfb.arceus.service.fcfb.animation.choreography.arc
 import com.fcfb.arceus.service.fcfb.animation.choreography.bounce
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
@@ -34,18 +37,32 @@ class KickoffPlayScript : PlayScript {
         val receivingGoal = if (forward > 0f) 100f else 0f
         val returnDirection = -forward
 
+        val lane = PlayRandom(context.play).pick(KickoffReturnLane.entries.toList())
+
         val kickSpot = FieldPoint(context.lineOfScrimmage, 0f)
         val catchSpot = if (squib) context.defenseSpot(SQUIB_DEPTH, side * 4f) else FieldPoint(receivingGoal - forward, side * 3f)
         val landing = if (touchback) FieldPoint(receivingGoal + forward * END_ZONE_CENTER, side * 2f) else catchSpot
-        val endPoint = FieldPoint(context.endSpot, side * 5f)
+        val endPoint =
+            FieldPoint(
+                context.endSpot,
+                (side * lane.endLateralShare * RETURN_LANE_WIDTH).coerceIn(-MAX_RETURN_LATERAL, MAX_RETURN_LATERAL),
+            )
         val catchAt = if (squib) SQUIB_CATCH_AT else CATCH_AT
         val returnAt =
             when {
                 !returning -> catchAt
                 returnScores -> SCORE_AT
-                else -> minOf(0.9f, catchAt + 0.08f + 0.3f * minOf(catchSpot.distanceTo(endPoint), 40f) / 40f)
+                else -> minOf(RETURN_CAP, catchAt + RETURN_LEAD + RETURN_PER_YARD * minOf(catchSpot.distanceTo(endPoint), 40f) / 40f)
             }
-        val returnBall = path(catchAt to catchSpot, returnAt to endPoint)
+        val returnPace = catchSpot.distanceTo(endPoint) / maxOf(returnAt - catchAt, MIN_RETURN_TIME)
+        val coverageSpeed = maxOf(Pursuit.COVERAGE_SPEED, returnPace * COVERAGE_PACE)
+        val returnBall =
+            if (returning) {
+                val weaveSide = if (lane == KickoffReturnLane.CUTBACK) -side else side
+                WeavingRun.between(catchSpot, endPoint, catchAt, returnAt, weaveSide, context.lineOfScrimmage)
+            } else {
+                path(catchAt to catchSpot, returnAt to endPoint)
+            }
 
         val kickingStarts = listOf(context.offenseSpot(KICKER_DEPTH, 0f)) + COVERAGE_LANES.map { context.offenseSpot(1f, it) }
         val receivingStarts =
@@ -74,7 +91,7 @@ class KickoffPlayScript : PlayScript {
                 tackleAt = returnAt,
                 tacklers = if (returnScores) 0 else 2,
                 reactAt = { index -> if (index == 0) KICK_AT else RELEASE_AT },
-                speed = { Pursuit.COVERAGE_SPEED },
+                speed = { coverageSpeed },
             )
         val kickingTeam =
             if (muffed) {
@@ -92,7 +109,7 @@ class KickoffPlayScript : PlayScript {
 
         val frontCount = FRONT_LINE.size
         val secondCount = SECOND_LINE.size
-        val escortSpeed = catchSpot.distanceTo(endPoint) / maxOf(returnAt - catchAt, MIN_RETURN_TIME) * ESCORT_PACE
+        val escortSpeed = returnPace * ESCORT_PACE
         val receivingTeam =
             receivingStarts.mapIndexed { index, start ->
                 val blocking = index < frontCount + secondCount
@@ -132,13 +149,25 @@ class KickoffPlayScript : PlayScript {
                     else -> BallState(returnBall.at(progress))
                 }
             }
-        return Choreography(kickingTeam, receivingTeam, ball)
+        val settled =
+            when {
+                touchback -> minOf(1f, catchAt + SETTLE_TIME)
+                muffed -> minOf(1f, MUFF_RECOVER_AT + RETURN_SETTLE)
+                else -> minOf(1f, returnAt + RETURN_SETTLE)
+            }
+        return Choreography(kickingTeam, receivingTeam, ball, endsAt = settled)
     }
 
     companion object {
         private const val KICK_AT = 0.08f
         private const val RELEASE_AT = 0.06f
-        private const val CATCH_AT = 0.45f
+        private const val CATCH_AT = 0.4f
+        private const val RETURN_CAP = 0.94f
+        private const val RETURN_LEAD = 0.08f
+        private const val RETURN_PER_YARD = 0.45f
+        private const val RETURN_SETTLE = 0.05f
+        private const val RETURN_LANE_WIDTH = 13f
+        private const val MAX_RETURN_LATERAL = 14f
         private const val SQUIB_CATCH_AT = 0.36f
         private const val MUFF_RECOVER_AT = 0.62f
         private const val SETTLE_TIME = 0.15f
@@ -156,6 +185,7 @@ class KickoffPlayScript : PlayScript {
         private const val WALL_AT = 0.42f
         private const val MIN_RETURN_TIME = 0.05f
         private const val ESCORT_PACE = 0.85f
+        private const val COVERAGE_PACE = 0.95f
         private const val ESCORT_RADIUS = 4f
         private const val ESCORT_STEP = 1.5f
         private const val TOUCHBACK_STOP = 20f
