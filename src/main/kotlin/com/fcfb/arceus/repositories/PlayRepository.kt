@@ -126,4 +126,30 @@ interface PlayRepository : CrudRepository<Play, Int> {
         season: Int,
         week: Int,
     ): List<Array<Any>>
+
+    @Query(
+        value =
+            "SELECT " +
+                "CASE " +
+                "WHEN p.result = 'DELAY OF GAME ON HOME TEAM' THEN g.home_coach_discord_ids " +
+                "ELSE g.away_coach_discord_ids " +
+                "END AS coach_discord_ids, " +
+                "CASE " +
+                "WHEN p.result = 'DELAY OF GAME ON HOME TEAM' THEN g.home_team " +
+                "ELSE g.away_team " +
+                "END AS team, " +
+                "COUNT(*) AS dog_count " +
+                "FROM play p " +
+                "JOIN game g ON p.game_id = g.game_id " +
+                "WHERE g.season = :season " +
+                "AND g.week = :week " +
+                "AND g.game_type != 'SCRIMMAGE' " +
+                "AND p.result IN ('DELAY OF GAME ON HOME TEAM', 'DELAY OF GAME ON AWAY TEAM') " +
+                "GROUP BY coach_discord_ids, team",
+        nativeQuery = true,
+    )
+    fun getDelayOfGameCoachCountsByWeek(
+        season: Int,
+        week: Int,
+    ): List<Array<Any>>
 }
