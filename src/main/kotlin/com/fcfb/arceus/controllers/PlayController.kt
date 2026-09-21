@@ -101,12 +101,12 @@ class PlayController(
         @RequestParam("week") week: Int,
     ) = playService.getDelayOfGameCountsByWeek(season, week)
 
-    @Operation(summary = "User delay of game counts for a week")
+    @Operation(summary = "User delay of game counts for a season, or a single week of it")
     @GetMapping("/delay-of-game/users")
-    fun getUserDelayOfGameInstancesByWeek(
+    fun getUserDelayOfGameInstances(
         @RequestParam("season") season: Int,
-        @RequestParam("week") week: Int,
-    ) = delayOfGameReportService.getUserDelayOfGameInstancesByWeek(season, week)
+        @RequestParam(value = "week", required = false) week: Int?,
+    ) = delayOfGameReportService.getUserDelayOfGameInstances(season, week)
 
     @Operation(summary = "Update play")
     @PutMapping("")

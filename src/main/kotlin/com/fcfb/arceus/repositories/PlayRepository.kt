@@ -127,8 +127,20 @@ interface PlayRepository : CrudRepository<Play, Int> {
         week: Int,
     ): List<Array<Any>>
 
+    @Query(value = DELAY_OF_GAME_COACH_COUNTS + DELAY_OF_GAME_COACH_COUNTS_GROUP_BY, nativeQuery = true)
+    fun getDelayOfGameCoachCountsBySeason(season: Int): List<Array<Any>>
+
     @Query(
-        value =
+        value = DELAY_OF_GAME_COACH_COUNTS + "AND g.week = :week " + DELAY_OF_GAME_COACH_COUNTS_GROUP_BY,
+        nativeQuery = true,
+    )
+    fun getDelayOfGameCoachCountsByWeek(
+        season: Int,
+        week: Int,
+    ): List<Array<Any>>
+
+    companion object {
+        const val DELAY_OF_GAME_COACH_COUNTS =
             "SELECT " +
                 "CASE " +
                 "WHEN p.result = 'DELAY OF GAME ON HOME TEAM' THEN g.home_coach_discord_ids " +
@@ -142,14 +154,9 @@ interface PlayRepository : CrudRepository<Play, Int> {
                 "FROM play p " +
                 "JOIN game g ON p.game_id = g.game_id " +
                 "WHERE g.season = :season " +
-                "AND g.week = :week " +
                 "AND g.game_type != 'SCRIMMAGE' " +
-                "AND p.result IN ('DELAY OF GAME ON HOME TEAM', 'DELAY OF GAME ON AWAY TEAM') " +
-                "GROUP BY coach_discord_ids, team",
-        nativeQuery = true,
-    )
-    fun getDelayOfGameCoachCountsByWeek(
-        season: Int,
-        week: Int,
-    ): List<Array<Any>>
+                "AND p.result IN ('DELAY OF GAME ON HOME TEAM', 'DELAY OF GAME ON AWAY TEAM') "
+
+        const val DELAY_OF_GAME_COACH_COUNTS_GROUP_BY = "GROUP BY coach_discord_ids, team"
+    }
 }

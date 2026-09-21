@@ -11,14 +11,21 @@ class DelayOfGameReportService(
     private val userService: UserService,
     private val objectMapper: ObjectMapper,
 ) {
-    fun getUserDelayOfGameInstancesByWeek(
+    fun getUserDelayOfGameInstances(
         season: Int,
-        week: Int,
+        week: Int?,
     ): List<UserDelayOfGameResponse> {
         val countsByDiscordId = mutableMapOf<String, Int>()
         val teamsByDiscordId = mutableMapOf<String, String?>()
 
-        playRepository.getDelayOfGameCoachCountsByWeek(season, week).forEach { row ->
+        val rows =
+            if (week == null) {
+                playRepository.getDelayOfGameCoachCountsBySeason(season)
+            } else {
+                playRepository.getDelayOfGameCoachCountsByWeek(season, week)
+            }
+
+        rows.forEach { row ->
             val discordIds = parseDiscordIds(row[0])
             val team = row[1] as String?
             val count = (row[2] as Number).toInt()
