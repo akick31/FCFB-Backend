@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.ranking.RankingMetricType
 import com.fcfb.arceus.model.Game
+import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.RankingMetric
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
@@ -63,6 +64,21 @@ class RankingMetricServiceTest {
             )
         every { teamRepository.findAll() } returns teamNames.mapIndexed { index, name -> team(index + 1, name) }
         every { gameStatsRepository.findBySeasonOrderByGameIdAsc(any()) } returns emptyList()
+    }
+
+    private fun stats(
+        team: String,
+        week: Int,
+        offensiveDiff: Double,
+        defensiveDiff: Double,
+    ) = GameStats().apply {
+        this.team = team
+        this.season = 12
+        this.week = week
+        this.averageOffensiveDiff = offensiveDiff
+        this.averageDefensiveDiff = defensiveDiff
+        this.averageOffensiveSpecialTeamsDiff = offensiveDiff
+        this.averageDefensiveSpecialTeamsDiff = defensiveDiff
     }
 
     private fun computeAndCapture(games: List<Game>): List<RankingMetric> {
@@ -129,5 +145,60 @@ class RankingMetricServiceTest {
         val inflatedComposite = valuesFor(computeAndCapture(inflated), RankingMetricType.COMPOSITE)
 
         assertEquals(baseComposite.getValue(1), inflatedComposite.getValue(1), 1e-6)
+    }
+
+    @Test
+    fun `test average diff rankings cover the season to date, not just the latest week`() {
+        every { gameStatsRepository.findBySeasonOrderByGameIdAsc(12) } returns
+            listOf(
+                stats("Villanova", 1, offensiveDiff = 100.0, defensiveDiff = 600.0),
+                stats("Villanova", 2, offensiveDiff = 300.0, defensiveDiff = 400.0),
+            )
+        every { gameRepository.getFinalGamesThroughWeek(12, 2) } returns listOf(game("Villanova", "UNLV", 24, 21))
+        val rows = slot<List<RankingMetric>>()
+        every { rankingMetricBatchRepository.batchInsert(capture(rows)) } returns Unit
+
+        rankingMetricService.computeMetrics(12, 2)
+
+        assertEquals(200.0, valuesFor(rows.captured, RankingMetricType.AVERAGE_OFFENSIVE_DIFF).getValue(1), 1e-9)
+        assertEquals(500.0, valuesFor(rows.captured, RankingMetricType.AVERAGE_DEFENSIVE_DIFF).getValue(1), 1e-9)
+    }
+
+    @Test
+    fun `test average diff rankings ignore weeks after the one being computed`() {
+        every { gameStatsRepository.findBySeasonOrderByGameIdAsc(12) } returns
+            listOf(
+                stats("Villanova", 1, offensiveDiff = 100.0, defensiveDiff = 600.0),
+                stats("Villanova", 2, offensiveDiff = 700.0, defensiveDiff = 100.0),
+            )
+        every { gameRepository.getFinalGamesThroughWeek(12, 1) } returns listOf(game("Villanova", "UNLV", 24, 21))
+        val rows = slot<List<RankingMetric>>()
+        every { rankingMetricBatchRepository.batchInsert(capture(rows)) } returns Unit
+
+        rankingMetricService.computeMetrics(12, 1)
+
+        assertEquals(100.0, valuesFor(rows.captured, RankingMetricType.AVERAGE_OFFENSIVE_DIFF).getValue(1), 1e-9)
+    }
+
+    @Test
+    fun `test average diff rankings keep offense low-is-better and defense high-is-better`() {
+        assertEquals(false, RankingMetricType.AVERAGE_OFFENSIVE_DIFF.higherIsBetter)
+        assertEquals(true, RankingMetricType.AVERAGE_DEFENSIVE_DIFF.higherIsBetter)
+        assertEquals(false, RankingMetricType.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF.higherIsBetter)
+        assertEquals(true, RankingMetricType.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF.higherIsBetter)
+    }
+
+    @Test
+    fun `test teams without stats rows are left out of the average diff rankings`() {
+        every { gameStatsRepository.findBySeasonOrderByGameIdAsc(12) } returns
+            listOf(stats("Villanova", 1, offensiveDiff = 100.0, defensiveDiff = 600.0))
+        every { gameRepository.getFinalGamesThroughWeek(12, 1) } returns listOf(game("Villanova", "UNLV", 24, 21))
+        val rows = slot<List<RankingMetric>>()
+        every { rankingMetricBatchRepository.batchInsert(capture(rows)) } returns Unit
+
+        rankingMetricService.computeMetrics(12, 1)
+
+        val offensive = valuesFor(rows.captured, RankingMetricType.AVERAGE_OFFENSIVE_DIFF)
+        assertEquals(setOf(1), offensive.keys)
     }
 }
