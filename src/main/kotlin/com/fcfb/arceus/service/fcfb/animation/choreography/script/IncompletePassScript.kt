@@ -17,6 +17,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.Track
 import com.fcfb.arceus.service.fcfb.animation.choreography.arc
 import com.fcfb.arceus.service.fcfb.animation.choreography.bounce
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
+import com.fcfb.arceus.service.fcfb.animation.choreography.offsetBy
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
@@ -57,7 +58,7 @@ class IncompletePassScript : PlayScript {
                 speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED else Pursuit.DEFENSIVE_BACK_SPEED },
             )
         val before = DefensiveReaction.before(context, scene, offense, dropping = true)
-        val defense = defense(kind, scene, before, arrivalPoint, arriveAt, forward)
+        val defense = defense(kind, scene, before, receiver, arrivalPoint, arriveAt, forward)
 
         val held = concept.heldBall(quarterback)
         val restSpot = arrivalPoint + FieldPoint(forward * BOUNCE_ROLL, side * BOUNCE_DRIFT)
@@ -125,6 +126,7 @@ class IncompletePassScript : PlayScript {
         kind: IncompletionKind,
         scene: ScrimmageScene,
         before: List<Track>,
+        receiver: Track,
         arrivalPoint: FieldPoint,
         arriveAt: Float,
         forward: Float,
@@ -136,12 +138,10 @@ class IncompletePassScript : PlayScript {
         if (!contested) return before
         val breakAt = arriveAt - BREAK_ON_BALL
         val defender = Pursuit.closest(before.map { it.at(breakAt) }, scene.defensiveAlignment.secondary, arrivalPoint, 1).first()
+        val shadow = receiver.offsetBy(FieldPoint(-forward * COVER_TRAIL, COVER_SHOULDER))
+        val contest = Pursuit.chase(shadow, breakAt, Pursuit.COVERAGE_SPEED, Pursuit.toward(arrivalPoint + FieldPoint(forward, 1f)))
         return before.mapIndexed { index, track ->
-            if (index == defender) {
-                Pursuit.chase(track, breakAt, Pursuit.COVERAGE_SPEED, Pursuit.toward(arrivalPoint + FieldPoint(forward, 1f)))
-            } else {
-                track
-            }
+            if (index == defender) switchAt(breakAt, shadow, contest) else track
         }
     }
 
@@ -162,5 +162,7 @@ class IncompletePassScript : PlayScript {
         private const val BOUNCES = 3
         private const val BOUNCE_ROLL = 3f
         private const val BOUNCE_DRIFT = 1.5f
+        private const val COVER_TRAIL = 0.9f
+        private const val COVER_SHOULDER = 1.3f
     }
 }

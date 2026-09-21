@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.service.fcfb.animation.DeepScoreKind
 import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
@@ -32,10 +33,11 @@ class CompletedPassScript : PlayScript {
         val gain = context.gain
         val random = PlayRandom(context.play)
         val contested = !offenseScores && gain > CONTESTED_MIN_GAIN && random.chance(CONTESTED_CHANCE)
+        val scoreKind = if (offenseScores && gain > SHORT_SCORE) deepScoreKind(gain, random) else DeepScoreKind.WIDE_OPEN
         val catchDepth =
             when {
                 offenseScores && gain <= SHORT_SCORE -> gain
-                offenseScores -> BREAKAWAY_CATCH_DEPTH
+                offenseScores -> scoringCatchDepth(scoreKind, gain, random)
                 gain <= 3f -> gain
                 contested -> gain
                 gain > CONTESTED_MIN_GAIN -> random.between(MIN_CATCH_DEPTH, minOf(MAX_CATCH_DEPTH, gain - MIN_AFTER_CATCH))
@@ -62,7 +64,7 @@ class CompletedPassScript : PlayScript {
         val runPace = afterCatch / maxOf(tackleAt - catchAt, MIN_RUN_TIME)
         val escortSpeed = maxOf(Pursuit.DEFENSIVE_BACK_SPEED, runPace * ESCORT_PACE)
         val quarterback = concept.throwingQuarterback()
-        val blocking = concept.offense(quarterback, mapOf(targetIndex to receiver))
+        val blocking = concept.offense(quarterback, mapOf(targetIndex to receiver), conceptDepth = catchDepth)
         val offense =
             DownfieldEscort.follow(
                 before = blocking,
@@ -90,7 +92,15 @@ class CompletedPassScript : PlayScript {
                 tacklers,
                 linemenCanTackle = catchDepth <= 2f,
             )
-        val defense = if (contested) coverTarget(scene, before, responded, receiver, throwAt, catchAt, forward) else responded
+        val covered = offenseScores && scoreKind.covered
+        val shadowTrail = if (covered) scoreKind.coverTrail else COVER_TRAIL
+        val shadowShoulder = if (covered) scoreKind.coverShoulder else COVER_SHOULDER
+        val defense =
+            if (contested || covered) {
+                coverTarget(scene, before, responded, receiver, throwAt, catchAt, forward, shadowTrail, shadowShoulder)
+            } else {
+                responded
+            }
 
         val held = concept.heldBall(quarterback)
         val ball =
@@ -113,12 +123,31 @@ class CompletedPassScript : PlayScript {
         throwAt: Float,
         catchAt: Float,
         forward: Float,
+        trail: Float,
+        shoulder: Float,
     ): List<Track> {
         val catchSpot = receiver.at(catchAt)
         val cover = Pursuit.closest(before.map { it.at(throwAt) }, scene.defensiveAlignment.secondary, catchSpot, 1).first()
-        val shadow = receiver.offsetBy(FieldPoint(-forward * COVER_TRAIL, COVER_SHOULDER))
+        val shadow = receiver.offsetBy(FieldPoint(-forward * trail, shoulder))
         return responded.mapIndexed { index, track -> if (index == cover) shadow else track }
     }
+
+    private fun deepScoreKind(
+        gain: Float,
+        random: PlayRandom,
+    ): DeepScoreKind = random.pick(DeepScoreKind.entries.filter { it != DeepScoreKind.HAIL_MARY || gain <= HAIL_MARY_MAX_GAIN })
+
+    private fun scoringCatchDepth(
+        kind: DeepScoreKind,
+        gain: Float,
+        random: PlayRandom,
+    ): Float =
+        when (kind) {
+            DeepScoreKind.HAIL_MARY -> gain
+            DeepScoreKind.WIDE_OPEN -> BREAKAWAY_CATCH_DEPTH
+            DeepScoreKind.IN_STRIDE ->
+                random.between(IN_STRIDE_MIN_DEPTH, maxOf(IN_STRIDE_MIN_DEPTH, minOf(IN_STRIDE_MAX_DEPTH, gain - MIN_AFTER_CATCH)))
+        }
 
     companion object {
         internal fun facingLocked(scene: ScrimmageScene): Set<Int> =
@@ -138,6 +167,10 @@ class CompletedPassScript : PlayScript {
         private const val DEEP_CATCH_DEPTH = 12f
         private const val RUN_AFTER_CATCH = 3f
         private const val CATCH_TO_STRIDE = 0.06f
+
+        private const val HAIL_MARY_MAX_GAIN = 55f
+        private const val IN_STRIDE_MIN_DEPTH = 20f
+        private const val IN_STRIDE_MAX_DEPTH = 40f
 
         private const val CONTESTED_MIN_GAIN = 20f
         private const val CONTESTED_CHANCE = 0.45f

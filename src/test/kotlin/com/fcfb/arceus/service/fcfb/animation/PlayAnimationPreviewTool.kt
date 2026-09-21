@@ -93,7 +93,16 @@ class PlayAnimationPreviewTool {
             "pass-short-completion" to play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN).endingAt(38, OffensivePlaybook.WEST_COAST),
             "pass-deep-touchdown" to
                 play(TeamSide.HOME, 20, PlayCall.PASS, ActualResult.TOUCHDOWN)
-                    .endingAt(0, OffensivePlaybook.AIR_RAID, DefensivePlaybook.THREE_FOUR),
+                    .endingAt(100, OffensivePlaybook.AIR_RAID, DefensivePlaybook.THREE_FOUR),
+            "pass-touchdown-wide-open" to
+                play(TeamSide.HOME, 25, PlayCall.PASS, ActualResult.TOUCHDOWN, forcedPlayId = DEEP_SCORE_OPEN_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.AIR_RAID, DefensivePlaybook.THREE_FOUR),
+            "pass-touchdown-in-stride" to
+                play(TeamSide.HOME, 25, PlayCall.PASS, ActualResult.TOUCHDOWN, forcedPlayId = DEEP_SCORE_STRIDE_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.AIR_RAID, DefensivePlaybook.THREE_FOUR),
+            "pass-touchdown-hail-mary" to
+                play(TeamSide.HOME, 55, PlayCall.PASS, ActualResult.TOUCHDOWN, forcedPlayId = HAIL_MARY_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.AIR_RAID, DefensivePlaybook.THREE_FOUR),
             "pass-deep-contested" to
                 play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.FIRST_DOWN, forcedPlayId = CONTESTED_PLAY_ID)
                     .endingAt(85, OffensivePlaybook.AIR_RAID),
@@ -103,6 +112,9 @@ class PlayAnimationPreviewTool {
             "pass-incomplete" to
                 play(TeamSide.HOME, 50, PlayCall.PASS, ActualResult.NO_GAIN, Scenario.INCOMPLETE)
                     .endingAt(50, OffensivePlaybook.SPREAD),
+            "pass-incomplete-broken-up" to
+                play(TeamSide.HOME, 50, PlayCall.PASS, ActualResult.NO_GAIN, Scenario.INCOMPLETE, forcedPlayId = BROKEN_UP_PLAY_ID)
+                    .endingAt(50, OffensivePlaybook.SPREAD),
             "pass-sack" to
                 play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.LOSS)
                     .endingAt(23, OffensivePlaybook.SPREAD, DefensivePlaybook.THREE_FOUR),
@@ -110,6 +122,17 @@ class PlayAnimationPreviewTool {
             "pass-pick-six" to
                 play(TeamSide.HOME, 45, PlayCall.PASS, ActualResult.TURNOVER_TOUCHDOWN)
                     .endingAt(0, OffensivePlaybook.AIR_RAID),
+            "two-point-pass" to
+                play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.SUCCESS, forcedPlayId = TWO_POINT_PASS_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.AIR_RAID),
+            "two-point-run" to
+                play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.SUCCESS, forcedPlayId = TWO_POINT_RUN_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.PRO),
+            "two-point-failed" to
+                play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.FAILED, forcedPlayId = TWO_POINT_PASS_PLAY_ID)
+                    .endingAt(98, OffensivePlaybook.AIR_RAID),
+            "field-goal-near-miss-block" to
+                play(TeamSide.HOME, 70, PlayCall.FIELD_GOAL, ActualResult.GOOD, forcedPlayId = NEAR_MISS_PLAY_ID).endingAt(70),
             "delay-of-game" to play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.DELAY_OF_GAME).endingAt(35),
             "kneel" to play(TeamSide.HOME, 40, PlayCall.KNEEL, ActualResult.KNEEL).endingAt(38),
             "spike" to play(TeamSide.HOME, 60, PlayCall.SPIKE, ActualResult.SPIKE).endingAt(60),
@@ -120,6 +143,13 @@ class PlayAnimationPreviewTool {
             "kickoff-return-touchdown" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.RETURN_TOUCHDOWN).endingAt(0),
             "kickoff-touchback" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, Scenario.TOUCHBACK).endingAt(75),
             "onside-kick-recovered" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_ONSIDE, ActualResult.SUCCESSFUL_ONSIDE).endingAt(46),
+            "onside-kick-failed" to play(TeamSide.HOME, 35, PlayCall.KICKOFF_ONSIDE, ActualResult.FAILED_ONSIDE).endingAt(47),
+            "onside-kick-failed-2" to
+                play(TeamSide.HOME, 35, PlayCall.KICKOFF_ONSIDE, ActualResult.FAILED_ONSIDE, forcedPlayId = ONSIDE_ALT_PLAY_ID)
+                    .endingAt(47),
+            "onside-kick-recovered-2" to
+                play(TeamSide.HOME, 35, PlayCall.KICKOFF_ONSIDE, ActualResult.SUCCESSFUL_ONSIDE, forcedPlayId = ONSIDE_ALT_PLAY_ID)
+                    .endingAt(46),
             "field-goal-good" to play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(75),
             "field-goal-no-good" to play(TeamSide.HOME, 60, PlayCall.FIELD_GOAL, ActualResult.NO_GOOD).endingAt(60),
             "field-goal-no-good-2" to play(TeamSide.AWAY, 70, PlayCall.FIELD_GOAL, ActualResult.NO_GOOD).endingAt(30),
@@ -253,6 +283,14 @@ class PlayAnimationPreviewTool {
 
         const val CONTESTED_PLAY_ID = 902
         const val RUN_DOWN_PLAY_ID = 900
+        const val BROKEN_UP_PLAY_ID = 954
+        const val TWO_POINT_PASS_PLAY_ID = 902
+        const val TWO_POINT_RUN_PLAY_ID = 900
+        const val NEAR_MISS_PLAY_ID = 900
+        const val DEEP_SCORE_OPEN_PLAY_ID = 902
+        const val DEEP_SCORE_STRIDE_PLAY_ID = 900
+        const val HAIL_MARY_PLAY_ID = 900
+        const val ONSIDE_ALT_PLAY_ID = 917
         const val PLAYOFF_LOGO =
             "https://am-prod-client-files.ppub-tmaws.io/cfbplayoff/s3fs-public/" +
                 "CFP%20Symbol%20Gold%20PMS%20Dark%20BG.PNG"

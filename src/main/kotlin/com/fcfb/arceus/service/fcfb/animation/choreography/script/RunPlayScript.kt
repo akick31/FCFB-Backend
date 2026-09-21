@@ -1,6 +1,8 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.enums.play.PlayCall
+import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
@@ -25,8 +27,13 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
 import kotlin.math.abs
 
 class RunPlayScript : PlayScript {
+    private val twoPointPass = CompletedPassScript()
+
     override fun choreograph(context: PlayContext): Choreography {
         if (context.play.actualResult == ActualResult.SAFETY) return PitchPlay.choreograph(context)
+        if (context.play.playCall == PlayCall.TWO_POINT && PlayRandom(context.play).chance(TWO_POINT_PASS_CHANCE)) {
+            return twoPointPass.choreograph(context)
+        }
         val scene = ScrimmageScene.from(context)
         val alignment = scene.offensiveAlignment
         val forward = context.forward
@@ -139,6 +146,7 @@ class RunPlayScript : PlayScript {
     companion object {
         private const val HANDOFF = 0.2f
         private const val ESCORT_FROM = 0.3f
+        private const val TWO_POINT_PASS_CHANCE = 0.5f
         private const val MIN_RUN_TIME = 0.05f
         private const val CLEAR_MARGIN = 5f
         private const val ESCORT_PACE = 0.9f

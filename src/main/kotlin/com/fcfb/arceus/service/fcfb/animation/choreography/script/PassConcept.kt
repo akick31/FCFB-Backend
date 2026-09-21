@@ -48,6 +48,7 @@ internal class PassConcept(
     fun offense(
         quarterback: Track,
         overrides: Map<Int, Track>,
+        conceptDepth: Float = 0f,
     ): List<Track> =
         scene.offense.mapIndexed { index, start ->
             overrides[index] ?: when {
@@ -56,7 +57,7 @@ internal class PassConcept(
                 index == alignment.quarterback -> quarterback
                 index in alignment.backs ->
                     path(0f to start, 0.12f to start, 0.3f to context.offenseSpot(PROTECTION_DEPTH, if (start.lateral >= 0f) 2f else -2f))
-                else -> route(index)
+                else -> route(index, conceptDepth)
             }
         }
 
@@ -107,16 +108,22 @@ internal class PassConcept(
             spinning = true,
         )
 
-    private fun route(index: Int): Track {
+    private fun route(
+        index: Int,
+        conceptDepth: Float,
+    ): Track {
         val start = scene.offense[index]
         val order = alignment.receivers.indexOf(index)
-        val depth = 10f + (order % 3) * 4f
+        val short = 10f + (order % 3) * 4f
+        val vertical = conceptDepth >= VERTICAL_CONCEPT_DEPTH
+        val depth = if (vertical) conceptDepth * (VERTICAL_SHARE - (order % 3) * VERTICAL_STAGGER) else short
         val outward = if (start.lateral >= 0f) 1f else -1f
+        val breakLateral = if (vertical) start.lateral + outward * SIDELINE_STEM else start.lateral * 0.6f
         return path(
             0f to start,
             SNAP_END to start,
-            0.5f to FieldPoint(context.lineOfScrimmage + forward * depth, start.lateral + outward * 2f),
-            0.85f to FieldPoint(context.lineOfScrimmage + forward * (depth + 5f), start.lateral * 0.6f),
+            0.5f to FieldPoint(context.lineOfScrimmage + forward * depth * 0.55f, start.lateral + outward * 2f),
+            0.85f to FieldPoint(context.lineOfScrimmage + forward * depth, breakLateral),
         )
     }
 
@@ -131,6 +138,10 @@ internal class PassConcept(
         private const val PROTECTION_DEPTH = 3.5f
         private const val BREAK_TIME = 0.12f
         private const val DEEP_ARC_PER_YARD = 0.42f
+        private const val VERTICAL_CONCEPT_DEPTH = 25f
+        private const val VERTICAL_SHARE = 0.95f
+        private const val VERTICAL_STAGGER = 0.12f
+        private const val SIDELINE_STEM = 3f
 
         private const val BASE_FLIGHT = 0.05f
         private const val DISTANCE_FLIGHT = 0.24f

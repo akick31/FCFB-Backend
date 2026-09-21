@@ -47,6 +47,7 @@ object FieldGoalUnitPainter {
     private const val BLOCKER_GAP_X = 21f
     private const val BLOCKER_END_X = 12f
     private const val BLOCKER_JUMP = 22f
+    private const val NEAR_MISS_REACH = 0.72f
     private const val JUMP_WINDOW = 0.08f
     private const val HAND_REACH = 78f
 
@@ -75,8 +76,10 @@ object FieldGoalUnitPainter {
         rushing: Uniform,
         blockSide: Int,
         blocked: Boolean,
+        rusherIndex: Int = -1,
+        nearMiss: Boolean = false,
     ) {
-        val blocker = if (blocked) RUSH_OFFSETS.indexOf(BLOCKER_START_X * blockSide) else -1
+        val blocker = if (blocked || nearMiss) blockerIndex(rusherIndex, blockSide) else -1
         val rushUnit =
             RUSH_OFFSETS.indices.map { index ->
                 if (index == blocker) {
@@ -86,6 +89,7 @@ object FieldGoalUnitPainter {
                         rushing,
                         blockSide,
                         index,
+                        nearMiss,
                     )
                 } else {
                     rusher(layout, progress, rushing, index)
@@ -199,14 +203,23 @@ object FieldGoalUnitPainter {
         return RUSH_DEPTH + stagger + segment(progress, SNAP_AT, HOLD_AT) * RUSH_SURGE
     }
 
+    private fun blockerIndex(
+        rusherIndex: Int,
+        blockSide: Int,
+    ): Int {
+        if (rusherIndex in RUSH_OFFSETS.indices) return rusherIndex
+        return RUSH_OFFSETS.indexOf(BLOCKER_START_X * blockSide)
+    }
+
     private fun blockerFigure(
         layout: GoalPostScenePainter.Layout,
         progress: Float,
         uniform: Uniform,
         blockSide: Int,
         index: Int,
+        nearMiss: Boolean,
     ): FieldGoalFigure {
-        val (x, footY, scale) = blockerStance(layout, progress, blockSide)
+        val (x, footY, scale) = blockerStance(layout, progress, blockSide, nearMiss)
         val pose = if (progress >= GAP_AT) PlayerPose.ARMS_UP else PlayerPose.STANDING
         return FieldGoalFigure(x, footY, scale, uniform, RUSH_NUMBERS[index], pose, facingCamera = true)
     }
@@ -215,10 +228,12 @@ object FieldGoalUnitPainter {
         layout: GoalPostScenePainter.Layout,
         progress: Float,
         blockSide: Int,
+        nearMiss: Boolean = false,
     ): Triple<Float, Float, Float> {
         val unit = unitScale(layout)
+        val reach = if (nearMiss) NEAR_MISS_REACH else 1f
         val toGap = segment(progress, SNAP_AT, GAP_AT)
-        val through = segment(progress, GAP_AT, BLOCK_AT - 0.04f)
+        val through = segment(progress, GAP_AT, BLOCK_AT - 0.04f) * reach
         val offset = if (through <= 0f) lerp(BLOCKER_START_X, BLOCKER_GAP_X, toGap) else lerp(BLOCKER_GAP_X, BLOCKER_END_X, through)
         val depth = if (through <= 0f) lerp(RUSH_DEPTH, 0f, toGap) else lerp(0f, BLOCKER_END_DEPTH, through)
         val scale = lerp(RUSH_SCALE, BLOCKER_END_SCALE, segment(depth, RUSH_DEPTH, BLOCKER_END_DEPTH)) * unit
@@ -234,7 +249,7 @@ object FieldGoalUnitPainter {
         val unit = unitScale(layout)
         val (holdX, holdY) = holdSpot(layout)
         val snapY = depthY(layout, 0f) - SNAP_LIFT * unit
-        val (blockerX, blockerFootY, blockerScale) = blockerStance(layout, BLOCK_AT, blockSide)
+        val (blockerX, blockerFootY, blockerScale) = blockerStance(layout, BLOCK_AT, blockSide, false)
         val handsY = blockerFootY - HAND_REACH * blockerScale
         return when {
             progress < SNAP_AT -> CENTER_X to snapY

@@ -31,6 +31,9 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
 
         val blocked = play.actualResult == ActualResult.BLOCKED
         val blockSide = if (play.playId % 2 == 0) 1 else -1
+        val rush = PlayRandom(play)
+        val rusherIndex = rush.pick(RUSH_LANES)
+        val nearMiss = !blocked && rush.chance(NEAR_MISS_CHANCE)
         val trajectory = if (blocked) null else kickTrajectory(play, layout)
 
         val timeline = animationTimeline()
@@ -39,7 +42,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
 
         return timeline.mapIndexed { index, t ->
             val scene = GoalPostScenePainter.paint(theme, targetEndZone, layout, midfieldTopOnLeft = kickingHome != theme.flipped)
-            FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked)
+            FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked, rusherIndex, nearMiss)
             if (trajectory != null && t >= FieldGoalUnitPainter.KICK_AT) {
                 drawKick(scene, trajectory.at(flight(t)), flight(t))
                 if (flight(t) >= trajectory.arrival && trajectory.outcome in PASSES_THE_POSTS) {
@@ -104,6 +107,8 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
 
     companion object {
         private const val DOINK_FRAME_COUNT = 6
+        private const val NEAR_MISS_CHANCE = 0.35f
+        private val RUSH_LANES = listOf(2, 3, 4, 6, 7, 8)
         private const val SHORT_KICK_YARDS = 60f
         private const val DOINK_CHANCE = 0.35f
         private const val DOINK_IN_CHANCE = 0.15f
