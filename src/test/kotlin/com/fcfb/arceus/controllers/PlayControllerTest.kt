@@ -6,6 +6,7 @@ import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.service.fcfb.DelayOfGameReportService
 import com.fcfb.arceus.service.fcfb.PlayService
 import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
@@ -25,11 +26,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class PlayControllerTest {
     private lateinit var mockMvc: MockMvc
     private val playService: PlayService = mockk()
+    private val delayOfGameReportService: DelayOfGameReportService = mockk()
     private lateinit var playController: PlayController
 
     @BeforeEach
     fun setup() {
-        playController = PlayController(playService)
+        playController = PlayController(playService, delayOfGameReportService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(playController)
                 .setControllerAdvice(GlobalExceptionHandler())
