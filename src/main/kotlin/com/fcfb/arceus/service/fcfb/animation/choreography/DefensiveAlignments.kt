@@ -3,7 +3,6 @@ package com.fcfb.arceus.service.fcfb.animation.choreography
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import kotlin.math.abs
 
-/** Down linemen line up directly across from offensive linemen; corners take inside leverage on the widest receivers. */
 object DefensiveAlignments {
     private const val LINE_DEPTH = OffensiveAlignments.LINE_DEPTH
     private const val STACKED_DEPTH = 4.5f

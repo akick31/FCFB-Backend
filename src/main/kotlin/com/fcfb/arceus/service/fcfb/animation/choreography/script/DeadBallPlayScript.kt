@@ -22,7 +22,6 @@ class DeadBallPlayScript : PlayScript {
     }
 
     companion object {
-        /** A penalty is shown as the referee alone at midfield, so the camera has nothing else to follow. */
         private const val MIDFIELD = 50f
     }
 }

@@ -22,7 +22,6 @@ object GoalPostScenePainter {
     const val END_ZONE_DEPTH_YARDS = 10f
     const val CROSSBAR_HEIGHT_YARDS = 10f / 3f
 
-    /** REFERENCE_* values are measured downward from the top of the stands to the end line at `scale = 1`. */
     private const val REFERENCE_WALL_TOP_Y = 140
     private const val REFERENCE_END_ZONE_TOP_Y = 190
     private const val REFERENCE_CROSSBAR_Y = REFERENCE_END_ZONE_TOP_Y - 45
@@ -60,17 +59,12 @@ object GoalPostScenePainter {
 
         fun yardY(yardsFromGoal: Float): Float = endZoneBottomY + pixelsPerYard * yardsFromGoal
 
-        /** Negative yards are inside the end zone, measured back toward the end line where the posts stand. */
         fun groundY(yardsFromGoal: Float): Float {
             if (yardsFromGoal >= 0f) return yardY(yardsFromGoal)
             return endZoneBottomY + (endZoneTopY - endZoneBottomY) * (-yardsFromGoal / END_ZONE_DEPTH_YARDS)
         }
     }
 
-    /**
-     * The bottom of the frame sits just behind the holder, seven yards back from the line of scrimmage. The posts shrink with
-     * distance but never so far that the uprights would leave the top of the frame.
-     */
     fun layoutFor(play: Play): Layout {
         val lineOfScrimmageYards =
             if (play.playCall == PlayCall.PAT) PAT_LINE_OF_SCRIMMAGE_YARDS else (100 - play.ballLocation).toFloat().coerceAtLeast(1f)
@@ -142,7 +136,6 @@ object GoalPostScenePainter {
         listOf(Color(220, 80, 80), Color(80, 120, 220), Color(230, 210, 60), Color(240, 240, 240))
     val STAND_SHADES: List<Color> = listOf(STAND_COLOR_DARK, Color(80, 80, 88), Color(100, 100, 110), STAND_COLOR_LIGHT)
 
-    /** [midfieldTopOnLeft] turns the midfield logo so it reads from the same sideline it does on the overhead field. */
     fun paint(
         theme: FieldTheme,
         endZone: EndZoneDecoration,
@@ -179,7 +172,6 @@ object GoalPostScenePainter {
         return image
     }
 
-    /** Redraws the posts over a ball that has passed the end line, so the ball drops behind them instead of in front. */
     fun drawPost(
         image: BufferedImage,
         layout: Layout,
@@ -207,7 +199,6 @@ object GoalPostScenePainter {
         g.dispose()
     }
 
-    /** Rows of seats climb from the wall to the top of the frame, however much room the kick distance leaves. */
     private fun drawStands(
         g: Graphics2D,
         layout: Layout,
@@ -273,7 +264,6 @@ object GoalPostScenePainter {
         }
     }
 
-    /** The post is planted behind the end line, so the stem stops at the line instead of poking into the end zone. */
     private fun drawGoalPost(
         g: Graphics2D,
         layout: Layout,
@@ -336,7 +326,6 @@ object GoalPostScenePainter {
         }
     }
 
-    /** Hash marks and sideline ticks run parallel to the yard lines at every yard between the five-yard lines. */
     private fun drawHashMarks(
         g: Graphics2D,
         layout: Layout,
@@ -359,10 +348,6 @@ object GoalPostScenePainter {
         }
     }
 
-    /**
-     * Painted at the 50 the way the overhead field paints it: slightly wider than the hashes across the field and turned to
-     * read from the sideline, then squeezed front to back by the same yards-to-pixels squash as the turf around it.
-     */
     private fun drawMidfieldLogo(
         g: Graphics2D,
         logoUrl: String?,
@@ -384,7 +369,6 @@ object GoalPostScenePainter {
         g.transform = transform
     }
 
-    /** Sized so a split number, one digit on each side of its line, stays well clear of the next numbered line. */
     private fun yardNumberFontSize(layout: Layout): Int {
         val tenYards = layout.pixelsPerYard * 10
         return ((tenYards * YARD_NUMBER_SHARE_OF_TEN_YARDS - YARD_NUMBER_DIGIT_GAP) / DIGIT_WIDTH_PER_POINT).toInt().coerceIn(
@@ -412,10 +396,6 @@ object GoalPostScenePainter {
         g.transform = transform
     }
 
-    /**
-     * Lettering painted on the grass, seen from behind the kicker: each letter keeps its real width across the field but is
-     * squashed front to back. The name is centered, with any logo set in front of it.
-     */
     private fun drawEndZoneText(
         g: Graphics2D,
         endZone: EndZoneDecoration,

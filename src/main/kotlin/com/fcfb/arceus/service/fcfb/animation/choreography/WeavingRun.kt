@@ -1,9 +1,5 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography
 
-/**
- * A carrier weaves only while there is traffic to beat. Cuts are placed between the start of the run and [clearAlong],
- * the last place a defender is waiting; past that it is open grass and he runs straight for the end spot.
- */
 object WeavingRun {
     private const val MIN_WEAVE_YARDS = 6f
     private const val YARDS_PER_CUT = 7f

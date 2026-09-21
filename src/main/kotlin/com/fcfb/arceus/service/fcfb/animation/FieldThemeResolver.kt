@@ -51,7 +51,6 @@ class FieldThemeResolver(
         )
     }
 
-    /** A team's own turf color only applies at home; postseason games are played on a neutral field. */
     private fun homeFieldTurf(
         style: FieldStyle,
         homeTeam: Team,
@@ -60,10 +59,8 @@ class FieldThemeResolver(
         return TeamFieldOverrides.forTeam(homeTeam.name)?.turf ?: FieldBackgroundPainter.TURF_COLOR
     }
 
-    /** Teams switch ends at the half, and overtime quarters keep the home team defending the right end zone. */
     private fun drivesRightToLeft(play: Play): Boolean = play.quarter > FIRST_HALF_QUARTERS
 
-    /** Playoff fields use the dark-background version of the playoff logo, whichever round this game is. */
     private fun playoffLogo(game: Game): String? =
         gameRepository.getLatestDarkPlayoffLogo() ?: game.postseasonGameLogo ?: gameRepository.getLatestPlayoffLogo()
 

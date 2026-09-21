@@ -1,15 +1,10 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography
 
-/**
- * After a score the scoring side converges on whoever carried the ball in and the ball is spiked. Helmets carry no height
- * in this view, so a celebration has to read as the mob closing in plus the ball bouncing on the turf.
- */
 object Celebration {
     private const val MOB_RADIUS = 1.6f
     private const val MOB_STEP = 0.9f
     private const val MOB_SPEED = 70f
 
-    /** Teammates start closing well before the score, since starting at the goal line leaves only defenders nearby. */
     private const val MOB_LEAD = 0.25f
     private const val SPIKE_HEIGHT = 2.2f
     private const val SPIKE_BOUNCES = 3

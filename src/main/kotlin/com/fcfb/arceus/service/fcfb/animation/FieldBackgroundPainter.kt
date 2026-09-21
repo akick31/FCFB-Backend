@@ -108,7 +108,6 @@ object FieldBackgroundPainter {
         return image
     }
 
-    /** Bowls paint each team's conference logo on that team's own 25, between the hash marks and the sideline, on opposite sides. */
     private fun drawConferenceLogos(
         g: Graphics2D,
         theme: FieldTheme,
@@ -125,10 +124,6 @@ object FieldBackgroundPainter {
         }
     }
 
-    /**
-     * Midfield logos run slightly past both hash marks across the field, however wide the logo is. Conference marks are
-     * dense wordmarks that overpower the field at that size, so a championship logo stays inside the hashes.
-     */
     private fun drawMidfieldLogo(
         g: Graphics2D,
         logo: BufferedImage,
@@ -180,7 +175,6 @@ object FieldBackgroundPainter {
         angle: Double = 0.0,
     ) = drawFootball(image, x, y, scale, angle, lengthFactor = 1f, laceOffset = 0f, lacesVisible = true)
 
-    /** A spiral keeps its nose on the flight line while the laces roll around the long axis. */
     fun drawSpiralingBall(
         image: BufferedImage,
         x: Int,
@@ -202,7 +196,6 @@ object FieldBackgroundPainter {
         )
     }
 
-    /** End over end: the ball's length shrinks as its nose swings toward the viewer and grows back as it turns broadside. */
     fun drawTumblingBall(
         image: BufferedImage,
         x: Int,
@@ -258,7 +251,6 @@ object FieldBackgroundPainter {
         }
     }
 
-    /** College hashes sit 60 feet in from each sideline, leaving them 40 feet apart across the middle of the field. */
     private fun drawHashMarks(g: Graphics2D) {
         val stroke = g.stroke
         g.stroke = BasicStroke(HASH_STROKE_WIDTH)
@@ -323,7 +315,6 @@ object FieldBackgroundPainter {
         g.transform = transform
     }
 
-    /** Both end zones share the smaller of their two fitted sizes so the names, and the playoff logos beside them, match. */
     private fun fittedEndZoneFontSize(
         g: Graphics2D,
         endZone: EndZoneDecoration,
@@ -340,7 +331,6 @@ object FieldBackgroundPainter {
         return fontSize
     }
 
-    /** The playoff logo sits in line with the team name at the same height as the lettering, so both count toward the fit. */
     private fun endZoneLength(
         g: Graphics2D,
         label: String,

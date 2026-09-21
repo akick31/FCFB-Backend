@@ -73,10 +73,6 @@ class OverheadPlayFrameRenderer(
             .map { progress -> ChoreographyPainter.paint(field, camera, choreography, progress, helmets) }
     }
 
-    /**
-     * How far the ball itself travels, which on a return is far longer than the gap between the snap and the end spot.
-     * Sizing the extra frames off the endpoints alone left returns covering their real distance in a fraction of the time.
-     */
     private fun ballTravelYards(choreography: Choreography): Float {
         var total = 0f
         var previous = choreography.ball.at(0f).position

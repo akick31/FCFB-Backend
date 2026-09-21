@@ -2,7 +2,6 @@ package com.fcfb.arceus.service.fcfb.animation
 
 import com.fcfb.arceus.enums.team.TeamSide
 
-/** Fixed frame: 0 = HOME's own goal line, 100 = AWAY's own goal line, regardless of who has the ball. */
 object FieldCoordinateMapper {
     fun toAbsoluteFieldPosition(
         ballLocation: Int,

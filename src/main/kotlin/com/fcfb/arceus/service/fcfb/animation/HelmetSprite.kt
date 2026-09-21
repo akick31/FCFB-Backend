@@ -8,17 +8,12 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
 
-/**
- * Team helmets are recolored from one clip-art template. The template is painted in flat markers: white is the shell, which
- * takes the team's color, red is the facemask, which is painted white, and everything else is linework left alone.
- */
 object HelmetSprite {
     private const val TEMPLATE = "/images/helmet-template.png"
     private const val OPAQUE = 128
     private const val MARKER_HIGH = 200
     private const val MARKER_LOW = 60
 
-    /** The largest circle that fits inside the template's shell, so a logo of any shape lands centered and never overhangs. */
     private const val LOGO_FRACTION = 0.432f
     private const val LOGO_CENTER_X = 0.332f
     private const val LOGO_CENTER_Y = 0.367f
@@ -91,7 +86,6 @@ object HelmetSprite {
         return recolored
     }
 
-    /** Halving repeatedly keeps the linework readable; collapsing the template to sprite size in one step smears it. */
     private fun scaleDown(
         source: BufferedImage,
         size: Int,

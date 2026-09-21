@@ -56,7 +56,6 @@ class AnimatedGifEncoder {
         return IndexColorModel(8, size, reds, greens, blues)
     }
 
-    /** Converted one frame at a time inside the write loop: holding a second copy of every frame exhausts the heap on long plays. */
     private fun toIndexed(
         source: BufferedImage,
         colorModel: IndexColorModel,

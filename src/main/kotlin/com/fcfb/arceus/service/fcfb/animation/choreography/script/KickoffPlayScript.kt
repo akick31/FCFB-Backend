@@ -21,7 +21,6 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
 
-/** College kickoff: five cover men on each side of the kicker, a five-man front line restrained 10 yards off the ball, returner fielding at the goal line. */
 class KickoffPlayScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
         val forward = context.forward

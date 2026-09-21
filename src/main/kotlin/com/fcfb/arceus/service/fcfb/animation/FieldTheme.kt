@@ -5,10 +5,6 @@ import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamUniform
 import java.awt.Color
 
-/**
- * [flipped] is true when the home team is driving right to left, which happens in the second half and in overtime, where the
- * home team always defends the right end zone.
- */
 data class FieldTheme(
     val style: FieldStyle,
     val homeTeam: Team,
@@ -21,21 +17,18 @@ data class FieldTheme(
     val homeUniform: TeamUniform? = null,
     val awayUniform: TeamUniform? = null,
 ) {
-    /** What both teams wore the week this game was played, falling back to their current colors when nothing was stored. */
     fun uniforms(): Pair<Uniform, Uniform> = Uniforms.forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
 
     fun homeLogoUrl(): String? = homeUniform?.logoUrl ?: homeTeam.scorebugLogo
 
     fun awayLogoUrl(): String? = awayUniform?.logoUrl ?: awayTeam.scorebugLogo
 
-    /** The team whose end zone sits on the left of the frame, which swaps when the field is flipped. */
     fun leftSide(): TeamSide = if (flipped) TeamSide.AWAY else TeamSide.HOME
 
     fun rightSide(): TeamSide = if (flipped) TeamSide.HOME else TeamSide.AWAY
 
     fun conferenceLogoOf(side: TeamSide): String? = if (side == TeamSide.HOME) homeConferenceLogoUrl else awayConferenceLogoUrl
 
-    /** HOME defends the left end zone and AWAY the right; on a home field both end zones belong to the home team. */
     fun endZoneOf(side: TeamSide): EndZoneDecoration {
         val team = if (style == FieldStyle.HOME_FIELD || side == TeamSide.HOME) homeTeam else awayTeam
         val primary = FieldBackgroundPainter.parseColor(team.primaryColor)
@@ -50,7 +43,6 @@ data class FieldTheme(
         }
     }
 
-    /** Names painted on grass use the primary color, then the secondary, then white, skipping any color that would blend in. */
     private fun onGrass(
         team: Team,
         primary: Color,

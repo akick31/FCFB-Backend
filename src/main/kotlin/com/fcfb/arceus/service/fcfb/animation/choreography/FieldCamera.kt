@@ -2,7 +2,6 @@ package com.fcfb.arceus.service.fcfb.animation.choreography
 
 import com.fcfb.arceus.service.fcfb.animation.FieldBackgroundPainter
 
-/** Broadcast-style view: the field is drawn at [zoom] and a [VIEW_WIDTH] x [VIEW_HEIGHT] window pans with the ball. */
 class FieldCamera(
     private val ball: BallTrack,
     private val lookAhead: Float,
@@ -40,7 +39,6 @@ class FieldCamera(
     }
 
     companion object {
-        /** Squarer than the full field because phones scale a GIF to screen width, so a narrower frame shows players larger. */
         const val VIEW_WIDTH = 800
         const val VIEW_HEIGHT = 560
         const val ZOOM = 2f

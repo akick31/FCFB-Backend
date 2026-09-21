@@ -3,7 +3,6 @@ package com.fcfb.arceus.service.fcfb.animation
 import java.awt.Color
 import kotlin.math.sqrt
 
-/** "Redmean" distance: a cheap RGB distance weighted to track how different two colors look rather than how different their numbers are. */
 object ColorSimilarity {
     private const val SIMILAR_DISTANCE = 120.0
     private val FIELD_GREENS = listOf(FieldBackgroundPainter.TURF_COLOR, Color(0, 128, 0), Color(46, 139, 87))

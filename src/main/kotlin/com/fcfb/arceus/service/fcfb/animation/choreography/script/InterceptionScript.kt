@@ -94,10 +94,6 @@ class InterceptionScript : PlayScript {
     }
 
     companion object {
-        /**
-         * Where the ball is picked off varies from a screen jumped at the line to a deep ball taken over the top. The
-         * return still ends exactly on the play's real end spot, so only the catch point moves.
-         */
         private const val MIN_PICK_DEPTH = 1f
         private const val MAX_PICK_DEPTH = 24f
         private const val SHORT_RETURN = 4f

@@ -24,10 +24,6 @@ internal const val MOTION_FRAME_COUNT = 52
 internal const val HOLD_FRAME_COUNT = 4
 private const val MIN_MOTION_FRAMES = 16
 
-/**
- * Long plays get extra motion frames so the ball carrier covers the extra ground at the same speed, not faster.
- * [celebrationFrames] spends extra frames on the tail after a score, where the play itself has already finished.
- */
 internal fun animationTimeline(
     extraMotionFrames: Int = 0,
     celebrationFrames: Int = 0,

@@ -16,7 +16,6 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.snapBall
 import kotlin.math.abs
 
-/** Shared pieces of a dropback: quarterback drop, pass protection, and the routes of receivers who aren't the target. */
 internal class PassConcept(
     private val context: PlayContext,
     private val scene: ScrimmageScene,
@@ -35,7 +34,6 @@ internal class PassConcept(
         )
     val release = setPoint + carryOffset(forward)
 
-    /** He turns and drops the instant he has the ball; waiting out the full snap window reads as the quarterback freezing. */
     private val exchangeEnd = if (alignment.underCenter) SNAP_END * UNDER_CENTER_SNAP_SPEED else SNAP_END
 
     fun quarterback(vararg after: Pair<Float, FieldPoint>): Track =
@@ -62,7 +60,6 @@ internal class PassConcept(
             }
         }
 
-    /** Picked from either side of the formation so the same man is not targeted on every play with the same shape. */
     fun target(
         deep: Boolean,
         random: PlayRandom,
@@ -135,10 +132,6 @@ internal class PassConcept(
         private const val BREAK_TIME = 0.12f
         private const val DEEP_ARC_PER_YARD = 0.42f
 
-        /**
-         * A short throw is a bullet, but a deep ball is arced and has to hang, so the flight grows sharply with distance
-         * rather than staying flat. Both still cover ground faster than any player runs.
-         */
         private const val BASE_FLIGHT = 0.05f
         private const val DISTANCE_FLIGHT = 0.24f
     }

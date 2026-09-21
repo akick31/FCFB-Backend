@@ -55,7 +55,6 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
 
     private fun flight(t: Float): Float = segment(t, FieldGoalUnitPainter.KICK_AT, 1f)
 
-    /** Makes land anywhere between the uprights; misses under the long-kick limit are a random doink or a random side wide. */
     private fun kickTrajectory(
         play: Play,
         layout: GoalPostScenePainter.Layout,

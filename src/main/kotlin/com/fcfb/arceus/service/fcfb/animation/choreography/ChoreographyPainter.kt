@@ -71,7 +71,6 @@ object ChoreographyPainter {
         return frame
     }
 
-    /** Players face the way they are moving, and otherwise face their opponents across the line. */
     private fun drawHelmet(
         graphics: Graphics2D,
         view: View,

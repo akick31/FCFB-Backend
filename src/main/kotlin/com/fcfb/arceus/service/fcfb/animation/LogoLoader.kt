@@ -12,7 +12,6 @@ object LogoLoader {
 
     private val cache = ConcurrentHashMap<String, BufferedImage>()
 
-    /** Logos arrive with different amounts of empty padding, which would otherwise make them render at different sizes. */
     private fun trim(logo: BufferedImage): BufferedImage {
         var left = logo.width
         var right = -1

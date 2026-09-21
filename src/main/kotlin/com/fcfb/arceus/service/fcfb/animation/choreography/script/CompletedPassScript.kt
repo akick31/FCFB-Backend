@@ -105,10 +105,6 @@ class CompletedPassScript : PlayScript {
         return Choreography(offense, defense, ball, facingLocked = facingLocked(scene), endsAt = settled)
     }
 
-    /**
-     * A contested catch is only contested if the defender is stride for stride the whole way, so he simply runs the
-     * receiver's route a step off his hip rather than trying to close from coverage depth once the ball is thrown.
-     */
     private fun coverTarget(
         scene: ScrimmageScene,
         before: List<Track>,
@@ -125,11 +121,9 @@ class CompletedPassScript : PlayScript {
     }
 
     companion object {
-        /** Linemen set back into pass protection, so like the quarterback they keep facing the defense rather than turning. */
         internal fun facingLocked(scene: ScrimmageScene): Set<Int> =
             OffensiveAlignments.LINEMEN.toSet() + scene.offensiveAlignment.quarterback
 
-        /** A catch with no run after it still needs long enough for a defender to close and make the tackle. */
         private const val MIN_CONTEST_TIME = 0.12f
 
         private const val MIN_RUN_TIME = 0.05f
@@ -137,7 +131,6 @@ class CompletedPassScript : PlayScript {
         private const val COVER_SHOULDER = 1.3f
         private const val CLEAR_MARGIN = 5f
 
-        /** A beat after the tackle so the whistle lands before the result banner, rather than cutting instantly. */
         private const val TACKLE_SETTLE = 0.05f
         private const val ESCORT_PACE = 0.9f
         private const val SHORT_SCORE = 17f
@@ -146,7 +139,6 @@ class CompletedPassScript : PlayScript {
         private const val RUN_AFTER_CATCH = 3f
         private const val CATCH_TO_STRIDE = 0.06f
 
-        /** Long gains are either caught deep and tackled right there, or caught shorter and run down from behind. */
         private const val CONTESTED_MIN_GAIN = 20f
         private const val CONTESTED_CHANCE = 0.45f
         private const val MIN_CATCH_DEPTH = 10f

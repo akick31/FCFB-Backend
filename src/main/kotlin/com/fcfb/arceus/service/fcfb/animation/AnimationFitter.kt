@@ -4,11 +4,6 @@ import org.springframework.stereotype.Component
 import java.awt.Color
 import java.awt.image.BufferedImage
 
-/**
- * Discord rejects attachments over 8MB, so an animation is encoded at full fidelity and only degraded when it will not fit.
- * The palette is thinned first — it drops logo shades before anything structural — and frames are only dropped after that,
- * since a lower frame rate is the most visible loss.
- */
 @Component
 class AnimationFitter(
     private val encoder: AnimatedGifEncoder,

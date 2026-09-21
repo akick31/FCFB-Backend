@@ -21,10 +21,6 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
 
-/**
- * Incompletions are drawn from a handful of ways a pass falls dead: drops, deep shots that get away, balls a defender nearly
- * picks, throwaways under pressure, and screens thrown wide. The play's own seed decides which one, so it never changes.
- */
 class IncompletePassScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
         val scene = ScrimmageScene.from(context)
@@ -108,7 +104,6 @@ class IncompletePassScript : PlayScript {
             else -> targetLateral * TARGET_DRIFT
         }
 
-    /** On an overthrow or a throwaway the receiver never gets there, so he pulls up short of where the ball lands. */
     private fun receiverSpotFor(
         kind: IncompletionKind,
         arrivalPoint: FieldPoint,
@@ -126,7 +121,6 @@ class IncompletePassScript : PlayScript {
             else -> 0f
         }
 
-    /** Only the kinds where a defender is at the ball send someone driving on it; the rest just stay in coverage. */
     private fun defense(
         kind: IncompletionKind,
         scene: ScrimmageScene,

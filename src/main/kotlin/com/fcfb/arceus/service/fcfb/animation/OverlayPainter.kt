@@ -100,7 +100,6 @@ class OverlayPainter {
             else -> "TOUCHDOWN!"
         }
 
-    /** A penalty reads as the yellow flag banner rather than a callout, so it stays on screen for the whole dead play. */
     private fun stampFlag(
         frame: BufferedImage,
         team: String,
@@ -132,7 +131,6 @@ class OverlayPainter {
         return frame
     }
 
-    /** The flag bar goes up the moment the flag lands; the call itself waits until the referee has signalled it. */
     private fun drawFlagBar(
         g: Graphics2D,
         frame: BufferedImage,
@@ -163,7 +161,6 @@ class OverlayPainter {
         g.drawString(headline, headlineX, headlineMetrics.ascent + BACKGROUND_PADDING / 2)
     }
 
-    /** The signal is both arms crossed above the head, so [armFraction] swings them up from hanging at his sides. */
     private fun drawReferee(
         g: Graphics2D,
         centerX: Int,
@@ -206,7 +203,6 @@ class OverlayPainter {
         g.drawLine(centerX + 3, torsoY + REF_TORSO_HEIGHT, centerX + 5, torsoY + REF_TORSO_HEIGHT + REF_LEG)
     }
 
-    /** Outlined so a bare arm never disappears against the white stripes of the shirt it is folded across. */
     private fun drawForearm(
         g: Graphics2D,
         fromX: Int,
@@ -221,7 +217,6 @@ class OverlayPainter {
         g.drawLine(fromX, y, toX, y)
     }
 
-    /** A thrown flag lands as a rumpled square of cloth with the weighted corner knotted up at one end. */
     private fun drawPenaltyFlag(
         g: Graphics2D,
         x: Int,

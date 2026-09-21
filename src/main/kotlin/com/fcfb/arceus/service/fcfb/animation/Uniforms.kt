@@ -4,7 +4,6 @@ import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamUniform
 import java.awt.Color
 
-/** Home wears its primary color with white numbers; away wears white with numbers in its primary color. Both wear team pants. */
 object Uniforms {
     fun forMatchup(
         homeTeam: Team,

@@ -10,7 +10,6 @@ import java.awt.geom.Line2D
 import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
 
-/** Draws a player anchored at the feet so figures can be placed by their spot on the turf. */
 object FieldGoalPlayerPainter {
     private const val HELMET_RADIUS = 10f
     private const val TORSO_WIDTH = 30f
@@ -72,7 +71,6 @@ object FieldGoalPlayerPainter {
         g.dispose()
     }
 
-    /** Rushers face the camera, so their cage covers the front of the helmet; the kicking unit faces away and shows only its edges. */
     private fun drawFacemask(
         g: Graphics2D,
         figure: FieldGoalFigure,

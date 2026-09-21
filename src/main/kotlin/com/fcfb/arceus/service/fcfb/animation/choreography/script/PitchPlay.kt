@@ -18,7 +18,6 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.snapBall
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
 
-/** A toss to the wide side that the edge defenders string out and bury behind the line, the usual way a run ends in a safety. */
 internal object PitchPlay {
     private const val PITCH_AT = 0.2f
     private const val CATCH_AT = 0.28f

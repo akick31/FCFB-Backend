@@ -7,7 +7,6 @@ object DefensiveReaction {
     private const val LATE_LINEMAN_REACTION = 0.1f
     private const val CORNER_COUNT = 2
 
-    /** Pre-reaction movement: linemen stay engaged with their blocker, corners mirror their receiver, second level reads. */
     fun before(
         context: PlayContext,
         scene: ScrimmageScene,

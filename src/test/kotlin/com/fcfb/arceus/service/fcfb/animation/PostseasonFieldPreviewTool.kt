@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
 import java.io.File
 import javax.imageio.ImageIO
 
-/** Renders postseason fields for real season-11 matchups and logos, for visually checking the bowl, playoff, and championship themes. */
 class PostseasonFieldPreviewTool {
     private val classifier = PlayAnimationClassifier()
     private val overlayClassifier = PlayOutcomeOverlayClassifier()

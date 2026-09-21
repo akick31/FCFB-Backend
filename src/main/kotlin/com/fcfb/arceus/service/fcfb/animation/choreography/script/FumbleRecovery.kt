@@ -24,10 +24,6 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
 import java.util.Random
 import kotlin.math.pow
 
-/**
- * Mirrors NormalPlayProcessor's turnover spots: "TO + N" is recovered at the line of scrimmage and returned N yards,
- * "TO - N" is lost after the runner gains N yards, and a plain turnover changes hands at the line.
- */
 internal object FumbleRecovery {
     private const val LOOSE_BALL_TIME = 0.2f
     private const val RETURNED_LOOSE_BALL_TIME = 0.1f

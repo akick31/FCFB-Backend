@@ -3,7 +3,6 @@ package com.fcfb.arceus.service.fcfb.animation
 import java.awt.Color
 import java.awt.image.BufferedImage
 
-/** Every GIF frame shares one fixed palette, so a logo only keeps its colors if they are added to that palette. */
 object LogoPalette {
     private const val CHANNEL_BUCKET = 24
     private const val SAMPLE_STEP = 2

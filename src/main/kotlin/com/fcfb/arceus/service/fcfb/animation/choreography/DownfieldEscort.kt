@@ -1,9 +1,5 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography
 
-/**
- * Blockers and receivers finish their assignment long before the whistle, and a waypoint track holds its last position, so
- * without this they stand still while the play is still running. They keep working toward the carrier until he is down.
- */
 object DownfieldEscort {
     private const val TRAIL_RADIUS = 2.6f
     private const val TRAIL_STEP = 1.4f

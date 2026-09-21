@@ -12,10 +12,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.File
 
-/**
- * Renders sample GIFs straight through the real rendering pipeline without a database or Spring
- * context, for visually spot-checking animation output. Fetches the home team logo over the network.
- */
 class PlayAnimationPreviewTool {
     private val homeTeam =
         Team().apply {
@@ -255,7 +251,6 @@ class PlayAnimationPreviewTool {
         var nextPlayId = 1
         const val HELMET_PREVIEW_SIZE = 256
 
-        /** Chosen so one preview takes the contested deep catch branch and the other the caught-short, run-down branch. */
         const val CONTESTED_PLAY_ID = 902
         const val RUN_DOWN_PLAY_ID = 900
         const val PLAYOFF_LOGO =

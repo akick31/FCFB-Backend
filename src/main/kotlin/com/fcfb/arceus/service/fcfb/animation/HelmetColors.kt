@@ -10,7 +10,6 @@ object HelmetColors {
     private const val SAMPLE_STEP = 2
     private const val OPAQUE_ALPHA = 128
 
-    /** The away team switches to its secondary color when the two primaries would be hard to tell apart. */
     fun forMatchup(
         homeTeam: Team,
         awayTeam: Team,
@@ -23,16 +22,11 @@ object HelmetColors {
         return home to away
     }
 
-    /** A stored uniform already holds the resolved shell color, so rendering it never has to read the logo again. */
     private fun baseShell(
         team: Team,
         snapshot: TeamUniform?,
     ): Color = snapshot?.helmetColor?.let { FieldBackgroundPainter.parseColor(it) } ?: shellColor(team)
 
-    /**
-     * A logo painted mostly in the team's own color would disappear on the shell, so those teams wear their secondary.
-     * Share of the logo is what decides it: outlines and highlights would otherwise veto an obviously monochrome mark.
-     */
     fun shellColor(team: Team): Color {
         val primary = FieldBackgroundPainter.parseColor(team.primaryColor)
         val logo = LogoLoader.load(team.scorebugLogo) ?: return primary

@@ -2,7 +2,6 @@ package com.fcfb.arceus.service.fcfb.animation.choreography
 
 import kotlin.math.hypot
 
-/** A spot on the field in yards: `along` is the absolute 0-100 frame, `lateral` is distance from midfield width-wise. */
 data class FieldPoint(
     val along: Float,
     val lateral: Float,

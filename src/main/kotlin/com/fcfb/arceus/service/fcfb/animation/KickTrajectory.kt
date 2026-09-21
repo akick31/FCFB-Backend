@@ -7,11 +7,6 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/**
- * Every kick climbs to the same kind of peak and only breaks toward its final line late, so a make, a doink, and a miss
- * look alike until the ball nears the posts. Height uses more pixels per yard near the kicker than at the posts.
- * [lateralFraction] places the ball at the posts relative to the uprights: within ±1 is between them, ±1 is an upright.
- */
 class KickTrajectory(
     private val layout: GoalPostScenePainter.Layout,
     val outcome: KickOutcome,
@@ -24,12 +19,10 @@ class KickTrajectory(
     private val startYards = layout.lineOfScrimmageYards + GoalPostScenePainter.HOLD_DEPTH_YARDS
     private val farPixelsPerYard = (layout.endZoneTopY - layout.crossbarY) / GoalPostScenePainter.CROSSBAR_HEIGHT_YARDS
 
-    /** A chip shot reaches the posts far sooner than a long attempt, so the flight ends in proportion to the distance. */
     val arrival: Float =
         ((startYards + GoalPostScenePainter.END_ZONE_DEPTH_YARDS) / ARRIVAL_REFERENCE_YARDS * BASE_ARRIVAL)
             .coerceIn(MIN_ARRIVAL, MAX_ARRIVAL)
 
-    /** [flight] runs from the moment of the kick (0) to the end of the animation (1). */
     fun at(flight: Float): KickPoint {
         val depth = 1f - (1f - (flight / arrival).coerceAtMost(1f)).pow(DECELERATION)
         val settle = maxOf(SETTLED, arrival + MIN_SETTLE_TIME)
@@ -63,7 +56,6 @@ class KickTrajectory(
         return KickPoint(x, ground - heightYards * pixelsPerYard, ground, startScale + (endScale - startScale) * depth)
     }
 
-    /** Past the posts the ball carries on, lands on the turf behind them, and rolls clear of the post rather than onto it. */
     private fun dropBehindPosts(progress: Float): KickPoint {
         val passing = airborne(1f, PEAK_DEPTH, APEX_YARDS)
         val restY = layout.groundY(-GoalPostScenePainter.END_ZONE_DEPTH_YARDS * BEHIND_POSTS_LANDING_DEPTH)

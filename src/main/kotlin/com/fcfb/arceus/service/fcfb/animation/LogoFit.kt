@@ -3,7 +3,6 @@ package com.fcfb.arceus.service.fcfb.animation
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 
-/** Bowl and playoff logos are rarely square, so logos are scaled to fit a square box instead of being stretched to fill it. */
 object LogoFit {
     fun draw(
         g: Graphics2D,

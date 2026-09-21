@@ -7,10 +7,6 @@ import kotlin.math.abs
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/**
- * Both units at the line from behind the kicker, placed by yard line: the snap travels seven yards back to the holder, who
- * stands the ball up on its tip, and on a block one rusher slips the gap beside the center to get a hand on the kick.
- */
 object FieldGoalUnitPainter {
     const val KICK_AT = 0.3f
 
@@ -109,7 +105,6 @@ object FieldGoalUnitPainter {
         }
     }
 
-    /** Center of the held ball, which stands on its tip at the hold spot. */
     fun holdSpot(layout: GoalPostScenePainter.Layout): Pair<Float, Float> {
         val unit = unitScale(layout)
         return CENTER_X + HOLD_OFFSET_X * unit to depthY(layout, GoalPostScenePainter.HOLD_DEPTH_YARDS) - HOLD_LIFT * unit
@@ -117,7 +112,6 @@ object FieldGoalUnitPainter {
 
     fun heldBallScale(layout: GoalPostScenePainter.Layout): Float = BALL_SCALE * unitScale(layout)
 
-    /** Figures are sized for close kicks and shrink as the yard lines between the line and the holder squeeze together. */
     private fun unitScale(layout: GoalPostScenePainter.Layout): Float =
         (layout.pixelsPerYard / FULL_SIZE_PIXELS_PER_YARD).coerceIn(MIN_UNIT_SCALE, 1f)
 
