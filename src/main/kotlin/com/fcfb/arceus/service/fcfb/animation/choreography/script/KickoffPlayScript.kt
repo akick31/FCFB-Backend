@@ -16,6 +16,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.Pursuit
 import com.fcfb.arceus.service.fcfb.animation.choreography.SCORE_AT
 import com.fcfb.arceus.service.fcfb.animation.choreography.WeavingRun
 import com.fcfb.arceus.service.fcfb.animation.choreography.arc
+import com.fcfb.arceus.service.fcfb.animation.choreography.arriveBy
 import com.fcfb.arceus.service.fcfb.animation.choreography.bounce
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
@@ -23,6 +24,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.hold
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
+import kotlin.math.abs
 
 class KickoffPlayScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
@@ -55,16 +57,24 @@ class KickoffPlayScript : PlayScript {
                 else -> minOf(RETURN_CAP, catchAt + RETURN_LEAD + RETURN_PER_YARD * minOf(catchSpot.distanceTo(endPoint), 40f) / 40f)
             }
         val returnPace = catchSpot.distanceTo(endPoint) / maxOf(returnAt - catchAt, MIN_RETURN_TIME)
-        val coverageSpeed = maxOf(Pursuit.COVERAGE_SPEED, returnPace * COVERAGE_PACE)
+        val coverageSpeed = Pursuit.paced(maxOf(Pursuit.COVERAGE_SPEED, returnPace * COVERAGE_PACE))
+        val kickingStarts = listOf(context.offenseSpot(KICKER_DEPTH, 0f)) + COVERAGE_LANES.map { context.offenseSpot(1f, it) }
+        val laneEnd = catchSpot.along - forward * LANE_STANDOFF
+        val laneRun =
+            kickingStarts.mapIndexed { index, start ->
+                if (index == 0) {
+                    path(0f to start, KICK_AT to context.offenseSpot(0.6f, 0f))
+                } else {
+                    path(0f to start, RELEASE_AT to start, catchAt to FieldPoint(laneEnd, start.lateral))
+                }
+            }
         val returnBall =
             if (returning) {
                 val weaveSide = if (lane == KickoffReturnLane.CUTBACK) -side else side
-                WeavingRun.between(catchSpot, endPoint, catchAt, returnAt, weaveSide, context.lineOfScrimmage)
+                WeavingRun.between(catchSpot, endPoint, catchAt, returnAt, weaveSide, context.lineOfScrimmage, laneRun.drop(1))
             } else {
                 path(catchAt to catchSpot, returnAt to endPoint)
             }
-
-        val kickingStarts = listOf(context.offenseSpot(KICKER_DEPTH, 0f)) + COVERAGE_LANES.map { context.offenseSpot(1f, it) }
         val receivingStarts =
             FRONT_LINE.map { context.defenseSpot(FRONT_DEPTH, it) } +
                 SECOND_LINE.map { context.defenseSpot(SECOND_DEPTH, it) } +
@@ -81,17 +91,15 @@ class KickoffPlayScript : PlayScript {
         val coverageTarget = if (touchback) hold(FieldPoint(receivingGoal - forward * TOUCHBACK_STOP, side * 2f)) else returner
         val coverage =
             GangTackle.converge(
-                before =
-                    kickingStarts.mapIndexed { index, start ->
-                        if (index == 0) path(0f to start, KICK_AT to context.offenseSpot(0.6f, 0f)) else hold(start)
-                    },
+                before = laneRun,
                 candidates = if (returning) kickingStarts.indices.drop(1) else emptyList(),
                 carrier = coverageTarget,
                 direction = returnDirection,
                 tackleAt = returnAt,
                 tacklers = if (returnScores) 0 else 2,
-                reactAt = { index -> if (index == 0) KICK_AT else RELEASE_AT },
+                reactAt = { index -> if (index == 0) KICK_AT else catchAt },
                 speed = { coverageSpeed },
+                lead = { index -> COVERAGE_LEAD + (index % LEAD_LANES) * LEAD_STEP },
             )
         val kickingTeam =
             if (muffed) {
@@ -109,16 +117,16 @@ class KickoffPlayScript : PlayScript {
 
         val frontCount = FRONT_LINE.size
         val secondCount = SECOND_LINE.size
-        val escortSpeed = returnPace * ESCORT_PACE
+        val coverIndices = laneRun.indices.drop(1)
+        val escortSpeed = Pursuit.paced(maxOf(Pursuit.DEFENSIVE_BACK_SPEED, returnPace * ESCORT_PACE))
         val receivingTeam =
             receivingStarts.mapIndexed { index, start ->
                 val blocking = index < frontCount + secondCount
-                val wallDepth = if (index < frontCount) FRONT_WALL else SECOND_WALL
-                val wallSpread = if (index < frontCount) FRONT_SPREAD else SECOND_SPREAD
-                val wallSpot = FieldPoint(receivingGoal - forward * wallDepth, start.lateral * wallSpread)
                 val wall =
                     if (blocking) {
-                        path(0f to start, 0.1f to start, WALL_AT to wallSpot)
+                        val man = coverIndices.minBy { abs(laneRun[it].at(WALL_AT).lateral - start.lateral) }
+                        val meet = laneRun[man].at(WALL_AT) + FieldPoint(returnDirection * BLOCK_STANDOFF, 0f)
+                        path(0f to start, KICK_AT to start, arriveBy(KICK_AT, WALL_AT, start.distanceTo(meet)) to meet)
                     } else {
                         path(0f to start, catchAt to start, returnAt to endPoint + FieldPoint(returnDirection * 3f, -side * 2f))
                     }
@@ -178,16 +186,17 @@ class KickoffPlayScript : PlayScript {
         private const val SECOND_DEPTH = 24f
         private const val SQUIB_DEPTH = 30f
         private const val UP_BACK_DEPTH = 6f
-        private const val FRONT_WALL = 25f
-        private const val SECOND_WALL = 15f
-        private const val FRONT_SPREAD = 0.7f
-        private const val SECOND_SPREAD = 0.8f
+        private const val BLOCK_STANDOFF = 2f
         private const val WALL_AT = 0.42f
         private const val MIN_RETURN_TIME = 0.05f
         private const val ESCORT_PACE = 0.85f
         private const val COVERAGE_PACE = 0.95f
         private const val ESCORT_RADIUS = 4f
         private const val ESCORT_STEP = 1.5f
+        private const val LANE_STANDOFF = 25f
+        private const val COVERAGE_LEAD = 0.02f
+        private const val LEAD_LANES = 5
+        private const val LEAD_STEP = 0.02f
         private const val TOUCHBACK_STOP = 20f
         private const val END_ZONE_CENTER = 5f
         private val COVERAGE_LANES = listOf(-22f, -17f, -12f, -7f, -2.5f, 2.5f, 7f, 12f, 17f, 22f)

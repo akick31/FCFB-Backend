@@ -62,13 +62,62 @@ class PostseasonFieldPreviewTool {
         val texasAm = team("Texas A&M", "#500000", "#ffffff", "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/245.png")
         val wyoming = team("Wyoming", "#ffc425", "#492f24", "https://a.espncdn.com/i/teamlogos/ncaa/500/2751.png")
         return listOf(
-            "holiday-bowl" to FieldTheme(FieldStyle.BOWL, utahState, mississippiState, HOLIDAY_BOWL_LOGO),
-            "liberty-bowl" to FieldTheme(FieldStyle.BOWL, northTexas, southCarolina, LIBERTY_BOWL_LOGO),
-            "big-12-championship" to FieldTheme(FieldStyle.CONFERENCE_CHAMPIONSHIP, baylor, kansasState, BIG_12_LOGO),
-            "big-ten-championship" to FieldTheme(FieldStyle.CONFERENCE_CHAMPIONSHIP, michiganState, northwestern, BIG_TEN_LOGO),
-            "playoff-quarterfinal" to FieldTheme(FieldStyle.PLAYOFF, texasAm, duke, PLAYOFF_LOGO),
-            "playoff-semifinal" to FieldTheme(FieldStyle.PLAYOFF, duke, uab, PLAYOFF_LOGO),
-            "national-championship" to FieldTheme(FieldStyle.PLAYOFF, duke, wyoming, PLAYOFF_LOGO),
+            "holiday-bowl" to
+                FieldTheme(FieldStyle.BOWL, utahState, mississippiState, HOLIDAY_BOWL_LOGO, wallCaption = "Holiday Bowl"),
+            "liberty-bowl" to
+                FieldTheme(FieldStyle.BOWL, northTexas, southCarolina, LIBERTY_BOWL_LOGO, wallCaption = "Liberty Bowl"),
+            "big-12-championship" to
+                FieldTheme(
+                    FieldStyle.CONFERENCE_CHAMPIONSHIP,
+                    baylor,
+                    kansasState,
+                    BIG_12_LOGO,
+                    wallCaption = "Big 12 Championship",
+                ),
+            "big-ten-championship" to
+                FieldTheme(
+                    FieldStyle.CONFERENCE_CHAMPIONSHIP,
+                    michiganState,
+                    northwestern,
+                    BIG_TEN_LOGO,
+                    wallCaption = "Big Ten Championship",
+                ),
+            "playoff-first-round" to
+                FieldTheme(
+                    FieldStyle.PLAYOFF,
+                    uab,
+                    texasAm,
+                    PLAYOFF_LOGO,
+                    midfieldCaption = listOf("First Round"),
+                    wallCaption = "CFP First Round",
+                ),
+            "playoff-quarterfinal" to
+                FieldTheme(
+                    FieldStyle.PLAYOFF,
+                    texasAm,
+                    duke,
+                    PLAYOFF_LOGO,
+                    midfieldCaption = listOf("Quarterfinal"),
+                    wallCaption = "CFP Quarterfinal",
+                ),
+            "playoff-semifinal" to
+                FieldTheme(
+                    FieldStyle.PLAYOFF,
+                    duke,
+                    uab,
+                    PLAYOFF_LOGO,
+                    midfieldCaption = listOf("Semifinal"),
+                    wallCaption = "CFP Semifinal",
+                ),
+            "national-championship" to
+                FieldTheme(
+                    FieldStyle.NATIONAL_CHAMPIONSHIP,
+                    duke,
+                    wyoming,
+                    PLAYOFF_LOGO,
+                    midfieldCaption = listOf("National", "Championship"),
+                    midfieldLocation = "Seattle",
+                ),
         )
     }
 

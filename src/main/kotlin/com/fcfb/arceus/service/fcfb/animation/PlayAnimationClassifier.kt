@@ -16,7 +16,11 @@ class PlayAnimationClassifier {
             PlayCall.SPIKE -> AnimatedPlayType.SPIKE
             PlayCall.PUNT -> if (play.actualResult == ActualResult.BLOCKED) AnimatedPlayType.BLOCKED_KICK else AnimatedPlayType.PUNT
             PlayCall.FIELD_GOAL, PlayCall.PAT ->
-                if (play.actualResult == ActualResult.KICK_SIX) AnimatedPlayType.BLOCKED_KICK else AnimatedPlayType.FIELD_GOAL
+                when {
+                    play.actualResult != ActualResult.KICK_SIX -> AnimatedPlayType.FIELD_GOAL
+                    KickDistance.fallsShort(play) -> AnimatedPlayType.SHORT_KICK_RETURN
+                    else -> AnimatedPlayType.BLOCKED_KICK
+                }
             PlayCall.KICKOFF_NORMAL, PlayCall.KICKOFF_SQUIB -> AnimatedPlayType.KICKOFF
             PlayCall.KICKOFF_ONSIDE -> AnimatedPlayType.ONSIDE_KICK
             null -> AnimatedPlayType.DEAD_BALL

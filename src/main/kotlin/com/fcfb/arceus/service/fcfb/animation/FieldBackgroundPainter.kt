@@ -28,6 +28,14 @@ object FieldBackgroundPainter {
     private const val MIDFIELD_LOGO_MAX_WIDTH = 300f
     private const val CONFERENCE_MIDFIELD_LOGO_HEIGHT = 84f
     private const val CONFERENCE_MIDFIELD_LOGO_MAX_WIDTH = 220f
+    private const val CAPTIONED_MIDFIELD_LOGO_HEIGHT = 84f
+    private const val CAPTION_OUTLINE_WIDTH = 1
+    private const val CAPTION_TARGET_WIDTH = 118
+    private const val CAPTION_GAP = 12
+    private const val CAPTION_LINE_GAP = 2
+    private const val MIN_CAPTION_FONT_SIZE = 7
+    private const val MAX_CAPTION_FONT_SIZE = 30
+    private const val LOCATION_SIZE_DROP = 4
     private const val OOB_STROKE_WIDTH = 6f
     private const val BACK_LINE_INSET = 3
     private const val END_ZONE_OUTLINE_WIDTH = 2
@@ -101,7 +109,7 @@ object FieldBackgroundPainter {
 
         val midX = FieldCoordinateMapper.toPixelX(50, WIDTH, MARGIN)
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-        LogoLoader.load(theme.centerLogoUrl)?.let { logo -> drawMidfieldLogo(g, logo, midX, theme.style) }
+        LogoLoader.load(theme.centerLogoUrl)?.let { logo -> drawMidfieldLogo(g, logo, midX, theme) }
         drawConferenceLogos(g, theme)
 
         g.dispose()
@@ -128,15 +136,78 @@ object FieldBackgroundPainter {
         g: Graphics2D,
         logo: BufferedImage,
         centerX: Int,
-        style: FieldStyle,
+        theme: FieldTheme,
     ) {
-        val conference = style == FieldStyle.CONFERENCE_CHAMPIONSHIP
-        val targetHeight = if (conference) CONFERENCE_MIDFIELD_LOGO_HEIGHT else MIDFIELD_LOGO_HEIGHT
+        val captioned = theme.midfieldCaption.isNotEmpty()
+        val conference = theme.style == FieldStyle.CONFERENCE_CHAMPIONSHIP
+        val targetHeight =
+            when {
+                captioned -> CAPTIONED_MIDFIELD_LOGO_HEIGHT
+                conference -> CONFERENCE_MIDFIELD_LOGO_HEIGHT
+                else -> MIDFIELD_LOGO_HEIGHT
+            }
         val maxWidth = if (conference) CONFERENCE_MIDFIELD_LOGO_MAX_WIDTH else MIDFIELD_LOGO_MAX_WIDTH
         val aspect = logo.width.toFloat() / logo.height
         val width = minOf(targetHeight * aspect, maxWidth)
         val height = width / aspect
         g.drawImage(logo, (centerX - width / 2).toInt(), (HEIGHT / 2 - height / 2).toInt(), width.toInt(), height.toInt(), null)
+        drawMidfieldCaption(g, theme, centerX, HEIGHT / 2 + HASH_OFFSET)
+    }
+
+    private fun drawMidfieldCaption(
+        g: Graphics2D,
+        theme: FieldTheme,
+        centerX: Int,
+        logoBottomY: Int,
+    ) {
+        if (theme.midfieldCaption.isEmpty()) return
+        val lines = theme.midfieldCaption.map { it.uppercase() }
+        val previousFont = g.font
+        val captionFont = fittedFont(g, lines, CAPTION_TARGET_WIDTH)
+        g.font = captionFont
+        var baseline = logoBottomY + CAPTION_GAP + g.fontMetrics.ascent
+        val lineStep = g.fontMetrics.ascent + CAPTION_LINE_GAP
+        lines.forEach { line ->
+            drawOutlinedCaption(g, line, centerX - g.fontMetrics.stringWidth(line) / 2, baseline)
+            baseline += lineStep
+        }
+        theme.midfieldLocation?.uppercase()?.let { location ->
+            g.font = Font(Font.SANS_SERIF, Font.BOLD, maxOf(MIN_CAPTION_FONT_SIZE, captionFont.size - LOCATION_SIZE_DROP))
+            g.color = Color.BLACK
+            g.drawString(location, centerX - g.fontMetrics.stringWidth(location) / 2, baseline)
+        }
+        g.font = previousFont
+    }
+
+    private fun drawOutlinedCaption(
+        g: Graphics2D,
+        text: String,
+        x: Int,
+        baseline: Int,
+    ) {
+        g.color = Color.BLACK
+        for (dx in -CAPTION_OUTLINE_WIDTH..CAPTION_OUTLINE_WIDTH) {
+            for (dy in -CAPTION_OUTLINE_WIDTH..CAPTION_OUTLINE_WIDTH) {
+                if (dx != 0 || dy != 0) g.drawString(text, x + dx, baseline + dy)
+            }
+        }
+        g.color = LINE_COLOR
+        g.drawString(text, x, baseline)
+    }
+
+    private fun fittedFont(
+        g: Graphics2D,
+        lines: List<String>,
+        targetWidth: Int,
+    ): Font {
+        var best = Font(Font.SANS_SERIF, Font.BOLD, MIN_CAPTION_FONT_SIZE)
+        for (size in MIN_CAPTION_FONT_SIZE..MAX_CAPTION_FONT_SIZE) {
+            val candidate = Font(Font.SANS_SERIF, Font.BOLD, size)
+            val widest = lines.maxOf { g.getFontMetrics(candidate).stringWidth(it) }
+            if (widest > targetWidth) break
+            best = candidate
+        }
+        return best
     }
 
     fun drawScrimmageLines(

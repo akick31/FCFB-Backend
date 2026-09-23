@@ -99,7 +99,8 @@ class BlockedKickPlayScript : PlayScript {
                     else -> BallState(returnBall.at(progress))
                 }
             }
-        return Choreography(kickingTeam, rushTeam, ball)
+        val settled = if (defenseScores) minOf(1f, SCORE_AT + SETTLE) else minOf(1f, RECOVER_AT + SETTLE)
+        return Choreography(kickingTeam, rushTeam, ball, endsAt = settled)
     }
 
     companion object {
@@ -107,6 +108,7 @@ class BlockedKickPlayScript : PlayScript {
         private const val KICK_AT = 0.17f
         private const val DEFLECT_AT = 0.2f
         private const val RECOVER_AT = 0.4f
+        private const val SETTLE = 0.05f
         private const val BLOCK_DISTANCE = 3f
         private const val DEEP_DEPTH = 12f
         private const val BLOCKER = 2

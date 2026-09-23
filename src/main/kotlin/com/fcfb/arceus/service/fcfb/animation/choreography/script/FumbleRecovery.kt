@@ -25,7 +25,7 @@ import java.util.Random
 import kotlin.math.pow
 
 internal object FumbleRecovery {
-    private const val LOOSE_BALL_TIME = 0.2f
+    private const val LOOSE_BALL_TIME = 0.12f
     private const val RETURNED_LOOSE_BALL_TIME = 0.1f
     private const val SQUIRT_BACK = 2.5f
     private const val SQUIRT_WIDE = 1.5f
@@ -42,7 +42,7 @@ internal object FumbleRecovery {
     private const val ESCORT_DELAY = 0.05f
     private const val ESCORT_RADIUS = 4f
     private const val CHASE_TACKLERS = 2
-    private const val LATEST_FUMBLE_AT = 0.6f
+    private const val LATEST_FUMBLE_AT = 0.8f
     private const val RETURNED_FUMBLE_AT = 0.24f
     private const val CALLOUT_LINGER = 0.1f
     private const val CALLOUT_TEXT = "FUMBLE!"

@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
+import com.fcfb.arceus.service.fcfb.animation.BigLossKind
 import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
@@ -20,6 +21,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.WeavingRun
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryTime
+import com.fcfb.arceus.service.fcfb.animation.choreography.hold
 import com.fcfb.arceus.service.fcfb.animation.choreography.offsetBy
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.snapBall
@@ -31,7 +33,8 @@ class RunPlayScript : PlayScript {
 
     override fun choreograph(context: PlayContext): Choreography {
         if (context.play.actualResult == ActualResult.SAFETY) return PitchPlay.choreograph(context)
-        if (context.play.playCall == PlayCall.TWO_POINT && PlayRandom(context.play).chance(TWO_POINT_PASS_CHANCE)) {
+        val random = PlayRandom(context.play)
+        if (context.play.playCall == PlayCall.TWO_POINT && random.chance(TWO_POINT_PASS_CHANCE)) {
             return twoPointPass.choreograph(context)
         }
         val scene = ScrimmageScene.from(context)
@@ -42,10 +45,20 @@ class RunPlayScript : PlayScript {
         val fumble = result in FUMBLES
         val offenseScores = result in OFFENSIVE_SCORES
 
-        val runnerIndex = alignment.backs.firstOrNull { scene.offense[it].lateral * side > 0f } ?: alignment.backs.first()
+        val bigLoss = !fumble && !offenseScores && context.gain <= BIG_LOSS_GAIN
+        val lossKind = if (bigLoss) random.pick(BigLossKind.entries.toList()) else BigLossKind.STUFFED_INSIDE
+        if (bigLoss && lossKind == BigLossKind.PITCH) return PitchPlay.choreograph(context)
+        val reverse = lossKind == BigLossKind.REVERSE
+        val carrierSide = if (reverse) -side else side
+        val runnerIndex =
+            if (reverse) {
+                alignment.receivers.firstOrNull { scene.offense[it].lateral * carrierSide > 0f } ?: alignment.backs.first()
+            } else {
+                alignment.backs.firstOrNull { scene.offense[it].lateral * side > 0f } ?: alignment.backs.first()
+            }
         val quarterbackStart = scene.offense[alignment.quarterback]
         val meshDepth = if (alignment.underCenter) UNDER_CENTER_MESH_DEPTH else alignment.spots[alignment.quarterback].depth
-        val mesh = context.offenseSpot(meshDepth, side * MESH_WIDTH)
+        val mesh = context.offenseSpot(meshDepth, if (reverse) side * REVERSE_MESH_WIDTH else carrierSide * MESH_WIDTH)
         val quarterback =
             path(
                 0f to quarterbackStart,
@@ -54,26 +67,33 @@ class RunPlayScript : PlayScript {
                 FAKE_END to context.offenseSpot(meshDepth + FAKE_DEPTH, -side * FAKE_WIDTH),
             )
 
-        val drift = side * minOf(DRIFT_BASE + minOf(abs(context.gain), 12f) * DRIFT_PER_YARD, MAX_DRIFT)
+        val driftWidth =
+            when (lossKind) {
+                BigLossKind.STUFFED_OUTSIDE -> OUTSIDE_DRIFT
+                BigLossKind.REVERSE -> REVERSE_DRIFT
+                else -> minOf(DRIFT_BASE + minOf(abs(context.gain), 12f) * DRIFT_PER_YARD, MAX_DRIFT)
+            }
+        val drift = carrierSide * driftWidth
         val runEnd = if (fumble) FumbleRecovery.fumbleSpot(context, drift) else FieldPoint(context.endSpot, drift)
         val runGain = (runEnd.along - context.lineOfScrimmage) * forward
         val runTime = if (runGain <= 0f) STUFFED_AT else minOf(SCORE_AT, maxOf(SHORT_RUN_AT, HANDOFF + STRIDE_TIME + carryTime(runGain)))
         val tackleAt =
             when {
                 offenseScores -> SCORE_AT
-                fumble -> minOf(runTime, FumbleRecovery.latestFumbleAt(context))
+                fumble -> minOf(maxOf(runTime, HANDOFF + carryTime(runGain) * FUMBLE_PURSUIT_TIME), FumbleRecovery.latestFumbleAt(context))
                 else -> runTime
             }
 
         val handoffBall = mesh + carryOffset(forward)
-        val hole = context.defenseSpot(HOLE_DEPTH, side * HOLE_WIDTH)
+        val holeWidth = if (lossKind == BigLossKind.STUFFED_OUTSIDE) OUTSIDE_HOLE_WIDTH else HOLE_WIDTH
+        val hole = context.defenseSpot(HOLE_DEPTH, carrierSide * holeWidth)
         val ballRun =
             if (runGain > 1f) {
                 val toHole = handoffBall.distanceTo(hole)
                 val holeAt = HANDOFF + (tackleAt - HANDOFF) * toHole / (toHole + hole.distanceTo(runEnd))
                 val deepest = scene.defense.maxOf { (it.along - context.lineOfScrimmage) * forward }
                 val clearAlong = context.lineOfScrimmage + forward * (deepest + CLEAR_MARGIN)
-                val toDaylight = WeavingRun.between(hole, runEnd, holeAt, tackleAt, side, clearAlong)
+                val toDaylight = WeavingRun.between(hole, runEnd, holeAt, tackleAt, side, clearAlong, scene.defense.map { hold(it) })
                 switchAt(holeAt, path(HANDOFF to handoffBall, holeAt to hole), toDaylight)
             } else {
                 path(HANDOFF to handoffBall, tackleAt to runEnd)
@@ -100,7 +120,7 @@ class RunPlayScript : PlayScript {
             }
 
         val runPace = abs(runGain) / maxOf(tackleAt - HANDOFF, MIN_RUN_TIME)
-        val escortSpeed = maxOf(Pursuit.DEFENSIVE_BACK_SPEED, runPace * ESCORT_PACE)
+        val escortSpeed = Pursuit.paced(maxOf(Pursuit.DEFENSIVE_BACK_SPEED, runPace * ESCORT_PACE))
         val escorted =
             DownfieldEscort.follow(
                 before = offense,
@@ -139,7 +159,7 @@ class RunPlayScript : PlayScript {
                     else -> BallState(ballRun.at(progress))
                 }
             }
-        if (!fumble) return Choreography(escorted, defense, carried)
+        if (!fumble) return Choreography(escorted, defense, carried, endsAt = minOf(1f, tackleAt + TACKLE_SETTLE))
         return FumbleRecovery.choreograph(context, escorted, defense, carried, tackleAt, runEnd)
     }
 
@@ -160,6 +180,13 @@ class RunPlayScript : PlayScript {
         private const val QUARTERBACK_MESH_GAP = 1.6f
         private const val FAKE_DEPTH = 1.5f
         private const val FAKE_WIDTH = 4f
+        private const val TACKLE_SETTLE = 0.05f
+        private const val FUMBLE_PURSUIT_TIME = 1.8f
+        private const val BIG_LOSS_GAIN = -2f
+        private const val OUTSIDE_DRIFT = 13f
+        private const val OUTSIDE_HOLE_WIDTH = 11f
+        private const val REVERSE_MESH_WIDTH = 4f
+        private const val REVERSE_DRIFT = 10f
         private const val HOLE_DEPTH = 0.8f
         private const val HOLE_WIDTH = 3f
         private const val DRIFT_BASE = 2.5f

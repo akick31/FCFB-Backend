@@ -99,7 +99,8 @@ object GoalPostScenePainter {
     private const val FAN_DOT_SIZE = 16
     private const val FAN_COL_SPACING = 30
     private const val DOINK_FONT_SIZE = 32
-    private const val NET_SIDE_MARGIN = 30
+    const val NET_SIDE_MARGIN = 30
+
     private const val NET_COLS = 8
     private const val NET_ROWS = 6
     private const val WALL_LOGO_SIZE = 60
@@ -125,6 +126,35 @@ object GoalPostScenePainter {
     private const val YARD_NUMBER_SHARE_OF_TEN_YARDS = 0.3f
     private const val DIGIT_WIDTH_PER_POINT = 0.56f
     private const val FAN_SEED = 42L
+    private const val HOME_PRIMARY_SHARE = 8
+    private const val HOME_SECONDARY_SHARE = 2
+    private const val HOME_VISITOR_SHARE = 1
+    private const val NEUTRAL_SIDE_SHARE = 5
+    private const val NEUTRAL_OTHER_SHARE = 1
+    private const val TIER_CONTRAST_MIDPOINT = 128
+    private const val CAPTION_TARGET_YARDS = 14f
+    private const val MIN_CAPTION_FONT_SIZE = 7
+    private const val MAX_CAPTION_FONT_SIZE = 30
+    private const val CAPTION_GAP = 6
+    private const val CAPTION_LINE_GAP = 2
+    private const val LOCATION_SIZE_DROP = 4
+    private const val LOGO_ACCENT_SAMPLES = 8
+    private const val NEAR_BLACK_TOTAL = 90
+    private const val PALE_WALL_LIGHTNESS = 170
+    private const val WALL_CAPTION_GAP = 4
+    private const val WALL_BOTTOM_GAP = 10
+    private const val WALL_TOP_GAP = 2
+    private const val WALL_CAPTIONED_LOGO_FRACTION = 0.55f
+    private const val WALL_CAPTION_WIDTH_FACTOR = 2
+    private const val CHAMPIONSHIP_TEXT_HEIGHT_FRACTION = 0.72f
+    private const val WALL_TEXT_LIFT = 0.14f
+    private const val CHAMPIONSHIP_TEXT_MARGIN = 120
+    private const val CHAMPIONSHIP_OUTLINE_WIDTH = 1
+    private const val WALL_FLANK_LOGO_FRACTION = 0.8f
+    private const val WALL_FLANK_GAP = 14
+    private const val MIN_WALL_SATURATION = 0.18f
+    private const val WALL_FLANK_CENTER_SHARE = 0.34f
+    private const val CFP_FLANK_CENTER_SHARE = 0.46f
 
     val SKY_COLOR: Color = Color(135, 206, 235)
     val STAND_COLOR_LIGHT: Color = Color(120, 120, 130)
@@ -132,6 +162,8 @@ object GoalPostScenePainter {
     val POST_COLOR: Color = Color(255, 205, 0)
     val DEFENDER_COLOR: Color = Color(20, 20, 20)
     val NET_COLOR: Color = Color(235, 235, 235)
+    val DEFAULT_WALL_COLOR: Color = Color.BLACK
+    val SILVER_WALL_COLOR: Color = Color(176, 179, 184)
     val FAN_COLORS: List<Color> =
         listOf(Color(220, 80, 80), Color(80, 120, 220), Color(230, 210, 60), Color(240, 240, 240))
     val STAND_SHADES: List<Color> = listOf(STAND_COLOR_DARK, Color(80, 80, 88), Color(100, 100, 110), STAND_COLOR_LIGHT)
@@ -150,13 +182,18 @@ object GoalPostScenePainter {
 
         g.color = SKY_COLOR
         g.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT)
-        drawStands(g, layout)
+        drawStands(g, layout, crowdColors(theme))
 
         val wallTopY = layout.mapY(REFERENCE_WALL_TOP_Y)
-        g.color = FieldBackgroundPainter.parseColor(endZone.team.secondaryColor)
+        val wallPaint = wallColor(theme, endZone)
+        g.color = wallPaint
         g.fillRect(0, wallTopY, SCENE_WIDTH, layout.endZoneTopY - wallTopY)
-        if (theme.style != FieldStyle.PLAYOFF) {
-            drawWallLogos(g, theme.centerLogoUrl, layout)
+        val wallText = (theme.wallCaption ?: theme.midfieldCaption.joinToString(" ")).uppercase()
+        if (lettersOnWall(theme.style) && wallText.isNotBlank()) {
+            val flankShare = if (cfpWall(theme.style)) CFP_FLANK_CENTER_SHARE else WALL_FLANK_CENTER_SHARE
+            drawWallText(g, layout, wallText, wallTextOutline(theme, wallPaint), theme.wallLogoUrl ?: theme.centerLogoUrl, flankShare)
+        } else {
+            drawWallLogos(g, theme, layout)
         }
         drawNet(g, layout)
 
@@ -199,9 +236,48 @@ object GoalPostScenePainter {
         g.dispose()
     }
 
+    private fun fittedCaptionFont(
+        g: Graphics2D,
+        lines: List<String>,
+        targetWidth: Int,
+    ): Font {
+        var best = Font(Font.SANS_SERIF, Font.BOLD, MIN_CAPTION_FONT_SIZE)
+        for (size in MIN_CAPTION_FONT_SIZE..MAX_CAPTION_FONT_SIZE) {
+            val candidate = Font(Font.SANS_SERIF, Font.BOLD, size)
+            if (lines.maxOf { g.getFontMetrics(candidate).stringWidth(it) } > targetWidth) break
+            best = candidate
+        }
+        return best
+    }
+
+    private fun crowdColors(theme: FieldTheme): List<Color> {
+        val homePrimary = FieldBackgroundPainter.parseColor(theme.homeTeam.primaryColor)
+        val homeSecondary = FieldBackgroundPainter.parseColor(theme.homeTeam.secondaryColor)
+        val awayPrimary = FieldBackgroundPainter.parseColor(theme.awayTeam.primaryColor)
+        if (theme.style != FieldStyle.HOME_FIELD) {
+            return List(NEUTRAL_SIDE_SHARE) { homePrimary } +
+                List(NEUTRAL_SIDE_SHARE) { awayPrimary } +
+                List(NEUTRAL_OTHER_SHARE) { FAN_COLORS.last() }
+        }
+        return List(HOME_PRIMARY_SHARE) { homePrimary } +
+            List(HOME_SECONDARY_SHARE) { homeSecondary } +
+            List(HOME_VISITOR_SHARE) { awayPrimary }
+    }
+
+    private fun againstTier(
+        color: Color,
+        tierShade: Color,
+    ): Color = if (ColorSimilarity.areSimilar(color, tierShade)) contrastOf(color) else color
+
+    private fun contrastOf(color: Color): Color {
+        val lightness = (color.red + color.green + color.blue) / 3
+        return if (lightness < TIER_CONTRAST_MIDPOINT) FAN_COLORS.last() else STAND_COLOR_DARK
+    }
+
     private fun drawStands(
         g: Graphics2D,
         layout: Layout,
+        crowd: List<Color>,
     ) {
         val random = Random(FAN_SEED)
         val fanSize = (FAN_DOT_SIZE * layout.scale).toInt().coerceAtLeast(3)
@@ -211,12 +287,13 @@ object GoalPostScenePainter {
         var tier = 0
         while (tierBottomY > 0) {
             val tierTopY = tierBottomY - tierHeight
-            g.color = STAND_SHADES[STAND_SHADES.lastIndex - tier % STAND_SHADES.size]
+            val tierShade = STAND_SHADES[STAND_SHADES.lastIndex - tier % STAND_SHADES.size]
+            g.color = tierShade
             g.fillRect(0, tierTopY, SCENE_WIDTH, tierHeight)
             val fanY = tierTopY + tierHeight / 2 - fanSize / 2
             var x = fanSpacing / 2 + (tier % 2) * fanSpacing / 2
             while (x < SCENE_WIDTH) {
-                g.color = FAN_COLORS[random.nextInt(FAN_COLORS.size)]
+                g.color = againstTier(crowd[random.nextInt(crowd.size)], tierShade)
                 g.fillOval(x, fanY, fanSize, fanSize)
                 x += fanSpacing
             }
@@ -227,22 +304,164 @@ object GoalPostScenePainter {
 
     private fun drawWallLogos(
         g: Graphics2D,
-        logoUrl: String?,
+        theme: FieldTheme,
         layout: Layout,
     ) {
-        val logo = LogoLoader.load(logoUrl) ?: return
+        val logo = LogoLoader.load(theme.centerLogoUrl) ?: return
         val wallTopY = layout.mapY(REFERENCE_WALL_TOP_Y)
         val wallHeight = layout.endZoneTopY - wallTopY
-        val size = minOf((WALL_LOGO_SIZE * layout.scale).toInt(), (wallHeight * WALL_LOGO_HEIGHT_FRACTION).toInt()).coerceAtLeast(8)
-        val step = size + (WALL_LOGO_SPACING * layout.scale).toInt().coerceAtLeast(4)
-        val y = wallTopY + wallHeight / 2
+        val lines = theme.midfieldCaption.map { it.uppercase() }
+        val usable = (wallHeight - WALL_BOTTOM_GAP).coerceAtLeast(10)
+        val size =
+            if (lines.isEmpty()) {
+                minOf((WALL_LOGO_SIZE * layout.scale).toInt(), (usable * WALL_LOGO_HEIGHT_FRACTION).toInt()).coerceAtLeast(8)
+            } else {
+                (usable * WALL_CAPTIONED_LOGO_FRACTION).toInt().coerceAtLeast(8)
+            }
+        val logoCenterY = if (lines.isEmpty()) wallTopY + usable / 2 else wallTopY + WALL_TOP_GAP + size / 2
+        val captionFont = if (lines.isEmpty()) null else fittedCaptionFont(g, lines, size * WALL_CAPTION_WIDTH_FACTOR)
+        val captionWidth = captionFont?.let { font -> lines.maxOf { g.getFontMetrics(font).stringWidth(it) } } ?: 0
+        val step = maxOf(size, captionWidth) + (WALL_LOGO_SPACING * layout.scale).toInt().coerceAtLeast(4)
         val logosPerSide = CENTER_X / step + 1
         for (slot in 0 until logosPerSide) {
             val offset = step / 2 + slot * step
-            LogoFit.draw(g, logo, CENTER_X + offset, y, size)
-            LogoFit.draw(g, logo, CENTER_X - offset, y, size)
+            for (centerX in listOf(CENTER_X + offset, CENTER_X - offset)) {
+                LogoFit.draw(g, logo, centerX, logoCenterY, size)
+                captionFont?.let { drawWallCaption(g, lines, it, centerX, logoCenterY + size / 2 + WALL_CAPTION_GAP) }
+            }
         }
     }
+
+    private fun drawWallCaption(
+        g: Graphics2D,
+        lines: List<String>,
+        font: Font,
+        centerX: Int,
+        top: Int,
+    ) {
+        val previousFont = g.font
+        g.font = font
+        var baseline = top + g.fontMetrics.ascent
+        lines.forEach { line ->
+            val x = centerX - g.fontMetrics.stringWidth(line) / 2
+            g.color = Color.BLACK
+            for (dx in -1..1) {
+                for (dy in -1..1) {
+                    if (dx != 0 || dy != 0) g.drawString(line, x + dx, baseline + dy)
+                }
+            }
+            g.color = FieldBackgroundPainter.LINE_COLOR
+            g.drawString(line, x, baseline)
+            baseline += g.fontMetrics.ascent + CAPTION_LINE_GAP
+        }
+        g.font = previousFont
+    }
+
+    private fun lettersOnWall(style: FieldStyle): Boolean = style != FieldStyle.HOME_FIELD
+
+    private fun cfpWall(style: FieldStyle): Boolean = style == FieldStyle.PLAYOFF || style == FieldStyle.NATIONAL_CHAMPIONSHIP
+
+    private fun usesLogoColors(style: FieldStyle): Boolean = style == FieldStyle.BOWL || style == FieldStyle.CONFERENCE_CHAMPIONSHIP
+
+    private fun wallTextOutline(
+        theme: FieldTheme,
+        wallPaint: Color,
+    ): Color {
+        if (!usesLogoColors(theme.style)) return POST_COLOR
+        val logo = LogoLoader.load(theme.centerLogoUrl) ?: return Color.BLACK
+        return LogoPalette.dominantColors(logo, LOGO_ACCENT_SAMPLES)
+            .firstOrNull { !isPaleWall(it) && !ColorSimilarity.areSimilar(it, wallPaint) }
+            ?: Color.BLACK
+    }
+
+    private fun drawWallText(
+        g: Graphics2D,
+        layout: Layout,
+        text: String,
+        outlineColor: Color,
+        logoUrl: String?,
+        flankCenterShare: Float,
+    ) {
+        val wallTopY = layout.mapY(REFERENCE_WALL_TOP_Y)
+        val wallHeight = layout.endZoneTopY - wallTopY
+        val previousFont = g.font
+        var size = (wallHeight * CHAMPIONSHIP_TEXT_HEIGHT_FRACTION).toInt().coerceAtLeast(MIN_CAPTION_FONT_SIZE)
+        g.font = Font(Font.SANS_SERIF, Font.BOLD, size)
+        while (size > MIN_CAPTION_FONT_SIZE && g.fontMetrics.stringWidth(text) > SCENE_WIDTH - CHAMPIONSHIP_TEXT_MARGIN) {
+            size -= 1
+            g.font = Font(Font.SANS_SERIF, Font.BOLD, size)
+        }
+        val metrics = g.fontMetrics
+        val x = CENTER_X - metrics.stringWidth(text) / 2
+        val lift = (wallHeight * WALL_TEXT_LIFT).toInt()
+        val baseline = wallTopY + (wallHeight + metrics.ascent) / 2 - lift
+        g.color = outlineColor
+        for (dx in -CHAMPIONSHIP_OUTLINE_WIDTH..CHAMPIONSHIP_OUTLINE_WIDTH) {
+            for (dy in -CHAMPIONSHIP_OUTLINE_WIDTH..CHAMPIONSHIP_OUTLINE_WIDTH) {
+                if (dx != 0 || dy != 0) g.drawString(text, x + dx, baseline + dy)
+            }
+        }
+        g.color = FieldBackgroundPainter.LINE_COLOR
+        g.drawString(text, x, baseline)
+        g.font = previousFont
+        drawFlankingLogos(
+            g,
+            logoUrl,
+            baseline - (metrics.ascent * flankCenterShare).toInt(),
+            wallHeight,
+            x,
+            metrics.stringWidth(text),
+        )
+    }
+
+    private fun drawFlankingLogos(
+        g: Graphics2D,
+        logoUrl: String?,
+        centerY: Int,
+        wallHeight: Int,
+        textX: Int,
+        textWidth: Int,
+    ) {
+        val logo = LogoLoader.load(logoUrl) ?: return
+        val size = (wallHeight * WALL_FLANK_LOGO_FRACTION).toInt().coerceAtLeast(8)
+        LogoFit.draw(g, logo, textX - WALL_FLANK_GAP - size / 2, centerY, size)
+        LogoFit.draw(g, logo, textX + textWidth + WALL_FLANK_GAP + size / 2, centerY, size)
+    }
+
+    private fun wallColor(
+        theme: FieldTheme,
+        endZone: EndZoneDecoration,
+    ): Color {
+        if (theme.style == FieldStyle.NATIONAL_CHAMPIONSHIP || theme.style == FieldStyle.PLAYOFF) return Color.BLACK
+        if (theme.style == FieldStyle.CONFERENCE_CHAMPIONSHIP) return SILVER_WALL_COLOR
+        if (usesLogoColors(theme.style)) {
+            logoAccent(theme.centerLogoUrl)?.let { return it }
+        }
+        val accent = logoAccent(theme.centerLogoUrl)
+        val secondary = FieldBackgroundPainter.parseColor(endZone.team.secondaryColor)
+        val primary = FieldBackgroundPainter.parseColor(endZone.team.primaryColor)
+        listOf(secondary, primary)
+            .firstOrNull { usableWall(it) && (accent == null || !ColorSimilarity.areSimilar(it, accent)) }
+            ?.let { return it }
+        return DEFAULT_WALL_COLOR
+    }
+
+    private fun logoAccent(logoUrl: String?): Color? {
+        val logo = LogoLoader.load(logoUrl) ?: return null
+        return LogoPalette.dominantColors(logo, LOGO_ACCENT_SAMPLES).firstOrNull { usableWall(it) && !isNearBlack(it) }
+    }
+
+    private fun usableWall(color: Color): Boolean = !isPaleWall(color) && !ColorSimilarity.isNearGreen(color) && !isNearGrey(color)
+
+    private fun isNearGrey(color: Color): Boolean {
+        val brightest = maxOf(color.red, color.green, color.blue)
+        val darkest = minOf(color.red, color.green, color.blue)
+        return brightest == 0 || (brightest - darkest).toFloat() / brightest < MIN_WALL_SATURATION
+    }
+
+    private fun isPaleWall(color: Color): Boolean = (color.red + color.green + color.blue) / 3 > PALE_WALL_LIGHTNESS
+
+    private fun isNearBlack(color: Color): Boolean = color.red + color.green + color.blue < NEAR_BLACK_TOTAL
 
     private fun drawNet(
         g: Graphics2D,
@@ -312,7 +531,7 @@ object GoalPostScenePainter {
         drawHashMarks(g, layout)
         g.stroke = BasicStroke((GOAL_LINE_STROKE_WIDTH * layout.scale).coerceAtLeast(3f))
         g.drawLine(0, layout.endZoneBottomY, SCENE_WIDTH, layout.endZoneBottomY)
-        drawMidfieldLogo(g, theme.centerLogoUrl, layout, midfieldTopOnLeft)
+        drawMidfieldLogo(g, theme.centerLogoUrl, layout, midfieldTopOnLeft, theme)
 
         g.color = FieldBackgroundPainter.LINE_COLOR
         g.font = Font("Arial", Font.BOLD, yardNumberFontSize(layout))
@@ -353,6 +572,7 @@ object GoalPostScenePainter {
         logoUrl: String?,
         layout: Layout,
         topOnLeft: Boolean,
+        theme: FieldTheme,
     ) {
         val logo = LogoLoader.load(logoUrl) ?: return
         val aspect = logo.width.toFloat() / logo.height
@@ -366,6 +586,32 @@ object GoalPostScenePainter {
         g.translate(CENTER_X.toDouble(), layout.yardY(50f).toDouble())
         g.rotate(if (topOnLeft) -PI / 2 else PI / 2)
         g.drawImage(logo, (-screenAlong / 2).toInt(), (-screenAcross / 2).toInt(), screenAlong.toInt(), screenAcross.toInt(), null)
+        if (theme.midfieldCaption.isNotEmpty()) {
+            val previousFont = g.font
+            val targetWidth = (CAPTION_TARGET_YARDS * SCENE_WIDTH / FIELD_WIDTH_YARDS).toInt()
+            val lines = theme.midfieldCaption.map { it.uppercase() }
+            g.font = fittedCaptionFont(g, lines, targetWidth)
+            var baseline = (screenAcross / 2).toInt() + CAPTION_GAP + g.fontMetrics.ascent
+            val lineStep = g.fontMetrics.ascent + CAPTION_LINE_GAP
+            lines.forEach { line ->
+                val x = -g.fontMetrics.stringWidth(line) / 2
+                g.color = Color.BLACK
+                for (dx in -1..1) {
+                    for (dy in -1..1) {
+                        if (dx != 0 || dy != 0) g.drawString(line, x + dx, baseline + dy)
+                    }
+                }
+                g.color = FieldBackgroundPainter.LINE_COLOR
+                g.drawString(line, x, baseline)
+                baseline += lineStep
+            }
+            theme.midfieldLocation?.uppercase()?.let { location ->
+                g.font = Font(Font.SANS_SERIF, Font.BOLD, maxOf(MIN_CAPTION_FONT_SIZE, g.font.size - LOCATION_SIZE_DROP))
+                g.color = Color.BLACK
+                g.drawString(location, -g.fontMetrics.stringWidth(location) / 2, baseline)
+            }
+            g.font = previousFont
+        }
         g.transform = transform
     }
 

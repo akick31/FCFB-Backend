@@ -16,6 +16,10 @@ data class FieldTheme(
     val awayConferenceLogoUrl: String? = null,
     val homeUniform: TeamUniform? = null,
     val awayUniform: TeamUniform? = null,
+    val midfieldCaption: List<String> = emptyList(),
+    val midfieldLocation: String? = null,
+    val wallCaption: String? = null,
+    val wallLogoUrl: String? = null,
 ) {
     fun uniforms(): Pair<Uniform, Uniform> = Uniforms.forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
 
@@ -36,12 +40,40 @@ data class FieldTheme(
         val override = TeamFieldOverrides.forTeam(homeTeam.name)
         return when (style) {
             FieldStyle.HOME_FIELD ->
-                EndZoneDecoration(team, override?.endZoneFill ?: primary, FieldBackgroundPainter.LINE_COLOR, secondary, null)
-            FieldStyle.BOWL -> EndZoneDecoration(team, primary, FieldBackgroundPainter.LINE_COLOR, secondary, null)
+                EndZoneDecoration(
+                    team,
+                    override?.endZoneFill ?: primary,
+                    FieldBackgroundPainter.LINE_COLOR,
+                    outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
+                    null,
+                )
+            FieldStyle.BOWL ->
+                EndZoneDecoration(
+                    team,
+                    primary,
+                    FieldBackgroundPainter.LINE_COLOR,
+                    outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
+                    null,
+                )
             FieldStyle.PLAYOFF -> onGrass(team, primary, secondary, centerLogoUrl)
+            FieldStyle.NATIONAL_CHAMPIONSHIP ->
+                EndZoneDecoration(
+                    team,
+                    Color.BLACK,
+                    FieldBackgroundPainter.LINE_COLOR,
+                    outlineOf(FieldBackgroundPainter.LINE_COLOR, primary),
+                    centerLogoUrl,
+                )
             FieldStyle.CONFERENCE_CHAMPIONSHIP -> onGrass(team, primary, secondary, null)
         }
     }
+
+    private fun outlineOf(
+        textColor: Color,
+        outlineColor: Color,
+    ): Color = if (isWhite(outlineColor) && isWhite(textColor)) Color.BLACK else outlineColor
+
+    private fun isWhite(color: Color): Boolean = ColorSimilarity.areSimilar(color, FieldBackgroundPainter.LINE_COLOR)
 
     private fun onGrass(
         team: Team,
@@ -51,6 +83,6 @@ data class FieldTheme(
     ): EndZoneDecoration {
         val text = listOf(primary, secondary).firstOrNull { !ColorSimilarity.areSimilar(it, turf) } ?: FieldBackgroundPainter.LINE_COLOR
         val outline = listOf(secondary, primary).firstOrNull { it != text && !ColorSimilarity.areSimilar(it, turf) } ?: Color.BLACK
-        return EndZoneDecoration(team, null, text, outline, logoUrl)
+        return EndZoneDecoration(team, null, text, outlineOf(text, outline), logoUrl)
     }
 }

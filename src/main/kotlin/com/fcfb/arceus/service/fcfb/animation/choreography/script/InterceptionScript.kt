@@ -60,7 +60,7 @@ class InterceptionScript : PlayScript {
                 carrierOf(returnBall, returnDirection),
             )
         val returnPace = catchPoint.distanceTo(endPoint) / maxOf(returnAt - catchAt, MIN_RETURN_TIME)
-        val escortSpeed = returnPace * ESCORT_PACE
+        val escortSpeed = Pursuit.paced(maxOf(Pursuit.DEFENSIVE_BACK_SPEED, returnPace * ESCORT_PACE))
         val defense =
             before.mapIndexed { index, track ->
                 if (index == interceptorIndex) {

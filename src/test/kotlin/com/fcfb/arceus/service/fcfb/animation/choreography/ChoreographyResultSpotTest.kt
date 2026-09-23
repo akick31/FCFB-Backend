@@ -7,11 +7,13 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.service.fcfb.animation.choreography.script.BlockedKickPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.KickoffPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.KneelPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.PassPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.PuntPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.RunPlayScript
+import com.fcfb.arceus.service.fcfb.animation.choreography.script.ShortKickReturnScript
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -108,6 +110,8 @@ class ChoreographyResultSpotTest {
                 listOf(
                     case("punt return", PuntPlayScript(), PlayCall.PUNT, ActualResult.PUNT, 30, 68f),
                     case("kickoff return", KickoffPlayScript(), PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, 35, 72f),
+                    case("blocked kick six", BlockedKickPlayScript(), PlayCall.FIELD_GOAL, ActualResult.KICK_SIX, 70, -5f),
+                    case("short kick six", ShortKickReturnScript(), PlayCall.FIELD_GOAL, ActualResult.KICK_SIX, 45, -5f),
                 )
 
         private fun case(

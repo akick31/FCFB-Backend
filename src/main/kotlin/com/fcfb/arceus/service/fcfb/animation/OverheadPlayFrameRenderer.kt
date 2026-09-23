@@ -20,6 +20,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.script.OnsideKickPlay
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.PassPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.PuntPlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.RunPlayScript
+import com.fcfb.arceus.service.fcfb.animation.choreography.script.ShortKickReturnScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.script.SpikePlayScript
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage
@@ -37,6 +38,7 @@ class OverheadPlayFrameRenderer(
             AnimatedPlayType.SPIKE to SpikePlayScript(),
             AnimatedPlayType.PUNT to PuntPlayScript(),
             AnimatedPlayType.BLOCKED_KICK to BlockedKickPlayScript(),
+            AnimatedPlayType.SHORT_KICK_RETURN to ShortKickReturnScript(),
             AnimatedPlayType.KICKOFF to KickoffPlayScript(),
             AnimatedPlayType.ONSIDE_KICK to OnsideKickPlayScript(),
         )

@@ -36,7 +36,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
         val nearMiss = !blocked && rush.chance(NEAR_MISS_CHANCE)
         val trajectory = if (blocked) null else kickTrajectory(play, layout)
 
-        val timeline = animationTimeline()
+        val timeline = animationTimeline(endsAt = if (blocked) BLOCKED_ENDS_AT else 1f)
         val doinked = trajectory?.outcome == KickOutcome.DOINK || trajectory?.outcome == KickOutcome.DOINK_IN
         val contactFrameIndex = if (doinked && trajectory != null) timeline.indexOfFirst { flight(it) >= trajectory.arrival } else -1
 
@@ -107,6 +107,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
 
     companion object {
         private const val DOINK_FRAME_COUNT = 6
+        private const val BLOCKED_ENDS_AT = 0.38f
         private const val NEAR_MISS_CHANCE = 0.35f
         private val RUSH_LANES = listOf(2, 3, 4, 6, 7, 8)
         private const val SHORT_KICK_YARDS = 60f

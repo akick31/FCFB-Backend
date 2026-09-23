@@ -45,6 +45,7 @@ class SackScript : PlayScript {
             defense,
             concept.heldBall(quarterback),
             facingLocked = CompletedPassScript.facingLocked(scene),
+            endsAt = minOf(1f, SACK_AT + SACK_SETTLE),
         )
     }
 
@@ -52,6 +53,7 @@ class SackScript : PlayScript {
         private const val PROTECT_FROM = 0.3f
         private const val HOLD_BALL_UNTIL = 0.42f
         private const val SACK_AT = 0.62f
+        private const val SACK_SETTLE = 0.05f
         private const val BEAT_BLOCK_AT = 0.25f
         private const val EDGE_RUSH_SPEED = 26f
         private const val RUSHER_COUNT = 2

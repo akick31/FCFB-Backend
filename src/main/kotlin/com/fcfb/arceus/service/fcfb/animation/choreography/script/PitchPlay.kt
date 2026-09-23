@@ -23,6 +23,7 @@ internal object PitchPlay {
     private const val CATCH_AT = 0.28f
     private const val READ_AT = 0.1f
     private const val TACKLE_AT = 0.56f
+    private const val TACKLE_SETTLE = 0.05f
     private const val TACKLERS = 3
     private const val QUARTERBACK_OPEN_DEPTH = 1.2f
     private const val QUARTERBACK_OPEN_WIDTH = 1.5f
@@ -88,6 +89,6 @@ internal object PitchPlay {
                     else -> BallState(ballRun.at(progress))
                 }
             }
-        return Choreography(offense, defense, ball)
+        return Choreography(offense, defense, ball, endsAt = minOf(1f, TACKLE_AT + TACKLE_SETTLE))
     }
 }

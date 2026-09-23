@@ -134,7 +134,8 @@ class PuntPlayScript : PlayScript {
                     else -> BallState(returnBall.at(progress))
                 }
             }
-        return Choreography(kickingTeam, returnTeam, ball)
+        val settled = if (muffed) minOf(1f, RECOVER_AT + RETURN_SETTLE) else minOf(1f, returnAt + RETURN_SETTLE)
+        return Choreography(kickingTeam, returnTeam, ball, endsAt = settled)
     }
 
     private fun landingSpot(
@@ -163,6 +164,7 @@ class PuntPlayScript : PlayScript {
         private const val KICK_AT = 0.17f
         private const val CATCH_AT = 0.55f
         private const val RECOVER_AT = 0.7f
+        private const val RETURN_SETTLE = 0.05f
         private const val GUNNER_RELEASE = 0.05f
         private const val PUNT_HEIGHT = 16f
         private const val PUNTER_SPEED = 12f

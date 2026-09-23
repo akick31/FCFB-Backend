@@ -7,6 +7,7 @@ enum class AnimatedPlayType {
     SPIKE,
     PUNT,
     BLOCKED_KICK,
+    SHORT_KICK_RETURN,
     KICKOFF,
     ONSIDE_KICK,
     FIELD_GOAL,

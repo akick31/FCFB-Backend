@@ -17,6 +17,12 @@ private const val CARRIER_YARDS_PER_MOTION = 58f
 
 internal fun carryTime(yards: Float): Float = abs(yards) / CARRIER_YARDS_PER_MOTION
 
+internal fun arriveBy(
+    from: Float,
+    scheduled: Float,
+    yards: Float,
+): Float = maxOf(scheduled, from + carryTime(yards))
+
 internal fun path(vararg waypoints: Pair<Float, FieldPoint>): Track = WaypointTrack(waypoints.map { Waypoint(it.first, it.second) })
 
 internal fun hold(point: FieldPoint): Track = Track { point }

@@ -29,7 +29,8 @@ class OnsideKickPlayScript : PlayScript {
         val random = PlayRandom(context.play)
         val kind = random.pick(OnsideKickKind.entries.toList())
         val kickSide = random.side()
-        val bounceDepth = random.between(kind.minDepth, kind.maxDepth)
+        val recoveryDepth = (context.endSpot - context.lineOfScrimmage) * forward
+        val bounceDepth = if (kickingRecovers) recoveryDepth else random.between(kind.minDepth, kind.maxDepth)
         val bouncePoint = context.defenseSpot(bounceDepth, kickSide * random.between(MIN_WIDTH, MAX_WIDTH))
         val cleanField = !kickingRecovers && random.chance(CLEAN_FIELD_CHANCE)
         val recoverAt = if (cleanField) CLEAN_RECOVER_AT else random.between(SCRAMBLE_RECOVER_MIN, SCRAMBLE_RECOVER_MAX)
@@ -63,8 +64,13 @@ class OnsideKickPlayScript : PlayScript {
         val recovererIndex = recoveringTeam.indices.minBy { recoveringTeam[it].at(recoverAt).distanceTo(bouncePoint) }
         val direction = if (kickingRecovers) forward else -forward
         val endPoint = FieldPoint(context.endSpot, bouncePoint.lateral)
-        val returnAt = minOf(RETURN_LIMIT, recoverAt + RETURN_LEAD + RETURN_PER_YARD * minOf(bouncePoint.distanceTo(endPoint), 20f) / 20f)
-        val returnBall = path(recoverAt to bouncePoint, returnAt to endPoint)
+        val returnAt =
+            if (kickingRecovers) {
+                recoverAt
+            } else {
+                minOf(RETURN_LIMIT, recoverAt + RETURN_LEAD + RETURN_PER_YARD * minOf(bouncePoint.distanceTo(endPoint), 20f) / 20f)
+            }
+        val returnBall = if (kickingRecovers) hold(endPoint) else path(recoverAt to bouncePoint, returnAt to endPoint)
         val recoverer = recoveringTeam[recovererIndex]
         val carrier =
             switchAt(

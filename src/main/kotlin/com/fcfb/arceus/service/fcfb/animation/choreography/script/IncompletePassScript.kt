@@ -12,12 +12,12 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.OffensiveAlignments
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.Pursuit
+import com.fcfb.arceus.service.fcfb.animation.choreography.SNAP_END
 import com.fcfb.arceus.service.fcfb.animation.choreography.ScrimmageScene
 import com.fcfb.arceus.service.fcfb.animation.choreography.Track
 import com.fcfb.arceus.service.fcfb.animation.choreography.arc
 import com.fcfb.arceus.service.fcfb.animation.choreography.bounce
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
-import com.fcfb.arceus.service.fcfb.animation.choreography.offsetBy
 import com.fcfb.arceus.service.fcfb.animation.choreography.path
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
@@ -75,7 +75,8 @@ class IncompletePassScript : PlayScript {
                     }
                 }
             }
-        return Choreography(offense, defense, ball, facingLocked = CompletedPassScript.facingLocked(scene))
+        val settled = minOf(1f, maxOf(arriveAt + FALL_TIME, SETTLE_AT) + DEAD_BALL_SETTLE)
+        return Choreography(offense, defense, ball, facingLocked = CompletedPassScript.facingLocked(scene), endsAt = settled)
     }
 
     private fun depthOf(
@@ -138,7 +139,10 @@ class IncompletePassScript : PlayScript {
         if (!contested) return before
         val breakAt = arriveAt - BREAK_ON_BALL
         val defender = Pursuit.closest(before.map { it.at(breakAt) }, scene.defensiveAlignment.secondary, arrivalPoint, 1).first()
-        val shadow = receiver.offsetBy(FieldPoint(-forward * COVER_TRAIL, COVER_SHOULDER))
+        val shadow =
+            Pursuit.chase(before[defender], SNAP_END, Pursuit.COVERAGE_SPEED) { progress, _ ->
+                receiver.at(progress) + FieldPoint(-forward * COVER_TRAIL, COVER_SHOULDER)
+            }
         val contest = Pursuit.chase(shadow, breakAt, Pursuit.COVERAGE_SPEED, Pursuit.toward(arrivalPoint + FieldPoint(forward, 1f)))
         return before.mapIndexed { index, track ->
             if (index == defender) switchAt(breakAt, shadow, contest) else track
@@ -151,6 +155,7 @@ class IncompletePassScript : PlayScript {
         private const val BREAK_ON_BALL = 0.2f
         private const val FALL_TIME = 0.25f
         private const val SETTLE_AT = 0.9f
+        private const val DEAD_BALL_SETTLE = 0.03f
         private const val TARGET_DRIFT = 0.6f
         private const val CROSSER_SWING = 0.5f
         private const val THROWAWAY_WIDTH = 20f

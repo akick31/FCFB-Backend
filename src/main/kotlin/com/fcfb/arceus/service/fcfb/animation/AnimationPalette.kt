@@ -19,6 +19,8 @@ object AnimationPalette {
                 GoalPostScenePainter.POST_COLOR,
                 GoalPostScenePainter.DEFENDER_COLOR,
                 GoalPostScenePainter.NET_COLOR,
+                GoalPostScenePainter.DEFAULT_WALL_COLOR,
+                GoalPostScenePainter.SILVER_WALL_COLOR,
             ) + GoalPostScenePainter.FAN_COLORS + GoalPostScenePainter.STAND_SHADES
         val teams = listOf(theme.homeTeam, theme.awayTeam)
         val teamColors =

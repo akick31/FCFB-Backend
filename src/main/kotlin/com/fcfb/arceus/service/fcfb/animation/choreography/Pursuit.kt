@@ -7,6 +7,9 @@ object Pursuit {
     const val LINEBACKER_SPEED = 25f
     const val DEFENSIVE_BACK_SPEED = 28f
     const val COVERAGE_SPEED = 32f
+    const val MAX_PLAYER_SPEED = 150f
+
+    fun paced(speed: Float): Float = speed.coerceAtMost(MAX_PLAYER_SPEED)
 
     private const val SAMPLE_COUNT = 240
     private const val LEAD = 0.015f
@@ -61,6 +64,18 @@ object Pursuit {
     fun toward(point: FieldPoint): PursuitTarget = { _, _ -> point }
 
     fun pursue(carrier: Track): PursuitTarget = { progress, _ -> carrier.at(progress) }
+
+    fun intercept(
+        carrier: Track,
+        lead: Float,
+        until: Float,
+        direction: Float = 0f,
+    ): PursuitTarget =
+        { progress, from ->
+            val now = carrier.at(progress)
+            val ahead = direction != 0f && (from.along - now.along) * direction > 0f
+            if (ahead) now else carrier.at(minOf(progress + lead, until))
+        }
 
     fun closest(
         positions: List<FieldPoint>,

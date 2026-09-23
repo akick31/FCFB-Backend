@@ -24,7 +24,8 @@ object GangTackle {
         ownSpeed: Float,
     ): Float {
         val needed = from.distanceTo(carrier.at(tackleAt)) / maxOf(tackleAt - reactAt, MIN_CHASE_TIME) * ARRIVAL_MARGIN
-        return needed.coerceAtMost(MAX_CHASE_SPEED * positionFactor(ownSpeed))
+        val pacing = carrierPace(carrier, reactAt, tackleAt) * ARRIVAL_MARGIN
+        return Pursuit.paced(maxOf(needed, pacing).coerceAtMost(MAX_CHASE_SPEED * positionFactor(ownSpeed)))
     }
 
     private fun positionFactor(ownSpeed: Float): Float = ownSpeed / Pursuit.COVERAGE_SPEED
@@ -38,6 +39,7 @@ object GangTackle {
         tacklers: Int,
         reactAt: (Int) -> Float,
         speed: (Int) -> Float,
+        lead: (Int) -> Float = { 0f },
     ): List<Track> {
         val reactPositions = before.mapIndexed { index, track -> track.at(reactAt(index)) }
         val tacklerIds = Pursuit.closest(reactPositions, candidates, carrier.at(tackleAt), tacklers)
@@ -57,14 +59,12 @@ object GangTackle {
                         before[index],
                         reactAt(index),
                         trailSpeed(index, speed, carrier, reactAt(index), tackleAt),
-                        closingTarget(carrier),
+                        Pursuit.intercept(carrier, lead(index), tackleAt, direction),
                     )
                 }
             switchAt(tackleAt, chased, hold(chased.at(tackleAt)))
         }
     }
-
-    private fun closingTarget(carrier: Track): PursuitTarget = Pursuit.pursue(carrier)
 
     private fun trailSpeed(
         index: Int,
@@ -75,6 +75,6 @@ object GangTackle {
     ): Float {
         val trail = speed(index) * TRAIL_SPEED_FACTOR
         val paced = carrierPace(carrier, reactAt, tackleAt) * CHASE_PACE_FACTOR * positionFactor(speed(index))
-        return maxOf(trail, paced)
+        return Pursuit.paced(maxOf(trail, paced))
     }
 }

@@ -14,27 +14,27 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.PlayContext
 import com.fcfb.arceus.service.fcfb.animation.choreography.PlayScript
 import com.fcfb.arceus.service.fcfb.animation.choreography.Pursuit
 import com.fcfb.arceus.service.fcfb.animation.choreography.SCORE_AT
+import com.fcfb.arceus.service.fcfb.animation.choreography.SNAP_END
 import com.fcfb.arceus.service.fcfb.animation.choreography.ScrimmageScene
 import com.fcfb.arceus.service.fcfb.animation.choreography.Track
 import com.fcfb.arceus.service.fcfb.animation.choreography.WeavingRun
 import com.fcfb.arceus.service.fcfb.animation.choreography.carrierOf
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryOffset
 import com.fcfb.arceus.service.fcfb.animation.choreography.carryTime
-import com.fcfb.arceus.service.fcfb.animation.choreography.offsetBy
+import com.fcfb.arceus.service.fcfb.animation.choreography.hold
 import com.fcfb.arceus.service.fcfb.animation.choreography.segment
 import com.fcfb.arceus.service.fcfb.animation.choreography.switchAt
 
 class CompletedPassScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
         val scene = ScrimmageScene.from(context)
-        val concept = PassConcept(context, scene)
         val forward = context.forward
         val offenseScores = context.play.actualResult == ActualResult.TOUCHDOWN
         val gain = context.gain
         val random = PlayRandom(context.play)
         val contested = !offenseScores && gain > CONTESTED_MIN_GAIN && random.chance(CONTESTED_CHANCE)
         val scoreKind = if (offenseScores && gain > SHORT_SCORE) deepScoreKind(gain, random) else DeepScoreKind.WIDE_OPEN
-        val catchDepth =
+        val baseCatchDepth =
             when {
                 offenseScores && gain <= SHORT_SCORE -> gain
                 offenseScores -> scoringCatchDepth(scoreKind, gain, random)
@@ -44,6 +44,9 @@ class CompletedPassScript : PlayScript {
                 gain <= BREAKAWAY_CATCH_DEPTH -> maxOf(gain - RUN_AFTER_CATCH, 2f)
                 else -> DEEP_CATCH_DEPTH
             }
+        val fleaFlicker = gain >= FLEA_MIN_GAIN && random.chance(FLEA_CHANCE)
+        val catchDepth = if (fleaFlicker) gain else baseCatchDepth
+        val concept = PassConcept(context, scene, fleaFlicker)
         val targetIndex = concept.target(deep = catchDepth > 9f, random = random)
         val targetStart = scene.offense[targetIndex]
         val endLateral = (targetStart.lateral * 0.45f).coerceIn(-18f, 18f)
@@ -57,14 +60,19 @@ class CompletedPassScript : PlayScript {
         val tackleAt = minOf(SCORE_AT, maxOf(catchAt + MIN_CONTEST_TIME, catchAt + CATCH_TO_STRIDE + carryTime(afterCatch)))
         val deepestDefender = scene.defense.maxOf { (it.along - context.lineOfScrimmage) * forward }
         val clearAlong = context.lineOfScrimmage + forward * (deepestDefender + CLEAR_MARGIN)
-        val runAfterCatch = WeavingRun.between(catchPoint, endPoint, catchAt, tackleAt, context.side, clearAlong)
+        val runAfterCatch =
+            WeavingRun.between(catchPoint, endPoint, catchAt, tackleAt, context.side, clearAlong, scene.defense.map { hold(it) })
         val receiver =
             switchAt(catchAt, concept.routeTo(targetIndex, catchPoint - carryOffset(forward), catchAt), carrierOf(runAfterCatch, forward))
 
         val runPace = afterCatch / maxOf(tackleAt - catchAt, MIN_RUN_TIME)
-        val escortSpeed = maxOf(Pursuit.DEFENSIVE_BACK_SPEED, runPace * ESCORT_PACE)
+        val escortSpeed = Pursuit.paced(maxOf(Pursuit.DEFENSIVE_BACK_SPEED, runPace * ESCORT_PACE))
         val quarterback = concept.throwingQuarterback()
-        val blocking = concept.offense(quarterback, mapOf(targetIndex to receiver), conceptDepth = catchDepth)
+        val backIndex = scene.offensiveAlignment.backs.first()
+        val fleaBack = if (fleaFlicker) concept.fleaBack(backIndex) else null
+        val overrides =
+            if (fleaBack != null) mapOf(targetIndex to receiver, backIndex to fleaBack) else mapOf(targetIndex to receiver)
+        val blocking = concept.offense(quarterback, overrides, conceptDepth = catchDepth)
         val offense =
             DownfieldEscort.follow(
                 before = blocking,
@@ -102,7 +110,7 @@ class CompletedPassScript : PlayScript {
                 responded
             }
 
-        val held = concept.heldBall(quarterback)
+        val held = if (fleaBack != null) concept.fleaHeldBall(quarterback, fleaBack) else concept.heldBall(quarterback)
         val ball =
             BallTrack { progress ->
                 when {
@@ -128,7 +136,10 @@ class CompletedPassScript : PlayScript {
     ): List<Track> {
         val catchSpot = receiver.at(catchAt)
         val cover = Pursuit.closest(before.map { it.at(throwAt) }, scene.defensiveAlignment.secondary, catchSpot, 1).first()
-        val shadow = receiver.offsetBy(FieldPoint(-forward * trail, shoulder))
+        val shadow =
+            Pursuit.chase(before[cover], SNAP_END, Pursuit.COVERAGE_SPEED) { progress, _ ->
+                receiver.at(progress) + FieldPoint(-forward * trail, shoulder)
+            }
         return responded.mapIndexed { index, track -> if (index == cover) shadow else track }
     }
 
@@ -171,6 +182,9 @@ class CompletedPassScript : PlayScript {
         private const val HAIL_MARY_MAX_GAIN = 55f
         private const val IN_STRIDE_MIN_DEPTH = 20f
         private const val IN_STRIDE_MAX_DEPTH = 40f
+
+        private const val FLEA_MIN_GAIN = 25f
+        private const val FLEA_CHANCE = 0.1f
 
         private const val CONTESTED_MIN_GAIN = 20f
         private const val CONTESTED_CHANCE = 0.45f

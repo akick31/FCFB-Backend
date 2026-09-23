@@ -12,7 +12,9 @@ internal object PuntFormation {
     private const val LINE_DEPTH = 1.1f
     private const val BACK_DEPTH = 5.5f
 
-    private const val GUNNER_WIDTH = 24f
+    private const val GUNNER_WIDTH = 17f
+    private const val WING_DEPTH = 2.6f
+    private const val WING_WIDTH = 7.5f
 
     val RUSHERS = listOf(-9f, -5f, -1.5f, 1.5f, 5f, 9f).map { Spot(LINE_DEPTH, it) }
     val JAMMERS = listOf(Spot(LINE_DEPTH, -GUNNER_WIDTH + 1f), Spot(LINE_DEPTH, GUNNER_WIDTH - 1f))
@@ -25,8 +27,8 @@ internal object PuntFormation {
             Spot(LINE_DEPTH, 0f),
             Spot(LINE_DEPTH, 2.5f),
             Spot(LINE_DEPTH, 5f),
-            Spot(BACK_DEPTH, -5f),
-            Spot(BACK_DEPTH, 5f),
+            Spot(WING_DEPTH, -WING_WIDTH),
+            Spot(WING_DEPTH, WING_WIDTH),
             Spot(LINE_DEPTH, -GUNNER_WIDTH),
             Spot(LINE_DEPTH, GUNNER_WIDTH),
             Spot(BACK_DEPTH, 0f),

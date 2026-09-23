@@ -78,6 +78,14 @@ class PlayAnimationPreviewTool {
                 play(TeamSide.HOME, 30, PlayCall.RUN, ActualResult.FIRST_DOWN)
                     .endingAt(42, OffensivePlaybook.FLEXBONE, DefensivePlaybook.THREE_THREE_FIVE),
             "run-for-loss" to play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.LOSS).endingAt(37),
+            "run-loss-stuffed-inside" to
+                play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.LOSS, forcedPlayId = LOSS_INSIDE_PLAY_ID).endingAt(35),
+            "run-loss-stuffed-outside" to
+                play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.LOSS, forcedPlayId = LOSS_OUTSIDE_PLAY_ID).endingAt(35),
+            "run-loss-pitch" to
+                play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.LOSS, forcedPlayId = LOSS_PITCH_PLAY_ID).endingAt(35),
+            "run-loss-reverse" to
+                play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.LOSS, forcedPlayId = LOSS_REVERSE_PLAY_ID).endingAt(35),
             "run-touchdown-away" to
                 play(TeamSide.AWAY, 88, PlayCall.RUN, ActualResult.TOUCHDOWN)
                     .endingAt(0, OffensivePlaybook.SPREAD, DefensivePlaybook.FOUR_FOUR),
@@ -166,6 +174,8 @@ class PlayAnimationPreviewTool {
             "field-goal-no-good-4" to play(TeamSide.HOME, 72, PlayCall.FIELD_GOAL, ActualResult.NO_GOOD).endingAt(72),
             "field-goal-good-2" to play(TeamSide.AWAY, 68, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(32),
             "field-goal-blocked" to play(TeamSide.HOME, 70, PlayCall.FIELD_GOAL, ActualResult.BLOCKED).endingAt(70),
+            "field-goal-kick-six" to play(TeamSide.HOME, 70, PlayCall.FIELD_GOAL, ActualResult.KICK_SIX).endingAt(0),
+            "field-goal-kick-six-long" to play(TeamSide.HOME, 45, PlayCall.FIELD_GOAL, ActualResult.KICK_SIX).endingAt(0),
             "extra-point-good" to play(TeamSide.HOME, 97, PlayCall.PAT, ActualResult.GOOD).endingAt(97),
             "extra-point-blocked" to play(TeamSide.AWAY, 97, PlayCall.PAT, ActualResult.BLOCKED).endingAt(3),
             "field-goal-from-the-2" to play(TeamSide.HOME, 98, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(98),
@@ -269,7 +279,17 @@ class PlayAnimationPreviewTool {
             centerLogoUrl = if (style == FieldStyle.HOME_FIELD) homeTeam.scorebugLogo else postseasonLogoFor(style),
             homeConferenceLogoUrl = if (style == FieldStyle.BOWL) conferenceLogoFor(homeTeam) else null,
             awayConferenceLogoUrl = if (style == FieldStyle.BOWL) conferenceLogoFor(awayTeam) else null,
+            wallCaption = wallCaptionFor(style),
         )
+
+    private fun wallCaptionFor(style: FieldStyle): String? =
+        when (style) {
+            FieldStyle.BOWL -> "Holiday Bowl"
+            FieldStyle.PLAYOFF -> "CFP Quarterfinal"
+            FieldStyle.NATIONAL_CHAMPIONSHIP -> "National Championship"
+            FieldStyle.CONFERENCE_CHAMPIONSHIP -> "Big 12 Championship"
+            else -> null
+        }
 
     private fun postseasonLogoFor(style: FieldStyle): String =
         when (style) {
@@ -302,6 +322,10 @@ class PlayAnimationPreviewTool {
         const val RETURN_SIDELINE_PLAY_ID = 901
         const val RETURN_MIDDLE_PLAY_ID = 911
         const val RETURN_CUTBACK_PLAY_ID = 900
+        const val LOSS_INSIDE_PLAY_ID = 907
+        const val LOSS_OUTSIDE_PLAY_ID = 902
+        const val LOSS_PITCH_PLAY_ID = 901
+        const val LOSS_REVERSE_PLAY_ID = 900
         const val ONSIDE_ALT_PLAY_ID = 917
         const val PLAYOFF_LOGO =
             "https://am-prod-client-files.ppub-tmaws.io/cfbplayoff/s3fs-public/" +

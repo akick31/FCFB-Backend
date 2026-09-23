@@ -14,7 +14,7 @@ object HelmetSprite {
     private const val MARKER_HIGH = 200
     private const val MARKER_LOW = 60
 
-    private const val LOGO_FRACTION = 0.432f
+    private const val LOGO_FRACTION = 0.389f
     private const val LOGO_CENTER_X = 0.332f
     private const val LOGO_CENTER_Y = 0.367f
 
@@ -36,8 +36,10 @@ object HelmetSprite {
     ): HelmetSprites {
         val key = "${shellColor.rgb}:${logo?.hashCode() ?: 0}:$size"
         return cache.getOrPut(key) {
-            val facingRight = draw(shellColor, logo, size, facingRight = true)
-            HelmetSprites(facingRight, mirror(facingRight))
+            HelmetSprites(
+                draw(shellColor, logo, size, facingRight = true),
+                draw(shellColor, logo, size, facingRight = false),
+            )
         }
     }
 
@@ -52,7 +54,8 @@ object HelmetSprite {
         val g = sprite.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-        g.drawImage(scaleDown(recolor(source, shellColor), size), 0, 0, null)
+        val shell = scaleDown(recolor(source, shellColor), size)
+        g.drawImage(if (facingRight) shell else mirror(shell), 0, 0, null)
         logo?.let {
             val centerX = (if (facingRight) LOGO_CENTER_X else 1f - LOGO_CENTER_X) * size
             LogoFit.draw(g, it, centerX.toInt(), (LOGO_CENTER_Y * size).toInt(), (LOGO_FRACTION * size).toInt())
