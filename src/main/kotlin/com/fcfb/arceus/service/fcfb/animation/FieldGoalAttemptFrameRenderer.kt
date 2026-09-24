@@ -62,7 +62,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
             if (trajectory != null && t >= FieldGoalUnitPainter.KICK_AT) {
                 drawKick(scene, trajectory.at(flight(t)), flight(t))
                 if (flight(t) >= trajectory.arrival && trajectory.outcome in PASSES_THE_POSTS) {
-                    GoalPostScenePainter.drawPost(scene, layout)
+                    GoalPostScenePainter.drawPost(scene, theme, layout)
                 }
             }
             if (trajectory != null && contactFrameIndex != -1 && index in contactFrameIndex until contactFrameIndex + DOINK_FRAME_COUNT) {

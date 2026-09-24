@@ -22,8 +22,10 @@ object FieldBackgroundPainter {
     private const val TOP_NUMBER_Y = 68
     private const val BOTTOM_NUMBER_Y = 386
     private const val DIGIT_GAP = 4
+    private const val YARD_NUMBER_FONT_SIZE = 26
+    private const val DIGIT_CAP_FRACTION = 0.72f
     private const val CONFERENCE_LOGO_YARD = 25
-    private const val CONFERENCE_LOGO_SIZE = 34
+    private const val CONFERENCE_LOGO_SIZE = 55
     private const val MIDFIELD_LOGO_HEIGHT = 116f
     private const val MIDFIELD_LOGO_MAX_WIDTH = 300f
     private const val CONFERENCE_MIDFIELD_LOGO_HEIGHT = 84f
@@ -52,7 +54,10 @@ object FieldBackgroundPainter {
     private const val HASH_TICK_LENGTH = 10
     private const val SIDELINE_TICK_LENGTH = 10
     private const val HASH_STROKE_WIDTH = 2f
-    private const val QUARTER_LOGO_SIZE = 34
+    private const val QUARTER_LOGO_SIZE = 55
+    private const val RED_ZONE_YARD = 20
+    private const val RED_ZONE_STROKE_WIDTH = 7f
+    private const val SIDELINE_BAND_FRACTION = 0.55f
     private const val NUMBER_OUTLINE_WIDTH = 2
 
     val TURF_COLOR: Color = Color(34, 102, 51)
@@ -93,12 +98,21 @@ object FieldBackgroundPainter {
         g.drawLine(BACK_LINE_INSET, OOB_INSET, BACK_LINE_INSET, HEIGHT - OOB_INSET)
         g.drawLine(WIDTH - BACK_LINE_INSET, OOB_INSET, WIDTH - BACK_LINE_INSET, HEIGHT - OOB_INSET)
         g.stroke = defaultStroke
+        drawSidelineAccent(g, theme)
 
         drawHashMarks(g)
         val numberOutline = theme.homeField?.fieldNumberOutlineColor?.let { parseColor(it) }
-        g.font = Font(EndZoneFonts.YARD_NUMBER_FAMILY, Font.BOLD, 26)
+        g.font = Font(EndZoneFonts.YARD_NUMBER_FAMILY, Font.BOLD, YARD_NUMBER_FONT_SIZE)
+        val redZone = theme.homeField?.redZoneBorderColor?.let { parseColor(it) }
         for (yard in 0..100 step 5) {
             val x = FieldCoordinateMapper.toPixelX(yard, WIDTH, MARGIN)
+            if (redZone != null && (yard == RED_ZONE_YARD || yard == 100 - RED_ZONE_YARD)) {
+                g.color = redZone
+                val inner = (OOB_STROKE_WIDTH / 2).toInt()
+                g.stroke = BasicStroke(RED_ZONE_STROKE_WIDTH, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)
+                g.drawLine(x, OOB_INSET + inner, x, HEIGHT - OOB_INSET - inner)
+                g.stroke = defaultStroke
+            }
             g.color = LINE_COLOR
             g.drawLine(x, OOB_INSET, x, HEIGHT - OOB_INSET)
             if (yard == 0 || yard == 100 || yard % 10 != 0) continue
@@ -123,19 +137,46 @@ object FieldBackgroundPainter {
         return image
     }
 
+    /**
+     * Team color fills the out-of-bounds margin out to each 20, off the field of play. Filled to the image edge rather
+     * than stroked at a fixed width, so no strip of turf is left showing outside it whatever the margin depth is.
+     * Restores color: anything left set here bleeds into the hash marks and yard lines drawn afterwards.
+     */
+    private fun drawSidelineAccent(
+        g: Graphics2D,
+        theme: FieldTheme,
+    ) {
+        val accent = theme.homeField?.oobLineColor?.let { parseColor(it) } ?: return
+        val left = FieldCoordinateMapper.toPixelX(RED_ZONE_YARD, WIDTH, MARGIN)
+        val right = FieldCoordinateMapper.toPixelX(100 - RED_ZONE_YARD, WIDTH, MARGIN)
+        val color = g.color
+        val edge = (OOB_STROKE_WIDTH / 2).toInt()
+        val bandDepth = ((OOB_INSET - edge) * SIDELINE_BAND_FRACTION).toInt()
+        val topStart = OOB_INSET - edge - bandDepth
+        val bottomTop = HEIGHT - OOB_INSET + edge
+        g.color = accent
+        g.fillRect(0, topStart, left, bandDepth)
+        g.fillRect(right, topStart, WIDTH - right, bandDepth)
+        g.fillRect(0, bottomTop, left, bandDepth)
+        g.fillRect(right, bottomTop, WIDTH - right, bandDepth)
+        g.color = LINE_COLOR
+        g.fillRect(left, topStart, right - left, bandDepth)
+        g.fillRect(left, bottomTop, right - left, bandDepth)
+        g.color = color
+    }
+
     private fun drawConferenceLogos(
         g: Graphics2D,
         theme: FieldTheme,
     ) {
         if (theme.style != FieldStyle.BOWL && theme.style != FieldStyle.HOME_FIELD) return
-        val offset = quarterLogoOffset()
         LogoLoader.load(theme.conferenceLogoOf(theme.leftSide()))?.let {
             val x = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-            LogoFit.draw(g, it, x, HEIGHT / 2 + offset, CONFERENCE_LOGO_SIZE)
+            LogoFit.draw(g, it, x, bottomQuarterLogoY(), CONFERENCE_LOGO_SIZE)
         }
         LogoLoader.load(theme.conferenceLogoOf(theme.rightSide()))?.let {
             val x = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-            LogoFit.draw(g, it, x, HEIGHT / 2 - offset, CONFERENCE_LOGO_SIZE)
+            LogoFit.draw(g, it, x, topQuarterLogoY(), CONFERENCE_LOGO_SIZE)
         }
     }
 
@@ -146,14 +187,21 @@ object FieldBackgroundPainter {
     ) {
         if (theme.style != FieldStyle.HOME_FIELD) return
         val logo = LogoLoader.load(theme.homeField?.quarterLogoUrl) ?: return
-        val offset = quarterLogoOffset()
         val leftX = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
         val rightX = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-        LogoFit.draw(g, logo, leftX, HEIGHT / 2 - offset, QUARTER_LOGO_SIZE)
-        LogoFit.draw(g, logo, rightX, HEIGHT / 2 + offset, QUARTER_LOGO_SIZE)
+        LogoFit.draw(g, logo, leftX, topQuarterLogoY(), QUARTER_LOGO_SIZE)
+        LogoFit.draw(g, logo, rightX, bottomQuarterLogoY(), QUARTER_LOGO_SIZE)
     }
 
-    private fun quarterLogoOffset(): Int = HASH_OFFSET + (HEIGHT / 2 - OOB_INSET - HASH_OFFSET) / 2
+    /**
+     * Centred in the bare turf between the hash line and the yard numbers rather than the full hash-to-sideline band,
+     * whose outboard half the numbers already occupy. The two bands differ because the number rows are not symmetric.
+     */
+    private fun topQuarterLogoY(): Int = (TOP_NUMBER_Y + (HEIGHT / 2 - HASH_OFFSET)) / 2
+
+    private fun bottomQuarterLogoY(): Int = ((HEIGHT / 2 + HASH_OFFSET) + (BOTTOM_NUMBER_Y - digitCapHeight())) / 2
+
+    private fun digitCapHeight(): Int = (YARD_NUMBER_FONT_SIZE * DIGIT_CAP_FRACTION).toInt()
 
     private fun drawMidfieldLogo(
         g: Graphics2D,

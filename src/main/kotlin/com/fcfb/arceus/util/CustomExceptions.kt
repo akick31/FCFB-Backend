@@ -12,6 +12,12 @@ class UserForbiddenException : Exception("User is not permitted to modify this a
     }
 }
 
+class InvalidUniformException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidUniformException: ${super.message}"
+    }
+}
+
 class DiscordUserNotFoundException : Exception("Discord user not found") {
     override fun toString(): String {
         return "DiscordUserNotFoundException: ${super.message}"

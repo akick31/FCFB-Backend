@@ -50,6 +50,24 @@ object OffensiveAlignments {
                 )
         }
 
+    /** A kneel is always in victory formation: quarterback under center with the backs tucked in behind him. */
+    fun victory(): OffensiveAlignment =
+        build(
+            underCenter = true,
+            quarterback = Spot(1.8f, 0f),
+            backs = listOf(Spot(5f, -2.5f), Spot(5f, 0f), Spot(5f, 2.5f)),
+            receivers = listOf(Spot(LINE_DEPTH, 7f), Spot(LINE_DEPTH, -7f)),
+        )
+
+    /** A spike is always taken from under center, whatever the playbook's usual quarterback depth. */
+    fun underCenter(playbook: OffensivePlaybook): OffensiveAlignment {
+        val alignment = forPlaybook(playbook)
+        if (alignment.underCenter) return alignment
+        val spots = alignment.spots.toMutableList()
+        spots[alignment.quarterback] = Spot(1.8f, 0f)
+        return alignment.copy(spots = spots, underCenter = true)
+    }
+
     private fun build(
         underCenter: Boolean,
         quarterback: Spot,

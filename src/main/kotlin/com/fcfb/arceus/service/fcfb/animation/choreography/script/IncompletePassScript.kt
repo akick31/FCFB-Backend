@@ -77,6 +77,7 @@ class IncompletePassScript : PlayScript {
                     progress < arriveAt && deflected ->
                         concept.tipped(tipPoint, restSpot, segment(progress, throwAt, arriveAt))
                     progress < arriveAt -> concept.thrown(arrivalPoint, segment(progress, throwAt, arriveAt))
+                    deflected -> BallState(restSpot)
                     else -> {
                         val fraction = segment(progress, arriveAt, arriveAt + FALL_TIME)
                         val hop = if (tip > 0f) arc(fraction, tip) else bounce(fraction, BOUNCE_HEIGHT, BOUNCES)

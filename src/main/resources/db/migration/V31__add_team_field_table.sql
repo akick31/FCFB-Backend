@@ -5,12 +5,20 @@ CREATE TABLE team_field (
     end_zone_font VARCHAR(32) NOT NULL DEFAULT 'CLASSIC',
     midfield_logo_url VARCHAR(512) DEFAULT NULL,
     field_number_outline_color VARCHAR(9) DEFAULT NULL,
+    red_zone_border_color VARCHAR(9) DEFAULT NULL,
+    oob_line_color VARCHAR(9) DEFAULT NULL,
+    wall_color VARCHAR(9) DEFAULT NULL,
+    wall_design VARCHAR(24) NOT NULL DEFAULT 'REPEATING_LOGOS',
+    wall_text VARCHAR(64) DEFAULT NULL,
+    wall_text_outline_color VARCHAR(9) DEFAULT NULL,
+    goal_post_color VARCHAR(9) NOT NULL DEFAULT '#FFCD00',
+    goal_post_style VARCHAR(8) NOT NULL DEFAULT 'Y',
     quarter_logo_url VARCHAR(512) DEFAULT NULL,
     PRIMARY KEY (team)
 );
 
-INSERT INTO team_field (team, turf_color, end_zone_color, midfield_logo_url)
-SELECT name, '#226633', primary_color, scorebug_logo
+INSERT INTO team_field (team, turf_color, end_zone_color, midfield_logo_url, red_zone_border_color, wall_color)
+SELECT name, '#226633', primary_color, scorebug_logo, primary_color, primary_color
 FROM team
 WHERE name IS NOT NULL;
 

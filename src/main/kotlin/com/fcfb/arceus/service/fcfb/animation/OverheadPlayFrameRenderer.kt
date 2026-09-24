@@ -97,14 +97,19 @@ class OverheadPlayFrameRenderer(
         return total
     }
 
+    private fun helmetLogo(
+        uniform: Uniform,
+        url: String?,
+    ): BufferedImage? = if (uniform.helmetLogoMode.drawsLogo) LogoLoader.load(url) else null
+
     private fun matchupHelmets(
         play: Play,
         theme: FieldTheme,
         forward: Float,
     ): MatchupHelmets {
         val (homeUniform, awayUniform) = theme.uniforms()
-        val home = HelmetSprite.render(homeUniform.helmet, LogoLoader.load(theme.homeLogoUrl()), HELMET_SIZE)
-        val away = HelmetSprite.render(awayUniform.helmet, LogoLoader.load(theme.awayLogoUrl()), HELMET_SIZE)
+        val home = HelmetSprite.render(homeUniform, helmetLogo(homeUniform, theme.homeLogoUrl()), HELMET_SIZE)
+        val away = HelmetSprite.render(awayUniform, helmetLogo(awayUniform, theme.awayLogoUrl()), HELMET_SIZE)
         val (offense, defense) = if (play.possession == TeamSide.HOME) home to away else away to home
         return MatchupHelmets(offense, defense, offenseFacesRight = forward > 0f)
     }

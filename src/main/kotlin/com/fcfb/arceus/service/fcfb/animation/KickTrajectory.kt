@@ -18,8 +18,6 @@ class KickTrajectory(
     private val endScale = maxOf(layout.scale, MIN_END_BALL_SCALE)
     private val startYards = layout.lineOfScrimmageYards + GoalPostScenePainter.HOLD_DEPTH_YARDS
     private val farPixelsPerYard = (layout.endZoneTopY - layout.crossbarY) / GoalPostScenePainter.CROSSBAR_HEIGHT_YARDS
-    private val netLeftX = layout.leftUprightX - GoalPostScenePainter.NET_SIDE_MARGIN
-    private val netRightX = layout.rightUprightX + GoalPostScenePainter.NET_SIDE_MARGIN
 
     val arrival: Float =
         ((startYards + GoalPostScenePainter.END_ZONE_DEPTH_YARDS) / ARRIVAL_REFERENCE_YARDS * BASE_ARRIVAL)
@@ -59,16 +57,15 @@ class KickTrajectory(
         return KickPoint(x, ground - heightYards * pixelsPerYard, ground, startScale + (endScale - startScale) * depth)
     }
 
+    /**
+     * Every kick that clears the posts falls to the ground and bounces; nothing hangs in the net. [driftedX] still
+     * carries the placement, so a doink-in, a left, a right and a straight one each come to rest somewhere different.
+     */
     private fun dropBehindPosts(progress: Float): KickPoint {
         val passing = airborne(1f, PEAK_DEPTH, APEX_YARDS)
         val x = driftedX(passing.x, progress)
         val fall = (progress / DROP_FALL).coerceAtMost(1f)
         val settle = segment(progress, DROP_FALL, 1f)
-        if (caughtInNet(passing.x)) {
-            val restY = layout.crossbarY - (layout.crossbarY - layout.netTopY) * NET_REST_FRACTION
-            val sway = sin(settle * NET_SWAY_CYCLES * PI).toFloat() * NET_SWAY * layout.scale * (1f - settle).pow(2)
-            return KickPoint(x, passing.y + (restY - passing.y) * fall * fall + sway, null, endScale * BEHIND_POSTS_SCALE)
-        }
         val restY = layout.groundY(-GoalPostScenePainter.END_ZONE_DEPTH_YARDS * BEHIND_POSTS_LANDING_DEPTH)
         val hop = abs(sin(settle * DROP_BOUNCES * PI)).toFloat() * DROP_HOP * layout.scale * (1f - settle).pow(2)
         return KickPoint(x, passing.y + (restY - passing.y) * fall * fall - hop, restY, endScale * BEHIND_POSTS_SCALE)
@@ -81,11 +78,6 @@ class KickTrajectory(
         val kickedIn = if (outcome == KickOutcome.DOINK_IN) -DOINK_IN_KICK else BEHIND_POSTS_DRIFT
         val away = if (passingX < GoalPostScenePainter.CENTER_X) -1f else 1f
         return passingX + (targetX - start.first) * kickedIn * progress + away * BEHIND_POSTS_ROLL * layout.scale * progress
-    }
-
-    private fun caughtInNet(passingX: Float): Boolean {
-        val resting = driftedX(passingX, 1f)
-        return resting >= netLeftX && resting <= netRightX
     }
 
     private fun deflection(progress: Float): KickPoint {
@@ -146,9 +138,6 @@ class KickTrajectory(
         private const val BEHIND_POSTS_ROLL = 26f
         private const val DOINK_IN_KICK = 0.55f
         private const val BEHIND_POSTS_SCALE = 0.9f
-        private const val NET_REST_FRACTION = 0.12f
-        private const val NET_SWAY = 4f
-        private const val NET_SWAY_CYCLES = 3.0
         private const val DROP_FALL = 0.45f
         private const val DROP_BOUNCES = 2.0
         private const val DROP_HOP = 10f

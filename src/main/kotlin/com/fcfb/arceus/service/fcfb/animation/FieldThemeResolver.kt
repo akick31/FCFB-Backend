@@ -55,7 +55,7 @@ class FieldThemeResolver(
             awayUniform = awayUniform,
             midfieldCaption = midfieldCaption(style, game),
             midfieldLocation = if (style == FieldStyle.NATIONAL_CHAMPIONSHIP) CHAMPIONSHIP_LOCATION else null,
-            wallCaption = wallCaption(style, game, homeTeam),
+            wallCaption = wallCaption(style, game, homeTeam, homeField),
             wallLogoUrl = null,
             homeField = homeField,
         )
@@ -79,6 +79,7 @@ class FieldThemeResolver(
         style: FieldStyle,
         game: Game,
         homeTeam: Team,
+        homeField: TeamField?,
     ): String? {
         val named = game.postseasonGameName?.trim()?.takeIf { it.isNotBlank() }
         return when (style) {
@@ -86,6 +87,7 @@ class FieldThemeResolver(
             FieldStyle.PLAYOFF -> named?.let { "$CFP_PREFIX $it" }
             FieldStyle.BOWL -> named
             FieldStyle.CONFERENCE_CHAMPIONSHIP -> named ?: conferenceName(homeTeam)?.let { "$it $CONFERENCE_TITLE_SUFFIX" }
+            FieldStyle.HOME_FIELD -> homeField?.wallText?.takeIf { it.isNotBlank() }
             else -> null
         }
     }

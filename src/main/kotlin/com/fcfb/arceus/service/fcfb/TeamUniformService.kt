@@ -57,6 +57,8 @@ class TeamUniformService(
             secondaryColor = current?.secondaryColor ?: team.secondaryColor,
             tertiaryColor = current?.tertiaryColor,
             helmetColor = current?.helmetColor ?: hex(HelmetColors.shellColor(team)),
+            secondaryHelmetColor = current?.secondaryHelmetColor,
+            helmetNumberColor = current?.helmetNumberColor ?: TeamUniformCurrent.DEFAULT_HELMET_NUMBER_COLOR,
             facemaskColor = current?.facemaskColor ?: FACEMASK_COLOR,
             helmetLogoMode = current?.helmetLogoMode ?: TeamUniformCurrent.DEFAULT_HELMET_LOGO_MODE,
             jerseyColor = current?.jerseyColor ?: team.primaryColor,

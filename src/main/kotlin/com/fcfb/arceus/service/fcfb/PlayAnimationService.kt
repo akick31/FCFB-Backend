@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
@@ -16,6 +17,7 @@ import com.fcfb.arceus.service.fcfb.animation.OverheadPlayFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.OverlayPainter
 import com.fcfb.arceus.service.fcfb.animation.PlayAnimationClassifier
 import com.fcfb.arceus.service.fcfb.animation.PlayOutcomeOverlayClassifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -36,12 +38,20 @@ class PlayAnimationService(
     private val kickSixFrameRenderer: KickSixFrameRenderer,
     private val fieldThemeResolver: FieldThemeResolver,
     private val teamUniformService: TeamUniformService,
+    @Value("\${animations.scrimmage-only:true}") private val scrimmageOnly: Boolean,
 ) {
+    /**
+     * A 404 rather than an error when animations are off for this game: every caller already treats a non-success as
+     * "no animation" and skips it silently, so the play still posts normally.
+     */
     fun getPlayAnimationByPlayId(playId: Int): ResponseEntity<ByteArray> {
         val play = playService.getPlayById(playId)
+        val game = gameService.getGameById(play.gameId)
+        if (scrimmageOnly && game.gameType != GameType.SCRIMMAGE) {
+            return ResponseEntity(HttpStatus.NOT_FOUND)
+        }
         val homeTeam = teamService.getTeamByName(play.homeTeam)
         val awayTeam = teamService.getTeamByName(play.awayTeam)
-        val game = gameService.getGameById(play.gameId)
 
         val startAbs = FieldCoordinateMapper.toAbsoluteFieldPosition(play.ballLocation, play.possession)
         val endAbs = resultSpot(play, game, startAbs)

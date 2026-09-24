@@ -17,7 +17,7 @@ import com.fcfb.arceus.service.fcfb.animation.choreography.snapBall
 
 class KneelPlayScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
-        val scene = ScrimmageScene.from(context)
+        val scene = ScrimmageScene.from(context, OffensiveAlignments.victory())
         val alignment = scene.offensiveAlignment
         val forward = context.forward
         val quarterbackStart = scene.offense[alignment.quarterback]

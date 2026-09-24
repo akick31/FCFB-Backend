@@ -34,6 +34,41 @@ class TeamField {
     @Column(name = "field_number_outline_color")
     var fieldNumberOutlineColor: String? = null
 
+    /** Border drawn either side of the white 20-yard line, marking the red zone. */
+    @Basic
+    @Column(name = "red_zone_border_color")
+    var redZoneBorderColor: String? = null
+
+    /** Runs each sideline out to the 20; null leaves the sidelines plain white. */
+    @Basic
+    @Column(name = "oob_line_color")
+    var oobLineColor: String? = null
+
+    /** The wall behind the end zone in the kick view. White is rejected on save. */
+    @Basic
+    @Column(name = "wall_color")
+    var wallColor: String? = null
+
+    @Basic
+    @Column(name = "wall_design")
+    var wallDesign: String = DEFAULT_WALL_DESIGN
+
+    @Basic
+    @Column(name = "wall_text")
+    var wallText: String? = null
+
+    @Basic
+    @Column(name = "wall_text_outline_color")
+    var wallTextOutlineColor: String? = null
+
+    @Basic
+    @Column(name = "goal_post_color")
+    var goalPostColor: String = DEFAULT_GOAL_POST_COLOR
+
+    @Basic
+    @Column(name = "goal_post_style")
+    var goalPostStyle: String = DEFAULT_GOAL_POST_STYLE
+
     @Basic
     @Column(name = "quarter_logo_url")
     var quarterLogoUrl: String? = null
@@ -41,5 +76,8 @@ class TeamField {
     companion object {
         const val DEFAULT_TURF_COLOR = "#226633"
         const val DEFAULT_END_ZONE_FONT = "CLASSIC"
+        const val DEFAULT_WALL_DESIGN = "REPEATING_LOGOS"
+        const val DEFAULT_GOAL_POST_COLOR = "#FFCD00"
+        const val DEFAULT_GOAL_POST_STYLE = "Y"
     }
 }

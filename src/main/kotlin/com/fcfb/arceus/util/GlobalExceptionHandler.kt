@@ -36,6 +36,7 @@ class GlobalExceptionHandler {
         InvalidNewSignupException::class,
         MetricNotImplementedException::class,
         InvalidRankingMetricException::class,
+        InvalidUniformException::class,
     )
     fun handleBadRequest(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.BAD_REQUEST, e)
 

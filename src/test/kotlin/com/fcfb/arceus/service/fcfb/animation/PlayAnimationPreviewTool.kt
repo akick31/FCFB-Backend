@@ -45,11 +45,14 @@ class PlayAnimationPreviewTool {
         outputDir.deleteRecursively()
         outputDir.mkdirs()
 
+        val rendered = mutableListOf<String>()
         scenarios().forEach { (name, preview) ->
             val bytes = renderGif(preview)
             File(outputDir, "$name.gif").writeBytes(bytes)
             assertTrue(bytes.isNotEmpty(), "Expected non-empty GIF bytes for scenario '$name'")
+            rendered += name
         }
+        File(outputDir, "index.html").writeText(previewIndex(rendered))
         FieldStyle.entries.forEach { style ->
             javax.imageio.ImageIO.write(
                 FieldBackgroundPainter.paint(themeFor(style)),
@@ -57,13 +60,15 @@ class PlayAnimationPreviewTool {
                 File(outputDir, "field-${style.name.lowercase()}.png"),
             )
         }
+        val shell = FieldBackgroundPainter.parseColor(awayTeam.primaryColor)
         val helmet =
             HelmetSprite.render(
-                FieldBackgroundPainter.parseColor(awayTeam.primaryColor),
+                Uniform(jersey = shell, number = java.awt.Color.WHITE, helmet = shell, pants = shell),
                 LogoLoader.load(awayTeam.scorebugLogo),
                 HELMET_PREVIEW_SIZE,
             )
         javax.imageio.ImageIO.write(helmet.facingRight, "png", File(outputDir, "helmet.png"))
+        javax.imageio.ImageIO.write(helmetVariants(), "png", File(outputDir, "helmet-variants.png"))
         javax.imageio.ImageIO.write(FieldBackgroundPainter.paint(boiseStateField()), "png", File(outputDir, "field-boise-state.png"))
         javax.imageio.ImageIO.write(
             FieldBackgroundPainter.paint(themeFor(FieldStyle.BOWL).copy(flipped = true)),
@@ -75,6 +80,16 @@ class PlayAnimationPreviewTool {
             "png",
             File(outputDir, "field-home-logos.png"),
         )
+        val wallPlay = play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD, forcedPlayId = WALL_PREVIEW_PLAY_ID)
+        val wallLayout = GoalPostScenePainter.layoutFor(wallPlay)
+        listOf("REPEATING_LOGOS", "TEXT_WITH_LOGOS", "TEXT_ONLY", "BLANK").forEach { design ->
+            val scene = homeFieldWall(design)
+            javax.imageio.ImageIO.write(
+                GoalPostScenePainter.paint(scene, scene.endZoneOf(TeamSide.AWAY), wallLayout, midfieldTopOnLeft = false),
+                "png",
+                File(outputDir, "wall-${design.lowercase()}.png"),
+            )
+        }
     }
 
     private fun scenarios(): List<Pair<String, Preview>> =
@@ -223,6 +238,17 @@ class PlayAnimationPreviewTool {
                 play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(75, style = FieldStyle.PLAYOFF),
             "field-goal-bowl" to
                 play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(75, style = FieldStyle.BOWL),
+            // Appended last on purpose: inserting mid-list reseeds every scenario defined after it.
+            // A spike is always under center; this proves the SPREAD playbook does not leave the quarterback in shotgun.
+            "spike-spread-playbook" to
+                play(TeamSide.HOME, 60, PlayCall.SPIKE, ActualResult.SPIKE).endingAt(60, OffensivePlaybook.SPREAD),
+            // A reverse and a jet sweep are no longer losses by definition; these exercise the winning outcomes.
+            "run-reverse-touchdown" to
+                play(TeamSide.HOME, 70, PlayCall.RUN, ActualResult.TOUCHDOWN, forcedPlayId = REVERSE_SCORE_PLAY_ID).endingAt(100),
+            "run-jet-sweep-gain" to
+                play(TeamSide.HOME, 30, PlayCall.RUN, ActualResult.FIRST_DOWN, forcedPlayId = JET_SWEEP_GAIN_PLAY_ID).endingAt(42),
+            "run-jet-sweep-loss" to
+                play(TeamSide.HOME, 40, PlayCall.RUN, ActualResult.LOSS, forcedPlayId = JET_SWEEP_LOSS_PLAY_ID).endingAt(35),
         )
 
     private fun renderGif(preview: Preview): ByteArray {
@@ -314,12 +340,86 @@ class PlayAnimationPreviewTool {
         )
     }
 
+    /** Every preview on one page in scenario order, so the whole set can be reviewed without opening files one by one. */
+    private fun previewIndex(names: List<String>): String {
+        val cards =
+            names.joinToString("\n") { name ->
+                """    <figure><img src="$name.gif" alt="$name" loading="lazy"><figcaption>$name</figcaption></figure>"""
+            }
+        return """
+            <!doctype html>
+            <meta charset="utf-8">
+            <title>Play animation previews</title>
+            <style>
+              body { background:#15171a; color:#e8e8e8; font:14px system-ui,sans-serif; margin:0; padding:24px; }
+              h1 { font-size:18px; font-weight:600; margin:0 0 4px; }
+              p.count { color:#9aa0a6; margin:0 0 24px; }
+              .grid { display:grid; gap:20px; grid-template-columns:repeat(auto-fill,minmax(420px,1fr)); }
+              figure { margin:0; background:#1e2125; border-radius:8px; padding:10px; }
+              img { width:100%; height:auto; display:block; border-radius:4px; }
+              figcaption { margin-top:8px; font-family:ui-monospace,monospace; font-size:12px; color:#9aa0a6; }
+            </style>
+            <h1>Play animation previews</h1>
+            <p class="count">${names.size} scenarios, in definition order</p>
+            <div class="grid">
+            $cards
+            </div>
+            """.trimIndent()
+    }
+
+    /** Left to right: plain, stripe, colored facemask, jersey numbers, no decal. */
+    private fun helmetVariants(): java.awt.image.BufferedImage {
+        val shell = FieldBackgroundPainter.parseColor(homeTeam.primaryColor)
+        val accent = FieldBackgroundPainter.parseColor(homeTeam.secondaryColor)
+        val base = Uniform(jersey = shell, number = java.awt.Color.WHITE, helmet = shell, pants = shell)
+        val variants =
+            listOf(
+                base,
+                base.copy(stripe = accent),
+                base.copy(facemask = accent),
+                base.copy(helmetLogoMode = HelmetLogoMode.NUMBERS),
+                base.copy(helmetLogoMode = HelmetLogoMode.NONE),
+            )
+        val logo = LogoLoader.load(homeTeam.scorebugLogo)
+        val size = HELMET_PREVIEW_SIZE
+        val strip = java.awt.image.BufferedImage(size * variants.size, size, java.awt.image.BufferedImage.TYPE_INT_RGB)
+        val g = strip.createGraphics()
+        g.color = java.awt.Color(90, 90, 90)
+        g.fillRect(0, 0, strip.width, strip.height)
+        variants.forEachIndexed { index, uniform ->
+            g.drawImage(HelmetSprite.render(uniform, logo, size).facingRight, index * size, 0, null)
+        }
+        g.dispose()
+        return strip
+    }
+
+    /** A goal-post scene with a configured wall, so the wall color and design paths actually run. */
+    private fun homeFieldWall(design: String): FieldTheme {
+        val field =
+            com.fcfb.arceus.model.TeamField().apply {
+                team = homeTeam.name.orEmpty()
+                wallColor = homeTeam.primaryColor
+                wallDesign = design
+                wallText = homeTeam.name?.uppercase()
+                wallTextOutlineColor = homeTeam.secondaryColor
+            }
+        return FieldTheme(
+            style = FieldStyle.HOME_FIELD,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
+            centerLogoUrl = homeTeam.scorebugLogo,
+            wallCaption = field.wallText,
+            homeField = field,
+        )
+    }
+
     private fun homeFieldWithLogos(): FieldTheme {
         val field =
             com.fcfb.arceus.model.TeamField().apply {
                 team = homeTeam.name.orEmpty()
                 quarterLogoUrl = homeTeam.scorebugLogo
-                fieldNumberOutlineColor = homeTeam.secondaryColor
+                redZoneBorderColor = homeTeam.primaryColor
+                oobLineColor = homeTeam.primaryColor
             }
         return FieldTheme(
             style = FieldStyle.HOME_FIELD,
@@ -348,7 +448,18 @@ class PlayAnimationPreviewTool {
             homeConferenceLogoUrl = if (style == FieldStyle.BOWL) conferenceLogoFor(homeTeam) else null,
             awayConferenceLogoUrl = if (style == FieldStyle.BOWL) conferenceLogoFor(awayTeam) else null,
             wallCaption = wallCaptionFor(style),
+            homeField = seededTeamField(),
         )
+
+    /** Mirrors what `V31` seeds for every team, so previews show a real configuration rather than a null one. */
+    private fun seededTeamField(): com.fcfb.arceus.model.TeamField =
+        com.fcfb.arceus.model.TeamField().apply {
+            team = homeTeam.name.orEmpty()
+            endZoneColor = homeTeam.primaryColor
+            midfieldLogoUrl = homeTeam.scorebugLogo
+            redZoneBorderColor = homeTeam.primaryColor
+            wallColor = homeTeam.primaryColor
+        }
 
     private fun wallCaptionFor(style: FieldStyle): String? =
         when (style) {
@@ -399,16 +510,21 @@ class PlayAnimationPreviewTool {
         const val RETURN_SIDELINE_PLAY_ID = 901
         const val RETURN_MIDDLE_PLAY_ID = 911
         const val RETURN_CUTBACK_PLAY_ID = 900
-        const val LOSS_INSIDE_PLAY_ID = 907
-        const val LOSS_OUTSIDE_PLAY_ID = 902
-        const val LOSS_PITCH_PLAY_ID = 901
+        // Recomputed for the five-value RunConcept draw; the old ids selected different concepts.
+        const val LOSS_INSIDE_PLAY_ID = 896
+        const val LOSS_OUTSIDE_PLAY_ID = 897
+        const val LOSS_PITCH_PLAY_ID = 904
         const val LOSS_REVERSE_PLAY_ID = 900
+        const val REVERSE_SCORE_PLAY_ID = 901
+        const val JET_SWEEP_LOSS_PLAY_ID = 895
+        const val JET_SWEEP_GAIN_PLAY_ID = 902
         const val ONSIDE_ALT_PLAY_ID = 917
         const val PLAYOFF_LOGO =
             "https://am-prod-client-files.ppub-tmaws.io/cfbplayoff/s3fs-public/" +
                 "CFP%20Symbol%20Gold%20PMS%20Dark%20BG.PNG"
         const val CONFERENCE_LOGO = "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/4.png"
         const val BOWL_LOGO = "https://1000logos.net/wp-content/uploads/2020/04/Holiday-Bowl-Logo.png"
+        const val WALL_PREVIEW_PLAY_ID = 930
         const val BOISE_TURF_COLOR = "#0033A0"
         const val BOISE_END_ZONE_COLOR = "#D64309"
     }

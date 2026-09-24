@@ -15,8 +15,12 @@ data class ScrimmageScene(
             ?: offensiveAlignment.quarterback
 
     companion object {
-        fun from(context: PlayContext): ScrimmageScene {
-            val offensive = OffensiveAlignments.forPlaybook(context.offensivePlaybook)
+        /** [alignment] overrides the playbook for plays whose formation is fixed, such as a kneel or a spike. */
+        fun from(
+            context: PlayContext,
+            alignment: OffensiveAlignment? = null,
+        ): ScrimmageScene {
+            val offensive = alignment ?: OffensiveAlignments.forPlaybook(context.offensivePlaybook)
             val defensive = DefensiveAlignments.forPlaybook(context.defensivePlaybook, offensive)
             return ScrimmageScene(
                 offense = offensive.spots.map { context.offenseSpot(it.depth, it.lateral) },

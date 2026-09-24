@@ -2,8 +2,8 @@ package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
-import com.fcfb.arceus.service.fcfb.animation.BigLossKind
 import com.fcfb.arceus.service.fcfb.animation.PlayRandom
+import com.fcfb.arceus.service.fcfb.animation.RunConcept
 import com.fcfb.arceus.service.fcfb.animation.TwoPointKind
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
@@ -48,20 +48,27 @@ class RunPlayScript : PlayScript {
         val fumble = result in FUMBLES
         val offenseScores = result in OFFENSIVE_SCORES
 
-        val bigLoss = !fumble && !offenseScores && context.gain <= BIG_LOSS_GAIN
-        val lossKind = if (bigLoss) random.pick(BigLossKind.entries.toList()) else BigLossKind.STUFFED_INSIDE
-        if (bigLoss && lossKind == BigLossKind.PITCH) return PitchPlay.choreograph(context)
-        val reverse = lossKind == BigLossKind.REVERSE
-        val carrierSide = if (reverse) -side else side
+        // PitchPlay was written for losses, so a scoring or fumbled pitch falls back to a straight run rather than
+        // being routed through a path that has never been exercised at that outcome.
+        val drawn = random.pick(RunConcept.entries.toList())
+        val concept = if ((offenseScores || fumble) && drawn == RunConcept.PITCH) RunConcept.POWER else drawn
+        if (concept == RunConcept.PITCH) return PitchPlay.choreograph(context)
+        val carrierSide = if (concept == RunConcept.REVERSE) -side else side
         val runnerIndex =
-            if (reverse) {
-                alignment.receivers.firstOrNull { scene.offense[it].lateral * carrierSide > 0f } ?: alignment.backs.first()
+            if (concept.inMotion) {
+                alignment.receivers.firstOrNull { scene.offense[it].lateral * -carrierSide > 0f } ?: alignment.backs.first()
             } else {
                 alignment.backs.firstOrNull { scene.offense[it].lateral * side > 0f } ?: alignment.backs.first()
             }
         val quarterbackStart = scene.offense[alignment.quarterback]
         val meshDepth = if (alignment.underCenter) UNDER_CENTER_MESH_DEPTH else alignment.spots[alignment.quarterback].depth
-        val mesh = context.offenseSpot(meshDepth, if (reverse) side * REVERSE_MESH_WIDTH else carrierSide * MESH_WIDTH)
+        val meshWidth =
+            when (concept) {
+                RunConcept.REVERSE -> side * REVERSE_MESH_WIDTH
+                RunConcept.JET_SWEEP -> carrierSide * JET_MESH_WIDTH
+                else -> carrierSide * MESH_WIDTH
+            }
+        val mesh = context.offenseSpot(meshDepth, meshWidth)
         val quarterback =
             path(
                 0f to quarterbackStart,
@@ -71,15 +78,22 @@ class RunPlayScript : PlayScript {
             )
 
         val driftWidth =
-            when (lossKind) {
-                BigLossKind.STUFFED_OUTSIDE -> OUTSIDE_DRIFT
-                BigLossKind.REVERSE -> REVERSE_DRIFT
+            when (concept) {
+                RunConcept.OUTSIDE -> OUTSIDE_DRIFT
+                RunConcept.REVERSE -> REVERSE_DRIFT
+                RunConcept.JET_SWEEP -> JET_DRIFT
                 else -> minOf(DRIFT_BASE + minOf(abs(context.gain), 12f) * DRIFT_PER_YARD, MAX_DRIFT)
             }
         val drift = carrierSide * driftWidth
         val runEnd = if (fumble) FumbleRecovery.fumbleSpot(context, drift) else FieldPoint(context.endSpot, drift)
         val runGain = (runEnd.along - context.lineOfScrimmage) * forward
-        val runTime = if (runGain <= 0f) STUFFED_AT else minOf(SCORE_AT, maxOf(SHORT_RUN_AT, HANDOFF + STRIDE_TIME + carryTime(runGain)))
+        val runTime =
+            if (runGain <= 0f) {
+                // A reverse crosses the formation, so a flat stuffed time would sprint the carrier sideways.
+                minOf(SCORE_AT, maxOf(STUFFED_AT, HANDOFF + STRIDE_TIME + carryTime(mesh.distanceTo(runEnd))))
+            } else {
+                minOf(SCORE_AT, maxOf(SHORT_RUN_AT, HANDOFF + STRIDE_TIME + carryTime(runGain)))
+            }
         val tackleAt =
             when {
                 offenseScores -> SCORE_AT
@@ -88,7 +102,7 @@ class RunPlayScript : PlayScript {
             }
 
         val handoffBall = mesh + carryOffset(forward)
-        val holeWidth = if (lossKind == BigLossKind.STUFFED_OUTSIDE) OUTSIDE_HOLE_WIDTH else HOLE_WIDTH
+        val holeWidth = if (concept == RunConcept.OUTSIDE) OUTSIDE_HOLE_WIDTH else HOLE_WIDTH
         val hole = context.defenseSpot(HOLE_DEPTH, carrierSide * holeWidth)
         val ballRun =
             if (runGain > 1f) {
@@ -102,7 +116,14 @@ class RunPlayScript : PlayScript {
                 path(HANDOFF to handoffBall, tackleAt to runEnd)
             }
         val runnerStart = scene.offense[runnerIndex]
-        val runner = switchAt(HANDOFF, path(0f to runnerStart, SNAP_END to runnerStart, HANDOFF to mesh), carrierOf(ballRun, forward))
+        // A motion man is already crossing at the snap, the way a real reverse or jet sweep starts.
+        val runnerPath =
+            if (concept.inMotion) {
+                path(0f to runnerStart, MOTION_START to runnerStart, SNAP_END to runnerStart.lerp(mesh, MOTION_SHARE), HANDOFF to mesh)
+            } else {
+                path(0f to runnerStart, SNAP_END to runnerStart, HANDOFF to mesh)
+            }
+        val runner = switchAt(HANDOFF, runnerPath, carrierOf(ballRun, forward))
 
         val drive = if (runGain > 0f) DRIVE_BLOCK else -DRIVE_BLOCK * 0.6f
         val offense =
@@ -185,11 +206,14 @@ class RunPlayScript : PlayScript {
         private const val FAKE_WIDTH = 4f
         private const val TACKLE_SETTLE = 0.05f
         private const val FUMBLE_PURSUIT_TIME = 1.8f
-        private const val BIG_LOSS_GAIN = -2f
         private const val OUTSIDE_DRIFT = 13f
         private const val OUTSIDE_HOLE_WIDTH = 11f
         private const val REVERSE_MESH_WIDTH = 4f
         private const val REVERSE_DRIFT = 10f
+        private const val JET_MESH_WIDTH = 3f
+        private const val JET_DRIFT = 8f
+        private const val MOTION_START = 0.02f
+        private const val MOTION_SHARE = 0.45f
         private const val HOLE_DEPTH = 0.8f
         private const val HOLE_WIDTH = 3f
         private const val DRIFT_BASE = 2.5f

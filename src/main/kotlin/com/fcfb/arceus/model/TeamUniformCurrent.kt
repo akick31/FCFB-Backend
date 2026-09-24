@@ -30,6 +30,15 @@ class TeamUniformCurrent {
     @Column(name = "helmet_color")
     var helmetColor: String? = null
 
+    /** The alternate shell, worn when the opponent's helmet is too close to this team's. Must differ from [helmetColor]. */
+    @Basic
+    @Column(name = "secondary_helmet_color")
+    var secondaryHelmetColor: String? = null
+
+    @Basic
+    @Column(name = "helmet_number_color")
+    var helmetNumberColor: String = DEFAULT_HELMET_NUMBER_COLOR
+
     @Basic
     @Column(name = "facemask_color")
     var facemaskColor: String = DEFAULT_FACEMASK_COLOR
@@ -72,6 +81,7 @@ class TeamUniformCurrent {
 
     companion object {
         const val DEFAULT_FACEMASK_COLOR = "#FFFFFF"
+        const val DEFAULT_HELMET_NUMBER_COLOR = "#FFFFFF"
         const val DEFAULT_HELMET_LOGO_MODE = "MAIN"
     }
 }

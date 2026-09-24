@@ -4,6 +4,8 @@ CREATE TABLE team_uniform_current (
     secondary_color VARCHAR(9) DEFAULT NULL,
     tertiary_color VARCHAR(9) DEFAULT NULL,
     helmet_color VARCHAR(9) DEFAULT NULL,
+    secondary_helmet_color VARCHAR(9) DEFAULT NULL,
+    helmet_number_color VARCHAR(9) NOT NULL DEFAULT '#FFFFFF',
     facemask_color VARCHAR(9) NOT NULL DEFAULT '#FFFFFF',
     helmet_logo_mode VARCHAR(16) NOT NULL DEFAULT 'MAIN',
     logo_url VARCHAR(512) DEFAULT NULL,
@@ -24,6 +26,7 @@ INSERT INTO team_uniform_current (
     jersey_color,
     pants_color,
     number_color,
+    helmet_number_color,
     logo_url
 )
 SELECT
@@ -32,6 +35,7 @@ SELECT
     secondary_color,
     primary_color,
     primary_color,
+    '#FFFFFF',
     '#FFFFFF',
     scorebug_logo
 FROM team

@@ -1,12 +1,12 @@
 package com.fcfb.arceus.service.fcfb.animation
 
 import java.awt.BasicStroke
-import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
 import java.awt.geom.Line2D
+import java.awt.geom.Rectangle2D
 import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
 
@@ -25,6 +25,8 @@ object FieldGoalPlayerPainter {
     private const val OUTLINE_WIDTH = 1.5f
     private const val NUMBER_SIZE = 18f
     private const val MASK_WIDTH = 2.2f
+    private const val STRIPE_HALF_WIDTH = 0.22f
+    private const val STRIPE_BAND_HEIGHT = 0.5f
 
     fun draw(
         image: BufferedImage,
@@ -65,10 +67,34 @@ object FieldGoalPlayerPainter {
         val helmet = Ellipse2D.Float(x - helmetRadius, helmetCenterY - helmetRadius, helmetRadius * 2, helmetRadius * 2)
         g.color = figure.uniform.helmet
         g.fill(helmet)
+        drawHelmetStripe(g, figure, helmet, helmetCenterY, helmetRadius)
         g.color = GoalPostScenePainter.DEFENDER_COLOR
+        g.stroke = BasicStroke(OUTLINE_WIDTH)
         g.draw(helmet)
         drawFacemask(g, figure, helmetCenterY, helmetRadius)
         g.dispose()
+    }
+
+    /** Clipped to the shell so the band follows the helmet edge: down the middle head-on, over the crown side-on. */
+    private fun drawHelmetStripe(
+        g: Graphics2D,
+        figure: FieldGoalFigure,
+        helmet: Ellipse2D.Float,
+        centerY: Float,
+        radius: Float,
+    ) {
+        val stripe = figure.uniform.stripe ?: return
+        val clip = g.clip
+        g.clip(helmet)
+        g.color = stripe
+        if (figure.facingCamera) {
+            val halfWidth = radius * STRIPE_HALF_WIDTH
+            g.fill(Rectangle2D.Float(figure.x - halfWidth, centerY - radius, halfWidth * 2, radius * 2))
+        } else {
+            val bandTop = centerY - radius
+            g.fill(Rectangle2D.Float(figure.x - radius, bandTop, radius * 2, radius * STRIPE_BAND_HEIGHT))
+        }
+        g.clip = clip
     }
 
     private fun drawFacemask(
@@ -78,7 +104,7 @@ object FieldGoalPlayerPainter {
         radius: Float,
     ) {
         val x = figure.x
-        g.color = Color.WHITE
+        g.color = figure.uniform.facemask
         g.stroke = BasicStroke(maxOf(1f, MASK_WIDTH * figure.scale), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
         if (figure.facingCamera) {
             g.draw(Line2D.Float(x - radius * 0.65f, centerY + radius * 0.15f, x + radius * 0.65f, centerY + radius * 0.15f))
@@ -98,12 +124,19 @@ object FieldGoalPlayerPainter {
         g.font = Font("Arial", Font.BOLD, (NUMBER_SIZE * figure.scale).toInt().coerceAtLeast(6))
         val text = figure.number.toString()
         val metrics = g.fontMetrics
+        val textX = figure.x - metrics.stringWidth(text) / 2f
+        val textY = shoulderY + (TORSO_HEIGHT * figure.scale + metrics.ascent * 0.8f) / 2f
+        figure.uniform.numberOutline?.let { outline ->
+            g.color = outline
+            for (dx in -1..1) {
+                for (dy in -1..1) {
+                    if (dx == 0 && dy == 0) continue
+                    g.drawString(text, textX + dx, textY + dy)
+                }
+            }
+        }
         g.color = figure.uniform.number
-        g.drawString(
-            text,
-            figure.x - metrics.stringWidth(text) / 2f,
-            shoulderY + (TORSO_HEIGHT * figure.scale + metrics.ascent * 0.8f) / 2f,
-        )
+        g.drawString(text, textX, textY)
     }
 
     private fun drawLegs(

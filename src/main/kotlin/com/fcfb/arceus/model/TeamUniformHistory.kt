@@ -46,6 +46,14 @@ class TeamUniformHistory {
     var helmetColor: String? = null
 
     @Basic
+    @Column(name = "secondary_helmet_color")
+    var secondaryHelmetColor: String? = null
+
+    @Basic
+    @Column(name = "helmet_number_color")
+    var helmetNumberColor: String? = null
+
+    @Basic
     @Column(name = "facemask_color")
     var facemaskColor: String? = null
 
@@ -94,6 +102,8 @@ class TeamUniformHistory {
         secondaryColor: String?,
         tertiaryColor: String?,
         helmetColor: String?,
+        secondaryHelmetColor: String?,
+        helmetNumberColor: String?,
         facemaskColor: String?,
         helmetLogoMode: String,
         jerseyColor: String?,
@@ -112,6 +122,8 @@ class TeamUniformHistory {
         this.secondaryColor = secondaryColor
         this.tertiaryColor = tertiaryColor
         this.helmetColor = helmetColor
+        this.secondaryHelmetColor = secondaryHelmetColor
+        this.helmetNumberColor = helmetNumberColor
         this.facemaskColor = facemaskColor
         this.helmetLogoMode = helmetLogoMode
         this.jerseyColor = jerseyColor

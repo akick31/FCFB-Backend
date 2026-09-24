@@ -189,10 +189,12 @@ object GoalPostScenePainter {
         g.color = wallPaint
         g.fillRect(0, wallTopY, SCENE_WIDTH, layout.endZoneTopY - wallTopY)
         val wallText = (theme.wallCaption ?: theme.midfieldCaption.joinToString(" ")).uppercase()
-        if (lettersOnWall(theme.style) && wallText.isNotBlank()) {
+        val design = wallDesign(theme)
+        if (design.showsText && wallText.isNotBlank()) {
             val flankShare = if (cfpWall(theme.style)) CFP_FLANK_CENTER_SHARE else WALL_FLANK_CENTER_SHARE
-            drawWallText(g, layout, wallText, wallTextOutline(theme, wallPaint), theme.wallLogoUrl ?: theme.centerLogoUrl, flankShare)
-        } else {
+            val flankLogo = if (design == WallDesign.TEXT_ONLY) null else theme.wallLogoUrl ?: theme.centerLogoUrl
+            drawWallText(g, layout, wallText, wallTextOutline(theme, wallPaint), flankLogo, flankShare)
+        } else if (design == WallDesign.REPEATING_LOGOS) {
             drawWallLogos(g, theme, layout)
         }
         drawNet(g, layout)
@@ -201,7 +203,7 @@ object GoalPostScenePainter {
         g.fillRect(0, layout.endZoneTopY, SCENE_WIDTH, layout.endZoneBottomY - layout.endZoneTopY)
         drawEndZoneText(g, endZone, layout)
 
-        drawGoalPost(g, layout)
+        drawGoalPost(g, theme, layout)
         drawBackOfEndZoneLine(g, layout)
         drawFieldGap(g, theme, layout, midfieldTopOnLeft)
 
@@ -209,13 +211,15 @@ object GoalPostScenePainter {
         return image
     }
 
+    /** Redrawn over the ball once it clears the bar, so it has to match the post painted into the scene beneath. */
     fun drawPost(
         image: BufferedImage,
+        theme: FieldTheme,
         layout: Layout,
     ) {
         val g = image.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        drawGoalPost(g, layout)
+        drawGoalPost(g, theme, layout)
         g.dispose()
     }
 
@@ -357,7 +361,11 @@ object GoalPostScenePainter {
         g.font = previousFont
     }
 
-    private fun lettersOnWall(style: FieldStyle): Boolean = style != FieldStyle.HOME_FIELD
+    /** Postseason styles keep their built-in look; a home field follows whatever the team configured. */
+    private fun wallDesign(theme: FieldTheme): WallDesign {
+        if (theme.style != FieldStyle.HOME_FIELD) return WallDesign.TEXT_WITH_LOGOS
+        return WallDesign.from(theme.homeField?.wallDesign)
+    }
 
     private fun cfpWall(style: FieldStyle): Boolean = style == FieldStyle.PLAYOFF || style == FieldStyle.NATIONAL_CHAMPIONSHIP
 
@@ -367,6 +375,9 @@ object GoalPostScenePainter {
         theme: FieldTheme,
         wallPaint: Color,
     ): Color {
+        if (theme.style == FieldStyle.HOME_FIELD) {
+            theme.homeField?.wallTextOutlineColor?.let { return FieldBackgroundPainter.parseColor(it) }
+        }
         if (!usesLogoColors(theme.style)) return POST_COLOR
         val logo = LogoLoader.load(theme.centerLogoUrl) ?: return Color.BLACK
         return LogoPalette.dominantColors(logo, LOGO_ACCENT_SAMPLES)
@@ -428,10 +439,17 @@ object GoalPostScenePainter {
         LogoFit.draw(g, logo, textX + textWidth + WALL_FLANK_GAP + size / 2, centerY, size)
     }
 
+    /**
+     * A configured wall color wins outright. The heuristics below only pick something sensible when nothing is set, so
+     * letting them veto an explicit choice would hand a team black for picking its own pale primary.
+     */
     private fun wallColor(
         theme: FieldTheme,
         endZone: EndZoneDecoration,
     ): Color {
+        if (theme.style == FieldStyle.HOME_FIELD) {
+            theme.homeField?.wallColor?.let { return FieldBackgroundPainter.parseColor(it) }
+        }
         if (theme.style == FieldStyle.NATIONAL_CHAMPIONSHIP || theme.style == FieldStyle.PLAYOFF) return Color.BLACK
         if (theme.style == FieldStyle.CONFERENCE_CHAMPIONSHIP) return SILVER_WALL_COLOR
         if (usesLogoColors(theme.style)) {
@@ -483,15 +501,23 @@ object GoalPostScenePainter {
         }
     }
 
+    /** A Y drops one stem from the center of the crossbar; an H drops one under each upright, same width and height. */
     private fun drawGoalPost(
         g: Graphics2D,
+        theme: FieldTheme,
         layout: Layout,
     ) {
         val width = (POST_STROKE_WIDTH * layout.scale).coerceAtLeast(3f)
         val lineHalfWidth = (OOB_LINE_STROKE_WIDTH * layout.scale).coerceAtLeast(4f) / 2
-        g.color = POST_COLOR
+        val baseY = (layout.endZoneTopY - lineHalfWidth).toInt()
+        g.color = goalPostColor(theme)
         g.stroke = BasicStroke(width, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)
-        g.drawLine(CENTER_X, (layout.endZoneTopY - lineHalfWidth).toInt(), CENTER_X, layout.crossbarY)
+        if (goalPostStyle(theme) == GoalPostStyle.H) {
+            g.drawLine(layout.leftUprightX, baseY, layout.leftUprightX, layout.crossbarY)
+            g.drawLine(layout.rightUprightX, baseY, layout.rightUprightX, layout.crossbarY)
+        } else {
+            g.drawLine(CENTER_X, baseY, CENTER_X, layout.crossbarY)
+        }
         val uprights =
             Path2D.Float().apply {
                 moveTo(layout.leftUprightX.toFloat(), layout.uprightTopY.toFloat())
@@ -500,6 +526,16 @@ object GoalPostScenePainter {
                 lineTo(layout.rightUprightX.toFloat(), layout.uprightTopY.toFloat())
             }
         g.draw(uprights)
+    }
+
+    private fun goalPostColor(theme: FieldTheme): Color {
+        if (theme.style != FieldStyle.HOME_FIELD) return POST_COLOR
+        return theme.homeField?.goalPostColor?.let { FieldBackgroundPainter.parseColor(it) } ?: POST_COLOR
+    }
+
+    private fun goalPostStyle(theme: FieldTheme): GoalPostStyle {
+        if (theme.style != FieldStyle.HOME_FIELD) return GoalPostStyle.Y
+        return GoalPostStyle.from(theme.homeField?.goalPostStyle)
     }
 
     private fun drawBackOfEndZoneLine(
