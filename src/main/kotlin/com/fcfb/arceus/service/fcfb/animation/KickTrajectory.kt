@@ -43,6 +43,7 @@ class KickTrajectory(
                 } else {
                     roll(segment(flight, arrival, settle))
                 }
+            KickOutcome.CAUGHT -> caught(minOf(depth, 1f))
         }
     }
 
@@ -101,6 +102,18 @@ class KickTrajectory(
         return KickPoint(x, ground - hop, ground, endScale)
     }
 
+    /**
+     * A returnable short kick has to reach the returner's hands still in the air — he cannot be
+     * seen fielding it off a bounce. The flight is aimed at his spot and simply stops there.
+     */
+    private fun caught(depth: Float): KickPoint {
+        val toReturner = (startYards + CATCH_DEPTH_IN_END_ZONE) / (startYards + GoalPostScenePainter.END_ZONE_DEPTH_YARDS)
+        val reached = depth * toReturner
+        val point = airborne(reached, toReturner / 2f, CATCH_APEX_YARDS)
+        val hands = CATCH_HANDS_LIFT * layout.scale
+        return point.copy(y = point.y - hands, shadowY = null)
+    }
+
     private fun roll(progress: Float): KickPoint {
         val landed = airborne(SHORT_LANDING + SHORT_ROLL * sqrt(progress), SHORT_LANDING / 2, 0f)
         val hop = abs(sin(progress * SHORT_BOUNCES * PI)).toFloat() * SHORT_HOP_YARDS * farPixelsPerYard * (1f - progress).pow(2)
@@ -118,6 +131,9 @@ class KickTrajectory(
         private const val PEAK_DEPTH = 0.6f
         private const val APEX_YARDS = 16f
         private const val SHORT_APEX_YARDS = 13f
+        private const val CATCH_DEPTH_IN_END_ZONE = 4f
+        private const val CATCH_APEX_YARDS = 15f
+        private const val CATCH_HANDS_LIFT = 26f
         private const val SHORT_LANDING = 0.86f
         private const val SHORT_ROLL = 0.06f
         private const val SHORT_BOUNCES = 2.0

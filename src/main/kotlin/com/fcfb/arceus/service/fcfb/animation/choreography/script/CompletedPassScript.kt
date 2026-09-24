@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.service.fcfb.animation.CatchKind
 import com.fcfb.arceus.service.fcfb.animation.DeepScoreKind
 import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
@@ -29,23 +30,27 @@ class CompletedPassScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
         val scene = ScrimmageScene.from(context)
         val forward = context.forward
-        val offenseScores = context.play.actualResult == ActualResult.TOUCHDOWN
+        val offenseScores = context.play.actualResult in OFFENSIVE_SCORES
         val gain = context.gain
         val random = PlayRandom(context.play)
         val contested = !offenseScores && gain > CONTESTED_MIN_GAIN && random.chance(CONTESTED_CHANCE)
         val scoreKind = if (offenseScores && gain > SHORT_SCORE) deepScoreKind(gain, random) else DeepScoreKind.WIDE_OPEN
-        val baseCatchDepth =
+        val scoringDepth =
             when {
                 offenseScores && gain <= SHORT_SCORE -> gain
                 offenseScores -> scoringCatchDepth(scoreKind, gain, random)
-                gain <= 3f -> gain
                 contested -> gain
-                gain > CONTESTED_MIN_GAIN -> random.between(MIN_CATCH_DEPTH, minOf(MAX_CATCH_DEPTH, gain - MIN_AFTER_CATCH))
-                gain <= BREAKAWAY_CATCH_DEPTH -> maxOf(gain - RUN_AFTER_CATCH, 2f)
-                else -> DEEP_CATCH_DEPTH
+                else -> null
             }
         val fleaFlicker = gain >= FLEA_MIN_GAIN && random.chance(FLEA_CHANCE)
-        val catchDepth = if (fleaFlicker) gain else baseCatchDepth
+        val catchKind = if (scoringDepth == null) random.pick(CatchKind.entries.toList()) else CatchKind.WRAPPED_UP
+        val tippedCatch = scoringDepth == null && gain >= TIPPED_MIN_GAIN && random.chance(TIPPED_CHANCE)
+        val catchDepth =
+            when {
+                fleaFlicker -> gain
+                scoringDepth != null -> scoringDepth
+                else -> catchDepthFor(catchKind, gain, random)
+            }
         val concept = PassConcept(context, scene, fleaFlicker)
         val targetIndex = concept.target(deep = catchDepth > 9f, random = random)
         val targetStart = scene.offense[targetIndex]
@@ -77,7 +82,7 @@ class CompletedPassScript : PlayScript {
             DownfieldEscort.follow(
                 before = blocking,
                 carrier = receiver,
-                from = throwAt,
+                from = if (offenseScores) SNAP_END else throwAt,
                 until = tackleAt,
                 exclude = setOf(targetIndex, scene.offensiveAlignment.quarterback),
                 speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED else escortSpeed },
@@ -115,6 +120,12 @@ class CompletedPassScript : PlayScript {
             BallTrack { progress ->
                 when {
                     progress < throwAt -> held.at(progress)
+                    progress < catchAt && tippedCatch ->
+                        concept.tipped(
+                            concept.tipPointFor(catchPoint, context.side * TIP_SWING),
+                            catchPoint,
+                            segment(progress, throwAt, catchAt),
+                        )
                     progress < catchAt -> concept.thrown(catchPoint, segment(progress, throwAt, catchAt))
                     else -> BallState(runAfterCatch.at(progress))
                 }
@@ -143,6 +154,22 @@ class CompletedPassScript : PlayScript {
         return responded.mapIndexed { index, track -> if (index == cover) shadow else track }
     }
 
+    /**
+     * Splits the gain between the throw and the run after it. The share comes from [CatchKind] so
+     * the same play can be caught at the sticks and tackled on the spot, or caught short and run
+     * the rest of the way. A loss is always caught where it ends — a receiver does not run
+     * backwards for yardage.
+     */
+    private fun catchDepthFor(
+        kind: CatchKind,
+        gain: Float,
+        random: PlayRandom,
+    ): Float {
+        if (gain <= MIN_RUNNABLE_GAIN) return gain
+        val share = random.between(kind.minShare, kind.maxShare)
+        return (gain * (1f - share)).coerceIn(MIN_CATCH_ABOVE_LINE, gain)
+    }
+
     private fun deepScoreKind(
         gain: Float,
         random: PlayRandom,
@@ -163,6 +190,14 @@ class CompletedPassScript : PlayScript {
     companion object {
         internal fun facingLocked(scene: ScrimmageScene): Set<Int> =
             OffensiveAlignments.LINEMEN.toSet() + scene.offensiveAlignment.quarterback
+
+        private val OFFENSIVE_SCORES = setOf(ActualResult.TOUCHDOWN, ActualResult.SUCCESS)
+
+        private const val MIN_RUNNABLE_GAIN = 3f
+        private const val MIN_CATCH_ABOVE_LINE = 1.5f
+        private const val TIPPED_MIN_GAIN = 6f
+        private const val TIPPED_CHANCE = 0.12f
+        private const val TIP_SWING = 2.2f
 
         private const val MIN_CONTEST_TIME = 0.12f
 

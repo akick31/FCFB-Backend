@@ -6,4 +6,5 @@ enum class KickOutcome {
     DOINK,
     WIDE,
     SHORT,
+    CAUGHT,
 }

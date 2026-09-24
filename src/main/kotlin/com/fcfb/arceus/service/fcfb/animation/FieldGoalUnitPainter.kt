@@ -58,6 +58,9 @@ object FieldGoalUnitPainter {
     private const val REBOUND_HOP = 40f
     private const val REBOUND_BOUNCES = 3.0
 
+    private const val DEEP_RETURNER_DEPTH = 4f
+    private const val DEEP_RETURNER_SCALE = 0.5f
+    private const val DEEP_RETURNER_NUMBER = 7
     private const val HOLDER_NUMBER = 12
     private const val KICKER_NUMBER = 39
     private val LINE_OFFSETS = listOf(0f, -42f, 42f, -84f, 84f, -126f, 126f)
@@ -78,6 +81,7 @@ object FieldGoalUnitPainter {
         blocked: Boolean,
         rusherIndex: Int = -1,
         nearMiss: Boolean = false,
+        deepReturner: Boolean = false,
     ) {
         val blocker = if (blocked || nearMiss) blockerIndex(rusherIndex, blockSide) else -1
         val rushUnit =
@@ -95,7 +99,10 @@ object FieldGoalUnitPainter {
                     rusher(layout, progress, rushing, index)
                 }
             }
-        (kickingUnit(layout, progress, kicking) + rushUnit).sortedBy { it.footY }.forEach { FieldGoalPlayerPainter.draw(scene, it) }
+        val deepUnit = if (deepReturner) listOf(deepReturnerFigure(layout, rushing)) else emptyList()
+        (kickingUnit(layout, progress, kicking) + rushUnit + deepUnit)
+            .sortedBy { it.footY }
+            .forEach { FieldGoalPlayerPainter.draw(scene, it) }
         if (blocked || progress < KICK_AT) {
             val (ballX, ballY) = ballPosition(layout, progress, blockSide)
             val upright = progress >= HOLD_AT && progress < KICK_AT
@@ -175,6 +182,20 @@ object FieldGoalUnitPainter {
             )
         return line + wings + holder + kicker
     }
+
+    private fun deepReturnerFigure(
+        layout: GoalPostScenePainter.Layout,
+        uniform: Uniform,
+    ): FieldGoalFigure =
+        FieldGoalFigure(
+            CENTER_X,
+            layout.groundY(-DEEP_RETURNER_DEPTH),
+            DEEP_RETURNER_SCALE * unitScale(layout),
+            uniform,
+            DEEP_RETURNER_NUMBER,
+            PlayerPose.STANDING,
+            facingCamera = true,
+        )
 
     private fun rusher(
         layout: GoalPostScenePainter.Layout,

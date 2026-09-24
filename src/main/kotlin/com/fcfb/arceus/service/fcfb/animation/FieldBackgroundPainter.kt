@@ -23,7 +23,7 @@ object FieldBackgroundPainter {
     private const val BOTTOM_NUMBER_Y = 386
     private const val DIGIT_GAP = 4
     private const val CONFERENCE_LOGO_YARD = 25
-    private const val CONFERENCE_LOGO_SIZE = 48
+    private const val CONFERENCE_LOGO_SIZE = 34
     private const val MIDFIELD_LOGO_HEIGHT = 116f
     private const val MIDFIELD_LOGO_MAX_WIDTH = 300f
     private const val CONFERENCE_MIDFIELD_LOGO_HEIGHT = 84f
@@ -52,6 +52,8 @@ object FieldBackgroundPainter {
     private const val HASH_TICK_LENGTH = 10
     private const val SIDELINE_TICK_LENGTH = 10
     private const val HASH_STROKE_WIDTH = 2f
+    private const val QUARTER_LOGO_SIZE = 34
+    private const val NUMBER_OUTLINE_WIDTH = 2
 
     val TURF_COLOR: Color = Color(34, 102, 51)
     val LINE_COLOR: Color = Color.WHITE
@@ -93,24 +95,29 @@ object FieldBackgroundPainter {
         g.stroke = defaultStroke
 
         drawHashMarks(g)
-        g.font = Font("Arial", Font.BOLD, 26)
+        val numberOutline = theme.homeField?.fieldNumberOutlineColor?.let { parseColor(it) }
+        g.font = Font(EndZoneFonts.YARD_NUMBER_FAMILY, Font.BOLD, 26)
         for (yard in 0..100 step 5) {
             val x = FieldCoordinateMapper.toPixelX(yard, WIDTH, MARGIN)
+            g.color = LINE_COLOR
             g.drawLine(x, OOB_INSET, x, HEIGHT - OOB_INSET)
             if (yard == 0 || yard == 100 || yard % 10 != 0) continue
             val label = (if (yard <= 50) yard else 100 - yard).toString()
-            drawSplitYardNumber(g, label, x, TOP_NUMBER_Y)
-            drawSplitYardNumber(g, label, x, BOTTOM_NUMBER_Y)
+            drawSplitYardNumber(g, label, x, TOP_NUMBER_Y, numberOutline)
+            drawSplitYardNumber(g, label, x, BOTTOM_NUMBER_Y, numberOutline)
         }
 
-        val endZoneFontSize = minOf(fittedEndZoneFontSize(g, homeEndZone), fittedEndZoneFontSize(g, awayEndZone))
-        drawEndZoneText(g, homeEndZone, MARGIN / 2, clockwise = false, endZoneFontSize)
-        drawEndZoneText(g, awayEndZone, WIDTH - MARGIN / 2, clockwise = true, endZoneFontSize)
+        val endZoneFamily = EndZoneFonts.familyOf(theme.homeField?.endZoneFont)
+        val endZoneFontSize =
+            minOf(fittedEndZoneFontSize(g, homeEndZone, endZoneFamily), fittedEndZoneFontSize(g, awayEndZone, endZoneFamily))
+        drawEndZoneText(g, homeEndZone, MARGIN / 2, clockwise = false, endZoneFontSize, endZoneFamily)
+        drawEndZoneText(g, awayEndZone, WIDTH - MARGIN / 2, clockwise = true, endZoneFontSize, endZoneFamily)
 
         val midX = FieldCoordinateMapper.toPixelX(50, WIDTH, MARGIN)
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
         LogoLoader.load(theme.centerLogoUrl)?.let { logo -> drawMidfieldLogo(g, logo, midX, theme) }
         drawConferenceLogos(g, theme)
+        drawQuarterLogos(g, theme)
 
         g.dispose()
         return image
@@ -120,8 +127,8 @@ object FieldBackgroundPainter {
         g: Graphics2D,
         theme: FieldTheme,
     ) {
-        if (theme.style != FieldStyle.BOWL) return
-        val offset = HASH_OFFSET + (HEIGHT / 2 - OOB_INSET - HASH_OFFSET) / 2
+        if (theme.style != FieldStyle.BOWL && theme.style != FieldStyle.HOME_FIELD) return
+        val offset = quarterLogoOffset()
         LogoLoader.load(theme.conferenceLogoOf(theme.leftSide()))?.let {
             val x = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
             LogoFit.draw(g, it, x, HEIGHT / 2 + offset, CONFERENCE_LOGO_SIZE)
@@ -131,6 +138,22 @@ object FieldBackgroundPainter {
             LogoFit.draw(g, it, x, HEIGHT / 2 - offset, CONFERENCE_LOGO_SIZE)
         }
     }
+
+    /** The team's own mark sits opposite the conference logo at each 25: left side top, right side bottom. */
+    private fun drawQuarterLogos(
+        g: Graphics2D,
+        theme: FieldTheme,
+    ) {
+        if (theme.style != FieldStyle.HOME_FIELD) return
+        val logo = LogoLoader.load(theme.homeField?.quarterLogoUrl) ?: return
+        val offset = quarterLogoOffset()
+        val leftX = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+        val rightX = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+        LogoFit.draw(g, logo, leftX, HEIGHT / 2 - offset, QUARTER_LOGO_SIZE)
+        LogoFit.draw(g, logo, rightX, HEIGHT / 2 + offset, QUARTER_LOGO_SIZE)
+    }
+
+    private fun quarterLogoOffset(): Int = HASH_OFFSET + (HEIGHT / 2 - OOB_INSET - HASH_OFFSET) / 2
 
     private fun drawMidfieldLogo(
         g: Graphics2D,
@@ -343,12 +366,26 @@ object FieldBackgroundPainter {
         label: String,
         lineX: Int,
         y: Int,
+        outline: Color?,
     ) {
         val left = label.substring(0, 1)
         val right = label.substring(1)
         val leftWidth = g.fontMetrics.stringWidth(left)
-        g.drawString(left, lineX - leftWidth - DIGIT_GAP, y)
-        g.drawString(right, lineX + DIGIT_GAP, y)
+        val leftX = lineX - leftWidth - DIGIT_GAP
+        val rightX = lineX + DIGIT_GAP
+        outline?.let {
+            g.color = it
+            for (dx in -NUMBER_OUTLINE_WIDTH..NUMBER_OUTLINE_WIDTH) {
+                for (dy in -NUMBER_OUTLINE_WIDTH..NUMBER_OUTLINE_WIDTH) {
+                    if (dx == 0 && dy == 0) continue
+                    g.drawString(left, leftX + dx, y + dy)
+                    g.drawString(right, rightX + dx, y + dy)
+                }
+            }
+        }
+        g.color = LINE_COLOR
+        g.drawString(left, leftX, y)
+        g.drawString(right, rightX, y)
     }
 
     private fun drawEndZoneText(
@@ -357,10 +394,11 @@ object FieldBackgroundPainter {
         centerX: Int,
         clockwise: Boolean,
         fontSize: Int,
+        family: String,
     ) {
         val label = endZone.team.name?.uppercase()?.takeIf { it.isNotBlank() } ?: return
         val logo = LogoLoader.load(endZone.logoUrl)
-        g.font = Font("Arial", Font.BOLD, fontSize)
+        g.font = Font(family, Font.BOLD, fontSize)
         val metrics = g.fontMetrics
         val logoSize = metrics.ascent
         val start = -endZoneLength(g, label, logo) / 2
@@ -389,15 +427,16 @@ object FieldBackgroundPainter {
     private fun fittedEndZoneFontSize(
         g: Graphics2D,
         endZone: EndZoneDecoration,
+        family: String,
     ): Int {
         var fontSize = MARGIN - 16
         val label = endZone.team.name?.uppercase()?.takeIf { it.isNotBlank() } ?: return fontSize
         val logo = LogoLoader.load(endZone.logoUrl)
         val availableHeight = (HEIGHT - 2 * END_ZONE_TEXT_PADDING).toFloat() - 2 * END_ZONE_OUTLINE_WIDTH
-        g.font = Font("Arial", Font.BOLD, fontSize)
+        g.font = Font(family, Font.BOLD, fontSize)
         while (fontSize > 6 && endZoneLength(g, label, logo) > availableHeight) {
             fontSize--
-            g.font = Font("Arial", Font.BOLD, fontSize)
+            g.font = Font(family, Font.BOLD, fontSize)
         }
         return fontSize
     }

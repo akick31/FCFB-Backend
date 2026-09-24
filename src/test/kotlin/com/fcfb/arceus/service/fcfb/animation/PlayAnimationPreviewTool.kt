@@ -37,6 +37,7 @@ class PlayAnimationPreviewTool {
     private val encoder = AnimationFitter(AnimatedGifEncoder())
     private val overheadRenderer = OverheadPlayFrameRenderer(classifier)
     private val fieldGoalRenderer = FieldGoalAttemptFrameRenderer()
+    private val kickSixRenderer = KickSixFrameRenderer(fieldGoalRenderer, overheadRenderer)
 
     @Test
     fun generatePreviews() {
@@ -68,6 +69,11 @@ class PlayAnimationPreviewTool {
             FieldBackgroundPainter.paint(themeFor(FieldStyle.BOWL).copy(flipped = true)),
             "png",
             File(outputDir, "field-second-half.png"),
+        )
+        javax.imageio.ImageIO.write(
+            FieldBackgroundPainter.paint(homeFieldWithLogos()),
+            "png",
+            File(outputDir, "field-home-logos.png"),
         )
     }
 
@@ -120,6 +126,29 @@ class PlayAnimationPreviewTool {
             "pass-incomplete" to
                 play(TeamSide.HOME, 50, PlayCall.PASS, ActualResult.NO_GAIN, Scenario.INCOMPLETE)
                     .endingAt(50, OffensivePlaybook.SPREAD),
+            "pass-incomplete-tipped" to
+                play(
+                    TeamSide.HOME,
+                    50,
+                    PlayCall.PASS,
+                    ActualResult.NO_GAIN,
+                    Scenario.INCOMPLETE,
+                    forcedPlayId = TIPPED_INCOMPLETION_PLAY_ID,
+                ).endingAt(50),
+            "pass-catch-and-run-short" to play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN).endingAt(37),
+            "pass-catch-and-run-medium" to play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN).endingAt(45),
+            "pass-catch-and-run-long" to play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.FIRST_DOWN).endingAt(58),
+            "pass-tipped-completion" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN, forcedPlayId = TIPPED_COMPLETION_PLAY_ID).endingAt(42),
+            "pass-catch-wrapped-up" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN, forcedPlayId = CATCH_WRAPPED_UP_PLAY_ID).endingAt(42),
+            "pass-catch-short-run" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN, forcedPlayId = CATCH_SHORT_RUN_PLAY_ID).endingAt(42),
+            "pass-catch-broke-tackle" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN, forcedPlayId = CATCH_BROKE_TACKLE_PLAY_ID).endingAt(42),
+            "pass-catch-in-stride" to
+                play(TeamSide.HOME, 30, PlayCall.PASS, ActualResult.GAIN, forcedPlayId = CATCH_IN_STRIDE_PLAY_ID).endingAt(42),
+            "pass-completion-for-loss" to play(TeamSide.HOME, 40, PlayCall.PASS, ActualResult.LOSS).endingAt(36),
             "pass-incomplete-broken-up" to
                 play(TeamSide.HOME, 50, PlayCall.PASS, ActualResult.NO_GAIN, Scenario.INCOMPLETE, forcedPlayId = BROKEN_UP_PLAY_ID)
                     .endingAt(50, OffensivePlaybook.SPREAD),
@@ -135,6 +164,15 @@ class PlayAnimationPreviewTool {
                     .endingAt(100, OffensivePlaybook.AIR_RAID),
             "two-point-run" to
                 play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.SUCCESS, forcedPlayId = TWO_POINT_RUN_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.PRO),
+            "two-point-option" to
+                play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.SUCCESS, forcedPlayId = TWO_POINT_OPTION_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.FLEXBONE),
+            "two-point-read" to
+                play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.SUCCESS, forcedPlayId = TWO_POINT_READ_PLAY_ID)
+                    .endingAt(100, OffensivePlaybook.SPREAD),
+            "two-point-statue" to
+                play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.SUCCESS, forcedPlayId = TWO_POINT_STATUE_PLAY_ID)
                     .endingAt(100, OffensivePlaybook.PRO),
             "two-point-failed" to
                 play(TeamSide.HOME, 97, PlayCall.TWO_POINT, ActualResult.FAILED, forcedPlayId = TWO_POINT_PASS_PLAY_ID)
@@ -175,11 +213,12 @@ class PlayAnimationPreviewTool {
             "field-goal-good-2" to play(TeamSide.AWAY, 68, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(32),
             "field-goal-blocked" to play(TeamSide.HOME, 70, PlayCall.FIELD_GOAL, ActualResult.BLOCKED).endingAt(70),
             "field-goal-kick-six" to play(TeamSide.HOME, 70, PlayCall.FIELD_GOAL, ActualResult.KICK_SIX).endingAt(0),
-            "field-goal-kick-six-long" to play(TeamSide.HOME, 45, PlayCall.FIELD_GOAL, ActualResult.KICK_SIX).endingAt(0),
+            "field-goal-kick-six-long" to play(TeamSide.HOME, 55, PlayCall.FIELD_GOAL, ActualResult.KICK_SIX).endingAt(0),
             "extra-point-good" to play(TeamSide.HOME, 97, PlayCall.PAT, ActualResult.GOOD).endingAt(97),
             "extra-point-blocked" to play(TeamSide.AWAY, 97, PlayCall.PAT, ActualResult.BLOCKED).endingAt(3),
             "field-goal-from-the-2" to play(TeamSide.HOME, 98, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(98),
-            "field-goal-long-no-good" to play(TeamSide.AWAY, 42, PlayCall.FIELD_GOAL, ActualResult.NO_GOOD).endingAt(58),
+            "field-goal-long-no-good" to play(TeamSide.AWAY, 57, PlayCall.FIELD_GOAL, ActualResult.NO_GOOD).endingAt(43),
+            "field-goal-beyond-range" to play(TeamSide.HOME, 40, PlayCall.FIELD_GOAL, ActualResult.NO_GOOD).endingAt(40),
             "field-goal-playoff" to
                 play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(75, style = FieldStyle.PLAYOFF),
             "field-goal-bowl" to
@@ -194,7 +233,12 @@ class PlayAnimationPreviewTool {
                 play.actualResult == ActualResult.SAFETY -> if (play.possession == TeamSide.HOME) -5 else 105
                 else -> scoringTeamOrNull(play)?.let { if (it == TeamSide.HOME) 105 else -5 } ?: preview.endAbs
             }
-        val renderer = if (classifier.classify(play) == AnimatedPlayType.FIELD_GOAL) fieldGoalRenderer else overheadRenderer
+        val renderer =
+            when {
+                play.actualResult == ActualResult.KICK_SIX -> kickSixRenderer
+                classifier.classify(play) == AnimatedPlayType.FIELD_GOAL -> fieldGoalRenderer
+                else -> overheadRenderer
+            }
         val frames =
             renderer.renderFrames(
                 play,
@@ -254,13 +298,37 @@ class PlayAnimationPreviewTool {
                 secondaryColor = "#0033A0"
                 scorebugLogo = "https://a.espncdn.com/i/teamlogos/ncaa/500/68.png"
             }
-        val override = TeamFieldOverrides.forTeam(boise.name)
+        val field =
+            com.fcfb.arceus.model.TeamField().apply {
+                team = boise.name.orEmpty()
+                turfColor = BOISE_TURF_COLOR
+                endZoneColor = BOISE_END_ZONE_COLOR
+            }
         return FieldTheme(
             FieldStyle.HOME_FIELD,
             boise,
             awayTeam,
             boise.scorebugLogo,
-            turf = override?.turf ?: FieldBackgroundPainter.TURF_COLOR,
+            turf = FieldBackgroundPainter.parseColor(field.turfColor),
+            homeField = field,
+        )
+    }
+
+    private fun homeFieldWithLogos(): FieldTheme {
+        val field =
+            com.fcfb.arceus.model.TeamField().apply {
+                team = homeTeam.name.orEmpty()
+                quarterLogoUrl = homeTeam.scorebugLogo
+                fieldNumberOutlineColor = homeTeam.secondaryColor
+            }
+        return FieldTheme(
+            style = FieldStyle.HOME_FIELD,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
+            centerLogoUrl = homeTeam.scorebugLogo,
+            homeConferenceLogoUrl = conferenceLogoFor(homeTeam),
+            awayConferenceLogoUrl = conferenceLogoFor(homeTeam),
+            homeField = field,
         )
     }
 
@@ -312,9 +380,18 @@ class PlayAnimationPreviewTool {
 
         const val CONTESTED_PLAY_ID = 902
         const val RUN_DOWN_PLAY_ID = 900
-        const val BROKEN_UP_PLAY_ID = 954
+        const val BROKEN_UP_PLAY_ID = 903
+        const val TIPPED_INCOMPLETION_PLAY_ID = 902
+        const val TIPPED_COMPLETION_PLAY_ID = 900
+        const val TWO_POINT_OPTION_PLAY_ID = 901
+        const val TWO_POINT_READ_PLAY_ID = 920
+        const val TWO_POINT_STATUE_PLAY_ID = 900
+        const val CATCH_WRAPPED_UP_PLAY_ID = 907
+        const val CATCH_SHORT_RUN_PLAY_ID = 902
+        const val CATCH_BROKE_TACKLE_PLAY_ID = 901
+        const val CATCH_IN_STRIDE_PLAY_ID = 910
         const val TWO_POINT_PASS_PLAY_ID = 902
-        const val TWO_POINT_RUN_PLAY_ID = 900
+        const val TWO_POINT_RUN_PLAY_ID = 921
         const val NEAR_MISS_PLAY_ID = 900
         const val DEEP_SCORE_OPEN_PLAY_ID = 902
         const val DEEP_SCORE_STRIDE_PLAY_ID = 900
@@ -332,5 +409,7 @@ class PlayAnimationPreviewTool {
                 "CFP%20Symbol%20Gold%20PMS%20Dark%20BG.PNG"
         const val CONFERENCE_LOGO = "https://a.espncdn.com/i/teamlogos/ncaa_conf/500/4.png"
         const val BOWL_LOGO = "https://1000logos.net/wp-content/uploads/2020/04/Holiday-Bowl-Logo.png"
+        const val BOISE_TURF_COLOR = "#0033A0"
+        const val BOISE_END_ZONE_COLOR = "#D64309"
     }
 }

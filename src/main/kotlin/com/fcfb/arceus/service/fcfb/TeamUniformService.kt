@@ -2,15 +2,18 @@ package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamUniform
-import com.fcfb.arceus.repositories.TeamUniformRepository
+import com.fcfb.arceus.model.TeamUniformCurrent
+import com.fcfb.arceus.model.TeamUniformHistory
+import com.fcfb.arceus.repositories.TeamUniformCurrentRepository
+import com.fcfb.arceus.repositories.TeamUniformHistoryRepository
 import com.fcfb.arceus.service.fcfb.animation.HelmetColors
 import org.springframework.stereotype.Service
 import java.awt.Color
 
 @Service
 class TeamUniformService(
-    private val teamUniformRepository: TeamUniformRepository,
+    private val teamUniformHistoryRepository: TeamUniformHistoryRepository,
+    private val teamUniformCurrentRepository: TeamUniformCurrentRepository,
     private val teamService: TeamService,
 ) {
     /** Captures both teams' uniforms for the week a game is played, so its animations never follow later color changes. */
@@ -24,9 +27,9 @@ class TeamUniformService(
         team: String,
         season: Int?,
         week: Int?,
-    ): TeamUniform? {
+    ): TeamUniformHistory? {
         if (season == null || week == null) return null
-        return teamUniformRepository.findByTeamAndSeasonNumberAndWeek(team, season, week)
+        return teamUniformHistoryRepository.findByTeamAndSeasonNumberAndWeek(team, season, week)
     }
 
     private fun capture(
@@ -34,8 +37,8 @@ class TeamUniformService(
         season: Int,
         week: Int,
     ) {
-        if (teamUniformRepository.findByTeamAndSeasonNumberAndWeek(team, season, week) != null) return
-        teamUniformRepository.save(uniformOf(teamService.getTeamByName(team), season, week))
+        if (teamUniformHistoryRepository.findByTeamAndSeasonNumberAndWeek(team, season, week) != null) return
+        teamUniformHistoryRepository.save(uniformOf(teamService.getTeamByName(team), season, week))
     }
 
     /** The helmet color is resolved here rather than at render time because it depends on reading the team's logo. */
@@ -43,23 +46,34 @@ class TeamUniformService(
         team: Team,
         season: Int,
         week: Int,
-    ): TeamUniform =
-        TeamUniform(
-            team = team.name.orEmpty(),
+    ): TeamUniformHistory {
+        val name = team.name.orEmpty()
+        val current = teamUniformCurrentRepository.findById(name).orElse(null)
+        return TeamUniformHistory(
+            team = name,
             seasonNumber = season,
             week = week,
-            helmetColor = hex(HelmetColors.shellColor(team)),
-            facemaskColor = FACEMASK_COLOR,
-            jerseyColor = team.primaryColor,
-            pantsColor = team.primaryColor,
-            logoUrl = team.scorebugLogo,
-            hasLogo = true,
-            hasStripe = false,
+            primaryColor = current?.primaryColor ?: team.primaryColor,
+            secondaryColor = current?.secondaryColor ?: team.secondaryColor,
+            tertiaryColor = current?.tertiaryColor,
+            helmetColor = current?.helmetColor ?: hex(HelmetColors.shellColor(team)),
+            facemaskColor = current?.facemaskColor ?: FACEMASK_COLOR,
+            helmetLogoMode = current?.helmetLogoMode ?: TeamUniformCurrent.DEFAULT_HELMET_LOGO_MODE,
+            jerseyColor = current?.jerseyColor ?: team.primaryColor,
+            numberColor = current?.numberColor ?: NUMBER_COLOR,
+            numberOutlineColor = current?.numberOutlineColor,
+            pantsColor = current?.pantsColor ?: team.primaryColor,
+            logoUrl = current?.logoUrl ?: team.scorebugLogo,
+            hasLogo = current?.hasLogo ?: true,
+            hasStripe = current?.hasStripe ?: false,
+            stripeColor = current?.stripeColor,
         )
+    }
 
     private fun hex(color: Color): String = String.format("#%06X", color.rgb and 0xFFFFFF)
 
     companion object {
         private const val FACEMASK_COLOR = "#FFFFFF"
+        private const val NUMBER_COLOR = "#FFFFFF"
     }
 }

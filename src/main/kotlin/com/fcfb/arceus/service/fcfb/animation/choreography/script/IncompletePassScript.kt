@@ -61,12 +61,21 @@ class IncompletePassScript : PlayScript {
         val defense = defense(kind, scene, before, receiver, arrivalPoint, arriveAt, forward)
 
         val held = concept.heldBall(quarterback)
-        val restSpot = arrivalPoint + FieldPoint(forward * BOUNCE_ROLL, side * BOUNCE_DRIFT)
+        val deflected = kind == IncompletionKind.TIPPED
+        val tipPoint = concept.tipPointFor(arrivalPoint, side * TIP_SWING)
+        val restSpot =
+            if (deflected) {
+                tipPoint + FieldPoint(forward * TIP_FALL_SHORT, side * TIP_SWING)
+            } else {
+                arrivalPoint + FieldPoint(forward * BOUNCE_ROLL, side * BOUNCE_DRIFT)
+            }
         val tip = tipHeightOf(kind)
         val ball =
             BallTrack { progress ->
                 when {
                     progress < throwAt -> held.at(progress)
+                    progress < arriveAt && deflected ->
+                        concept.tipped(tipPoint, restSpot, segment(progress, throwAt, arriveAt))
                     progress < arriveAt -> concept.thrown(arrivalPoint, segment(progress, throwAt, arriveAt))
                     else -> {
                         val fraction = segment(progress, arriveAt, arriveAt + FALL_TIME)
@@ -89,6 +98,7 @@ class IncompletePassScript : PlayScript {
             IncompletionKind.BROKEN_UP -> random.between(10f, 20f)
             IncompletionKind.ALMOST_INTERCEPTED -> random.between(14f, 24f)
             IncompletionKind.ALMOST_PICKED_CROSSER -> random.between(6f, 11f)
+            IncompletionKind.TIPPED -> random.between(9f, 18f)
             IncompletionKind.OVERTHROWN -> random.between(22f, 38f)
             IncompletionKind.THROWN_AWAY -> random.between(4f, 9f)
             IncompletionKind.SCREEN_WIDE -> random.between(-2f, 1f)
@@ -135,7 +145,8 @@ class IncompletePassScript : PlayScript {
         val contested =
             kind == IncompletionKind.BROKEN_UP ||
                 kind == IncompletionKind.ALMOST_INTERCEPTED ||
-                kind == IncompletionKind.ALMOST_PICKED_CROSSER
+                kind == IncompletionKind.ALMOST_PICKED_CROSSER ||
+                kind == IncompletionKind.TIPPED
         if (!contested) return before
         val breakAt = arriveAt - BREAK_ON_BALL
         val defender = Pursuit.closest(before.map { it.at(breakAt) }, scene.defensiveAlignment.secondary, arrivalPoint, 1).first()
@@ -163,6 +174,8 @@ class IncompletePassScript : PlayScript {
         private const val OVERTHROW_GAP = 4f
         private const val THROWAWAY_GAP = 3f
         private const val TIP_HEIGHT = 3.2f
+        private const val TIP_SWING = 2.4f
+        private const val TIP_FALL_SHORT = -3.5f
         private const val BOUNCE_HEIGHT = 1.8f
         private const val BOUNCES = 3
         private const val BOUNCE_ROLL = 3f

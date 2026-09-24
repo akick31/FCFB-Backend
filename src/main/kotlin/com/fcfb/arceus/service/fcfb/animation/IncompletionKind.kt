@@ -6,6 +6,7 @@ enum class IncompletionKind {
     BROKEN_UP,
     ALMOST_INTERCEPTED,
     ALMOST_PICKED_CROSSER,
+    TIPPED,
     OVERTHROWN,
     THROWN_AWAY,
     SCREEN_WIDE,

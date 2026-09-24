@@ -2,7 +2,8 @@ package com.fcfb.arceus.service.fcfb.animation
 
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamUniform
+import com.fcfb.arceus.model.TeamField
+import com.fcfb.arceus.model.TeamUniformHistory
 import java.awt.Color
 
 data class FieldTheme(
@@ -14,12 +15,13 @@ data class FieldTheme(
     val turf: Color = FieldBackgroundPainter.TURF_COLOR,
     val homeConferenceLogoUrl: String? = null,
     val awayConferenceLogoUrl: String? = null,
-    val homeUniform: TeamUniform? = null,
-    val awayUniform: TeamUniform? = null,
+    val homeUniform: TeamUniformHistory? = null,
+    val awayUniform: TeamUniformHistory? = null,
     val midfieldCaption: List<String> = emptyList(),
     val midfieldLocation: String? = null,
     val wallCaption: String? = null,
     val wallLogoUrl: String? = null,
+    val homeField: TeamField? = null,
 ) {
     fun uniforms(): Pair<Uniform, Uniform> = Uniforms.forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
 
@@ -37,12 +39,11 @@ data class FieldTheme(
         val team = if (style == FieldStyle.HOME_FIELD || side == TeamSide.HOME) homeTeam else awayTeam
         val primary = FieldBackgroundPainter.parseColor(team.primaryColor)
         val secondary = FieldBackgroundPainter.parseColor(team.secondaryColor)
-        val override = TeamFieldOverrides.forTeam(homeTeam.name)
         return when (style) {
             FieldStyle.HOME_FIELD ->
                 EndZoneDecoration(
                     team,
-                    override?.endZoneFill ?: primary,
+                    homeFieldEndZoneFill() ?: primary,
                     FieldBackgroundPainter.LINE_COLOR,
                     outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
                     null,
@@ -67,6 +68,8 @@ data class FieldTheme(
             FieldStyle.CONFERENCE_CHAMPIONSHIP -> onGrass(team, primary, secondary, null)
         }
     }
+
+    private fun homeFieldEndZoneFill(): Color? = homeField?.endZoneColor?.let { FieldBackgroundPainter.parseColor(it) }
 
     private fun outlineOf(
         textColor: Color,

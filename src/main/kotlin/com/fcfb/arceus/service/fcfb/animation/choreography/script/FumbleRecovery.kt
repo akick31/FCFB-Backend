@@ -47,6 +47,8 @@ internal object FumbleRecovery {
     private const val CALLOUT_LINGER = 0.1f
     private const val CALLOUT_TEXT = "FUMBLE!"
     private const val SCOOP_TO_STRIDE = 0.06f
+    private const val ESCORT_PACE = 1.0f
+    private const val MIN_RETURN_TIME = 0.05f
 
     private val DEFENSIVE_SCORES = setOf(ActualResult.TURNOVER_TOUCHDOWN, ActualResult.DEFENSE_TWO_POINT)
 
@@ -82,6 +84,8 @@ internal object FumbleRecovery {
         val recovererTrack = switchAt(fumbleAt, defense[recoverer], switchAt(recoverAt, dive, carrierOf(returnBall, returnDirection)))
 
         val defenseDivers = Pursuit.closest(defense.map { it.at(fumbleAt) }, defense.indices - recoverer, fumbleSpot, DEFENDERS_IN_SCRAMBLE)
+        val returnPace = recoverySpot.distanceTo(returnEnd) / maxOf(returnAt - recoverAt, MIN_RETURN_TIME)
+        val escortSpeed = Pursuit.paced(maxOf(Pursuit.LINEBACKER_SPEED, returnPace * ESCORT_PACE))
         val finalDefense =
             defense.mapIndexed { index, track ->
                 val scrambling = if (index in defenseDivers) scramble(track, fumbleAt, looseBall, index) else track
@@ -91,7 +95,7 @@ internal object FumbleRecovery {
                         Pursuit.chase(
                             scrambling,
                             recoverAt + ESCORT_DELAY,
-                            Pursuit.LINEBACKER_SPEED,
+                            escortSpeed,
                             Pursuit.trail(recovererTrack, ESCORT_RADIUS + index % 3),
                         )
                     else -> scrambling

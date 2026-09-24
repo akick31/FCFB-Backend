@@ -2,15 +2,25 @@ package com.fcfb.arceus.service.fcfb.animation
 
 import com.fcfb.arceus.util.Logger
 import java.awt.image.BufferedImage
+import java.io.File
 import java.io.IOException
 import java.net.URI
+import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
 
 object LogoLoader {
     private const val OPAQUE = 16
+    private const val DEFAULT_IMAGES_PATH = "./images"
 
     private val cache = ConcurrentHashMap<String, BufferedImage>()
+
+    /**
+     * Uploaded logos are stored as paths relative to the images directory, which [URI.toURL] rejects as not absolute.
+     * Set at startup so those resolve against the same directory the upload service writes to.
+     */
+    @Volatile
+    var imagesPath: String = DEFAULT_IMAGES_PATH
 
     private fun trim(logo: BufferedImage): BufferedImage {
         var left = logo.width
@@ -34,7 +44,7 @@ object LogoLoader {
         if (url.isNullOrBlank()) return null
         cache[url]?.let { return it }
         return try {
-            ImageIO.read(URI(url).toURL())?.let { trim(it) }?.also { cache[url] = it }
+            ImageIO.read(locate(url))?.let { trim(it) }?.also { cache[url] = it }
         } catch (e: IOException) {
             Logger.error("Error loading logo from $url: ${e.message}")
             null
@@ -42,5 +52,10 @@ object LogoLoader {
             Logger.error("Invalid logo url $url: ${e.message}")
             null
         }
+    }
+
+    private fun locate(url: String): URL {
+        val uri = URI(url)
+        return if (uri.isAbsolute) uri.toURL() else File(imagesPath, url).toURI().toURL()
     }
 }

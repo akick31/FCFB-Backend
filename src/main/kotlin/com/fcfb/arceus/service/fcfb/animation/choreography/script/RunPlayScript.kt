@@ -4,6 +4,7 @@ import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.service.fcfb.animation.BigLossKind
 import com.fcfb.arceus.service.fcfb.animation.PlayRandom
+import com.fcfb.arceus.service.fcfb.animation.TwoPointKind
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
@@ -34,8 +35,10 @@ class RunPlayScript : PlayScript {
     override fun choreograph(context: PlayContext): Choreography {
         if (context.play.actualResult == ActualResult.SAFETY) return PitchPlay.choreograph(context)
         val random = PlayRandom(context.play)
-        if (context.play.playCall == PlayCall.TWO_POINT && random.chance(TWO_POINT_PASS_CHANCE)) {
-            return twoPointPass.choreograph(context)
+        if (context.play.playCall == PlayCall.TWO_POINT) {
+            if (random.chance(TWO_POINT_PASS_CHANCE)) return twoPointPass.choreograph(context)
+            val kind = random.pick(TwoPointKind.entries.toList())
+            if (kind != TwoPointKind.POWER && kind != TwoPointKind.FADE) return TwoPointPlay.choreograph(context, kind)
         }
         val scene = ScrimmageScene.from(context)
         val alignment = scene.offensiveAlignment
@@ -125,7 +128,7 @@ class RunPlayScript : PlayScript {
             DownfieldEscort.follow(
                 before = offense,
                 carrier = runner,
-                from = ESCORT_FROM,
+                from = if (offenseScores) SNAP_END else ESCORT_FROM,
                 until = tackleAt,
                 exclude = setOf(runnerIndex, alignment.quarterback),
                 speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED else escortSpeed },

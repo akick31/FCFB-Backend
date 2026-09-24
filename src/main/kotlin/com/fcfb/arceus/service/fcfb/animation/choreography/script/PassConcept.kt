@@ -155,6 +155,36 @@ internal class PassConcept(
             spinning = true,
         )
 
+    /**
+     * A deflected throw: a clean arc from the release to [tipPoint], then a flatter, tumbling
+     * deviation on to [endPoint]. [TIP_AT] is the share of the flight spent before contact.
+     */
+    fun tipped(
+        tipPoint: FieldPoint,
+        endPoint: FieldPoint,
+        fraction: Float,
+    ): BallState {
+        if (fraction < TIP_AT) {
+            val toTip = segment(fraction, 0f, TIP_AT)
+            return BallState(
+                release.lerp(tipPoint, toTip),
+                arc(toTip, 1.5f + release.distanceTo(tipPoint) * DEEP_ARC_PER_YARD),
+                spinning = true,
+            )
+        }
+        val afterTip = segment(fraction, TIP_AT, 1f)
+        return BallState(
+            tipPoint.lerp(endPoint, afterTip),
+            arc(afterTip, TIP_POP) * (1f - afterTip),
+            tumbling = true,
+        )
+    }
+
+    fun tipPointFor(
+        catchPoint: FieldPoint,
+        lateral: Float,
+    ): FieldPoint = release.lerp(catchPoint, TIP_AT) + FieldPoint(0f, lateral)
+
     private fun route(
         index: Int,
         conceptDepth: Float,
@@ -201,6 +231,9 @@ internal class PassConcept(
         private const val STEM_SHARE = 0.55f
         private const val ROUTE_STEM_AT = 0.5f
         private const val ROUTE_BREAK_AT = 0.85f
+
+        private const val TIP_AT = 0.68f
+        private const val TIP_POP = 2.6f
 
         private const val BASE_FLIGHT = 0.05f
         private const val DISTANCE_FLIGHT = 0.24f

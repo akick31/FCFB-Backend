@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation
 
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamUniform
+import com.fcfb.arceus.model.TeamUniformHistory
 import java.awt.Color
 import java.awt.image.BufferedImage
 
@@ -13,8 +13,8 @@ object HelmetColors {
     fun forMatchup(
         homeTeam: Team,
         awayTeam: Team,
-        homeSnapshot: TeamUniform? = null,
-        awaySnapshot: TeamUniform? = null,
+        homeSnapshot: TeamUniformHistory? = null,
+        awaySnapshot: TeamUniformHistory? = null,
     ): Pair<Color, Color> {
         val home = baseShell(homeTeam, homeSnapshot)
         val awayShell = baseShell(awayTeam, awaySnapshot)
@@ -24,7 +24,7 @@ object HelmetColors {
 
     private fun baseShell(
         team: Team,
-        snapshot: TeamUniform?,
+        snapshot: TeamUniformHistory?,
     ): Color = snapshot?.helmetColor?.let { FieldBackgroundPainter.parseColor(it) } ?: shellColor(team)
 
     fun shellColor(team: Team): Color {

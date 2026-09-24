@@ -116,7 +116,7 @@ class ShortKickReturnScript : PlayScript {
     companion object {
         private const val SNAP_AT = 0.1f
         private const val KICK_AT = 0.17f
-        private const val CATCH_AT = 0.42f
+        internal const val CATCH_AT = 0.42f
         private const val RETURN_SETTLE = 0.05f
         private const val CATCH_DEPTH_IN_END_ZONE = 3f
         private const val CATCH_WIDTH = 2f
@@ -138,7 +138,7 @@ class ShortKickReturnScript : PlayScript {
         private const val GUNNER_LEAD = 0.04f
         private const val LINE_DELAY = 0.03f
         private const val KICKER_DELAY = 0.06f
-        private const val ESCORT_PACE = 0.85f
+        private const val ESCORT_PACE = 1.0f
         private const val MIN_RETURN_TIME = 0.05f
     }
 }

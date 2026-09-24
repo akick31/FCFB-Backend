@@ -23,26 +23,42 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,
     ): List<BufferedImage> {
+        val blocked = play.actualResult == ActualResult.BLOCKED
+        return renderKickPhase(play, theme, blocked, if (blocked) BLOCKED_ENDS_AT else 1f)
+    }
+
+    internal fun renderKickPhase(
+        play: Play,
+        theme: FieldTheme,
+        blocked: Boolean,
+        endsAt: Float,
+        caught: Boolean = false,
+    ): List<BufferedImage> {
         val layout = GoalPostScenePainter.layoutFor(play)
         val kickingHome = play.possession == TeamSide.HOME
         val targetEndZone = theme.endZoneOf(if (kickingHome) TeamSide.AWAY else TeamSide.HOME)
         val (homeUniform, awayUniform) = theme.uniforms()
         val (kicking, rushing) = if (kickingHome) homeUniform to awayUniform else awayUniform to homeUniform
 
-        val blocked = play.actualResult == ActualResult.BLOCKED
         val blockSide = if (play.playId % 2 == 0) 1 else -1
         val rush = PlayRandom(play)
         val rusherIndex = rush.pick(RUSH_LANES)
         val nearMiss = !blocked && rush.chance(NEAR_MISS_CHANCE)
-        val trajectory = if (blocked) null else kickTrajectory(play, layout)
+        val trajectory =
+            when {
+                blocked -> null
+                caught -> KickTrajectory(layout, KickOutcome.CAUGHT, 0f)
+                else -> kickTrajectory(play, layout)
+            }
+        val deepReturner = KickDistance.fallsShort(play)
 
-        val timeline = animationTimeline(endsAt = if (blocked) BLOCKED_ENDS_AT else 1f)
+        val timeline = animationTimeline(endsAt = endsAt)
         val doinked = trajectory?.outcome == KickOutcome.DOINK || trajectory?.outcome == KickOutcome.DOINK_IN
-        val contactFrameIndex = if (doinked && trajectory != null) timeline.indexOfFirst { flight(it) >= trajectory.arrival } else -1
+        val contactFrameIndex = if (doinked) timeline.indexOfFirst { flight(it) >= trajectory!!.arrival } else -1
 
         return timeline.mapIndexed { index, t ->
             val scene = GoalPostScenePainter.paint(theme, targetEndZone, layout, midfieldTopOnLeft = kickingHome != theme.flipped)
-            FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked, rusherIndex, nearMiss)
+            FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked, rusherIndex, nearMiss, deepReturner)
             if (trajectory != null && t >= FieldGoalUnitPainter.KICK_AT) {
                 drawKick(scene, trajectory.at(flight(t)), flight(t))
                 if (flight(t) >= trajectory.arrival && trajectory.outcome in PASSES_THE_POSTS) {

@@ -65,7 +65,17 @@ class BlockedKickPlayScript : PlayScript {
                     carrierOf(returnBall, returnDirection),
                 ),
             )
-        val rushTeam = rushBefore.mapIndexed { index, track -> if (index == recoverer) recovererTrack else track }
+        val returnPace = recoverySpot.distanceTo(returnEnd) / maxOf(SCORE_AT - RECOVER_AT, MIN_RETURN_TIME)
+        val escortSpeed = Pursuit.paced(maxOf(Pursuit.DEFENSIVE_BACK_SPEED, returnPace * ESCORT_PACE))
+        val rushTeam =
+            rushBefore.mapIndexed { index, track ->
+                when {
+                    index == recoverer -> recovererTrack
+                    defenseScores ->
+                        Pursuit.chase(track, RECOVER_AT, escortSpeed, Pursuit.trail(recovererTrack, ESCORT_RADIUS + index % 3))
+                    else -> track
+                }
+            }
         val kickingTeam =
             kickingStarts.mapIndexed { index, start ->
                 val before = if (index == PuntFormation.KICKER) kicker else hold(start)
@@ -106,11 +116,14 @@ class BlockedKickPlayScript : PlayScript {
     companion object {
         private const val SNAP_AT = 0.1f
         private const val KICK_AT = 0.17f
-        private const val DEFLECT_AT = 0.2f
+        internal const val DEFLECT_AT = 0.2f
         private const val RECOVER_AT = 0.4f
         private const val SETTLE = 0.05f
         private const val BLOCK_DISTANCE = 3f
         private const val DEEP_DEPTH = 12f
         private const val BLOCKER = 2
+        private const val ESCORT_PACE = 1.0f
+        private const val ESCORT_RADIUS = 4f
+        private const val MIN_RETURN_TIME = 0.05f
     }
 }

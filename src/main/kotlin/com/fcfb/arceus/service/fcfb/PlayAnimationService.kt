@@ -11,6 +11,7 @@ import com.fcfb.arceus.service.fcfb.animation.AnimationPalette
 import com.fcfb.arceus.service.fcfb.animation.FieldCoordinateMapper
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalAttemptFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.FieldThemeResolver
+import com.fcfb.arceus.service.fcfb.animation.KickSixFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.OverheadPlayFrameRenderer
 import com.fcfb.arceus.service.fcfb.animation.OverlayPainter
 import com.fcfb.arceus.service.fcfb.animation.PlayAnimationClassifier
@@ -32,6 +33,7 @@ class PlayAnimationService(
     private val animationFitter: AnimationFitter,
     private val overheadPlayFrameRenderer: OverheadPlayFrameRenderer,
     private val fieldGoalAttemptFrameRenderer: FieldGoalAttemptFrameRenderer,
+    private val kickSixFrameRenderer: KickSixFrameRenderer,
     private val fieldThemeResolver: FieldThemeResolver,
     private val teamUniformService: TeamUniformService,
 ) {
@@ -47,8 +49,14 @@ class PlayAnimationService(
         val offensivePlaybook = if (play.possession == TeamSide.HOME) game.homeOffensivePlaybook else game.awayOffensivePlaybook
         val defensivePlaybook = if (play.possession == TeamSide.HOME) game.awayDefensivePlaybook else game.homeDefensivePlaybook
 
+        val isKickSix = play.actualResult == ActualResult.KICK_SIX
         val isFieldGoal = playAnimationClassifier.classify(play) == AnimatedPlayType.FIELD_GOAL
-        val renderer = if (isFieldGoal) fieldGoalAttemptFrameRenderer else overheadPlayFrameRenderer
+        val renderer =
+            when {
+                isKickSix -> kickSixFrameRenderer
+                isFieldGoal -> fieldGoalAttemptFrameRenderer
+                else -> overheadPlayFrameRenderer
+            }
         val homeUniform = teamUniformService.uniformFor(play.homeTeam, game.season, game.week)
         val awayUniform = teamUniformService.uniformFor(play.awayTeam, game.season, game.week)
         val theme = fieldThemeResolver.resolve(play, game, homeTeam, awayTeam, homeUniform, awayUniform)

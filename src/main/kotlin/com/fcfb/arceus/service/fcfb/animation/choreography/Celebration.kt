@@ -4,6 +4,8 @@ object Celebration {
     private const val MOB_RADIUS = 1.6f
     private const val MOB_STEP = 0.9f
     private const val MOB_SPEED = 70f
+    private const val MOB_PACE = 1.15f
+    private const val MIN_MOB_TIME = 0.05f
 
     private const val MOB_LEAD = 0.25f
     private const val SPIKE_HEIGHT = 2.2f
@@ -19,12 +21,13 @@ object Celebration {
         val scorerIndex = scoring.indices.minBy { scoring[it].at(scoreAt).distanceTo(spot) }
         val scorer = scoring[scorerIndex]
         val escortFrom = maxOf(0f, scoreAt - MOB_LEAD)
+        val speed = mobSpeed(scorer, escortFrom, scoreAt)
         val mobbed =
             scoring.mapIndexed { index, track ->
                 if (index == scorerIndex) {
                     track
                 } else {
-                    Pursuit.chase(track, escortFrom, MOB_SPEED, Pursuit.trail(scorer, MOB_RADIUS + (index % 3) * MOB_STEP))
+                    Pursuit.chase(track, escortFrom, speed, Pursuit.trail(scorer, MOB_RADIUS + (index % 3) * MOB_STEP))
                 }
             }
         val ball = spiked(choreography.ball, scoreAt)
@@ -36,6 +39,15 @@ object Celebration {
         spot: FieldPoint,
         scoreAt: Float,
     ): Float = tracks.minOf { it.at(scoreAt).distanceTo(spot) }
+
+    private fun mobSpeed(
+        scorer: Track,
+        from: Float,
+        scoreAt: Float,
+    ): Float {
+        val pace = scorer.at(scoreAt).distanceTo(scorer.at(from)) / maxOf(scoreAt - from, MIN_MOB_TIME)
+        return Pursuit.paced(maxOf(MOB_SPEED, pace * MOB_PACE))
+    }
 
     private fun spiked(
         ball: BallTrack,

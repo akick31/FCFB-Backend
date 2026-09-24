@@ -102,6 +102,6 @@ class InterceptionScript : PlayScript {
         private const val ESCORT_RADIUS = 4f
         private const val CATCH_TO_STRIDE = 0.08f
         private const val MIN_RETURN_TIME = 0.05f
-        private const val ESCORT_PACE = 0.85f
+        private const val ESCORT_PACE = 1.0f
     }
 }

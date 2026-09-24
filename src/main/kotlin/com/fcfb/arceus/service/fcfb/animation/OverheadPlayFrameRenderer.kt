@@ -50,6 +50,16 @@ class OverheadPlayFrameRenderer(
         theme: FieldTheme,
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,
+    ): List<BufferedImage> = renderFromProgress(play, startAbs, endAbs, theme, offensivePlaybook, defensivePlaybook, 0f)
+
+    internal fun renderFromProgress(
+        play: Play,
+        startAbs: Int,
+        endAbs: Int,
+        theme: FieldTheme,
+        offensivePlaybook: OffensivePlaybook,
+        defensivePlaybook: DefensivePlaybook,
+        fromProgress: Float,
     ): List<BufferedImage> {
         val context =
             PlayContext(
@@ -72,6 +82,7 @@ class OverheadPlayFrameRenderer(
         val extraFrames = ((ballTravelYards(choreography) - LONG_PLAY_YARDS) * EXTRA_FRAMES_PER_YARD).toInt().coerceIn(0, MAX_EXTRA_FRAMES)
         val celebrationFrames = if (play.actualResult in CELEBRATED_SCORES) CELEBRATION_FRAMES else 0
         return animationTimeline(extraFrames, celebrationFrames, choreography.endsAt)
+            .filter { it >= fromProgress }
             .map { progress -> ChoreographyPainter.paint(field, camera, choreography, progress, helmets) }
     }
 
