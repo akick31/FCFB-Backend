@@ -48,8 +48,6 @@ class RunPlayScript : PlayScript {
         val fumble = result in FUMBLES
         val offenseScores = result in OFFENSIVE_SCORES
 
-        // PitchPlay was written for losses, so a scoring or fumbled pitch falls back to a straight run rather than
-        // being routed through a path that has never been exercised at that outcome.
         val drawn = random.pick(RunConcept.entries.toList())
         val concept = if ((offenseScores || fumble) && drawn == RunConcept.PITCH) RunConcept.POWER else drawn
         if (concept == RunConcept.PITCH) return PitchPlay.choreograph(context)
@@ -89,7 +87,6 @@ class RunPlayScript : PlayScript {
         val runGain = (runEnd.along - context.lineOfScrimmage) * forward
         val runTime =
             if (runGain <= 0f) {
-                // A reverse crosses the formation, so a flat stuffed time would sprint the carrier sideways.
                 minOf(SCORE_AT, maxOf(STUFFED_AT, HANDOFF + STRIDE_TIME + carryTime(mesh.distanceTo(runEnd))))
             } else {
                 minOf(SCORE_AT, maxOf(SHORT_RUN_AT, HANDOFF + STRIDE_TIME + carryTime(runGain)))
@@ -116,7 +113,6 @@ class RunPlayScript : PlayScript {
                 path(HANDOFF to handoffBall, tackleAt to runEnd)
             }
         val runnerStart = scene.offense[runnerIndex]
-        // A motion man is already crossing at the snap, the way a real reverse or jet sweep starts.
         val runnerPath =
             if (concept.inMotion) {
                 path(0f to runnerStart, MOTION_START to runnerStart, SNAP_END to runnerStart.lerp(mesh, MOTION_SHARE), HANDOFF to mesh)

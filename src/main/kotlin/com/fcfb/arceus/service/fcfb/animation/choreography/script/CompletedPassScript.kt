@@ -147,7 +147,6 @@ class CompletedPassScript : PlayScript {
     ): List<Track> {
         val catchSpot = receiver.at(catchAt)
         val cover = Pursuit.closest(before.map { it.at(throwAt) }, scene.defensiveAlignment.secondary, catchSpot, 1).first()
-        // Flat coverage speed leaves the defender yards behind a deep route, so there is nobody there to contest.
         val needed = before[cover].at(SNAP_END).distanceTo(catchSpot) / maxOf(catchAt - SNAP_END, MIN_COVER_TIME)
         val speed = Pursuit.paced(maxOf(Pursuit.COVERAGE_SPEED, needed * COVER_PACE))
         val shadow =

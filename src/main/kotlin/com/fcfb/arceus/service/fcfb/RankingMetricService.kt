@@ -250,8 +250,6 @@ class RankingMetricService(
                 },
             )
 
-        // Lower average difference is better for offense (harder for the defense to read); higher is better for defense
-        // (this team read its opponents better). Same convention applies to the special-teams variants.
         val offensiveDiff = normalize(teamIds.associateWith { -diffAggregates.getValue(it).averageOffensiveDiff })
         val defensiveDiff = normalize(teamIds.associateWith { diffAggregates.getValue(it).averageDefensiveDiff })
         val offensiveSpecialTeamsDiff = normalize(teamIds.associateWith { -diffAggregates.getValue(it).averageOffensiveSpecialTeamsDiff })
