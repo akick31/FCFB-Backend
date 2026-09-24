@@ -59,9 +59,6 @@ class CoachStatsServiceTest {
 
     @Test
     fun `getCoachStats finds a stint logged under a since-renamed username via discord id`() {
-        // The transaction log entry was written back when this coach's username was
-        // "flying_porygon" - the current lookup is by "cyclone_puffin", which never
-        // appears in the log's `coach` field, only in `coachDiscordIds`.
         val hiredEntry =
             CoachTransactionLog(
                 "Arkansas",
@@ -102,9 +99,6 @@ class CoachStatsServiceTest {
 
     @Test
     fun `getCoachStats attributes a team's entire history when the team has no transaction log entries at all`() {
-        // Original team assignment predates the transaction log system entirely - there
-        // are no HIRED/FIRED rows for this team, but the coach's current team is still
-        // known from the User row itself.
         currentUser.team = "Wyoming"
         every { coachTransactionLogRepository.getEntireCoachTransactionLog() } returns emptyList()
 

@@ -238,11 +238,8 @@ class PlayAnimationPreviewTool {
                 play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(75, style = FieldStyle.PLAYOFF),
             "field-goal-bowl" to
                 play(TeamSide.HOME, 75, PlayCall.FIELD_GOAL, ActualResult.GOOD).endingAt(75, style = FieldStyle.BOWL),
-            // Appended last on purpose: inserting mid-list reseeds every scenario defined after it.
-            // A spike is always under center; this proves the SPREAD playbook does not leave the quarterback in shotgun.
             "spike-spread-playbook" to
                 play(TeamSide.HOME, 60, PlayCall.SPIKE, ActualResult.SPIKE).endingAt(60, OffensivePlaybook.SPREAD),
-            // A reverse and a jet sweep are no longer losses by definition; these exercise the winning outcomes.
             "run-reverse-touchdown" to
                 play(TeamSide.HOME, 70, PlayCall.RUN, ActualResult.TOUCHDOWN, forcedPlayId = REVERSE_SCORE_PLAY_ID).endingAt(100),
             "run-jet-sweep-gain" to
@@ -510,7 +507,6 @@ class PlayAnimationPreviewTool {
         const val RETURN_SIDELINE_PLAY_ID = 901
         const val RETURN_MIDDLE_PLAY_ID = 911
         const val RETURN_CUTBACK_PLAY_ID = 900
-        // Recomputed for the five-value RunConcept draw; the old ids selected different concepts.
         const val LOSS_INSIDE_PLAY_ID = 896
         const val LOSS_OUTSIDE_PLAY_ID = 897
         const val LOSS_PITCH_PLAY_ID = 904

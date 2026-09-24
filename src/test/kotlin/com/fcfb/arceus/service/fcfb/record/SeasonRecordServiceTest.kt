@@ -33,9 +33,6 @@ class SeasonRecordServiceTest {
 
     @Test
     fun `attributes a season record to the coach's current username even after a mid-season rename`() {
-        // The coach renamed from "flying_porygon" to "cyclone_puffin" partway through
-        // the season, so the two GameStats rows carry different `coaches` strings - but
-        // the same coachDiscordIds, which is what attribution should actually key on.
         val earlyGame =
             GameStats(gameId = 1, team = "Arkansas", season = 13, coaches = listOf("flying_porygon"), coachDiscordIds = listOf(discordId))
         val laterGame =
