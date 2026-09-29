@@ -2,11 +2,13 @@ package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.dto.response.ScorebugResponse
 import com.fcfb.arceus.enums.game.GameMode
+import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.enums.game.TVChannel.CBS_SPORTS_NETWORK
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.service.fcfb.scorebug.CbsScorebugRenderer
+import com.fcfb.arceus.service.fcfb.scorebug.ChewBadgeOverlay
 import com.fcfb.arceus.service.fcfb.scorebug.CwScorebugRenderer
 import com.fcfb.arceus.service.fcfb.scorebug.EspnScorebugRenderer
 import com.fcfb.arceus.service.fcfb.scorebug.FoxScorebugRenderer
@@ -28,6 +30,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Base64
 import javax.imageio.ImageIO
@@ -44,6 +47,7 @@ class ScorebugService(
     private val tntRenderer: TntScorebugRenderer,
     private val cwRenderer: CwScorebugRenderer,
     private val pacTwelveRenderer: PacTwelveScorebugRenderer,
+    private val chewBadgeOverlay: ChewBadgeOverlay,
     @Value("\${images.path}")
     private val imagePath: String,
 ) {
@@ -121,22 +125,34 @@ class ScorebugService(
 
     fun getScorebugByGameId(gameId: Int): ResponseEntity<ByteArray> {
         val game = gameService.getGameById(gameId)
-        generateScorebug(game)
+        val scorebug = generateScorebug(game)
+        val rendered =
+            if (game.gameMode == GameMode.CHEW && game.gameStatus != GameStatus.FINAL) {
+                chewBadgeOverlay.apply(scorebug)
+            } else {
+                scorebug
+            }
 
-        try {
-            val scorebug = File("$imagePath/scorebugs/${game.gameId}_scorebug.png").readBytes()
+        return try {
+            val bytes = toPngBytes(rendered)
 
             val headers =
                 HttpHeaders().apply {
                     contentType = MediaType.IMAGE_PNG
-                    contentLength = scorebug.size.toLong()
+                    contentLength = bytes.size.toLong()
                 }
 
-            return ResponseEntity(scorebug, headers, HttpStatus.OK)
+            ResponseEntity(bytes, headers, HttpStatus.OK)
         } catch (e: Exception) {
             Logger.error("Error fetching scorebug image: ${e.message}")
-            return ResponseEntity(HttpStatus.NOT_FOUND)
+            ResponseEntity(HttpStatus.NOT_FOUND)
         }
+    }
+
+    private fun toPngBytes(image: BufferedImage): ByteArray {
+        val output = ByteArrayOutputStream()
+        ImageIO.write(image, "png", output)
+        return output.toByteArray()
     }
 
     fun getLatestScorebugByGameId(gameId: Int): ResponseEntity<ByteArray> {
