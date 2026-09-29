@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.web.client.RestTemplate
+import java.time.LocalDateTime
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -100,6 +102,20 @@ class AppConfigTest {
             }
 
         assertTrue(jsonCapableConverters.isNotEmpty(), "RestTemplate should support JSON processing")
+    }
+
+    @Test
+    fun `restTemplate serializes LocalDateTime as an ISO-8601 string, not a timestamp array`() {
+        val restTemplate = appConfig.restTemplate()
+        val jacksonConverter =
+            restTemplate.messageConverters
+                .filterIsInstance<MappingJackson2HttpMessageConverter>()
+                .first()
+
+        val serialized = jacksonConverter.objectMapper.writeValueAsString(LocalDateTime.of(2026, 9, 15, 21, 24, 59))
+
+        assertEquals("\"2026-09-15T21:24:59\"", serialized, "Dates must serialize as ISO strings so the Discord bot's Gson can parse them")
+        assertFalse(serialized.startsWith("["), "Dates must not serialize as a numeric timestamp array")
     }
 
     @Test
