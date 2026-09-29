@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb.animation
 
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.BowlField
+import com.fcfb.arceus.model.PostseasonField
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamField
 import com.fcfb.arceus.model.TeamUniformHistory
@@ -24,38 +25,42 @@ data class FieldTheme(
     val wallLogoUrl: String? = null,
     val homeField: TeamField? = null,
     val bowlField: BowlField? = null,
+    val postseasonField: PostseasonField? = null,
 ) {
     private val bowlStyling: BowlFieldStyling? by lazy { bowlField?.let { BowlFieldStyling(it, homeTeam, awayTeam, turf) } }
 
-    val hasCustomField: Boolean get() = homeField != null || bowlField != null
+    val hasCustomField: Boolean get() = homeField != null || bowlField != null || postseasonField != null
 
-    fun endZoneFont(): String? = homeField?.endZoneFont ?: bowlField?.endZoneFont
+    fun endZoneFont(): String? = homeField?.endZoneFont ?: bowlField?.endZoneFont ?: postseasonField?.endZoneFont
 
-    fun wallDesign(): String? = homeField?.wallDesign ?: bowlField?.wallDesign
+    fun wallDesign(): String? = homeField?.wallDesign ?: bowlField?.wallDesign ?: postseasonField?.wallDesign
 
-    fun wallColor(): String? = homeField?.wallColor ?: bowlField?.wallColor
+    fun wallColor(): String? = homeField?.wallColor ?: bowlField?.wallColor ?: postseasonField?.wallColor
 
-    fun wallTextOutlineColor(): String? = homeField?.wallTextOutlineColor ?: bowlField?.wallTextOutlineColor
+    fun wallTextOutlineColor(): String? =
+        homeField?.wallTextOutlineColor ?: bowlField?.wallTextOutlineColor ?: postseasonField?.wallTextOutlineColor
 
-    fun goalPostColor(): String? = homeField?.goalPostColor ?: bowlField?.goalPostColor
+    fun goalPostColor(): String? = homeField?.goalPostColor ?: bowlField?.goalPostColor ?: postseasonField?.goalPostColor
 
-    fun goalPostStyle(): String? = homeField?.goalPostStyle ?: bowlField?.goalPostStyle
+    fun goalPostStyle(): String? = homeField?.goalPostStyle ?: bowlField?.goalPostStyle ?: postseasonField?.goalPostStyle
 
     fun yardNumberOutline(
         yard: Int,
         top: Boolean,
     ): Color? =
         bowlStyling?.yardNumberOutline(yard, top, teamOf(leftSide()), teamOf(rightSide()))
-            ?: homeField?.fieldNumberOutlineColor?.let { FieldBackgroundPainter.parseColor(it) }
+            ?: parsed(homeField?.fieldNumberOutlineColor ?: postseasonField?.yardNumberOutlineColor)
 
     fun redZoneBorder(yard: Int): Color? =
         bowlStyling?.redZoneBorder(yard, teamOf(leftSide()), teamOf(rightSide()))
-            ?: homeField?.redZoneBorderColor?.let { FieldBackgroundPainter.parseColor(it) }
+            ?: parsed(homeField?.redZoneBorderColor ?: postseasonField?.redZoneBorderColor)
 
     fun sidelineAccent(physicalLeft: Boolean): Color? {
-        val styling = bowlStyling ?: return homeField?.oobLineColor?.let { FieldBackgroundPainter.parseColor(it) }
+        val styling = bowlStyling ?: return parsed(homeField?.oobLineColor ?: postseasonField?.sidelineAccentColor)
         return styling.sidelineAccent(homeEnd = physicalLeft == (leftSide() == TeamSide.HOME))
     }
+
+    private fun parsed(hex: String?): Color? = hex?.let { FieldBackgroundPainter.parseColor(it) }
 
     private fun teamOf(side: TeamSide): Team = if (side == TeamSide.HOME) homeTeam else awayTeam
 

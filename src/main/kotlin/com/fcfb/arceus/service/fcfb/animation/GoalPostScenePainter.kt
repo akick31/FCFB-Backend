@@ -363,7 +363,7 @@ object GoalPostScenePainter {
 
     /** Postseason styles keep their built-in look; a home field follows whatever the team configured. */
     private fun wallDesign(theme: FieldTheme): WallDesign {
-        if (theme.style != FieldStyle.HOME_FIELD && theme.bowlField == null) return WallDesign.TEXT_WITH_LOGOS
+        if (theme.style != FieldStyle.HOME_FIELD && !theme.hasCustomField) return WallDesign.TEXT_WITH_LOGOS
         return WallDesign.from(theme.wallDesign())
     }
 

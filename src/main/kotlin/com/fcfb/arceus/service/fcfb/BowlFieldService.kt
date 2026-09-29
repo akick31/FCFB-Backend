@@ -34,7 +34,6 @@ class BowlFieldService(
         request.yardNumberSource?.let { field.yardNumberSource = it }
         request.redZoneEnabled?.let { field.redZoneEnabled = it }
         request.wallDesign?.let { field.wallDesign = it }
-        request.wallColor?.let { field.wallColor = it }
         request.goalPostColor?.let { field.goalPostColor = it }
         request.goalPostStyle?.let { field.goalPostStyle = it }
         field.leftEndZoneLogoUrl = request.leftEndZoneLogoUrl
@@ -43,6 +42,7 @@ class BowlFieldService(
         field.leftOobLineColor = request.leftOobLineColor
         field.rightOobLineColor = request.rightOobLineColor
         field.redZoneBorderColor = request.redZoneBorderColor
+        field.wallColor = request.wallColor
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
         requireVisibleWall(field)

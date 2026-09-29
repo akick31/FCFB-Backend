@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
@@ -30,6 +31,11 @@ class PuntPlayScript : PlayScript {
         val returnScores = result == ActualResult.PUNT_RETURN_TOUCHDOWN
         val muffed = result == ActualResult.MUFFED_PUNT || result == ActualResult.PUNT_TEAM_TOUCHDOWN
         val returnDirection = -forward
+        val random = PlayRandom(context.play)
+        val rushAttempt = random.chance(BLOCK_ATTEMPT_CHANCE)
+        val lateArrivals = PuntRush.lateArrivals(random)
+        val snapAt = if (rushAttempt) PuntRush.SNAP_AT else SNAP_AT
+        val kickAt = if (rushAttempt) PuntRush.KICK_AT else KICK_AT
         val endPoint = FieldPoint(context.endSpot, side * 3f)
         val landing = landingSpot(context, endPoint, returnScores, muffed)
         val fairCatch = !muffed && !returnScores && abs(landing.along - endPoint.along) < 0.5f
@@ -55,7 +61,7 @@ class PuntPlayScript : PlayScript {
             }
 
         val punterStart = kickingStarts[PuntFormation.KICKER]
-        val punter = path(0f to punterStart, SNAP_AT to punterStart, KICK_AT to punterStart + FieldPoint(forward * 1.5f, 0f))
+        val punter = path(0f to punterStart, snapAt to punterStart, kickAt to punterStart + FieldPoint(forward * 1.5f, 0f))
         val coverage =
             GangTackle.converge(
                 before = kickingStarts.mapIndexed { index, start -> if (index == PuntFormation.KICKER) punter else hold(start) },
@@ -65,7 +71,7 @@ class PuntPlayScript : PlayScript {
                 direction = returnDirection,
                 tackleAt = returnAt,
                 tacklers = if (returnScores) 0 else 2,
-                reactAt = { index -> if (index in PuntFormation.GUNNERS) GUNNER_RELEASE else KICK_AT },
+                reactAt = { index -> if (index in PuntFormation.GUNNERS) GUNNER_RELEASE else kickAt },
                 speed = { index -> if (index == PuntFormation.KICKER) PUNTER_SPEED else Pursuit.COVERAGE_SPEED },
             )
         val kickingTeam =
@@ -89,6 +95,15 @@ class PuntPlayScript : PlayScript {
                 val jammer = !rusher && index < PuntFormation.RUSHERS.size + jammerCount
                 when {
                     index == returnerIndex -> returner
+                    rusher && rushAttempt -> {
+                        val arriveAt = lateArrivals[index]
+                        val atPunter = PuntRush.charge(start, index, punterStart, forward, arriveAt).at(arriveAt)
+                        path(
+                            0f to start,
+                            arriveAt to atPunter,
+                            0.5f to FieldPoint(landing.along - forward * 12f, start.lateral * 1.4f),
+                        )
+                    }
                     rusher ->
                         path(
                             0f to start,
@@ -114,17 +129,17 @@ class PuntPlayScript : PlayScript {
             )
 
         val snapFrom = context.offenseSpot(0.3f, 0f)
-        val kickFrom = punter.at(KICK_AT) + carryOffset(forward)
+        val kickFrom = punter.at(kickAt) + carryOffset(forward)
         val ball =
             BallTrack { progress ->
                 when {
-                    progress < SNAP_AT -> {
-                        val fraction = segment(progress, 0f, SNAP_AT)
+                    progress < snapAt -> {
+                        val fraction = segment(progress, 0f, snapAt)
                         BallState(snapFrom.lerp(punterStart + carryOffset(forward), fraction), arc(fraction, 1.2f))
                     }
-                    progress < KICK_AT -> BallState(punter.at(progress) + carryOffset(forward))
+                    progress < kickAt -> BallState(punter.at(progress) + carryOffset(forward))
                     progress < CATCH_AT -> {
-                        val fraction = segment(progress, KICK_AT, CATCH_AT)
+                        val fraction = segment(progress, kickAt, CATCH_AT)
                         BallState(kickFrom.lerp(landing, fraction), arc(fraction, PUNT_HEIGHT), tumbling = true)
                     }
                     muffed -> {
@@ -172,5 +187,6 @@ class PuntPlayScript : PlayScript {
         private const val TOUCHDOWN_RETURN_PUNT = 42f
         private const val MIN_DEPTH_FROM_GOAL = 5f
         private const val MIN_PUNT = 20f
+        private const val BLOCK_ATTEMPT_CHANCE = 0.35f
     }
 }

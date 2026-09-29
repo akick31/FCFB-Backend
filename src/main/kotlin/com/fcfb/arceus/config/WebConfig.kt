@@ -107,6 +107,8 @@ internal val ADMIN_ONLY_POST_PATHS =
 internal val ADMIN_ONLY_PUT_PATHS =
     arrayOf(
         "$FULL_PATH/bowl-field",
+        "$FULL_PATH/postseason-field/playoff",
+        "$FULL_PATH/postseason-field/conference-championship",
         "$FULL_PATH/team",
         "$FULL_PATH/user/update",
         "$FULL_PATH/play",

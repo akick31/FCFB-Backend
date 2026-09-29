@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb.animation.choreography.script
 
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
+import com.fcfb.arceus.service.fcfb.animation.PlayRandom
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallState
 import com.fcfb.arceus.service.fcfb.animation.choreography.BallTrack
 import com.fcfb.arceus.service.fcfb.animation.choreography.Choreography
@@ -36,12 +37,14 @@ class BlockedKickPlayScript : PlayScript {
         val rushStarts =
             (PuntFormation.RUSHERS + PuntFormation.JAMMERS + PuntFormation.MIDDLE).map { context.defenseSpot(it.depth, it.lateral) } +
                 context.defenseSpot(DEEP_DEPTH, 0f)
-        val blocker = BLOCKER
+        val random = PlayRandom(context.play)
+        val blocker = random.pick((0 until PuntRush.LANES).toList())
+        val lateArrivals = PuntRush.lateArrivals(random)
         val rushBefore =
             rushStarts.mapIndexed { index, start ->
                 when {
                     index == blocker -> path(0f to start, KICK_AT to blockSpot + FieldPoint(forward, 0f))
-                    index < PuntFormation.RUSHERS.size -> path(0f to start, 0.25f to start - FieldPoint(forward * 1.5f, 0f))
+                    index < PuntRush.LANES -> PuntRush.charge(start, index, kickerStart, forward, lateArrivals[index])
                     else -> hold(start)
                 }
             }
@@ -114,14 +117,13 @@ class BlockedKickPlayScript : PlayScript {
     }
 
     companion object {
-        private const val SNAP_AT = 0.1f
-        private const val KICK_AT = 0.17f
-        internal const val DEFLECT_AT = 0.2f
-        private const val RECOVER_AT = 0.4f
+        private const val SNAP_AT = PuntRush.SNAP_AT
+        private const val KICK_AT = PuntRush.KICK_AT
+        internal const val DEFLECT_AT = 0.28f
+        private const val RECOVER_AT = 0.46f
         private const val SETTLE = 0.05f
         private const val BLOCK_DISTANCE = 3f
         private const val DEEP_DEPTH = 12f
-        private const val BLOCKER = 2
         private const val ESCORT_PACE = 1.0f
         private const val ESCORT_RADIUS = 4f
         private const val MIN_RETURN_TIME = 0.05f

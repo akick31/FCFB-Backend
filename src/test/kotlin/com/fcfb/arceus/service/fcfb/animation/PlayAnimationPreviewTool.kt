@@ -254,6 +254,8 @@ class PlayAnimationPreviewTool {
         val endAbs =
             when {
                 play.actualResult == ActualResult.SAFETY -> if (play.possession == TeamSide.HOME) -5 else 105
+                play.playCall == PlayCall.TWO_POINT && play.actualResult == ActualResult.SUCCESS ->
+                    if (play.possession == TeamSide.HOME) 105 else -5
                 else -> scoringTeamOrNull(play)?.let { if (it == TeamSide.HOME) 105 else -5 } ?: preview.endAbs
             }
         val renderer =
