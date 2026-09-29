@@ -363,8 +363,8 @@ object GoalPostScenePainter {
 
     /** Postseason styles keep their built-in look; a home field follows whatever the team configured. */
     private fun wallDesign(theme: FieldTheme): WallDesign {
-        if (theme.style != FieldStyle.HOME_FIELD) return WallDesign.TEXT_WITH_LOGOS
-        return WallDesign.from(theme.homeField?.wallDesign)
+        if (theme.style != FieldStyle.HOME_FIELD && theme.bowlField == null) return WallDesign.TEXT_WITH_LOGOS
+        return WallDesign.from(theme.wallDesign())
     }
 
     private fun cfpWall(style: FieldStyle): Boolean = style == FieldStyle.PLAYOFF || style == FieldStyle.NATIONAL_CHAMPIONSHIP
@@ -375,8 +375,8 @@ object GoalPostScenePainter {
         theme: FieldTheme,
         wallPaint: Color,
     ): Color {
-        if (theme.style == FieldStyle.HOME_FIELD) {
-            theme.homeField?.wallTextOutlineColor?.let { return FieldBackgroundPainter.parseColor(it) }
+        if (theme.hasCustomField) {
+            theme.wallTextOutlineColor()?.let { return FieldBackgroundPainter.parseColor(it) }
         }
         if (!usesLogoColors(theme.style)) return POST_COLOR
         val logo = LogoLoader.load(theme.centerLogoUrl) ?: return Color.BLACK
@@ -447,8 +447,8 @@ object GoalPostScenePainter {
         theme: FieldTheme,
         endZone: EndZoneDecoration,
     ): Color {
-        if (theme.style == FieldStyle.HOME_FIELD) {
-            theme.homeField?.wallColor?.let { return FieldBackgroundPainter.parseColor(it) }
+        if (theme.hasCustomField) {
+            theme.wallColor()?.let { return FieldBackgroundPainter.parseColor(it) }
         }
         if (theme.style == FieldStyle.NATIONAL_CHAMPIONSHIP || theme.style == FieldStyle.PLAYOFF) return Color.BLACK
         if (theme.style == FieldStyle.CONFERENCE_CHAMPIONSHIP) return SILVER_WALL_COLOR
@@ -529,13 +529,13 @@ object GoalPostScenePainter {
     }
 
     private fun goalPostColor(theme: FieldTheme): Color {
-        if (theme.style != FieldStyle.HOME_FIELD) return POST_COLOR
-        return theme.homeField?.goalPostColor?.let { FieldBackgroundPainter.parseColor(it) } ?: POST_COLOR
+        if (!theme.hasCustomField) return POST_COLOR
+        return theme.goalPostColor()?.let { FieldBackgroundPainter.parseColor(it) } ?: POST_COLOR
     }
 
     private fun goalPostStyle(theme: FieldTheme): GoalPostStyle {
-        if (theme.style != FieldStyle.HOME_FIELD) return GoalPostStyle.Y
-        return GoalPostStyle.from(theme.homeField?.goalPostStyle)
+        if (!theme.hasCustomField) return GoalPostStyle.Y
+        return GoalPostStyle.from(theme.goalPostStyle())
     }
 
     private fun drawBackOfEndZoneLine(

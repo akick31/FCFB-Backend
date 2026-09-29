@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation
 
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.model.BowlField
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamField
 import com.fcfb.arceus.model.TeamUniformHistory
@@ -22,7 +23,42 @@ data class FieldTheme(
     val wallCaption: String? = null,
     val wallLogoUrl: String? = null,
     val homeField: TeamField? = null,
+    val bowlField: BowlField? = null,
 ) {
+    private val bowlStyling: BowlFieldStyling? by lazy { bowlField?.let { BowlFieldStyling(it, homeTeam, awayTeam, turf) } }
+
+    val hasCustomField: Boolean get() = homeField != null || bowlField != null
+
+    fun endZoneFont(): String? = homeField?.endZoneFont ?: bowlField?.endZoneFont
+
+    fun wallDesign(): String? = homeField?.wallDesign ?: bowlField?.wallDesign
+
+    fun wallColor(): String? = homeField?.wallColor ?: bowlField?.wallColor
+
+    fun wallTextOutlineColor(): String? = homeField?.wallTextOutlineColor ?: bowlField?.wallTextOutlineColor
+
+    fun goalPostColor(): String? = homeField?.goalPostColor ?: bowlField?.goalPostColor
+
+    fun goalPostStyle(): String? = homeField?.goalPostStyle ?: bowlField?.goalPostStyle
+
+    fun yardNumberOutline(
+        yard: Int,
+        top: Boolean,
+    ): Color? =
+        bowlStyling?.yardNumberOutline(yard, top, teamOf(leftSide()), teamOf(rightSide()))
+            ?: homeField?.fieldNumberOutlineColor?.let { FieldBackgroundPainter.parseColor(it) }
+
+    fun redZoneBorder(yard: Int): Color? =
+        bowlStyling?.redZoneBorder(yard, teamOf(leftSide()), teamOf(rightSide()))
+            ?: homeField?.redZoneBorderColor?.let { FieldBackgroundPainter.parseColor(it) }
+
+    fun sidelineAccent(physicalLeft: Boolean): Color? {
+        val styling = bowlStyling ?: return homeField?.oobLineColor?.let { FieldBackgroundPainter.parseColor(it) }
+        return styling.sidelineAccent(homeEnd = physicalLeft == (leftSide() == TeamSide.HOME))
+    }
+
+    private fun teamOf(side: TeamSide): Team = if (side == TeamSide.HOME) homeTeam else awayTeam
+
     fun uniforms(): Pair<Uniform, Uniform> = Uniforms.forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
 
     fun homeLogoUrl(): String? = homeUniform?.logoUrl ?: homeTeam.scorebugLogo
@@ -49,13 +85,14 @@ data class FieldTheme(
                     null,
                 )
             FieldStyle.BOWL ->
-                EndZoneDecoration(
-                    team,
-                    primary,
-                    FieldBackgroundPainter.LINE_COLOR,
-                    outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
-                    null,
-                )
+                bowlStyling?.endZoneOf(team, side == TeamSide.HOME)
+                    ?: EndZoneDecoration(
+                        team,
+                        primary,
+                        FieldBackgroundPainter.LINE_COLOR,
+                        outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
+                        null,
+                    )
             FieldStyle.PLAYOFF -> onGrass(team, primary, secondary, centerLogoUrl)
             FieldStyle.NATIONAL_CHAMPIONSHIP ->
                 EndZoneDecoration(

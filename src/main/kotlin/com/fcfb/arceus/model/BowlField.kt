@@ -81,6 +81,14 @@ class BowlField {
     @Column(name = "wall_text_outline_color")
     var wallTextOutlineColor: String? = null
 
+    @Basic
+    @Column(name = "goal_post_color")
+    var goalPostColor: String = TeamField.DEFAULT_GOAL_POST_COLOR
+
+    @Basic
+    @Column(name = "goal_post_style")
+    var goalPostStyle: String = TeamField.DEFAULT_GOAL_POST_STYLE
+
     companion object {
         const val DEFAULT_END_ZONE_FILL = "PRIMARY"
         const val DEFAULT_YARD_NUMBER_SOURCE = "TEAM_PER_SIDE"

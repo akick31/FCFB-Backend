@@ -35,6 +35,8 @@ class BowlFieldService(
         request.redZoneEnabled?.let { field.redZoneEnabled = it }
         request.wallDesign?.let { field.wallDesign = it }
         request.wallColor?.let { field.wallColor = it }
+        request.goalPostColor?.let { field.goalPostColor = it }
+        request.goalPostStyle?.let { field.goalPostStyle = it }
         field.leftEndZoneLogoUrl = request.leftEndZoneLogoUrl
         field.rightEndZoneLogoUrl = request.rightEndZoneLogoUrl
         field.yardNumberOutlineColor = request.yardNumberOutlineColor

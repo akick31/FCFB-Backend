@@ -101,12 +101,11 @@ object FieldBackgroundPainter {
         drawSidelineAccent(g, theme)
 
         drawHashMarks(g)
-        val numberOutline = theme.homeField?.fieldNumberOutlineColor?.let { parseColor(it) }
         g.font = Font(EndZoneFonts.YARD_NUMBER_FAMILY, Font.BOLD, YARD_NUMBER_FONT_SIZE)
-        val redZone = theme.homeField?.redZoneBorderColor?.let { parseColor(it) }
         for (yard in 0..100 step 5) {
             val x = FieldCoordinateMapper.toPixelX(yard, WIDTH, MARGIN)
-            if (redZone != null && (yard == RED_ZONE_YARD || yard == 100 - RED_ZONE_YARD)) {
+            val redZone = if (yard == RED_ZONE_YARD || yard == 100 - RED_ZONE_YARD) theme.redZoneBorder(yard) else null
+            if (redZone != null) {
                 g.color = redZone
                 val inner = (OOB_STROKE_WIDTH / 2).toInt()
                 g.stroke = BasicStroke(RED_ZONE_STROKE_WIDTH, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)
@@ -117,11 +116,11 @@ object FieldBackgroundPainter {
             g.drawLine(x, OOB_INSET, x, HEIGHT - OOB_INSET)
             if (yard == 0 || yard == 100 || yard % 10 != 0) continue
             val label = (if (yard <= 50) yard else 100 - yard).toString()
-            drawSplitYardNumber(g, label, x, TOP_NUMBER_Y, numberOutline)
-            drawSplitYardNumber(g, label, x, BOTTOM_NUMBER_Y, numberOutline)
+            drawSplitYardNumber(g, label, x, TOP_NUMBER_Y, theme.yardNumberOutline(yard, top = true))
+            drawSplitYardNumber(g, label, x, BOTTOM_NUMBER_Y, theme.yardNumberOutline(yard, top = false))
         }
 
-        val endZoneFamily = EndZoneFonts.familyOf(theme.homeField?.endZoneFont)
+        val endZoneFamily = EndZoneFonts.familyOf(theme.endZoneFont())
         val endZoneFontSize =
             minOf(fittedEndZoneFontSize(g, homeEndZone, endZoneFamily), fittedEndZoneFontSize(g, awayEndZone, endZoneFamily))
         drawEndZoneText(g, homeEndZone, MARGIN / 2, clockwise = false, endZoneFontSize, endZoneFamily)
@@ -146,7 +145,9 @@ object FieldBackgroundPainter {
         g: Graphics2D,
         theme: FieldTheme,
     ) {
-        val accent = theme.homeField?.oobLineColor?.let { parseColor(it) } ?: return
+        val leftAccent = theme.sidelineAccent(physicalLeft = true)
+        val rightAccent = theme.sidelineAccent(physicalLeft = false)
+        if (leftAccent == null && rightAccent == null) return
         val left = FieldCoordinateMapper.toPixelX(RED_ZONE_YARD, WIDTH, MARGIN)
         val right = FieldCoordinateMapper.toPixelX(100 - RED_ZONE_YARD, WIDTH, MARGIN)
         val color = g.color
@@ -154,11 +155,16 @@ object FieldBackgroundPainter {
         val bandDepth = ((OOB_INSET - edge) * SIDELINE_BAND_FRACTION).toInt()
         val topStart = OOB_INSET - edge - bandDepth
         val bottomTop = HEIGHT - OOB_INSET + edge
-        g.color = accent
-        g.fillRect(0, topStart, left, bandDepth)
-        g.fillRect(right, topStart, WIDTH - right, bandDepth)
-        g.fillRect(0, bottomTop, left, bandDepth)
-        g.fillRect(right, bottomTop, WIDTH - right, bandDepth)
+        leftAccent?.let {
+            g.color = it
+            g.fillRect(0, topStart, left, bandDepth)
+            g.fillRect(0, bottomTop, left, bandDepth)
+        }
+        rightAccent?.let {
+            g.color = it
+            g.fillRect(right, topStart, WIDTH - right, bandDepth)
+            g.fillRect(right, bottomTop, WIDTH - right, bandDepth)
+        }
         g.color = LINE_COLOR
         g.fillRect(left, topStart, right - left, bandDepth)
         g.fillRect(left, bottomTop, right - left, bandDepth)

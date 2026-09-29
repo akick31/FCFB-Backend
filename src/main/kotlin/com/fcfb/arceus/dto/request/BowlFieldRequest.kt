@@ -18,4 +18,6 @@ data class BowlFieldRequest(
     val wallDesign: String? = null,
     val wallText: String? = null,
     val wallTextOutlineColor: String? = null,
+    val goalPostColor: String? = null,
+    val goalPostStyle: String? = null,
 )
