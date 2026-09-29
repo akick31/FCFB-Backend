@@ -24,7 +24,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
         defensivePlaybook: DefensivePlaybook,
     ): List<BufferedImage> {
         val blocked = play.actualResult == ActualResult.BLOCKED
-        return renderKickPhase(play, theme, blocked, if (blocked) BLOCKED_ENDS_AT else 1f)
+        return renderKickPhase(play, theme, blocked, if (blocked) FieldGoalUnitPainter.DOWNED_AT + BLOCKED_TAIL else 1f)
     }
 
     internal fun renderKickPhase(
@@ -123,7 +123,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
 
     companion object {
         private const val DOINK_FRAME_COUNT = 6
-        private const val BLOCKED_ENDS_AT = 0.38f
+        private const val BLOCKED_TAIL = 0.06f
         private const val NEAR_MISS_CHANCE = 0.35f
         private val RUSH_LANES = listOf(2, 3, 4, 6, 7, 8)
         private const val SHORT_KICK_YARDS = 60f

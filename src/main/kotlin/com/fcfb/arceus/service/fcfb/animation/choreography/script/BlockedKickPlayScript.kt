@@ -53,7 +53,7 @@ class BlockedKickPlayScript : PlayScript {
             if (defenseScores) {
                 blockSpot + FieldPoint(-forward * 3f, side * 2f)
             } else {
-                FieldPoint(context.endSpot, side * 2f)
+                blockSpot + FieldPoint(forward * RECOVERY_TOWARD_LINE, side * RECOVERY_LATERAL)
             }
         val returnEnd = if (defenseScores) FieldPoint(context.endSpot, side * 4f) else recoverySpot
         val returnBall = path(RECOVER_AT to recoverySpot, (if (defenseScores) SCORE_AT else RECOVER_AT) to returnEnd)
@@ -107,7 +107,7 @@ class BlockedKickPlayScript : PlayScript {
                     progress < DEFLECT_AT -> BallState(kickFrom.lerp(blockSpot, segment(progress, KICK_AT, DEFLECT_AT)), 1.5f)
                     progress < RECOVER_AT -> {
                         val fraction = segment(progress, DEFLECT_AT, RECOVER_AT)
-                        BallState(blockSpot.lerp(recoverySpot, fraction), bounce(fraction, 3f, 2))
+                        BallState(blockSpot.lerp(recoverySpot, fraction), bounce(fraction, DEFLECT_DROP_HEIGHT, DEFLECT_BOUNCES))
                     }
                     else -> BallState(returnBall.at(progress))
                 }
@@ -123,6 +123,10 @@ class BlockedKickPlayScript : PlayScript {
         private const val RECOVER_AT = 0.46f
         private const val SETTLE = 0.05f
         private const val BLOCK_DISTANCE = 3f
+        private const val RECOVERY_TOWARD_LINE = 2f
+        private const val RECOVERY_LATERAL = 1.5f
+        private const val DEFLECT_DROP_HEIGHT = 2.5f
+        private const val DEFLECT_BOUNCES = 2
         private const val DEEP_DEPTH = 12f
         private const val ESCORT_PACE = 1.0f
         private const val ESCORT_RADIUS = 4f

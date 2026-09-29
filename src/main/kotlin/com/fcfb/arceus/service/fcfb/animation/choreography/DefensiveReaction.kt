@@ -22,7 +22,7 @@ object DefensiveReaction {
                     offense[scene.blockerFor(index)].offsetBy(FieldPoint(forward * 2 * OffensiveAlignments.LINE_DEPTH, 0f))
                 in alignment.linebackers ->
                     if (dropping) {
-                        path(0f to start, 0.12f to start, 0.4f to start + FieldPoint(forward * HOOK_DROP, 0f))
+                        path(0f to start, 0.12f to start, 0.4f to context.keepInField(start + FieldPoint(forward * HOOK_DROP, 0f)))
                     } else {
                         path(0f to start, 0.22f to start + FieldPoint(-forward * RUN_READ_STEP, 0f))
                     }
@@ -30,7 +30,7 @@ object DefensiveReaction {
                     val receiver = scene.nearestReceiver(index)
                     offense[receiver].offsetBy(start - scene.offense[receiver])
                 }
-                else -> path(0f to start, 0.35f to start + FieldPoint(forward * SAFETY_BACKPEDAL, 0f))
+                else -> path(0f to start, 0.35f to context.keepInField(start + FieldPoint(forward * SAFETY_BACKPEDAL, 0f)))
             }
         }
     }

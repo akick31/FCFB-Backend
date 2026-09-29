@@ -5,7 +5,6 @@ import java.awt.image.BufferedImage
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin
-import kotlin.math.sqrt
 
 object FieldGoalUnitPainter {
     const val KICK_AT = 0.3f
@@ -15,7 +14,7 @@ object FieldGoalUnitPainter {
     private const val HOLD_AT = 0.18f
     private const val GAP_AT = HOLD_AT + 0.04f
     private const val BLOCK_AT = 0.38f
-    private const val SETTLED_AT = 0.85f
+    const val DOWNED_AT = 0.66f
     private const val FOLLOW_THROUGH = 0.12f
 
     private const val RUSH_DEPTH = -2.2f
@@ -49,14 +48,14 @@ object FieldGoalUnitPainter {
     private const val BLOCKER_JUMP = 22f
     private const val NEAR_MISS_REACH = 0.72f
     private const val JUMP_WINDOW = 0.08f
-    private const val HAND_REACH = 78f
 
     private const val BALL_SCALE = 1.1f
     private const val SNAP_ARC = 10f
-    private const val REBOUND_X = 150f
-    private const val REBOUND_FALL_PORTION = 0.3f
-    private const val REBOUND_HOP = 40f
-    private const val REBOUND_BOUNCES = 3.0
+    private const val DEAD_BALL_DRIFT = 20f
+    private const val DEAD_BALL_HOP = 34f
+    private const val DEAD_BALL_BOUNCES = 2
+    private const val KNOCKDOWN_LIFT = 26f
+    private const val BALL_REST_LIFT = 6f
 
     private const val DEEP_RETURNER_DEPTH = 4f
     private const val DEEP_RETURNER_SCALE = 0.5f
@@ -271,7 +270,7 @@ object FieldGoalUnitPainter {
         val (holdX, holdY) = holdSpot(layout)
         val snapY = depthY(layout, 0f) - SNAP_LIFT * unit
         val (blockerX, blockerFootY, blockerScale) = blockerStance(layout, BLOCK_AT, blockSide, false)
-        val handsY = blockerFootY - HAND_REACH * blockerScale
+        val groundY = blockerFootY - BALL_REST_LIFT * blockerScale
         return when {
             progress < SNAP_AT -> CENTER_X to snapY
             progress < HOLD_AT -> {
@@ -281,26 +280,26 @@ object FieldGoalUnitPainter {
             progress < KICK_AT -> holdX to holdY
             progress < BLOCK_AT -> {
                 val fraction = segment(progress, KICK_AT, BLOCK_AT)
-                lerp(holdX, blockerX, fraction) to lerp(holdY, handsY, fraction)
+                val lift = KNOCKDOWN_LIFT * unit * sin(PI * fraction).toFloat() * (1f - fraction)
+                lerp(holdX, blockerX, fraction) to lerp(holdY, groundY, fraction) - lift
             }
-            else -> rebound(segment(progress, BLOCK_AT, SETTLED_AT), blockerX, handsY, depthY(layout, REBOUND_DEPTH), blockSide * unit)
+            else -> bounceLoose(segment(progress, BLOCK_AT, DOWNED_AT), blockerX, groundY, blockSide * unit)
         }
     }
 
-    private fun rebound(
+    /**
+     * After the block the ball is batted to the turf at the block spot and bounces there, decaying to rest as a player
+     * falls on it, rather than being caught or caroming downfield.
+     */
+    private fun bounceLoose(
         fraction: Float,
         fromX: Float,
-        fromY: Float,
         groundY: Float,
         direction: Float,
     ): Pair<Float, Float> {
-        val x = fromX + direction * REBOUND_X * sqrt(fraction)
-        if (fraction < REBOUND_FALL_PORTION) {
-            val fall = fraction / REBOUND_FALL_PORTION
-            return x to fromY + (groundY - fromY) * fall * fall
-        }
-        val settle = (fraction - REBOUND_FALL_PORTION) / (1f - REBOUND_FALL_PORTION)
-        val hop = abs(sin(settle * REBOUND_BOUNCES * PI)).toFloat() * REBOUND_HOP * abs(direction) * (1f - settle) * (1f - settle)
+        val f = fraction.coerceIn(0f, 1f)
+        val x = fromX + direction * DEAD_BALL_DRIFT * f
+        val hop = abs(sin(f * PI * DEAD_BALL_BOUNCES)).toFloat() * DEAD_BALL_HOP * (1f - f) * (1f - f)
         return x to groundY - hop
     }
 
