@@ -310,9 +310,7 @@ object GameStatsCalculator {
     }
 
     fun calculateKickReturnTd(allPlays: List<Play>): Int {
-        return allPlays.count { play ->
-            play.playCall == PlayCall.KICKOFF_NORMAL && play.actualResult == ActualResult.RETURN_TOUCHDOWN
-        }
+        return allPlays.count { play -> play.actualResult == ActualResult.RETURN_TOUCHDOWN }
     }
 
     fun calculateNumberOfDrives(
