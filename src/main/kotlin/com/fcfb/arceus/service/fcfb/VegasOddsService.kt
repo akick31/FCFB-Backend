@@ -6,7 +6,7 @@ import com.fcfb.arceus.dto.response.VegasOddsResponse
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.service.fcfb.elo.VegasSpreadCalculator
+import com.fcfb.arceus.service.fcfb.elo.EloCalculator
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -27,7 +27,7 @@ class VegasOddsService(
 
         logger.info("Calculating Vegas odds: ${homeTeam.name} (${homeElo.toInt()}) vs ${awayTeam.name} (${awayElo.toInt()})")
 
-        val homeSpread = VegasSpreadCalculator.homeSpread(homeElo, awayElo)
+        val homeSpread = EloCalculator.homeSpread(homeElo, awayElo)
         val awaySpread = -homeSpread
 
         return VegasOddsResponse(
@@ -46,7 +46,7 @@ class VegasOddsService(
         homeTeamName: String? = null,
         awayTeamName: String? = null,
     ): VegasOddsResponse {
-        val homeSpread = VegasSpreadCalculator.homeSpread(homeElo, awayElo)
+        val homeSpread = EloCalculator.homeSpread(homeElo, awayElo)
         val awaySpread = -homeSpread
 
         return VegasOddsResponse(
@@ -148,7 +148,7 @@ class VegasOddsService(
                     continue
                 }
 
-                val spread = VegasSpreadCalculator.homeSpread(homeStats.teamElo, awayStats.teamElo)
+                val spread = EloCalculator.homeSpread(homeStats.teamElo, awayStats.teamElo)
                 val homeSpread = spread
                 val awaySpread = -spread
 

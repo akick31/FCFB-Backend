@@ -10,8 +10,8 @@ import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.service.fcfb.elo.EloRebuildService
-import com.fcfb.arceus.service.fcfb.elo.EloReplay
+import com.fcfb.arceus.service.fcfb.elo.EloCalculator
+import com.fcfb.arceus.service.fcfb.elo.EloService
 import com.fcfb.arceus.service.fcfb.gamestats.GameStatsCalculator
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameStatsNotFoundException
@@ -29,7 +29,7 @@ class GameStatsService(
     private val gameRepository: GameRepository,
     private val playRepository: PlayRepository,
     private val teamRepository: TeamRepository,
-    private val eloRebuildService: EloRebuildService,
+    private val eloService: EloService,
 ) {
     fun createGameStats(game: Game): List<GameStats> {
         val homeTeam =
@@ -139,7 +139,7 @@ class GameStatsService(
     @Transactional(rollbackFor = [Exception::class])
     fun generateAllGameStats() {
         try {
-            val eloRebuild = eloRebuildService.rebuild(apply = true)
+            val eloRebuild = eloService.rebuild(apply = true)
             Logger.info(
                 "Rebuilt ELO from scratch: ${eloRebuild.teamsChanged.size} teams, " +
                     "${eloRebuild.gameSpreadsChanged} game spreads, ${eloRebuild.gameStatsRowsChanged} game stats rows updated",
@@ -201,7 +201,7 @@ class GameStatsService(
         games: List<Game>,
         stats: List<GameStats>,
     ) {
-        val preGameElo = EloReplay.replay(games).preGameElo
+        val preGameElo = EloCalculator.replay(games).preGameElo
         stats.forEach { row -> row.team?.let { team -> preGameElo[row.gameId to team]?.let { row.teamElo = it } } }
     }
 

@@ -1,6 +1,5 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.service.fcfb.elo.EloRebuildService
 import com.fcfb.arceus.service.fcfb.elo.EloService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController
 @CrossOrigin(origins = ["*"])
 class EloController(
     private val eloService: EloService,
-    private val eloRebuildService: EloRebuildService,
 ) {
     @Operation(summary = "Get team ELO ratings")
     @GetMapping("/ratings")
@@ -32,5 +30,5 @@ class EloController(
     @PostMapping("/rebuild")
     fun rebuildElo(
         @RequestParam(defaultValue = "false") apply: Boolean,
-    ) = eloRebuildService.rebuild(apply)
+    ) = eloService.rebuild(apply)
 }

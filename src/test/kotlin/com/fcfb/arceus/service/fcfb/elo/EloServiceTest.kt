@@ -14,11 +14,11 @@ import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class EloRebuildServiceTest {
+class EloServiceTest {
     private val gameRepository = mockk<GameRepository>(relaxed = true)
     private val gameStatsRepository = mockk<GameStatsRepository>(relaxed = true)
     private val teamRepository = mockk<TeamRepository>(relaxed = true)
-    private val service = EloRebuildService(gameRepository, gameStatsRepository, teamRepository)
+    private val service = EloService(teamRepository, gameStatsRepository, gameRepository)
 
     private val airForce = team("Air Force", 1464.29)
     private val wyoming = team("Wyoming", 1759.49)
