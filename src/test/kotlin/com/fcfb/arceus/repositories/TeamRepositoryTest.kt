@@ -162,38 +162,6 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun `test getCoachesPollRankingById returns null when no ranking`() {
-        val team =
-            createTestTeam(
-                id = 1,
-                name = "Unranked Team",
-                coachesPollRanking = null,
-            )
-
-        every { teamRepository.getCoachesPollRankingById(1) } returns null
-
-        val result = teamRepository.getCoachesPollRankingById(1)
-
-        assertNull(result)
-    }
-
-    @Test
-    fun `test getCoachesPollRankingById`() {
-        val team =
-            createTestTeam(
-                id = 1,
-                name = "Ranked Team",
-                coachesPollRanking = 5,
-            )
-
-        every { teamRepository.getCoachesPollRankingById(1) } returns 5
-
-        val result = teamRepository.getCoachesPollRankingById(1)
-
-        assertEquals(5, result)
-    }
-
-    @Test
     fun `test count`() {
         every { teamRepository.count() } returns 10L
 
@@ -243,8 +211,6 @@ class TeamRepositoryTest {
         coachDiscordIds: MutableList<String> = mutableListOf("123456789"),
         primaryColor: String = "#FF0000",
         secondaryColor: String = "#0000FF",
-        coachesPollRanking: Int? = null,
-        playoffCommitteeRanking: Int? = null,
         subdivision: Subdivision = Subdivision.FBS,
         offensivePlaybook: OffensivePlaybook = OffensivePlaybook.PRO,
         defensivePlaybook: DefensivePlaybook = DefensivePlaybook.THREE_FOUR,
@@ -281,8 +247,6 @@ class TeamRepositoryTest {
             this.coachDiscordIds = coachDiscordIds
             this.primaryColor = primaryColor
             this.secondaryColor = secondaryColor
-            this.coachesPollRanking = coachesPollRanking
-            this.playoffCommitteeRanking = playoffCommitteeRanking
             this.subdivision = subdivision
             this.offensivePlaybook = offensivePlaybook
             this.defensivePlaybook = defensivePlaybook

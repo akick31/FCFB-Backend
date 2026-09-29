@@ -53,40 +53,6 @@ interface TeamRepository : CrudRepository<Team, Int> {
 
     @Query(
         value = """
-            SELECT CASE 
-                WHEN COUNT(*) > 0 THEN 1 
-                ELSE 0 
-            END 
-            FROM team 
-            WHERE active = true 
-            AND playoff_committee_ranking IS NOT NULL
-        """,
-        nativeQuery = true,
-    )
-    fun usePlayoffRanking(): Int
-
-    @Query(
-        value = """
-            SELECT playoff_committee_ranking 
-            FROM team 
-            WHERE id = :id
-        """,
-        nativeQuery = true,
-    )
-    fun getPlayoffRankingById(id: Int): Int?
-
-    @Query(
-        value = """
-            SELECT coaches_poll_ranking 
-            FROM team 
-            WHERE id = :id
-        """,
-        nativeQuery = true,
-    )
-    fun getCoachesPollRankingById(id: Int): Int?
-
-    @Query(
-        value = """
             SELECT * 
             FROM team
         """,
@@ -129,30 +95,4 @@ interface TeamRepository : CrudRepository<Team, Int> {
     fun findByCurrentConferenceWins(currentConferenceWins: Int): List<Team>
 
     fun findByCurrentConferenceLosses(currentConferenceLosses: Int): List<Team>
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE team SET coaches_poll_ranking = NULL", nativeQuery = true)
-    fun clearCoachesPollRankings()
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE team SET coaches_poll_ranking = :rank WHERE id = :id", nativeQuery = true)
-    fun setCoachesPollRankingById(
-        id: Int,
-        rank: Int,
-    )
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE team SET playoff_committee_ranking = NULL", nativeQuery = true)
-    fun clearPlayoffCommitteeRankings()
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE team SET playoff_committee_ranking = :rank WHERE id = :id", nativeQuery = true)
-    fun setPlayoffCommitteeRankingById(
-        id: Int,
-        rank: Int,
-    )
 }

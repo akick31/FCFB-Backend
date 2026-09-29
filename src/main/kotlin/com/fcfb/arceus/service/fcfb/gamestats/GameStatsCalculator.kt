@@ -310,9 +310,7 @@ object GameStatsCalculator {
     }
 
     fun calculateKickReturnTd(allPlays: List<Play>): Int {
-        return allPlays.count { play ->
-            play.playCall == PlayCall.KICKOFF_NORMAL && play.actualResult == ActualResult.RETURN_TOUCHDOWN
-        }
+        return allPlays.count { play -> play.actualResult == ActualResult.RETURN_TOUCHDOWN }
     }
 
     fun calculateNumberOfDrives(
@@ -547,6 +545,13 @@ object GameStatsCalculator {
                 play.actualResult == ActualResult.TOUCHDOWN
         }
     }
+
+    fun calculateFavoredMargin(teamSpread: Double?): Double? = teamSpread?.let { -it }
+
+    fun calculateUpsetMargin(
+        teamSpread: Double?,
+        teamWon: Boolean,
+    ): Double = if (teamWon && teamSpread != null && teamSpread > 0) teamSpread else 0.0
 
     fun calculateAverageDiff(allPlays: List<Play>): Double? {
         val differences = allPlays.mapNotNull { it.difference }

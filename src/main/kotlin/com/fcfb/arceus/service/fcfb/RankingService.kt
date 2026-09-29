@@ -2,7 +2,9 @@ package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.dto.response.RankingResponse
 import com.fcfb.arceus.enums.ranking.PollType
+import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Ranking
+import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.RankingRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.util.InvalidRankingsException
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service
 class RankingService(
     private val rankingRepository: RankingRepository,
     private val teamRepository: TeamRepository,
+    private val gameRepository: GameRepository,
 ) {
     fun getRankings(
         season: Int,
@@ -31,6 +34,41 @@ class RankingService(
                 losses = ranking.losses,
             )
         }
+    }
+
+    fun getTeamRankings(
+        teamId: Int,
+        pollType: String,
+    ): List<RankingResponse> {
+        val parsedPollType = parsePollType(pollType)
+        val teamName = teamRepository.findById(teamId).orElse(null)?.name
+        return rankingRepository.findByTeamAndPollType(teamId, parsedPollType.name).map { ranking ->
+            RankingResponse(
+                season = ranking.season,
+                week = ranking.week,
+                pollType = parsedPollType.name,
+                rank = ranking.rank,
+                teamId = ranking.teamId,
+                teamName = teamName,
+                wins = ranking.wins,
+                losses = ranking.losses,
+            )
+        }
+    }
+
+    fun getRankedGames(
+        team: String?,
+        season: Int?,
+    ): List<Game> =
+        gameRepository.getRankedGames().filter { game ->
+            val matchesTeam = team == null || team == "all" || game.homeTeam == team || game.awayTeam == team
+            val matchesSeason = season == null || game.season == season
+            matchesTeam && matchesSeason
+        }.sortedWith(compareBy<Game> { it.season }.thenBy { it.week })
+
+    fun getLatestRankings(pollType: String): List<RankingResponse> {
+        val latest = rankingRepository.findLatest(parsePollType(pollType).name) ?: return emptyList()
+        return getRankings(latest.season, latest.week, pollType)
     }
 
     fun getAvailableWeeks(
@@ -72,18 +110,20 @@ class RankingService(
             rankingRepository.save(Ranking(season, week, parsedPollType, index + 1, team.id, team.currentWins, team.currentLosses))
         }
 
-        when (parsedPollType) {
-            PollType.COACHES_POLL -> {
-                teamRepository.clearCoachesPollRankings()
-                teams.forEachIndexed { index, team -> teamRepository.setCoachesPollRankingById(team.id, index + 1) }
-            }
-            PollType.PLAYOFF_COMMITTEE -> {
-                teamRepository.clearPlayoffCommitteeRankings()
-                teams.forEachIndexed { index, team -> teamRepository.setPlayoffCommitteeRankingById(team.id, index + 1) }
-            }
-        }
-
         return getRankings(season, week, pollType)
+    }
+
+    fun getTeamRanks(
+        season: Int,
+        week: Int,
+        homeTeamId: Int,
+        awayTeamId: Int,
+    ): Pair<Int?, Int?> {
+        val pollType =
+            if (areRankingsUploaded(season, week, PollType.PLAYOFF_COMMITTEE)) PollType.PLAYOFF_COMMITTEE else PollType.COACHES_POLL
+        val ranksByTeamId =
+            rankingRepository.findBySeasonWeekAndPollType(season, week, pollType.name).associate { it.teamId to it.rank }
+        return ranksByTeamId[homeTeamId] to ranksByTeamId[awayTeamId]
     }
 
     private fun parsePollType(pollType: String): PollType =

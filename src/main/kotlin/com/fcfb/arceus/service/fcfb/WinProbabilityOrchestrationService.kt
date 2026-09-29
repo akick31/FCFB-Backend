@@ -1,6 +1,5 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.response.EloRatingResponse
 import com.fcfb.arceus.dto.response.GameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.SingleGameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.WinProbabilitiesForAllGamesResponse
@@ -13,8 +12,6 @@ class WinProbabilityOrchestrationService(
     private val playService: PlayService,
     private val teamService: TeamService,
 ) {
-    fun getEloRatings(): List<EloRatingResponse> = winProbabilityService.getEloRatings(teamService.getAllTeams())
-
     fun calculateWinProbabilityForGame(gameId: Int): SingleGameWinProbabilitiesResponse {
         val game = gameService.getGameById(gameId)
         return winProbabilityService.calculateWinProbabilitiesForSingleGame(

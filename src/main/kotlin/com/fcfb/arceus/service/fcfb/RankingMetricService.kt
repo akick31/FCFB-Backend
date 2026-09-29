@@ -33,6 +33,7 @@ class RankingMetricService(
         val losses: Int,
         val pointsFor: Int,
         val pointsAgainst: Int,
+        val cappedPointDifferential: Int,
     )
 
     private data class TeamDiffAggregate(
@@ -61,32 +62,42 @@ class RankingMetricService(
                 RankingMetricType.ADJUSTED_POINTS_AGAINST,
                 RankingMetricType.ADJUSTED_NET_POINTS,
             )
-        val simpleTypes = RankingMetricType.values().filter { it.implemented && it !in crossTeamTypes }
-        val metricValuesByType = mutableMapOf<RankingMetricType, Map<Int, Double>>()
+        val simpleTypes = RankingMetricType.values().filter { it.implemented && it !in crossTeamTypes && it !in DIFF_TYPES }
+        val diffAggregates = buildDiffAggregates(season, week, teamsByName)
+        val equivalentWins =
+            aggregates.mapValues { (_, aggregate) ->
+                calculateEquivalentWins(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
+            }
         simpleTypes.forEach { type ->
             val values = aggregates.mapValues { (_, aggregate) -> calculate(type, aggregate) }
             values.forEach { (teamId, value) ->
                 val aggregate = aggregates.getValue(teamId)
                 rows.add(RankingMetric(season, week, type, teamId, value, aggregate.wins, aggregate.losses))
             }
-            metricValuesByType[type] = values
         }
 
         val computedTypes = simpleTypes.map { it.name }.toMutableList()
 
-        val powerRatings = calculatePowerRatings(season, week, aggregates, teamsByName)
-        metricValuesByType[RankingMetricType.POWER_RATING] = powerRatings
+        DIFF_TYPES.forEach { type ->
+            diffAggregates.forEach { (teamId, diffAggregate) ->
+                val aggregate = aggregates[teamId] ?: return@forEach
+                rows.add(
+                    RankingMetric(season, week, type, teamId, selectDiff(type, diffAggregate), aggregate.wins, aggregate.losses),
+                )
+            }
+            computedTypes.add(type.name)
+        }
+
+        val powerRatings = calculatePowerRatings(aggregates, diffAggregates)
         saveCrossTeamMetric(season, week, RankingMetricType.POWER_RATING, powerRatings, aggregates, computedTypes, rows)
 
         val colleyRatings = calculateColleyRatings(games, aggregates, teamsByName)
-        metricValuesByType[RankingMetricType.COLLEY_MATRIX] = colleyRatings
         saveCrossTeamMetric(season, week, RankingMetricType.COLLEY_MATRIX, colleyRatings, aggregates, computedTypes, rows)
 
         val asrRatings = calculateAsrRatings(games, aggregates, teamsByName)
-        metricValuesByType[RankingMetricType.ASR] = asrRatings
         saveCrossTeamMetric(season, week, RankingMetricType.ASR, asrRatings, aggregates, computedTypes, rows)
 
-        val compositeRatings = calculateCompositeRatings(metricValuesByType)
+        val compositeRatings = calculateCompositeRatings(colleyRatings, asrRatings, equivalentWins)
         saveCrossTeamMetric(season, week, RankingMetricType.COMPOSITE, compositeRatings, aggregates, computedTypes, rows)
 
         val adjustedPointsForRatings = calculateAdjustedPointsForRatings(games, aggregates, teamsByName)
@@ -149,6 +160,7 @@ class RankingMetricService(
             var losses: Int = 0,
             var pointsFor: Int = 0,
             var pointsAgainst: Int = 0,
+            var cappedPointDifferential: Int = 0,
         )
 
         val byTeamId = mutableMapOf<Int, MutableAggregate>()
@@ -163,6 +175,7 @@ class RankingMetricService(
             aggregate.gamesPlayed += 1
             aggregate.pointsFor += pointsFor
             aggregate.pointsAgainst += pointsAgainst
+            aggregate.cappedPointDifferential += (pointsFor - pointsAgainst).coerceIn(-MARGIN_CAP, MARGIN_CAP)
             if (pointsFor > pointsAgainst) aggregate.wins += 1 else aggregate.losses += 1
         }
 
@@ -179,6 +192,7 @@ class RankingMetricService(
                 losses = aggregate.losses,
                 pointsFor = aggregate.pointsFor,
                 pointsAgainst = aggregate.pointsAgainst,
+                cappedPointDifferential = aggregate.cappedPointDifferential,
             )
         }
     }
@@ -225,13 +239,22 @@ class RankingMetricService(
         }
     }
 
+    private fun selectDiff(
+        type: RankingMetricType,
+        diffAggregate: TeamDiffAggregate,
+    ): Double =
+        when (type) {
+            RankingMetricType.AVERAGE_OFFENSIVE_DIFF -> diffAggregate.averageOffensiveDiff
+            RankingMetricType.AVERAGE_DEFENSIVE_DIFF -> diffAggregate.averageDefensiveDiff
+            RankingMetricType.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF -> diffAggregate.averageOffensiveSpecialTeamsDiff
+            RankingMetricType.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF -> diffAggregate.averageDefensiveSpecialTeamsDiff
+            else -> throw MetricNotImplementedException(type.name)
+        }
+
     private fun calculatePowerRatings(
-        season: Int,
-        week: Int,
         aggregates: Map<Int, TeamSeasonAggregate>,
-        teamsByName: Map<String, Team>,
+        diffAggregates: Map<Int, TeamDiffAggregate>,
     ): Map<Int, Double> {
-        val diffAggregates = buildDiffAggregates(season, week, teamsByName)
         val teamIds = aggregates.keys.intersect(diffAggregates.keys)
         if (teamIds.isEmpty()) return emptyMap()
 
@@ -351,7 +374,7 @@ class RankingMetricService(
         teamsByName: Map<String, Team>,
     ): Map<Int, Double> =
         calculateAdjustedScheduleRatings(games, aggregates, teamsByName) {
-            calculateMarginOfVictory(it.pointsFor, it.pointsAgainst, it.gamesPlayed)
+            calculateCappedMarginOfVictory(it.cappedPointDifferential, it.gamesPlayed)
         }
 
     private fun calculateAdjustedPointsForRatings(
@@ -372,20 +395,27 @@ class RankingMetricService(
             calculateScoringDefense(it.pointsAgainst, it.gamesPlayed)
         }
 
-    /** Poll-of-polls, mirroring the BCS composite: average of every other metric normalized to 0-100 first so raw units don't dominate. */
-    private fun calculateCompositeRatings(metricValuesByType: Map<RankingMetricType, Map<Int, Double>>): Map<Int, Double> {
-        val teamIds = metricValuesByType.values.flatMap { it.keys }.toSet()
+    /**
+     * Blends the three independent signals rather than averaging every metric: averaging them all weights
+     * scoring margin five times over, since equivalent wins, margin of victory, scoring offense, scoring
+     * defense and ASR are all functions of the same points for and points against.
+     */
+    private fun calculateCompositeRatings(
+        colleyRatings: Map<Int, Double>,
+        asrRatings: Map<Int, Double>,
+        equivalentWins: Map<Int, Double>,
+    ): Map<Int, Double> {
+        val teamIds = colleyRatings.keys + asrRatings.keys + equivalentWins.keys
         if (teamIds.isEmpty()) return emptyMap()
 
-        val normalizedByType =
-            metricValuesByType.map { (type, values) ->
-                val directed = if (type.higherIsBetter) values else values.mapValues { -it.value }
-                normalize(directed)
-            }
+        val normalizedColley = normalize(colleyRatings)
+        val normalizedAsr = normalize(asrRatings)
+        val normalizedEquivalentWins = normalize(equivalentWins)
 
         return teamIds.associateWith { teamId ->
-            val scores = normalizedByType.mapNotNull { it[teamId] }
-            if (scores.isEmpty()) 0.0 else scores.sum() / scores.size
+            COMPOSITE_COLLEY_WEIGHT * (normalizedColley[teamId] ?: 0.0) +
+                COMPOSITE_ASR_WEIGHT * (normalizedAsr[teamId] ?: 0.0) +
+                COMPOSITE_EQUIVALENT_WINS_WEIGHT * (normalizedEquivalentWins[teamId] ?: 0.0)
         }
     }
 
@@ -412,6 +442,11 @@ class RankingMetricService(
                 calculateScoringDefense(aggregate.pointsAgainst, aggregate.gamesPlayed)
             else -> throw MetricNotImplementedException(type.name)
         }
+
+    fun calculateCappedMarginOfVictory(
+        cappedPointDifferential: Int,
+        gamesPlayed: Int,
+    ): Double = if (gamesPlayed == 0) 0.0 else cappedPointDifferential.toDouble() / gamesPlayed
 
     fun calculateMarginOfVictory(
         pointsFor: Int,
@@ -495,8 +530,19 @@ class RankingMetricService(
         const val BASE_WIN_PCT_WEIGHT = 0.35
         const val NORMAL_PLAY_DIFF_WEIGHT = 0.95
         const val SPECIAL_TEAMS_DIFF_WEIGHT = 0.05
-        const val POWER_RATING_BASE_WEIGHT = 0.9
-        const val POWER_RATING_DIFFERENTIAL_WEIGHT = 0.1
+        const val POWER_RATING_BASE_WEIGHT = 0.8
+        const val POWER_RATING_DIFFERENTIAL_WEIGHT = 0.2
+        val DIFF_TYPES =
+            listOf(
+                RankingMetricType.AVERAGE_OFFENSIVE_DIFF,
+                RankingMetricType.AVERAGE_DEFENSIVE_DIFF,
+                RankingMetricType.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
+                RankingMetricType.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF,
+            )
         const val ASR_REGULARIZATION = 0.1
+        const val MARGIN_CAP = 28
+        const val COMPOSITE_COLLEY_WEIGHT = 0.45
+        const val COMPOSITE_ASR_WEIGHT = 0.40
+        const val COMPOSITE_EQUIVALENT_WINS_WEIGHT = 0.15
     }
 }

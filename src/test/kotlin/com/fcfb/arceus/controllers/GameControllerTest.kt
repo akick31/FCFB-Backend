@@ -162,6 +162,29 @@ class GameControllerTest {
     }
 
     @Test
+    fun `unchewGame should return updated game`() {
+        val channelId = 1234UL
+        val mockGame = mockk<Game>()
+        every { gameService.unchewGameByPlatformId(channelId) } returns mockGame
+
+        val response = gameController.unchewGameByPlatformId(channelId)
+
+        assertEquals(ResponseEntity.ok(mockGame), response)
+        verify { gameService.unchewGameByPlatformId(channelId) }
+    }
+
+    @Test
+    fun `unchewAllGames should return list of unchewed games`() {
+        val mockGames = listOf(mockk<Game>())
+        every { gameService.unchewAllGames() } returns mockGames
+
+        val response = gameController.unchewAllGames()
+
+        assertEquals(ResponseEntity.ok(mockGames), response)
+        verify { gameService.unchewAllGames() }
+    }
+
+    @Test
     fun `runCoinToss should return updated game`() {
         val gameId = 1
         val coinTossCall = CoinTossCall.HEADS

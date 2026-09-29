@@ -34,30 +34,48 @@ class DelayOfGameMonitor(
     fun checkForDelayOfGame() {
         val warnedGamesFirstInstance = gameService.findGamesToWarnFirstInstance()
         warnedGamesFirstInstance.forEach { game ->
-            discordService.notifyWarning(game, 1)
-            gameService.updateGameAsWarned(game.gameId, 1)
-            Logger.info(
-                "Delay of game warning.\n" +
-                    "Game ID: ${game.gameId}\n" +
-                    "Home Team: ${game.homeTeam}\n" +
-                    "Away Team: ${game.awayTeam}\n" +
-                    "Instance: 1\n",
-            )
+            if (game.gameStatus == GameStatus.FINAL) {
+                Logger.warn("Skipping delay of game warning (instance 1) for game ${game.gameId} because the game has already ended.")
+                return@forEach
+            }
+            if (discordService.notifyWarning(game, 1)) {
+                gameService.updateGameAsWarned(game.gameId, 1)
+                Logger.info(
+                    "Delay of game warning.\n" +
+                        "Game ID: ${game.gameId}\n" +
+                        "Home Team: ${game.homeTeam}\n" +
+                        "Away Team: ${game.awayTeam}\n" +
+                        "Instance: 1\n",
+                )
+            } else {
+                Logger.warn("Delay of game warning (instance 1) failed to send for game ${game.gameId}, will retry next cycle.")
+            }
         }
         val warnedGamesSecondInstance = gameService.findGamesToWarnSecondInstance()
         warnedGamesSecondInstance.forEach { game ->
-            discordService.notifyWarning(game, 2)
-            gameService.updateGameAsWarned(game.gameId, 2)
-            Logger.info(
-                "Delay of game warning.\n" +
-                    "Game ID: ${game.gameId}\n" +
-                    "Home Team: ${game.homeTeam}\n" +
-                    "Away Team: ${game.awayTeam}\n" +
-                    "Instance: 2\n",
-            )
+            if (game.gameStatus == GameStatus.FINAL) {
+                Logger.warn("Skipping delay of game warning (instance 2) for game ${game.gameId} because the game has already ended.")
+                return@forEach
+            }
+            if (discordService.notifyWarning(game, 2)) {
+                gameService.updateGameAsWarned(game.gameId, 2)
+                Logger.info(
+                    "Delay of game warning.\n" +
+                        "Game ID: ${game.gameId}\n" +
+                        "Home Team: ${game.homeTeam}\n" +
+                        "Away Team: ${game.awayTeam}\n" +
+                        "Instance: 2\n",
+                )
+            } else {
+                Logger.warn("Delay of game warning (instance 2) failed to send for game ${game.gameId}, will retry next cycle.")
+            }
         }
         val expiredGames = gameService.findExpiredTimers()
         expiredGames.forEach { game ->
+            if (game.gameStatus == GameStatus.FINAL) {
+                Logger.warn("Skipping expired delay of game timer for game ${game.gameId} because the game has already ended.")
+                return@forEach
+            }
             val updatedGame =
                 if (game.gameStatus == GameStatus.PREGAME) {
                     applyPregameDelayOfGame(game)
@@ -93,32 +111,14 @@ class DelayOfGameMonitor(
     }
 
     private fun applyPregameDelayOfGame(game: Game): Game {
+        val offendingTeam = game.coinTossWinner ?: game.waitingOn
+        awardPenaltyPoints(game, offendingTeam)
+        chargeDelayOfGameInstance(game, offendingTeam)
+
+        val delayOfGamePlay = playService.recordPregameDelayOfGame(game, offendingTeam)
+        game.currentPlayId = delayOfGamePlay.playId
+        game.numPlays = delayOfGamePlay.playNumber
         game.gameTimer = gameService.calculateDelayOfGameTimer()
-
-        val teamToPenalize = game.coinTossWinner ?: game.waitingOn
-
-        if (teamToPenalize == TeamSide.HOME) {
-            game.awayScore += 8
-            if (game.gameType != GameType.SCRIMMAGE) {
-                for (coach in game.homeCoachDiscordIds!!) {
-                    val user = userService.getUserByDiscordId(coach)
-                    user.delayOfGameInstances += 1
-                    userService.saveUser(user)
-                }
-            }
-        } else {
-            game.homeScore += 8
-            if (game.gameType != GameType.SCRIMMAGE) {
-                for (coach in game.awayCoachDiscordIds!!) {
-                    val user = userService.getUserByDiscordId(coach)
-                    user.delayOfGameInstances += 1
-                    userService.saveUser(user)
-                }
-            }
-        }
-
-        val savedPlay = saveDelayOfGameOnOffensePlay(game.gameId, teamToPenalize)
-        game.currentPlayId = savedPlay.playId
         game.gameWarning = NONE
         gameService.saveGame(game)
         scorebugService.generateScorebug(game)
@@ -129,32 +129,10 @@ class DelayOfGameMonitor(
         game.gameTimer = gameService.calculateDelayOfGameTimer()
 
         val teamToPenalize = game.waitingOn
-
-        if (teamToPenalize == TeamSide.HOME) {
-            game.currentPlayType = PlayType.KICKOFF
-            game.possession = TeamSide.AWAY
-            game.awayScore += 8
-
-            if (game.gameType != GameType.SCRIMMAGE) {
-                for (coach in game.homeCoachDiscordIds!!) {
-                    val user = userService.getUserByDiscordId(coach)
-                    user.delayOfGameInstances += 1
-                    userService.saveUser(user)
-                }
-            }
-        } else {
-            game.currentPlayType = PlayType.KICKOFF
-            game.possession = TeamSide.HOME
-            game.homeScore += 8
-
-            if (game.gameType != GameType.SCRIMMAGE) {
-                for (coach in game.awayCoachDiscordIds!!) {
-                    val user = userService.getUserByDiscordId(coach)
-                    user.delayOfGameInstances += 1
-                    userService.saveUser(user)
-                }
-            }
-        }
+        game.currentPlayType = PlayType.KICKOFF
+        game.possession = if (teamToPenalize == TeamSide.HOME) TeamSide.AWAY else TeamSide.HOME
+        awardPenaltyPoints(game, teamToPenalize)
+        chargeDelayOfGameInstance(game, teamToPenalize)
 
         val currentPlay =
             try {
@@ -178,6 +156,32 @@ class DelayOfGameMonitor(
         gameService.saveGame(game)
         scorebugService.generateScorebug(game)
         return game
+    }
+
+    private fun awardPenaltyPoints(
+        game: Game,
+        offendingTeam: TeamSide,
+    ) {
+        if (offendingTeam == TeamSide.HOME) {
+            game.awayScore += 8
+        } else {
+            game.homeScore += 8
+        }
+    }
+
+    private fun chargeDelayOfGameInstance(
+        game: Game,
+        offendingTeam: TeamSide,
+    ) {
+        if (game.gameType == GameType.SCRIMMAGE) {
+            return
+        }
+        val offendingCoaches = if (offendingTeam == TeamSide.HOME) game.homeCoachDiscordIds else game.awayCoachDiscordIds
+        for (coach in offendingCoaches!!) {
+            val user = userService.getUserByDiscordId(coach)
+            user.delayOfGameInstances += 1
+            userService.saveUser(user)
+        }
     }
 
     private fun saveDelayOfGameOnDefensePlay(

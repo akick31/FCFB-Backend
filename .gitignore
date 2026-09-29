@@ -16,6 +16,10 @@ lib/
 *.png
 !src/main/resources/images/email/*.png
 
+### Generated animation previews ###
+/animation-previews/
+/animation-previews-postseason/
+
 ### STS ###
 .apt_generated
 .classpath

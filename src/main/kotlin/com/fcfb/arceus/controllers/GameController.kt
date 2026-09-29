@@ -99,13 +99,6 @@ class GameController(
     @GetMapping("/week/jobs")
     fun getAllGameWeekJobs(): ResponseEntity<List<GameWeekJob>> = ResponseEntity.ok(gameService.getAllGameWeekJobs())
 
-    @Operation(summary = "Team season rankings history")
-    @GetMapping("/rankings-history")
-    fun getRankingsHistory(
-        @RequestParam(required = false) team: String?,
-        @RequestParam(required = false) season: Int?,
-    ): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.getRankingsHistory(team, season))
-
     @Operation(summary = "Retry failed games")
     @PostMapping("/week/retry")
     fun retryFailedGames(
@@ -143,6 +136,22 @@ class GameController(
     @Operation(summary = "Chew clock on all games")
     @PostMapping("/chew-all")
     fun chewAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.chewAllGames())
+
+    @Operation(summary = "Return a game to normal clock by channel ID")
+    @PostMapping("/unchew", params = ["channelId"])
+    fun unchewGameByPlatformId(
+        @RequestParam("channelId") channelId: ULong,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.unchewGameByPlatformId(channelId))
+
+    @Operation(summary = "Return a game to normal clock by game ID")
+    @PostMapping("/unchew", params = ["gameId"])
+    fun unchewGameByGameId(
+        @RequestParam("gameId") gameId: Int,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.unchewGameByGameId(gameId))
+
+    @Operation(summary = "Return all games to normal clock")
+    @PostMapping("/unchew-all")
+    fun unchewAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.unchewAllGames())
 
     @Operation(summary = "Run coin toss")
     @PutMapping("/coin-toss")

@@ -35,6 +35,7 @@ import com.fcfb.arceus.service.specification.GameSpecificationService
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
+import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameWeekJobNotFoundException
 import com.fcfb.arceus.util.InvalidCoinTossChoiceException
@@ -87,6 +88,7 @@ class GameService(
     private val vegasOddsService: VegasOddsService,
     private val gameStatsRepository: GameStatsRepository,
     private val rankingRepository: RankingRepository,
+    private val rankingService: RankingService,
 ) {
     companion object {
         private val activeJobs = ConcurrentHashMap<String, GameWeekJob>()
@@ -146,7 +148,7 @@ class GameService(
             val awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
             val (season, currentWeek) = getCurrentSeasonAndWeek(startRequest, week)
-            val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
+            val (homeTeamRank, awayTeamRank) = getTeamRanks(season, currentWeek, homeTeamData.id, awayTeamData.id)
 
             val vegasOdds = vegasOddsService.calculateVegasOdds(homeTeamData, awayTeamData)
 
@@ -286,7 +288,7 @@ class GameService(
             val homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
             val awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-            val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
+            val (homeTeamRank, awayTeamRank) = getTeamRanks(null, null, homeTeamData.id, awayTeamData.id)
 
             val newGame =
                 withContext(Dispatchers.IO) {
@@ -943,10 +945,10 @@ class GameService(
                     val homeTeam = teamService.getTeamByName(game.homeTeam)
                     val awayTeam = teamService.getTeamByName(game.awayTeam)
                     winProbabilityService.updateEloRatings(game, homeTeam, awayTeam)
-                    teamService.updateTeam(homeTeam)
-                    teamService.updateTeam(awayTeam)
+                    teamService.updateCurrentElo(homeTeam)
+                    teamService.updateCurrentElo(awayTeam)
                 } catch (e: Exception) {
-                    Logger.error("Error updating ELO ratings: ${e.message}")
+                    Logger.error("Error updating ELO ratings for game ${game.gameId}: ${e.message}")
                 }
 
                 val homeUsers =
@@ -1094,12 +1096,22 @@ class GameService(
         game.waitingOn = if (game.possession == TeamSide.HOME) TeamSide.AWAY else TeamSide.HOME
     }
 
-    fun chewGame(game: Game): Game {
+    fun chewGame(game: Game): Game = setGameMode(game, GameMode.CHEW)
+
+    fun unchewGame(game: Game): Game = setGameMode(game, GameMode.NORMAL)
+
+    private fun setGameMode(
+        game: Game,
+        gameMode: GameMode,
+    ): Game {
         try {
-            game.gameMode = GameMode.CHEW
+            game.gameMode = gameMode
+            game.gameModeSetBy = actingUser()
+            game.gameModeSetAt = LocalDateTime.now()
             saveGame(game)
+            discordService.notifyGameModeChange(game)
             Logger.info(
-                "Game set to chew mode.\n" +
+                "Game set to ${gameMode.description.lowercase()} mode by ${game.gameModeSetBy}.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Game Type: ${game.gameType}\n" +
                     "Game Status: ${game.gameStatus}\n" +
@@ -1113,14 +1125,14 @@ class GameService(
         }
     }
 
-    fun chewAllGames(): List<Game> {
-        val gamesToChew = getAllOngoingGames()
-        val chewedGames = mutableListOf<Game>()
-        for (game in gamesToChew) {
-            chewedGames.add(chewGame(game))
-        }
-        return chewedGames
+    private fun actingUser(): String {
+        val userId = AuthContext.currentUserId() ?: return AuthContext.currentPrincipal()
+        return userService.getUserById(userId).username
     }
+
+    fun chewAllGames(): List<Game> = getAllOngoingGames().map { chewGame(it) }
+
+    fun unchewAllGames(): List<Game> = getAllOngoingGames().map { unchewGame(it) }
 
     fun runCoinToss(
         gameId: Int,
@@ -1626,6 +1638,10 @@ class GameService(
 
     fun chewGameByGameId(gameId: Int): Game = chewGame(getGameById(gameId))
 
+    fun unchewGameByPlatformId(channelId: ULong): Game = unchewGame(getGameByPlatformId(channelId))
+
+    fun unchewGameByGameId(gameId: Int): Game = unchewGame(getGameById(gameId))
+
     fun getFilteredGames(
         filters: List<GameFilter>?,
         category: GameCategory?,
@@ -1808,6 +1824,21 @@ class GameService(
         return discordData
     }
 
+    private fun getTeamRanks(
+        season: Int?,
+        week: Int?,
+        homeTeamId: Int,
+        awayTeamId: Int,
+    ): Pair<Int?, Int?> {
+        val currentSeason = seasonService.getCurrentSeason()
+        return rankingService.getTeamRanks(
+            season ?: currentSeason.seasonNumber,
+            week ?: currentSeason.currentWeek,
+            homeTeamId,
+            awayTeamId,
+        )
+    }
+
     private fun getCurrentSeasonAndWeek(
         startRequest: StartRequest,
         week: Int?,
@@ -1823,18 +1854,5 @@ class GameService(
             currentWeek = week
         }
         return season to currentWeek
-    }
-
-    fun getRankingsHistory(
-        team: String?,
-        season: Int?,
-    ): List<Game> {
-        val allRankedGames = gameRepository.getRankedGames()
-
-        return allRankedGames.filter { game ->
-            val matchesTeam = team == null || team == "all" || game.homeTeam == team || game.awayTeam == team
-            val matchesSeason = season == null || game.season == season
-            matchesTeam && matchesSeason
-        }.sortedWith(compareBy<Game> { it.season }.thenBy { it.week })
     }
 }

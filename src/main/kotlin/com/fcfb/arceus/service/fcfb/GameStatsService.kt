@@ -10,6 +10,8 @@ import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.service.fcfb.elo.EloCalculator
+import com.fcfb.arceus.service.fcfb.elo.EloService
 import com.fcfb.arceus.service.fcfb.gamestats.GameStatsCalculator
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameStatsNotFoundException
@@ -27,6 +29,7 @@ class GameStatsService(
     private val gameRepository: GameRepository,
     private val playRepository: PlayRepository,
     private val teamRepository: TeamRepository,
+    private val eloService: EloService,
 ) {
     fun createGameStats(game: Game): List<GameStats> {
         val homeTeam =
@@ -136,6 +139,11 @@ class GameStatsService(
     @Transactional(rollbackFor = [Exception::class])
     fun generateAllGameStats() {
         try {
+            val eloRebuild = eloService.rebuild(apply = true)
+            Logger.info(
+                "Rebuilt ELO from scratch: ${eloRebuild.teamsChanged.size} teams, " +
+                    "${eloRebuild.gameSpreadsChanged} game spreads, ${eloRebuild.gameStatsRowsChanged} game stats rows updated",
+            )
             val allGames =
                 gameRepository.getAllGames().ifEmpty {
                     throw GameNotFoundException("Could not find any games")
@@ -179,10 +187,8 @@ class GameStatsService(
                 )
             }
 
-            Logger.info("Reconstructing historical ELO across ${allGames.size} games")
-            recomputeHistoricalElo(allGames, allStats)
-
             Logger.info("Saving computed game stats for ${allGames.size} games")
+            seedPreGameElo(allGames, allStats)
             gameStatsRepository.deleteByGameIdIn(allGames.map { it.gameId })
             gameStatsRepository.saveAll(allStats)
             Logger.info("Completed generation of all game stats")
@@ -191,33 +197,12 @@ class GameStatsService(
         }
     }
 
-    private fun recomputeHistoricalElo(
+    private fun seedPreGameElo(
         games: List<Game>,
         stats: List<GameStats>,
     ) {
-        val baseElo = 1500.0
-        val kFactor = 32.0
-        val statsByKey = stats.associateBy { "${it.gameId}_${it.team}" }
-        val eloMap = HashMap<String, Double>()
-        val eloOf = { team: String -> eloMap.getOrPut(team) { baseElo } }
-
-        val orderedGames = games.sortedWith(compareBy({ it.season ?: 0 }, { it.week ?: 0 }, { it.gameId }))
-        for (game in orderedGames) {
-            val homeElo = eloOf(game.homeTeam)
-            val awayElo = eloOf(game.awayTeam)
-            var newHomeElo = homeElo
-            var newAwayElo = awayElo
-            if (game.gameStatus?.name == "FINAL") {
-                val homeWon = game.homeScore > game.awayScore
-                val expectedHome = 1.0 / (1.0 + Math.pow(10.0, (awayElo - homeElo) / 400.0))
-                newHomeElo = homeElo + kFactor * ((if (homeWon) 1.0 else 0.0) - expectedHome)
-                newAwayElo = awayElo + kFactor * ((if (homeWon) 0.0 else 1.0) - (1.0 - expectedHome))
-                eloMap[game.homeTeam] = newHomeElo
-                eloMap[game.awayTeam] = newAwayElo
-            }
-            statsByKey["${game.gameId}_${game.homeTeam}"]?.teamElo = newHomeElo
-            statsByKey["${game.gameId}_${game.awayTeam}"]?.teamElo = newAwayElo
-        }
+        val preGameElo = EloCalculator.replay(games).preGameElo
+        stats.forEach { row -> row.team?.let { team -> preGameElo[row.gameId to team]?.let { row.teamElo = it } } }
     }
 
     fun generateGameStats(gameId: Int) {
@@ -422,8 +407,8 @@ class GameStatsService(
         }
         val teamSpread = if (teamSide == TeamSide.HOME) game.homeVegasSpread else game.awayVegasSpread
         val teamWon = if (teamSide == TeamSide.HOME) game.homeScore > game.awayScore else game.awayScore > game.homeScore
-        stats.favoredMargin = teamSpread?.let { -it }
-        stats.upsetMargin = if (teamWon && teamSpread != null && teamSpread > 0) teamSpread else 0.0
+        stats.favoredMargin = GameStatsCalculator.calculateFavoredMargin(teamSpread)
+        stats.upsetMargin = GameStatsCalculator.calculateUpsetMargin(teamSpread, teamWon)
         stats.passTouchdowns = GameStatsCalculator.calculatePassTouchdowns(allOffensivePlays)
         stats.rushTouchdowns = GameStatsCalculator.calculateRushTouchdowns(allOffensivePlays)
         stats.redZoneAttempts = GameStatsCalculator.calculateRedZoneAttempts(allPlays, teamSide)
@@ -482,93 +467,6 @@ class GameStatsService(
         season: Int,
     ): List<GameStats> {
         return gameStatsRepository.findByTeamAndSeason(team, season)
-    }
-
-    fun getEloHistory(
-        team: String,
-        season: Int?,
-    ): List<com.fcfb.arceus.dto.response.EloHistoryEntry> {
-        val gameStatsList =
-            if (team.lowercase() == "all") {
-                if (season != null) {
-                    gameStatsRepository.findBySeasonOrderByGameIdAsc(season)
-                } else {
-                    val latestSeason = gameStatsRepository.findMaxSeason() ?: 0
-                    if (latestSeason == 0) {
-                        emptyList()
-                    } else {
-                        val minSeason = (latestSeason - 9).coerceAtLeast(1)
-                        gameStatsRepository.findBySeasonGreaterThanEqualOrderBySeasonDescGameIdAsc(minSeason)
-                    }
-                }
-            } else {
-                if (season != null) {
-                    gameStatsRepository.findByTeamAndSeason(team, season)
-                } else {
-                    gameStatsRepository.findByTeam(team)
-                }
-            }
-
-        if (gameStatsList.isEmpty()) {
-            return emptyList()
-        }
-
-        val gameIds = gameStatsList.mapNotNull { it.gameId }.distinct().take(10000)
-        val gamesMap =
-            if (gameIds.isNotEmpty()) {
-                gameRepository.findAllById(gameIds).associateBy { it.gameId }
-            } else {
-                emptyMap()
-            }
-
-        val sortedStats =
-            gameStatsList.sortedWith(
-                compareBy<GameStats> { it.team ?: "" }
-                    .thenBy { it.season ?: 0 }
-                    .thenBy { it.week ?: 0 }
-                    .thenBy { it.gameId },
-            )
-
-        return sortedStats.map { stats ->
-            val teamName = stats.team ?: ""
-            val game = stats.gameId?.let { gamesMap[it] }
-            val opponent =
-                if (game != null) {
-                    if (game.homeTeam == teamName) game.awayTeam else game.homeTeam
-                } else {
-                    null
-                }
-
-            val result =
-                if (game != null && game.gameStatus?.name == "FINAL") {
-                    val teamScore = if (game.homeTeam == teamName) game.homeScore else game.awayScore
-                    val oppScore = if (game.homeTeam == teamName) game.awayScore else game.homeScore
-                    when {
-                        teamScore != null && oppScore != null -> {
-                            if (teamScore > oppScore) {
-                                "W"
-                            } else if (teamScore < oppScore) {
-                                "L"
-                            } else {
-                                null
-                            }
-                        }
-                        else -> null
-                    }
-                } else {
-                    null
-                }
-
-            com.fcfb.arceus.dto.response.EloHistoryEntry(
-                team = teamName,
-                season = stats.season ?: 0,
-                week = stats.week,
-                elo = stats.teamElo,
-                gameId = stats.gameId,
-                opponent = opponent,
-                result = result,
-            )
-        }
     }
 
     fun getGameStatsBySeasonAndWeek(

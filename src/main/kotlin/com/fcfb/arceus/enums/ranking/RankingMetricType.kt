@@ -12,6 +12,10 @@ enum class RankingMetricType(val description: String, val implemented: Boolean, 
     ADJUSTED_POINTS_FOR("aPPf", true, true),
     ADJUSTED_POINTS_AGAINST("aPPa", true, false),
     ADJUSTED_NET_POINTS("aPPn", true, true),
+    AVERAGE_OFFENSIVE_DIFF("Average Offensive Diff", true, false),
+    AVERAGE_DEFENSIVE_DIFF("Average Defensive Diff", true, true),
+    AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF("Average Offensive ST Diff", true, false),
+    AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF("Average Defensive ST Diff", true, true),
     ;
 
     companion object {

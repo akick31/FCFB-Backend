@@ -4,6 +4,8 @@ import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.RunoffType
+import com.fcfb.arceus.enums.play.Scenario
+import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.repositories.PlayRepository
@@ -99,6 +101,50 @@ class PlayService(
             throw e
         }
     }
+
+    fun recordPregameDelayOfGame(
+        game: Game,
+        offendingTeam: TeamSide,
+    ): Play =
+        playRepository.save(
+            Play(
+                gameId = game.gameId,
+                playNumber = game.numPlays + 1,
+                homeScore = game.homeScore,
+                awayScore = game.awayScore,
+                quarter = game.quarter,
+                clock = GameRules.convertClockToSeconds(game.clock),
+                ballLocation = game.ballLocation,
+                possession = game.possession,
+                down = game.down,
+                yardsToGo = game.yardsToGo,
+                defensiveNumber = null,
+                offensiveNumber = null,
+                offensiveSubmitter = null,
+                offensiveSubmitterId = null,
+                defensiveSubmitter = null,
+                defensiveSubmitterId = null,
+                playCall = null,
+                result = if (offendingTeam == TeamSide.HOME) Scenario.DELAY_OF_GAME_HOME else Scenario.DELAY_OF_GAME_AWAY,
+                actualResult = ActualResult.DELAY_OF_GAME,
+                yards = 0,
+                playTime = 0,
+                runoffTime = 0,
+                winProbability = game.winProbability,
+                winProbabilityAdded = 0.0,
+                homeTeam = game.homeTeam,
+                awayTeam = game.awayTeam,
+                difference = 0,
+                timeoutUsed = false,
+                offensiveTimeoutCalled = false,
+                defensiveTimeoutCalled = false,
+                homeTimeouts = game.homeTimeouts,
+                awayTimeouts = game.awayTimeouts,
+                playFinished = true,
+                offensiveResponseSpeed = null,
+                defensiveResponseSpeed = null,
+            ),
+        )
 
     fun offensiveNumberSubmitted(
         gameId: Int,
