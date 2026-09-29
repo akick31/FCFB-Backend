@@ -2,6 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.UploadRankingsRequest
 import com.fcfb.arceus.dto.response.RankingResponse
+import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.service.fcfb.RankingService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.ResponseEntity
@@ -26,6 +27,20 @@ class RankingController(
         @RequestParam("week") week: Int,
         @RequestParam("pollType") pollType: String,
     ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getRankings(season, week, pollType))
+
+    @Operation(summary = "Get a team's rank in every uploaded week of a poll")
+    @GetMapping("/team")
+    fun getTeamRankings(
+        @RequestParam("teamId") teamId: Int,
+        @RequestParam("pollType") pollType: String,
+    ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getTeamRankings(teamId, pollType))
+
+    @Operation(summary = "Get games where a team was ranked")
+    @GetMapping("/games")
+    fun getRankedGames(
+        @RequestParam(required = false) team: String?,
+        @RequestParam(required = false) season: Int?,
+    ): ResponseEntity<List<Game>> = ResponseEntity.ok(rankingService.getRankedGames(team, season))
 
     @Operation(summary = "Get the most recently uploaded rankings for a poll")
     @GetMapping("/latest")

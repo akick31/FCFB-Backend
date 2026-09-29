@@ -40,6 +40,21 @@ interface RankingRepository : CrudRepository<Ranking, Int> {
 
     @Query(
         value = """
+            SELECT *
+            FROM ranking
+            WHERE team_id = :teamId
+            AND poll_type = :pollType
+            ORDER BY season ASC, week ASC
+        """,
+        nativeQuery = true,
+    )
+    fun findByTeamAndPollType(
+        teamId: Int,
+        pollType: String,
+    ): List<Ranking>
+
+    @Query(
+        value = """
             SELECT DISTINCT week
             FROM ranking
             WHERE season = :season

@@ -1,7 +1,10 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.enums.ranking.PollType
+import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Ranking
+import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.RankingRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import io.mockk.every
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.Test
 class RankingServiceTest {
     private val rankingRepository: RankingRepository = mockk()
     private val teamRepository: TeamRepository = mockk()
+    private val gameRepository: GameRepository = mockk()
     private lateinit var rankingService: RankingService
 
     private val season = 12
@@ -21,7 +25,7 @@ class RankingServiceTest {
 
     @BeforeEach
     fun setup() {
-        rankingService = RankingService(rankingRepository, teamRepository)
+        rankingService = RankingService(rankingRepository, teamRepository, gameRepository)
         every { rankingRepository.existsForWeek(season, week, PollType.PLAYOFF_COMMITTEE.name) } returns 0
         every { rankingRepository.findBySeasonWeekAndPollType(season, week, PollType.COACHES_POLL.name) } returns emptyList()
         every { rankingRepository.findBySeasonWeekAndPollType(season, week, PollType.PLAYOFF_COMMITTEE.name) } returns emptyList()
@@ -80,5 +84,57 @@ class RankingServiceTest {
         every { rankingRepository.findLatest(PollType.COACHES_POLL.name) } returns null
 
         assertEquals(emptyList<Any>(), rankingService.getLatestRankings("COACHES_POLL"))
+    }
+
+    @Test
+    fun `team rankings return the team's rank for every uploaded week in order`() {
+        every { rankingRepository.findByTeamAndPollType(10, PollType.COACHES_POLL.name) } returns
+            listOf(
+                Ranking(11, 5, PollType.COACHES_POLL, 8, 10, 4, 1),
+                Ranking(12, 1, PollType.COACHES_POLL, 3, 10, 1, 0),
+            )
+        every { teamRepository.findById(10) } returns
+            java.util.Optional.of(
+                Team().apply {
+                    id = 10
+                    name = "Army"
+                },
+            )
+
+        val history = rankingService.getTeamRankings(10, "COACHES_POLL")
+
+        assertEquals(listOf(11 to 5, 12 to 1), history.map { it.season to it.week })
+        assertEquals(listOf(8, 3), history.map { it.rank })
+        assertEquals(listOf("Army", "Army"), history.map { it.teamName })
+    }
+
+    @Test
+    fun `ranked games are filtered by team and season and ordered chronologically`() {
+        fun game(
+            home: String,
+            away: String,
+            gameSeason: Int,
+            gameWeek: Int,
+        ) = Game().apply {
+            homeTeam = home
+            awayTeam = away
+            this.season = gameSeason
+            this.week = gameWeek
+        }
+        every { gameRepository.getRankedGames() } returns
+            listOf(
+                game("Army", "Navy", 12, 5),
+                game("Ohio State", "Army", 11, 9),
+                game("Ohio State", "Michigan", 12, 2),
+                game("Navy", "Army", 12, 1),
+            )
+
+        val armyGames = rankingService.getRankedGames("Army", null)
+        val armySeason12 = rankingService.getRankedGames("Army", 12)
+        val everyone = rankingService.getRankedGames("all", null)
+
+        assertEquals(listOf(11 to 9, 12 to 1, 12 to 5), armyGames.map { it.season to it.week })
+        assertEquals(listOf(12 to 1, 12 to 5), armySeason12.map { it.season to it.week })
+        assertEquals(4, everyone.size)
     }
 }

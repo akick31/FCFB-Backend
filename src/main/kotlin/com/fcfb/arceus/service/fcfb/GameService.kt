@@ -1852,17 +1852,4 @@ class GameService(
         }
         return season to currentWeek
     }
-
-    fun getRankingsHistory(
-        team: String?,
-        season: Int?,
-    ): List<Game> {
-        val allRankedGames = gameRepository.getRankedGames()
-
-        return allRankedGames.filter { game ->
-            val matchesTeam = team == null || team == "all" || game.homeTeam == team || game.awayTeam == team
-            val matchesSeason = season == null || game.season == season
-            matchesTeam && matchesSeason
-        }.sortedWith(compareBy<Game> { it.season }.thenBy { it.week })
-    }
 }

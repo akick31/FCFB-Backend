@@ -2,7 +2,9 @@ package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.dto.response.RankingResponse
 import com.fcfb.arceus.enums.ranking.PollType
+import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Ranking
+import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.RankingRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.util.InvalidRankingsException
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service
 class RankingService(
     private val rankingRepository: RankingRepository,
     private val teamRepository: TeamRepository,
+    private val gameRepository: GameRepository,
 ) {
     fun getRankings(
         season: Int,
@@ -32,6 +35,36 @@ class RankingService(
             )
         }
     }
+
+    fun getTeamRankings(
+        teamId: Int,
+        pollType: String,
+    ): List<RankingResponse> {
+        val parsedPollType = parsePollType(pollType)
+        val teamName = teamRepository.findById(teamId).orElse(null)?.name
+        return rankingRepository.findByTeamAndPollType(teamId, parsedPollType.name).map { ranking ->
+            RankingResponse(
+                season = ranking.season,
+                week = ranking.week,
+                pollType = parsedPollType.name,
+                rank = ranking.rank,
+                teamId = ranking.teamId,
+                teamName = teamName,
+                wins = ranking.wins,
+                losses = ranking.losses,
+            )
+        }
+    }
+
+    fun getRankedGames(
+        team: String?,
+        season: Int?,
+    ): List<Game> =
+        gameRepository.getRankedGames().filter { game ->
+            val matchesTeam = team == null || team == "all" || game.homeTeam == team || game.awayTeam == team
+            val matchesSeason = season == null || game.season == season
+            matchesTeam && matchesSeason
+        }.sortedWith(compareBy<Game> { it.season }.thenBy { it.week })
 
     fun getLatestRankings(pollType: String): List<RankingResponse> {
         val latest = rankingRepository.findLatest(parsePollType(pollType).name) ?: return emptyList()
