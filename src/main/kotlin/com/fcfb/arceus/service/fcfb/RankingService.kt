@@ -33,6 +33,11 @@ class RankingService(
         }
     }
 
+    fun getLatestRankings(pollType: String): List<RankingResponse> {
+        val latest = rankingRepository.findLatest(parsePollType(pollType).name) ?: return emptyList()
+        return getRankings(latest.season, latest.week, pollType)
+    }
+
     fun getAvailableWeeks(
         season: Int,
         pollType: String,
@@ -72,18 +77,20 @@ class RankingService(
             rankingRepository.save(Ranking(season, week, parsedPollType, index + 1, team.id, team.currentWins, team.currentLosses))
         }
 
-        when (parsedPollType) {
-            PollType.COACHES_POLL -> {
-                teamRepository.clearCoachesPollRankings()
-                teams.forEachIndexed { index, team -> teamRepository.setCoachesPollRankingById(team.id, index + 1) }
-            }
-            PollType.PLAYOFF_COMMITTEE -> {
-                teamRepository.clearPlayoffCommitteeRankings()
-                teams.forEachIndexed { index, team -> teamRepository.setPlayoffCommitteeRankingById(team.id, index + 1) }
-            }
-        }
-
         return getRankings(season, week, pollType)
+    }
+
+    fun getTeamRanks(
+        season: Int,
+        week: Int,
+        homeTeamId: Int,
+        awayTeamId: Int,
+    ): Pair<Int?, Int?> {
+        val pollType =
+            if (areRankingsUploaded(season, week, PollType.PLAYOFF_COMMITTEE)) PollType.PLAYOFF_COMMITTEE else PollType.COACHES_POLL
+        val ranksByTeamId =
+            rankingRepository.findBySeasonWeekAndPollType(season, week, pollType.name).associate { it.teamId to it.rank }
+        return ranksByTeamId[homeTeamId] to ranksByTeamId[awayTeamId]
     }
 
     private fun parsePollType(pollType: String): PollType =

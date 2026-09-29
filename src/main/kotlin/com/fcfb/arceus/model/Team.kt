@@ -76,14 +76,6 @@ class Team {
     @Column(name = "secondary_color")
     var secondaryColor: String? = null
 
-    @Basic
-    @Column(name = "coaches_poll_ranking")
-    var coachesPollRanking: Int? = null
-
-    @Basic
-    @Column(name = "playoff_committee_ranking")
-    var playoffCommitteeRanking: Int? = null
-
     @Convert(converter = SubdivisionConverter::class)
     @Column(name = "subdivision")
     var subdivision: Subdivision? = null
@@ -196,8 +188,6 @@ class Team {
         abbreviation: String?,
         primaryColor: String?,
         secondaryColor: String?,
-        coachesPollRanking: Int?,
-        playoffCommitteeRanking: Int?,
         subdivision: Subdivision?,
         offensivePlaybook: OffensivePlaybook,
         defensivePlaybook: DefensivePlaybook,
@@ -239,8 +229,6 @@ class Team {
         this.abbreviation = abbreviation
         this.primaryColor = primaryColor
         this.secondaryColor = secondaryColor
-        this.coachesPollRanking = coachesPollRanking
-        this.playoffCommitteeRanking = playoffCommitteeRanking
         this.subdivision = subdivision
         this.offensivePlaybook = offensivePlaybook
         this.defensivePlaybook = defensivePlaybook

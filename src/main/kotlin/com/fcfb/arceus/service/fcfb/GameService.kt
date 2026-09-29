@@ -87,6 +87,7 @@ class GameService(
     private val vegasOddsService: VegasOddsService,
     private val gameStatsRepository: GameStatsRepository,
     private val rankingRepository: RankingRepository,
+    private val rankingService: RankingService,
 ) {
     companion object {
         private val activeJobs = ConcurrentHashMap<String, GameWeekJob>()
@@ -146,7 +147,7 @@ class GameService(
             val awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
             val (season, currentWeek) = getCurrentSeasonAndWeek(startRequest, week)
-            val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
+            val (homeTeamRank, awayTeamRank) = getTeamRanks(season, currentWeek, homeTeamData.id, awayTeamData.id)
 
             val vegasOdds = vegasOddsService.calculateVegasOdds(homeTeamData, awayTeamData)
 
@@ -285,7 +286,7 @@ class GameService(
             val homePlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
             val awayPlatform = com.fcfb.arceus.enums.system.Platform.DISCORD
 
-            val (homeTeamRank, awayTeamRank) = teamService.getTeamRanks(homeTeamData.id, awayTeamData.id)
+            val (homeTeamRank, awayTeamRank) = getTeamRanks(null, null, homeTeamData.id, awayTeamData.id)
 
             val newGame =
                 withContext(Dispatchers.IO) {
@@ -941,10 +942,10 @@ class GameService(
                     val homeTeam = teamService.getTeamByName(game.homeTeam)
                     val awayTeam = teamService.getTeamByName(game.awayTeam)
                     winProbabilityService.updateEloRatings(game, homeTeam, awayTeam)
-                    teamService.updateTeam(homeTeam)
-                    teamService.updateTeam(awayTeam)
+                    teamService.updateCurrentElo(homeTeam)
+                    teamService.updateCurrentElo(awayTeam)
                 } catch (e: Exception) {
-                    Logger.error("Error updating ELO ratings: ${e.message}")
+                    Logger.error("Error updating ELO ratings for game ${game.gameId}: ${e.message}")
                 }
 
                 val homeUsers =
@@ -1818,6 +1819,21 @@ class GameService(
             throw UnableToCreateGameThreadException()
         }
         return discordData
+    }
+
+    private fun getTeamRanks(
+        season: Int?,
+        week: Int?,
+        homeTeamId: Int,
+        awayTeamId: Int,
+    ): Pair<Int?, Int?> {
+        val currentSeason = seasonService.getCurrentSeason()
+        return rankingService.getTeamRanks(
+            season ?: currentSeason.seasonNumber,
+            week ?: currentSeason.currentWeek,
+            homeTeamId,
+            awayTeamId,
+        )
     }
 
     private fun getCurrentSeasonAndWeek(

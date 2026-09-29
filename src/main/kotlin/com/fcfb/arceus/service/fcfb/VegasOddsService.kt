@@ -6,10 +6,10 @@ import com.fcfb.arceus.dto.response.VegasOddsResponse
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
+import com.fcfb.arceus.service.fcfb.elo.VegasSpreadCalculator
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
-import kotlin.math.roundToInt
 
 @Service
 class VegasOddsService(
@@ -27,7 +27,7 @@ class VegasOddsService(
 
         logger.info("Calculating Vegas odds: ${homeTeam.name} (${homeElo.toInt()}) vs ${awayTeam.name} (${awayElo.toInt()})")
 
-        val homeSpread = calculateVegasSpread(homeElo, awayElo)
+        val homeSpread = VegasSpreadCalculator.homeSpread(homeElo, awayElo)
         val awaySpread = -homeSpread
 
         return VegasOddsResponse(
@@ -46,8 +46,8 @@ class VegasOddsService(
         homeTeamName: String? = null,
         awayTeamName: String? = null,
     ): VegasOddsResponse {
-        val homeSpread = calculateVegasSpread(homeElo, awayElo)
-        val awaySpread = calculateVegasSpread(awayElo, homeElo)
+        val homeSpread = VegasSpreadCalculator.homeSpread(homeElo, awayElo)
+        val awaySpread = -homeSpread
 
         return VegasOddsResponse(
             homeTeam = homeTeamName ?: "Home",
@@ -90,16 +90,6 @@ class VegasOddsService(
             logger.error("Error getting Vegas odds for ELO: ${e.message}", e)
             ResponseEntity.internalServerError().build()
         }
-
-    private fun calculateVegasSpread(
-        homeElo: Double,
-        awayElo: Double,
-    ): Double {
-        val eloDifference = homeElo - awayElo
-        val spread = (eloDifference / 100.0) * 3.0 + 2.5
-
-        return -((spread * 2).roundToInt() / 2.0)
-    }
 
     fun updateSpreadsForSeasonAndWeek(
         season: Int,
@@ -158,7 +148,7 @@ class VegasOddsService(
                     continue
                 }
 
-                val spread = calculateVegasSpread(homeStats.teamElo, awayStats.teamElo)
+                val spread = VegasSpreadCalculator.homeSpread(homeStats.teamElo, awayStats.teamElo)
                 val homeSpread = spread
                 val awaySpread = -spread
 

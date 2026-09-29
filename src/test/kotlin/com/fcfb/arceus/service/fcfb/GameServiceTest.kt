@@ -43,6 +43,7 @@ class GameServiceTest {
     private val vegasOddsService: VegasOddsService = mockk(relaxed = true)
     private val gameStatsRepository: GameStatsRepository = mockk(relaxed = true)
     private val rankingRepository: RankingRepository = mockk(relaxed = true)
+    private val rankingService: RankingService = mockk()
 
     private lateinit var gameService: GameService
 
@@ -77,11 +78,12 @@ class GameServiceTest {
                 vegasOddsService,
                 gameStatsRepository,
                 rankingRepository,
+                rankingService,
             )
 
         every { teamService.getTeamByName("Ohio State") } returns team(1, "Ohio State", "coachA", "111")
         every { teamService.getTeamByName("Michigan") } returns team(2, "Michigan", "coachB", "222")
-        every { teamService.getTeamRanks(1, 2) } returns (null to null)
+        every { rankingService.getTeamRanks(any(), any(), 1, 2) } returns (null to null)
         every { vegasOddsService.calculateVegasOdds(any(), any()) } returns
             VegasOddsResponse("Ohio State", "Michigan", -3.5, 3.5, 1600.0, 1500.0)
         every { gameRepository.save(any()) } answers { firstArg<Game>().apply { gameId = SAVED_GAME_ID } }

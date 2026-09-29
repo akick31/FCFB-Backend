@@ -27,6 +27,12 @@ class RankingController(
         @RequestParam("pollType") pollType: String,
     ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getRankings(season, week, pollType))
 
+    @Operation(summary = "Get the most recently uploaded rankings for a poll")
+    @GetMapping("/latest")
+    fun getLatest(
+        @RequestParam("pollType") pollType: String,
+    ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getLatestRankings(pollType))
+
     @Operation(summary = "Get available ranked weeks")
     @GetMapping("/weeks")
     fun getWeeks(

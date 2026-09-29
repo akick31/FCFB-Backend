@@ -548,6 +548,13 @@ object GameStatsCalculator {
         }
     }
 
+    fun calculateFavoredMargin(teamSpread: Double?): Double? = teamSpread?.let { -it }
+
+    fun calculateUpsetMargin(
+        teamSpread: Double?,
+        teamWon: Boolean,
+    ): Double = if (teamWon && teamSpread != null && teamSpread > 0) teamSpread else 0.0
+
     fun calculateAverageDiff(allPlays: List<Play>): Double? {
         val differences = allPlays.mapNotNull { it.difference }
         return if (differences.isEmpty()) null else differences.average()
