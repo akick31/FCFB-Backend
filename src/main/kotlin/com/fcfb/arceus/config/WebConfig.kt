@@ -98,6 +98,7 @@ internal val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/vegas-odds/update-spreads",
         "$FULL_PATH/win-probability/calculate",
         "$FULL_PATH/win-probability/calculate/all",
+        "$FULL_PATH/elo/rebuild",
         "$FULL_PATH/team",
         "$FULL_PATH/upload/postseason-logo",
         "$FULL_PATH/user/hash_emails",

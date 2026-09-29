@@ -40,8 +40,6 @@ class TeamTest {
         assertEquals(mutableListOf<String>(), team.coachDiscordIds)
         assertNull(team.primaryColor)
         assertNull(team.secondaryColor)
-        assertNull(team.coachesPollRanking)
-        assertNull(team.playoffCommitteeRanking)
         assertNull(team.subdivision)
         assertNull(team.conference)
         assertEquals(0, team.currentWins)
@@ -91,8 +89,6 @@ class TeamTest {
                 abbreviation = "TU",
                 primaryColor = "#FF0000",
                 secondaryColor = "#0000FF",
-                coachesPollRanking = 5,
-                playoffCommitteeRanking = 3,
                 subdivision = Subdivision.FBS,
                 offensivePlaybook = OffensivePlaybook.AIR_RAID,
                 defensivePlaybook = DefensivePlaybook.FOUR_THREE,
@@ -130,8 +126,6 @@ class TeamTest {
         assertEquals("TU", team.abbreviation)
         assertEquals("#FF0000", team.primaryColor)
         assertEquals("#0000FF", team.secondaryColor)
-        assertEquals(5, team.coachesPollRanking)
-        assertEquals(3, team.playoffCommitteeRanking)
         assertEquals(Subdivision.FBS, team.subdivision)
         assertEquals(OffensivePlaybook.AIR_RAID, team.offensivePlaybook)
         assertEquals(DefensivePlaybook.FOUR_THREE, team.defensivePlaybook)
@@ -172,8 +166,6 @@ class TeamTest {
         team.coachDiscordIds = mutableListOf("111222333")
         team.primaryColor = "#00FF00"
         team.secondaryColor = "#FFFF00"
-        team.coachesPollRanking = 10
-        team.playoffCommitteeRanking = 8
         team.subdivision = Subdivision.FCS
         team.offensivePlaybook = OffensivePlaybook.SPREAD
         team.defensivePlaybook = DefensivePlaybook.THREE_FOUR
@@ -209,8 +201,6 @@ class TeamTest {
         assertEquals(mutableListOf("111222333"), team.coachDiscordIds)
         assertEquals("#00FF00", team.primaryColor)
         assertEquals("#FFFF00", team.secondaryColor)
-        assertEquals(10, team.coachesPollRanking)
-        assertEquals(8, team.playoffCommitteeRanking)
         assertEquals(Subdivision.FCS, team.subdivision)
         assertEquals(OffensivePlaybook.SPREAD, team.offensivePlaybook)
         assertEquals(DefensivePlaybook.THREE_FOUR, team.defensivePlaybook)
@@ -249,8 +239,6 @@ class TeamTest {
         team.coachDiscordIds = null
         team.primaryColor = null
         team.secondaryColor = null
-        team.coachesPollRanking = null
-        team.playoffCommitteeRanking = null
         team.subdivision = null
         team.conference = null
 
@@ -265,8 +253,6 @@ class TeamTest {
         assertNull(team.coachDiscordIds)
         assertNull(team.primaryColor)
         assertNull(team.secondaryColor)
-        assertNull(team.coachesPollRanking)
-        assertNull(team.playoffCommitteeRanking)
         assertNull(team.subdivision)
         assertNull(team.conference)
     }
@@ -350,24 +336,6 @@ class TeamTest {
     @Test
     fun `test Team ranking tracking`() {
         val team = Team()
-
-        team.coachesPollRanking = 1
-        assertEquals(1, team.coachesPollRanking)
-
-        team.coachesPollRanking = 25
-        assertEquals(25, team.coachesPollRanking)
-
-        team.coachesPollRanking = null
-        assertNull(team.coachesPollRanking)
-
-        team.playoffCommitteeRanking = 4
-        assertEquals(4, team.playoffCommitteeRanking)
-
-        team.playoffCommitteeRanking = 12
-        assertEquals(12, team.playoffCommitteeRanking)
-
-        team.playoffCommitteeRanking = null
-        assertNull(team.playoffCommitteeRanking)
     }
 
     @Test

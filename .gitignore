@@ -18,6 +18,7 @@ lib/
 
 ### Generated animation previews ###
 /animation-previews/
+/animation-previews-postseason/
 
 ### STS ###
 .apt_generated

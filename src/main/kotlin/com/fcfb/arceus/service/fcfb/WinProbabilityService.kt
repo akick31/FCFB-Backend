@@ -1,6 +1,5 @@
 package com.fcfb.arceus.service.fcfb
 
-import com.fcfb.arceus.dto.response.EloRatingResponse
 import com.fcfb.arceus.dto.response.GameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.PlayWinProbabilityResponse
 import com.fcfb.arceus.dto.response.ProcessedGameResult
@@ -14,10 +13,10 @@ import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.service.fcfb.elo.EloCalculator
 import com.fcfb.arceus.util.ml.XGBoostPredictor
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import kotlin.math.pow
 
 @Service
 class WinProbabilityService(
@@ -26,8 +25,6 @@ class WinProbabilityService(
     private val gameStatsService: GameStatsService,
 ) {
     private val logger = LoggerFactory.getLogger(WinProbabilityService::class.java)
-
-    private val kFactor = 32.0
 
     fun calculateWinProbability(
         game: Game,
@@ -190,27 +187,14 @@ class WinProbabilityService(
         homeTeam: Team,
         awayTeam: Team,
     ) {
-        try {
-            val homeScore = game.homeScore
-            val awayScore = game.awayScore
-            val homeWon = homeScore > awayScore
-
-            val expectedHome = calculateExpectedScore(homeTeam.currentElo, awayTeam.currentElo)
-            val expectedAway = 1.0 - expectedHome
-
-            val actualHome = if (homeWon) 1.0 else 0.0
-            val actualAway = 1.0 - actualHome
-
-            val newHomeElo = homeTeam.currentElo + kFactor * (actualHome - expectedHome)
-            val newAwayElo = awayTeam.currentElo + kFactor * (actualAway - expectedAway)
-
-            homeTeam.currentElo = newHomeElo
-            awayTeam.currentElo = newAwayElo
-
-            logger.info("Updated ELO ratings - ${game.homeTeam}: ${newHomeElo.toInt()}, ${game.awayTeam}: ${newAwayElo.toInt()}")
-        } catch (e: Exception) {
-            logger.error("Error updating ELO ratings: ${e.message}", e)
-        }
+        val (newHomeElo, newAwayElo) =
+            EloCalculator.updatedRatings(homeTeam.currentElo, awayTeam.currentElo, game.homeScore > game.awayScore)
+        logger.info(
+            "Game ${game.gameId} ELO: ${game.homeTeam} ${homeTeam.currentElo} -> $newHomeElo, " +
+                "${game.awayTeam} ${awayTeam.currentElo} -> $newAwayElo",
+        )
+        homeTeam.currentElo = newHomeElo
+        awayTeam.currentElo = newAwayElo
     }
 
     private fun calculateTimeRemaining(
@@ -461,13 +445,6 @@ class WinProbabilityService(
         return rawWinProbability
     }
 
-    private fun calculateExpectedScore(
-        ratingA: Double,
-        ratingB: Double,
-    ): Double {
-        return 1.0 / (1.0 + 10.0.pow((ratingB - ratingA) / 400.0))
-    }
-
     private fun getWinProbabilityForEachTeam(play: Play): Pair<Double, Double> {
         val homeTeamWinProbability =
             if (play.possession == TeamSide.HOME) {
@@ -483,21 +460,6 @@ class WinProbabilityService(
             }
         return Pair(homeTeamWinProbability, awayTeamWinProbability)
     }
-
-    fun getEloRatings(teams: List<Team>): List<EloRatingResponse> =
-        try {
-            teams.map { team ->
-                EloRatingResponse(
-                    teamId = team.id,
-                    teamName = team.name ?: "",
-                    currentElo = team.currentElo,
-                    overallElo = team.overallElo,
-                )
-            }.sortedByDescending { it.currentElo }
-        } catch (e: Exception) {
-            logger.error("Error getting ELO ratings response: ${e.message}", e)
-            throw e
-        }
 
     private fun getTeamEloFromGameStats(
         gameId: Int,

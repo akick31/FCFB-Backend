@@ -99,13 +99,6 @@ class GameController(
     @GetMapping("/week/jobs")
     fun getAllGameWeekJobs(): ResponseEntity<List<GameWeekJob>> = ResponseEntity.ok(gameService.getAllGameWeekJobs())
 
-    @Operation(summary = "Team season rankings history")
-    @GetMapping("/rankings-history")
-    fun getRankingsHistory(
-        @RequestParam(required = false) team: String?,
-        @RequestParam(required = false) season: Int?,
-    ): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.getRankingsHistory(team, season))
-
     @Operation(summary = "Retry failed games")
     @PostMapping("/week/retry")
     fun retryFailedGames(

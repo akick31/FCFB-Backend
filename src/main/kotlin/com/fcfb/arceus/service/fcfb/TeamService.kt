@@ -129,8 +129,6 @@ class TeamService(
                 team.abbreviation,
                 team.primaryColor,
                 team.secondaryColor,
-                0,
-                0,
                 team.subdivision,
                 team.offensivePlaybook,
                 team.defensivePlaybook,
@@ -184,8 +182,6 @@ class TeamService(
             division = team.division
             primaryColor = team.primaryColor
             secondaryColor = team.secondaryColor
-            coachesPollRanking = team.coachesPollRanking
-            playoffCommitteeRanking = team.playoffCommitteeRanking
             offensivePlaybook = team.offensivePlaybook
             defensivePlaybook = team.defensivePlaybook
             isTaken = team.isTaken
@@ -212,6 +208,12 @@ class TeamService(
             existingTeam.name?.let { teamScheduleCleanupService.removeTeamFromUpcomingSchedule(it) }
         }
         return existingTeam
+    }
+
+    fun updateCurrentElo(team: Team) {
+        val existingTeam = getTeamByName(team.name)
+        existingTeam.currentElo = team.currentElo
+        teamRepository.save(existingTeam)
     }
 
     fun updateTeamColor(
@@ -480,41 +482,7 @@ class TeamService(
 
     fun getTeamsInConference(conference: String) = teamRepository.getTeamsInConference(conference)
 
-    fun getTeamRanks(
-        homeTeamId: Int,
-        awayTeamId: Int,
-    ): Pair<Int?, Int?> {
-        val usePlayoff = usePlayoffRanking()
-
-        val homeRank =
-            if (usePlayoff) {
-                getPlayoffRankingById(homeTeamId)
-            } else {
-                getCoachesPollRankingById(homeTeamId)
-            }
-
-        val awayRank =
-            if (usePlayoff) {
-                getPlayoffRankingById(awayTeamId)
-            } else {
-                getCoachesPollRankingById(awayTeamId)
-            }
-
-        return Pair(homeRank, awayRank)
-    }
-
     fun resetWinsAndLosses() = teamRepository.resetWinsAndLosses()
-
-    fun resetRankings() {
-        teamRepository.clearCoachesPollRankings()
-        teamRepository.clearPlayoffCommitteeRankings()
-    }
-
-    private fun usePlayoffRanking() = teamRepository.usePlayoffRanking() == 1
-
-    private fun getPlayoffRankingById(id: Int) = teamRepository.getPlayoffRankingById(id)
-
-    private fun getCoachesPollRankingById(id: Int) = teamRepository.getCoachesPollRankingById(id)
 
     private fun saveTeam(team: Team) = teamRepository.save(team)
 
