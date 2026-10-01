@@ -44,9 +44,9 @@ object OffensiveAlignments {
                 build(
                     underCenter = false,
                     quarterback = Spot(5f, 0f),
-                    backs = listOf(Spot(5f, -2.5f)),
+                    backs = listOf(Spot(5f, 2f)),
                     receivers =
-                        listOf(Spot(LINE_DEPTH, -19f), Spot(OFF_LINE_DEPTH, -11f), Spot(OFF_LINE_DEPTH, 11f), Spot(LINE_DEPTH, 19f)),
+                        listOf(Spot(LINE_DEPTH, -20f), Spot(LINE_DEPTH, 12f), Spot(OFF_LINE_DEPTH, 17f), Spot(OFF_LINE_DEPTH, 22f)),
                 )
         }
 

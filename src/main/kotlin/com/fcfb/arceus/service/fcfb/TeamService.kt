@@ -484,7 +484,7 @@ class TeamService(
 
     fun resetWinsAndLosses() = teamRepository.resetWinsAndLosses()
 
-    private fun saveTeam(team: Team) = teamRepository.save(team)
+    fun saveTeam(team: Team) = teamRepository.save(team)
 
     fun deleteTeam(id: Int): HttpStatus {
         teamRepository.findById(id) ?: return HttpStatus.NOT_FOUND

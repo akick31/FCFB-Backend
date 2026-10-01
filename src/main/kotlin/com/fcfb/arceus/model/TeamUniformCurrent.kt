@@ -48,8 +48,24 @@ class TeamUniformCurrent {
     var helmetLogoMode: String = DEFAULT_HELMET_LOGO_MODE
 
     @Basic
+    @Column(name = "helmet_logo_source")
+    var helmetLogoSource: String = DEFAULT_LOGO_SOURCE
+
+    @Basic
     @Column(name = "logo_url")
     var logoUrl: String? = null
+
+    @Basic
+    @Column(name = "logo_size")
+    var logoSize: Double = DEFAULT_LOGO_SIZE
+
+    @Basic
+    @Column(name = "logo_x")
+    var logoX: Double = 0.0
+
+    @Basic
+    @Column(name = "logo_y")
+    var logoY: Double = 0.0
 
     @Basic
     @Column(name = "has_logo", columnDefinition = "tinyint(1)")
@@ -62,6 +78,14 @@ class TeamUniformCurrent {
     @Basic
     @Column(name = "stripe_color")
     var stripeColor: String? = null
+
+    @Basic
+    @Column(name = "stripe_type")
+    var stripeType: String = DEFAULT_STRIPE_TYPE
+
+    @Basic
+    @Column(name = "secondary_stripe_color")
+    var secondaryStripeColor: String? = null
 
     @Basic
     @Column(name = "jersey_color")
@@ -83,5 +107,8 @@ class TeamUniformCurrent {
         const val DEFAULT_FACEMASK_COLOR = "#FFFFFF"
         const val DEFAULT_HELMET_NUMBER_COLOR = "#FFFFFF"
         const val DEFAULT_HELMET_LOGO_MODE = "MAIN"
+        const val DEFAULT_LOGO_SIZE = 1.0
+        const val DEFAULT_LOGO_SOURCE = "PRIMARY"
+        const val DEFAULT_STRIPE_TYPE = "SINGLE"
     }
 }

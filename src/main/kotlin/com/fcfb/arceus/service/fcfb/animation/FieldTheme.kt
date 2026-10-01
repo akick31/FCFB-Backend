@@ -24,6 +24,7 @@ data class FieldTheme(
     val wallCaption: String? = null,
     val wallLogoUrl: String? = null,
     val homeField: TeamField? = null,
+    val quarterLogoUrl: String? = null,
     val bowlField: BowlField? = null,
     val postseasonField: PostseasonField? = null,
 ) {
@@ -66,9 +67,22 @@ data class FieldTheme(
 
     fun uniforms(): Pair<Uniform, Uniform> = Uniforms.forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
 
-    fun homeLogoUrl(): String? = homeUniform?.logoUrl ?: homeTeam.scorebugLogo
+    fun homeLogoUrl(): String? = helmetDecalUrl(homeUniform, homeTeam)
 
-    fun awayLogoUrl(): String? = awayUniform?.logoUrl ?: awayTeam.scorebugLogo
+    fun awayLogoUrl(): String? = helmetDecalUrl(awayUniform, awayTeam)
+
+    /** The helmet decal: an uploaded logo if the mode is UPLOAD, otherwise the team's primary or secondary logo. */
+    private fun helmetDecalUrl(
+        uniform: TeamUniformHistory?,
+        team: Team,
+    ): String? {
+        val mode = HelmetLogoMode.from(uniform?.helmetLogoMode, uniform?.hasLogo ?: true)
+        if (mode == HelmetLogoMode.UPLOAD) return uniform?.logoUrl
+        return when (LogoSource.from(uniform?.helmetLogoSource)) {
+            LogoSource.SECONDARY -> team.secondaryLogo
+            else -> team.logo
+        }
+    }
 
     fun leftSide(): TeamSide = if (flipped) TeamSide.AWAY else TeamSide.HOME
 
@@ -81,14 +95,11 @@ data class FieldTheme(
         val primary = FieldBackgroundPainter.parseColor(team.primaryColor)
         val secondary = FieldBackgroundPainter.parseColor(team.secondaryColor)
         return when (style) {
-            FieldStyle.HOME_FIELD ->
-                EndZoneDecoration(
-                    team,
-                    homeFieldEndZoneFill() ?: primary,
-                    FieldBackgroundPainter.LINE_COLOR,
-                    outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
-                    null,
-                )
+            FieldStyle.HOME_FIELD -> {
+                val text = homeField?.endZoneTextColor?.let { FieldBackgroundPainter.parseColor(it) } ?: FieldBackgroundPainter.LINE_COLOR
+                val outline = homeField?.endZoneOutlineColor?.let { FieldBackgroundPainter.parseColor(it) } ?: outlineOf(text, secondary)
+                EndZoneDecoration(team, homeFieldEndZoneFill() ?: primary, text, outline, null)
+            }
             FieldStyle.BOWL ->
                 bowlStyling?.endZoneOf(team, side == TeamSide.HOME)
                     ?: EndZoneDecoration(

@@ -18,6 +18,37 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
 
     @Query(
         value =
+            "SELECT * FROM game WHERE game_type = 'BOWL' AND postseason_game_name = :name " +
+                "ORDER BY season DESC, game_id DESC LIMIT 1",
+        nativeQuery = true,
+    )
+    fun getLastBowlGame(name: String): Game?
+
+    @Query(
+        value =
+            "SELECT * FROM game WHERE game_type = 'PLAYOFFS' AND postseason_game_name = :round " +
+                "ORDER BY season DESC, game_id DESC LIMIT 1",
+        nativeQuery = true,
+    )
+    fun getLastPlayoffGame(round: String): Game?
+
+    @Query(
+        value = "SELECT * FROM game WHERE game_type = 'NATIONAL_CHAMPIONSHIP' ORDER BY season DESC, game_id DESC LIMIT 1",
+        nativeQuery = true,
+    )
+    fun getLastNationalChampionshipGame(): Game?
+
+    @Query(
+        value =
+            "SELECT g.* FROM game g JOIN team t ON g.home_team = t.name " +
+                "WHERE g.game_type = 'CONFERENCE_CHAMPIONSHIP' AND t.conference = :conference " +
+                "ORDER BY g.season DESC, g.game_id DESC LIMIT 1",
+        nativeQuery = true,
+    )
+    fun getLastConferenceChampionshipGame(conference: String): Game?
+
+    @Query(
+        value =
             "SELECT postseason_game_logo FROM game WHERE game_type IN ('PLAYOFFS', 'NATIONAL_CHAMPIONSHIP') " +
                 "AND postseason_game_logo IS NOT NULL ORDER BY season DESC, game_id DESC LIMIT 1",
         nativeQuery = true,

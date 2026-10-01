@@ -62,6 +62,10 @@ class TeamUniformHistory {
     var helmetLogoMode: String = TeamUniformCurrent.DEFAULT_HELMET_LOGO_MODE
 
     @Basic
+    @Column(name = "helmet_logo_source")
+    var helmetLogoSource: String = TeamUniformCurrent.DEFAULT_LOGO_SOURCE
+
+    @Basic
     @Column(name = "jersey_color")
     var jerseyColor: String? = null
 
@@ -93,6 +97,26 @@ class TeamUniformHistory {
     @Column(name = "stripe_color")
     var stripeColor: String? = null
 
+    @Basic
+    @Column(name = "stripe_type")
+    var stripeType: String = TeamUniformCurrent.DEFAULT_STRIPE_TYPE
+
+    @Basic
+    @Column(name = "secondary_stripe_color")
+    var secondaryStripeColor: String? = null
+
+    @Basic
+    @Column(name = "logo_size")
+    var logoSize: Double = TeamUniformCurrent.DEFAULT_LOGO_SIZE
+
+    @Basic
+    @Column(name = "logo_x")
+    var logoX: Double = 0.0
+
+    @Basic
+    @Column(name = "logo_y")
+    var logoY: Double = 0.0
+
     @Suppress("LongParameterList")
     constructor(
         team: String,
@@ -106,6 +130,7 @@ class TeamUniformHistory {
         helmetNumberColor: String?,
         facemaskColor: String?,
         helmetLogoMode: String,
+        helmetLogoSource: String,
         jerseyColor: String?,
         numberColor: String?,
         numberOutlineColor: String?,
@@ -114,6 +139,11 @@ class TeamUniformHistory {
         hasLogo: Boolean,
         hasStripe: Boolean,
         stripeColor: String?,
+        stripeType: String,
+        secondaryStripeColor: String?,
+        logoSize: Double,
+        logoX: Double,
+        logoY: Double,
     ) {
         this.team = team
         this.seasonNumber = seasonNumber
@@ -126,6 +156,7 @@ class TeamUniformHistory {
         this.helmetNumberColor = helmetNumberColor
         this.facemaskColor = facemaskColor
         this.helmetLogoMode = helmetLogoMode
+        this.helmetLogoSource = helmetLogoSource
         this.jerseyColor = jerseyColor
         this.numberColor = numberColor
         this.numberOutlineColor = numberOutlineColor
@@ -134,6 +165,11 @@ class TeamUniformHistory {
         this.hasLogo = hasLogo
         this.hasStripe = hasStripe
         this.stripeColor = stripeColor
+        this.stripeType = stripeType
+        this.secondaryStripeColor = secondaryStripeColor
+        this.logoSize = logoSize
+        this.logoX = logoX
+        this.logoY = logoY
     }
 
     constructor()

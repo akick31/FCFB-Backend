@@ -1,7 +1,11 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.dto.request.TeamColorsRequest
 import com.fcfb.arceus.dto.request.TeamFieldRequest
+import com.fcfb.arceus.dto.request.TeamLogosRequest
 import com.fcfb.arceus.dto.request.TeamUniformRequest
+import com.fcfb.arceus.dto.response.TeamColorsResponse
+import com.fcfb.arceus.dto.response.TeamLogosResponse
 import com.fcfb.arceus.model.TeamField
 import com.fcfb.arceus.model.TeamUniformCurrent
 import com.fcfb.arceus.repositories.TeamFieldRepository
@@ -25,6 +29,48 @@ class TeamAppearanceService(
 
     fun getField(team: String): TeamField = teamFieldRepository.findById(team).orElseGet { newField(team) }
 
+    fun getColors(team: String): TeamColorsResponse {
+        val found = teamService.getTeamByName(team)
+        return TeamColorsResponse(found.primaryColor, found.secondaryColor, found.tertiaryColor)
+    }
+
+    fun updateColors(
+        team: String,
+        request: TeamColorsRequest,
+    ): TeamColorsResponse {
+        val found = teamService.getTeamByName(team)
+        if (request.primaryColor != null || request.secondaryColor != null) requireAdmin()
+        if (request.tertiaryColor != null) requireCanEdit(team)
+        request.primaryColor?.let { found.primaryColor = it }
+        request.secondaryColor?.let { found.secondaryColor = it }
+        request.tertiaryColor?.let { found.tertiaryColor = it }
+        teamService.saveTeam(found)
+        return TeamColorsResponse(found.primaryColor, found.secondaryColor, found.tertiaryColor)
+    }
+
+    fun getLogos(team: String): TeamLogosResponse {
+        val found = teamService.getTeamByName(team)
+        return TeamLogosResponse(found.logo, found.logoDark, found.secondaryLogo)
+    }
+
+    fun updateLogos(
+        team: String,
+        request: TeamLogosRequest,
+    ): TeamLogosResponse {
+        requireAdmin()
+        val found = teamService.getTeamByName(team)
+        found.logo = request.logo
+        found.logoDark = request.logoDark
+        found.secondaryLogo = request.secondaryLogo
+        teamService.saveTeam(found)
+        return TeamLogosResponse(found.logo, found.logoDark, found.secondaryLogo)
+    }
+
+    /** Primary and secondary are league identity, not a coach's to change; only admins and commissioners may. */
+    private fun requireAdmin() {
+        if (!AuthContext.isAdmin()) throw UserForbiddenException()
+    }
+
     fun updateUniform(
         team: String,
         request: TeamUniformRequest,
@@ -36,6 +82,7 @@ class TeamAppearanceService(
         request.secondaryHelmetColor?.let { uniform.secondaryHelmetColor = it }
         request.facemaskColor?.let { uniform.facemaskColor = it }
         request.helmetLogoMode?.let { uniform.helmetLogoMode = it }
+        request.helmetLogoSource?.let { uniform.helmetLogoSource = it }
         request.helmetNumberColor?.let { uniform.helmetNumberColor = it }
         request.logoUrl?.let { uniform.logoUrl = it }
         request.hasLogo?.let { uniform.hasLogo = it }
@@ -45,6 +92,9 @@ class TeamAppearanceService(
         request.numberColor?.let { uniform.numberColor = it }
         request.numberOutlineColor?.let { uniform.numberOutlineColor = it }
         request.pantsColor?.let { uniform.pantsColor = it }
+        request.logoSize?.let { uniform.logoSize = it }
+        request.logoX?.let { uniform.logoX = it }
+        request.logoY?.let { uniform.logoY = it }
         requireDistinctShells(uniform)
         return teamUniformCurrentRepository.save(uniform)
     }
@@ -57,9 +107,13 @@ class TeamAppearanceService(
         val field = getField(team)
         request.turfColor?.let { field.turfColor = it }
         request.endZoneColor?.let { field.endZoneColor = it }
+        field.endZoneTextColor = request.endZoneTextColor
+        field.endZoneOutlineColor = request.endZoneOutlineColor
         request.endZoneFont?.let { field.endZoneFont = it }
         request.midfieldLogoUrl?.let { field.midfieldLogoUrl = it }
+        request.midfieldLogoSource?.let { field.midfieldLogoSource = it }
         request.quarterLogoUrl?.let { field.quarterLogoUrl = it }
+        request.quarterLogoSource?.let { field.quarterLogoSource = it }
         request.wallDesign?.let { field.wallDesign = it }
         request.wallColor?.let { field.wallColor = it }
         request.goalPostColor?.let { field.goalPostColor = it }

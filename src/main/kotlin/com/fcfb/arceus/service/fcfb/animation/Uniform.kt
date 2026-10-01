@@ -12,4 +12,7 @@ data class Uniform(
     val stripe: Color? = null,
     val helmetNumber: Color = Color.WHITE,
     val helmetLogoMode: HelmetLogoMode = HelmetLogoMode.MAIN,
+    val logoSize: Float = 1f,
+    val logoX: Float = 0f,
+    val logoY: Float = 0f,
 )

@@ -23,12 +23,24 @@ class TeamField {
     var endZoneColor: String? = null
 
     @Basic
+    @Column(name = "end_zone_text_color")
+    var endZoneTextColor: String? = null
+
+    @Basic
+    @Column(name = "end_zone_outline_color")
+    var endZoneOutlineColor: String? = null
+
+    @Basic
     @Column(name = "end_zone_font")
     var endZoneFont: String = DEFAULT_END_ZONE_FONT
 
     @Basic
     @Column(name = "midfield_logo_url")
     var midfieldLogoUrl: String? = null
+
+    @Basic
+    @Column(name = "midfield_logo_source")
+    var midfieldLogoSource: String = "CUSTOM"
 
     @Basic
     @Column(name = "field_number_outline_color")
@@ -72,6 +84,10 @@ class TeamField {
     @Basic
     @Column(name = "quarter_logo_url")
     var quarterLogoUrl: String? = null
+
+    @Basic
+    @Column(name = "quarter_logo_source")
+    var quarterLogoSource: String = "CUSTOM"
 
     companion object {
         const val DEFAULT_TURF_COLOR = "#226633"

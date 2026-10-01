@@ -1,4 +1,4 @@
-CREATE TABLE team_uniform_current (
+CREATE TABLE IF NOT EXISTS team_uniform_current (
     team VARCHAR(255) NOT NULL,
     primary_color VARCHAR(9) DEFAULT NULL,
     secondary_color VARCHAR(9) DEFAULT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE team_uniform_current (
     PRIMARY KEY (team)
 );
 
-INSERT INTO team_uniform_current (
+INSERT IGNORE INTO team_uniform_current (
     team,
     primary_color,
     secondary_color,

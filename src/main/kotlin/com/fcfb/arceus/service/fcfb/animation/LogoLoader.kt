@@ -40,6 +40,9 @@ object LogoLoader {
         return logo.getSubimage(left, top, right - left + 1, bottom - top + 1)
     }
 
+    /** The first of these urls that loads, so a selected-but-unloadable logo (e.g. an SVG) falls back to a known-good one. */
+    fun loadFirst(vararg urls: String?): BufferedImage? = urls.firstNotNullOfOrNull { load(it) }
+
     fun load(url: String?): BufferedImage? {
         if (url.isNullOrBlank()) return null
         cache[url]?.let { return it }

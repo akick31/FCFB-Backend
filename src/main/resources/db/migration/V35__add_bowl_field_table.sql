@@ -1,4 +1,4 @@
-CREATE TABLE bowl_field (
+CREATE TABLE IF NOT EXISTS bowl_field (
     bowl VARCHAR(255) NOT NULL,
     turf_color VARCHAR(9) NOT NULL DEFAULT '#226633',
     end_zone_fill VARCHAR(16) NOT NULL DEFAULT 'PRIMARY',
@@ -21,5 +21,5 @@ CREATE TABLE bowl_field (
     PRIMARY KEY (bowl)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO bowl_field (bowl, wall_text)
+INSERT IGNORE INTO bowl_field (bowl, wall_text)
 SELECT name, UPPER(name) FROM bowl;

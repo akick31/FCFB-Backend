@@ -1,4 +1,4 @@
-CREATE TABLE playoff_field (
+CREATE TABLE IF NOT EXISTS playoff_field (
     round VARCHAR(64) NOT NULL,
     turf_color VARCHAR(9) NOT NULL DEFAULT '#226633',
     end_zone_font VARCHAR(32) NOT NULL DEFAULT 'CLASSIC',
@@ -15,14 +15,14 @@ CREATE TABLE playoff_field (
     PRIMARY KEY (round)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO playoff_field (round) VALUES
+INSERT IGNORE INTO playoff_field (round) VALUES
     ('First Round'),
     ('Second Round'),
     ('Quarterfinal'),
     ('Semifinal'),
     ('National Championship');
 
-CREATE TABLE conference_championship_field (
+CREATE TABLE IF NOT EXISTS conference_championship_field (
     conference VARCHAR(64) NOT NULL,
     turf_color VARCHAR(9) NOT NULL DEFAULT '#226633',
     end_zone_font VARCHAR(32) NOT NULL DEFAULT 'CLASSIC',
@@ -39,5 +39,5 @@ CREATE TABLE conference_championship_field (
     PRIMARY KEY (conference)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO conference_championship_field (conference)
+INSERT IGNORE INTO conference_championship_field (conference)
 SELECT code FROM conference;

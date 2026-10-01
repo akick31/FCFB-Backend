@@ -4,8 +4,11 @@ package com.fcfb.arceus.dto.request
 data class TeamFieldRequest(
     val turfColor: String? = null,
     val endZoneColor: String? = null,
+    val endZoneTextColor: String? = null,
+    val endZoneOutlineColor: String? = null,
     val endZoneFont: String? = null,
     val midfieldLogoUrl: String? = null,
+    val midfieldLogoSource: String? = null,
     val fieldNumberOutlineColor: String? = null,
     val redZoneBorderColor: String? = null,
     val oobLineColor: String? = null,
@@ -16,4 +19,5 @@ data class TeamFieldRequest(
     val goalPostColor: String? = null,
     val goalPostStyle: String? = null,
     val quarterLogoUrl: String? = null,
+    val quarterLogoSource: String? = null,
 )

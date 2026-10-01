@@ -1,7 +1,6 @@
 package com.fcfb.arceus.service.fcfb.animation
 
 import java.awt.BasicStroke
-import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
@@ -24,7 +23,20 @@ object FieldGoalPlayerPainter {
     private const val LIMB_WIDTH = 7f
     private const val OUTLINE_WIDTH = 1.5f
     private const val NUMBER_SIZE = 18f
-    private const val MASK_WIDTH = 2.2f
+    private const val MASK_BAR_WIDTH = 1.2f
+    private const val FACE_HALF_WIDTH = 0.78f
+    private const val FACE_TOP = -0.40f
+    private const val FACE_BOTTOM = 0.98f
+    private const val MASK_TOP = 0.12f
+    private const val MASK_BOTTOM = 0.66f
+    private const val MASK_WIDTH_FRACTION = 0.82f
+    private const val EYE_Y = -0.14f
+    private const val EYE_X = 0.30f
+    private const val EYE_SIZE = 0.16f
+    private val EYE_COLOR = java.awt.Color(0x2A, 0x20, 0x18)
+    private const val PROFILE_FRONT = 1.02f
+    private val LIGHT_SKIN = java.awt.Color(0xE0, 0xB8, 0x98)
+    private val DARK_SKIN = java.awt.Color(0x6B, 0x4A, 0x33)
     private const val STRIPE_HALF_WIDTH = 0.22f
     private const val STRIPE_BAND_HEIGHT = 0.5f
 
@@ -97,6 +109,10 @@ object FieldGoalPlayerPainter {
         g.clip = clip
     }
 
+    /**
+     * A caged facemask over a recessed face opening, rather than a few loose lines. Head-on it is a grid of bars across
+     * the lower face; in profile it is a short cage bowing out past the front of the shell.
+     */
     private fun drawFacemask(
         g: Graphics2D,
         figure: FieldGoalFigure,
@@ -104,16 +120,94 @@ object FieldGoalPlayerPainter {
         radius: Float,
     ) {
         val x = figure.x
-        g.color = figure.uniform.facemask
-        g.stroke = BasicStroke(maxOf(1f, MASK_WIDTH * figure.scale), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+        val clip = g.clip
         if (figure.facingCamera) {
-            g.draw(Line2D.Float(x - radius * 0.65f, centerY + radius * 0.15f, x + radius * 0.65f, centerY + radius * 0.15f))
-            g.draw(Line2D.Float(x - radius * 0.5f, centerY + radius * 0.5f, x + radius * 0.5f, centerY + radius * 0.5f))
-            g.draw(Line2D.Float(x, centerY - radius * 0.05f, x, centerY + radius * 0.8f))
+            drawFaceOpening(g, figure, x, centerY, radius)
+            drawEyes(g, x, centerY, radius)
+            drawCage(g, figure, x, centerY, radius)
         } else {
-            g.draw(Line2D.Float(x - radius * 0.95f, centerY + radius * 0.1f, x - radius * 0.7f, centerY + radius * 0.8f))
-            g.draw(Line2D.Float(x + radius * 0.95f, centerY + radius * 0.1f, x + radius * 0.7f, centerY + radius * 0.8f))
+            drawProfileCage(g, figure, x, centerY, radius)
         }
+        g.clip = clip
+    }
+
+    /** A plain skin-tone face sits behind the mask; the tone is light or dark, fixed per player by their number. */
+    private fun drawFaceOpening(
+        g: Graphics2D,
+        figure: FieldGoalFigure,
+        x: Float,
+        centerY: Float,
+        radius: Float,
+    ) {
+        val shell = Ellipse2D.Float(x - radius, centerY - radius, radius * 2, radius * 2)
+        g.clip(shell)
+        g.color = skinTone(figure)
+        val faceWidth = radius * FACE_HALF_WIDTH * 2
+        g.fill(
+            RoundRectangle2D.Float(
+                x - radius * FACE_HALF_WIDTH,
+                centerY + radius * FACE_TOP,
+                faceWidth,
+                radius * (FACE_BOTTOM - FACE_TOP),
+                faceWidth * 0.5f,
+                faceWidth * 0.5f,
+            ),
+        )
+    }
+
+    /** Two eyes in the upper face, above the mask bars, so the opening reads as a face. */
+    private fun drawEyes(
+        g: Graphics2D,
+        x: Float,
+        centerY: Float,
+        radius: Float,
+    ) {
+        g.color = EYE_COLOR
+        val size = radius * EYE_SIZE
+        val eyeY = centerY + radius * EYE_Y - size / 2
+        listOf(-EYE_X, EYE_X).forEach { offset ->
+            g.fill(Ellipse2D.Float(x + radius * offset - size / 2, eyeY, size, size * 0.8f))
+        }
+    }
+
+    /** Three horizontal bars across the face, the way a real facemask reads head-on. */
+    private fun drawCage(
+        g: Graphics2D,
+        figure: FieldGoalFigure,
+        x: Float,
+        centerY: Float,
+        radius: Float,
+    ) {
+        g.clip(Ellipse2D.Float(x - radius, centerY - radius, radius * 2, radius * 2))
+        g.color = figure.uniform.facemask
+        g.stroke = BasicStroke(maxOf(1f, MASK_BAR_WIDTH * figure.scale), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+        val maskTop = centerY + radius * MASK_TOP
+        val maskBottom = centerY + radius * MASK_BOTTOM
+        val halfWidth = radius * FACE_HALF_WIDTH * MASK_WIDTH_FRACTION
+        listOf(0f, 0.5f, 1f).forEach { fraction ->
+            val barY = maskTop + (maskBottom - maskTop) * fraction
+            g.draw(Line2D.Float(x - halfWidth, barY, x + halfWidth, barY))
+        }
+    }
+
+    private fun skinTone(figure: FieldGoalFigure): java.awt.Color = if (figure.number % 2 == 0) DARK_SKIN else LIGHT_SKIN
+
+    private fun drawProfileCage(
+        g: Graphics2D,
+        figure: FieldGoalFigure,
+        x: Float,
+        centerY: Float,
+        radius: Float,
+    ) {
+        g.color = figure.uniform.facemask
+        g.stroke = BasicStroke(maxOf(1f, MASK_BAR_WIDTH * figure.scale), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+        val front = x + radius * PROFILE_FRONT
+        val top = centerY + radius * FACE_TOP
+        val bottom = centerY + radius * FACE_BOTTOM
+        g.draw(Line2D.Float(x + radius * 0.2f, top, front, top + radius * 0.12f))
+        g.draw(Line2D.Float(x + radius * 0.2f, bottom, front, bottom - radius * 0.12f))
+        g.draw(Line2D.Float(front, top + radius * 0.12f, front, bottom - radius * 0.12f))
+        g.draw(Line2D.Float(x + radius * 0.2f, (top + bottom) / 2f, front, (top + bottom) / 2f))
     }
 
     private fun drawNumber(
@@ -121,7 +215,7 @@ object FieldGoalPlayerPainter {
         figure: FieldGoalFigure,
         shoulderY: Float,
     ) {
-        g.font = Font("Arial", Font.BOLD, (NUMBER_SIZE * figure.scale).toInt().coerceAtLeast(6))
+        g.font = AnimationFonts.graduate.deriveFont((NUMBER_SIZE * figure.scale).coerceAtLeast(6f))
         val text = figure.number.toString()
         val metrics = g.fontMetrics
         val textX = figure.x - metrics.stringWidth(text) / 2f

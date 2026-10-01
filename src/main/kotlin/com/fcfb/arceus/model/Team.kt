@@ -45,6 +45,10 @@ class Team {
     var logoDark: String? = null
 
     @Basic
+    @Column(name = "secondary_logo")
+    var secondaryLogo: String? = null
+
+    @Basic
     @Column(name = "scorebug_logo")
     var scorebugLogo: String? = null
 
@@ -75,6 +79,10 @@ class Team {
     @Basic
     @Column(name = "secondary_color")
     var secondaryColor: String? = null
+
+    @Basic
+    @Column(name = "tertiary_color")
+    var tertiaryColor: String = "#000000"
 
     @Convert(converter = SubdivisionConverter::class)
     @Column(name = "subdivision")

@@ -192,7 +192,7 @@ object FieldBackgroundPainter {
         theme: FieldTheme,
     ) {
         if (theme.style != FieldStyle.HOME_FIELD) return
-        val logo = LogoLoader.load(theme.homeField?.quarterLogoUrl) ?: return
+        val logo = LogoLoader.load(theme.quarterLogoUrl) ?: return
         val leftX = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
         val rightX = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
         LogoFit.draw(g, logo, leftX, topQuarterLogoY(), QUARTER_LOGO_SIZE)

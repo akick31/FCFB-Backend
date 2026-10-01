@@ -61,6 +61,7 @@ class TeamUniformService(
             helmetNumberColor = current?.helmetNumberColor ?: TeamUniformCurrent.DEFAULT_HELMET_NUMBER_COLOR,
             facemaskColor = current?.facemaskColor ?: FACEMASK_COLOR,
             helmetLogoMode = current?.helmetLogoMode ?: TeamUniformCurrent.DEFAULT_HELMET_LOGO_MODE,
+            helmetLogoSource = current?.helmetLogoSource ?: TeamUniformCurrent.DEFAULT_LOGO_SOURCE,
             jerseyColor = current?.jerseyColor ?: team.primaryColor,
             numberColor = current?.numberColor ?: NUMBER_COLOR,
             numberOutlineColor = current?.numberOutlineColor,
@@ -69,6 +70,9 @@ class TeamUniformService(
             hasLogo = current?.hasLogo ?: true,
             hasStripe = current?.hasStripe ?: false,
             stripeColor = current?.stripeColor,
+            logoSize = current?.logoSize ?: TeamUniformCurrent.DEFAULT_LOGO_SIZE,
+            logoX = current?.logoX ?: 0.0,
+            logoY = current?.logoY ?: 0.0,
         )
     }
 

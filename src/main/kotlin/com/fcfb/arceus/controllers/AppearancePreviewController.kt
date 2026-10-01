@@ -1,6 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.AppearancePreviewRequest
+import com.fcfb.arceus.dto.request.PostseasonPreviewRequest
 import com.fcfb.arceus.service.fcfb.AppearancePreviewService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -20,4 +21,10 @@ class AppearancePreviewController(
     fun preview(
         @RequestBody request: AppearancePreviewRequest,
     ) = appearancePreviewService.preview(request)
+
+    @Operation(summary = "Render a postseason field using the last-played matchup")
+    @PostMapping("/postseason")
+    fun previewPostseason(
+        @RequestBody request: PostseasonPreviewRequest,
+    ) = appearancePreviewService.previewPostseason(request)
 }

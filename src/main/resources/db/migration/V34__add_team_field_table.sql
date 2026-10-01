@@ -1,4 +1,4 @@
-CREATE TABLE team_field (
+CREATE TABLE IF NOT EXISTS team_field (
     team VARCHAR(255) NOT NULL,
     turf_color VARCHAR(9) NOT NULL DEFAULT '#226633',
     end_zone_color VARCHAR(9) DEFAULT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE team_field (
     PRIMARY KEY (team)
 );
 
-INSERT INTO team_field (team, turf_color, end_zone_color, midfield_logo_url, red_zone_border_color, wall_color)
+INSERT IGNORE INTO team_field (team, turf_color, end_zone_color, midfield_logo_url, red_zone_border_color, wall_color)
 SELECT name, '#226633', primary_color, scorebug_logo, primary_color, primary_color
 FROM team
 WHERE name IS NOT NULL;

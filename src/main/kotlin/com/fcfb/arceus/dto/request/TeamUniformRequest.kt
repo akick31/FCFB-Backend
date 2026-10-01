@@ -10,6 +10,7 @@ data class TeamUniformRequest(
     val secondaryHelmetColor: String? = null,
     val facemaskColor: String? = null,
     val helmetLogoMode: String? = null,
+    val helmetLogoSource: String? = null,
     val helmetNumberColor: String? = null,
     val logoUrl: String? = null,
     val hasLogo: Boolean? = null,
@@ -19,4 +20,7 @@ data class TeamUniformRequest(
     val numberColor: String? = null,
     val numberOutlineColor: String? = null,
     val pantsColor: String? = null,
+    val logoSize: Double? = null,
+    val logoX: Double? = null,
+    val logoY: Double? = null,
 )

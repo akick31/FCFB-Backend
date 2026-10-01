@@ -34,6 +34,8 @@ class FieldThemeResolver(
         awayTeam: Team,
         homeUniform: TeamUniformHistory? = null,
         awayUniform: TeamUniformHistory? = null,
+        bowlFieldOverride: BowlField? = null,
+        postseasonFieldOverride: PostseasonField? = null,
     ): FieldTheme {
         val style =
             when (game.gameType) {
@@ -44,11 +46,12 @@ class FieldThemeResolver(
                 else -> FieldStyle.HOME_FIELD
             }
         val homeField = if (style == FieldStyle.HOME_FIELD) fieldFor(homeTeam) else null
-        val bowlField = if (style == FieldStyle.BOWL) bowlFieldFor(game) else null
-        val postseasonField = postseasonFieldFor(style, game, homeTeam)
+        val bowlField = bowlFieldOverride ?: if (style == FieldStyle.BOWL) bowlFieldFor(game) else null
+        val postseasonField = postseasonFieldOverride ?: postseasonFieldFor(style, game, homeTeam)
         val centerLogo =
             when (style) {
-                FieldStyle.HOME_FIELD -> homeField?.midfieldLogoUrl ?: homeTeam.scorebugLogo
+                FieldStyle.HOME_FIELD ->
+                    resolveFieldLogo(homeField?.midfieldLogoSource, homeField?.midfieldLogoUrl, homeTeam) ?: homeTeam.scorebugLogo
                 FieldStyle.CONFERENCE_CHAMPIONSHIP -> postseasonField?.centerLogoUrl ?: conferenceLogo(homeTeam) ?: game.postseasonGameLogo
                 FieldStyle.PLAYOFF, FieldStyle.NATIONAL_CHAMPIONSHIP -> postseasonField?.centerLogoUrl ?: playoffLogo(game)
                 FieldStyle.BOWL -> game.postseasonGameLogo
@@ -105,6 +108,17 @@ class FieldThemeResolver(
         }
 
     private fun bowlFieldFor(game: Game): BowlField? = game.postseasonGameName?.let { bowlFieldRepository.findById(it).orElse(null) }
+
+    private fun resolveFieldLogo(
+        source: String?,
+        customUrl: String?,
+        team: Team,
+    ): String? =
+        when (LogoSource.from(source)) {
+            LogoSource.PRIMARY -> team.logo
+            LogoSource.SECONDARY -> team.secondaryLogo
+            LogoSource.CUSTOM -> customUrl
+        }
 
     private fun fieldFor(team: Team): TeamField? = team.name?.let { teamFieldRepository.findById(it).orElse(null) }
 

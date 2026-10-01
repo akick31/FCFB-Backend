@@ -23,6 +23,9 @@ object Uniforms {
                 stripe = stripe(homeTeam, homeSnapshot),
                 helmetNumber = helmetNumber(homeSnapshot),
                 helmetLogoMode = logoMode(homeSnapshot),
+                logoSize = logoSize(homeSnapshot),
+                logoX = (homeSnapshot?.logoX ?: 0.0).toFloat(),
+                logoY = (homeSnapshot?.logoY ?: 0.0).toFloat(),
             )
         val away =
             Uniform(
@@ -35,6 +38,9 @@ object Uniforms {
                 stripe = stripe(awayTeam, awaySnapshot),
                 helmetNumber = helmetNumber(awaySnapshot),
                 helmetLogoMode = logoMode(awaySnapshot),
+                logoSize = logoSize(awaySnapshot),
+                logoX = (awaySnapshot?.logoX ?: 0.0).toFloat(),
+                logoY = (awaySnapshot?.logoY ?: 0.0).toFloat(),
             )
         return home to away
     }
@@ -69,6 +75,8 @@ object Uniforms {
         if (snapshot?.hasStripe != true) return null
         return FieldBackgroundPainter.parseColor(snapshot.stripeColor ?: team.secondaryColor)
     }
+
+    private fun logoSize(snapshot: TeamUniformHistory?): Float = (snapshot?.logoSize ?: 1.0).toFloat()
 
     private fun logoMode(snapshot: TeamUniformHistory?): HelmetLogoMode =
         HelmetLogoMode.from(snapshot?.helmetLogoMode, snapshot?.hasLogo ?: true)

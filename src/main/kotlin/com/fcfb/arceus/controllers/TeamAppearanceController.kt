@@ -1,6 +1,8 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.dto.request.TeamColorsRequest
 import com.fcfb.arceus.dto.request.TeamFieldRequest
+import com.fcfb.arceus.dto.request.TeamLogosRequest
 import com.fcfb.arceus.dto.request.TeamUniformRequest
 import com.fcfb.arceus.service.fcfb.TeamAppearanceService
 import io.swagger.v3.oas.annotations.Operation
@@ -43,4 +45,30 @@ class TeamAppearanceController(
         @RequestParam team: String,
         @RequestBody request: TeamFieldRequest,
     ) = teamAppearanceService.updateField(team, request)
+
+    @Operation(summary = "Get a team's colors")
+    @GetMapping("/colors")
+    fun getColors(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getColors(team)
+
+    @Operation(summary = "Update a team's colors")
+    @PutMapping("/colors")
+    fun updateColors(
+        @RequestParam team: String,
+        @RequestBody request: TeamColorsRequest,
+    ) = teamAppearanceService.updateColors(team, request)
+
+    @Operation(summary = "Get a team's logos")
+    @GetMapping("/logos")
+    fun getLogos(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getLogos(team)
+
+    @Operation(summary = "Update a team's logos")
+    @PutMapping("/logos")
+    fun updateLogos(
+        @RequestParam team: String,
+        @RequestBody request: TeamLogosRequest,
+    ) = teamAppearanceService.updateLogos(team, request)
 }
