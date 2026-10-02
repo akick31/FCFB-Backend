@@ -12,38 +12,61 @@ object Uniforms {
         awaySnapshot: TeamUniformHistory? = null,
     ): Pair<Uniform, Uniform> {
         val (homeHelmet, awayHelmet) = HelmetColors.forMatchup(homeTeam, awayTeam, homeSnapshot, awaySnapshot)
+        val awayAlt = HelmetColors.awayUsesAlternate(homeTeam, awayTeam, homeSnapshot, awaySnapshot)
         val home =
             Uniform(
                 jersey = jersey(homeTeam, homeSnapshot),
                 number = numberColor(homeSnapshot),
                 helmet = homeHelmet,
                 pants = pants(homeTeam, homeSnapshot),
-                facemask = facemask(homeSnapshot),
                 numberOutline = numberOutline(homeSnapshot),
-                stripe = stripe(homeTeam, homeSnapshot),
-                helmetNumber = helmetNumber(homeSnapshot),
-                helmetLogoMode = logoMode(homeSnapshot),
-                logoSize = logoSize(homeSnapshot),
-                logoX = (homeSnapshot?.logoX ?: 0.0).toFloat(),
-                logoY = (homeSnapshot?.logoY ?: 0.0).toFloat(),
-            )
+            ).withHelmet(homeTeam, homeSnapshot, alt = false)
         val away =
             Uniform(
                 jersey = Color.WHITE,
-                number = jersey(awayTeam, awaySnapshot),
+                number = awayNumber(awayTeam, awaySnapshot),
                 helmet = awayHelmet,
                 pants = pants(awayTeam, awaySnapshot),
-                facemask = facemask(awaySnapshot),
-                numberOutline = numberOutline(awaySnapshot),
-                stripe = stripe(awayTeam, awaySnapshot),
-                helmetNumber = helmetNumber(awaySnapshot),
-                helmetLogoMode = logoMode(awaySnapshot),
-                logoSize = logoSize(awaySnapshot),
-                logoX = (awaySnapshot?.logoX ?: 0.0).toFloat(),
-                logoY = (awaySnapshot?.logoY ?: 0.0).toFloat(),
-            )
+                numberOutline = awayNumberOutline(awaySnapshot),
+            ).withHelmet(awayTeam, awaySnapshot, alt = awayAlt)
         return home to away
     }
+
+    /** The secondary helmet rendered on its own, for the appearance editor preview. */
+    fun secondaryHelmet(
+        team: Team,
+        snapshot: TeamUniformHistory?,
+    ): Uniform {
+        val shell =
+            snapshot?.secondaryHelmetColor?.let { FieldBackgroundPainter.parseColor(it) }
+                ?: snapshot?.helmetColor?.let { FieldBackgroundPainter.parseColor(it) }
+                ?: HelmetColors.shellColor(team)
+        return Uniform(
+            jersey = jersey(team, snapshot),
+            number = numberColor(snapshot),
+            helmet = shell,
+            pants = pants(team, snapshot),
+            numberOutline = numberOutline(snapshot),
+        ).withHelmet(team, snapshot, alt = true)
+    }
+
+    private fun Uniform.withHelmet(
+        team: Team,
+        snapshot: TeamUniformHistory?,
+        alt: Boolean,
+    ): Uniform =
+        copy(
+            facemask = facemask(snapshot, alt),
+            stripe = stripe(team, snapshot, alt),
+            stripeType = StripeType.from(HelmetFields.stripeType(snapshot, alt)),
+            outerStripe = outerStripe(team, snapshot, alt),
+            helmetNumber = helmetNumber(snapshot, alt),
+            helmetLogoMode = HelmetLogoMode.from(HelmetFields.helmetLogoMode(snapshot, alt), HelmetFields.hasLogo(snapshot, alt)),
+            logoSize = HelmetFields.logoSize(snapshot, alt).toFloat(),
+            logoX = HelmetFields.logoX(snapshot, alt).toFloat(),
+            logoY = HelmetFields.logoY(snapshot, alt).toFloat(),
+            logoRotation = HelmetFields.logoRotation(snapshot, alt).toFloat(),
+        )
 
     private fun jersey(
         team: Team,
@@ -56,28 +79,45 @@ object Uniforms {
     ): Color = FieldBackgroundPainter.parseColor(snapshot?.pantsColor ?: team.primaryColor)
 
     /** The road team wears white, so its numbers stay the team color; only the home set honors a configured number color. */
+    private fun awayNumber(
+        team: Team,
+        snapshot: TeamUniformHistory?,
+    ): Color = snapshot?.awayNumberColor?.let { FieldBackgroundPainter.parseColor(it) } ?: jersey(team, snapshot)
+
+    private fun awayNumberOutline(snapshot: TeamUniformHistory?): Color? =
+        snapshot?.awayNumberOutlineColor?.let { FieldBackgroundPainter.parseColor(it) }
+
     private fun numberColor(snapshot: TeamUniformHistory?): Color =
         snapshot?.numberColor?.let { FieldBackgroundPainter.parseColor(it) } ?: Color.WHITE
 
     private fun numberOutline(snapshot: TeamUniformHistory?): Color? =
         snapshot?.numberOutlineColor?.let { FieldBackgroundPainter.parseColor(it) }
 
-    private fun helmetNumber(snapshot: TeamUniformHistory?): Color =
-        snapshot?.helmetNumberColor?.let { FieldBackgroundPainter.parseColor(it) } ?: Color.WHITE
+    private fun helmetNumber(
+        snapshot: TeamUniformHistory?,
+        alt: Boolean,
+    ): Color = HelmetFields.helmetNumberColor(snapshot, alt)?.let { FieldBackgroundPainter.parseColor(it) } ?: Color.WHITE
 
-    private fun facemask(snapshot: TeamUniformHistory?): Color =
-        snapshot?.facemaskColor?.let { FieldBackgroundPainter.parseColor(it) } ?: Color.WHITE
+    private fun facemask(
+        snapshot: TeamUniformHistory?,
+        alt: Boolean,
+    ): Color = HelmetFields.facemaskColor(snapshot, alt)?.let { FieldBackgroundPainter.parseColor(it) } ?: Color.WHITE
 
     private fun stripe(
         team: Team,
         snapshot: TeamUniformHistory?,
+        alt: Boolean,
     ): Color? {
-        if (snapshot?.hasStripe != true) return null
-        return FieldBackgroundPainter.parseColor(snapshot.stripeColor ?: team.secondaryColor)
+        if (!HelmetFields.hasStripe(snapshot, alt)) return null
+        return FieldBackgroundPainter.parseColor(HelmetFields.stripeColor(snapshot, alt) ?: team.secondaryColor)
     }
 
-    private fun logoSize(snapshot: TeamUniformHistory?): Float = (snapshot?.logoSize ?: 1.0).toFloat()
-
-    private fun logoMode(snapshot: TeamUniformHistory?): HelmetLogoMode =
-        HelmetLogoMode.from(snapshot?.helmetLogoMode, snapshot?.hasLogo ?: true)
+    private fun outerStripe(
+        team: Team,
+        snapshot: TeamUniformHistory?,
+        alt: Boolean,
+    ): Color? {
+        if (!HelmetFields.hasStripe(snapshot, alt)) return null
+        return FieldBackgroundPainter.parseColor(HelmetFields.secondaryStripeColor(snapshot, alt) ?: team.secondaryColor)
+    }
 }

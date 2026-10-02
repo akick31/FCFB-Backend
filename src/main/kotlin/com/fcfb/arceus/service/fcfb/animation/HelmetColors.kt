@@ -23,6 +23,14 @@ object HelmetColors {
         return home to away
     }
 
+    /** True when the away team's base shell clashes with the home shell and it must switch to its alternate helmet. */
+    fun awayUsesAlternate(
+        homeTeam: Team,
+        awayTeam: Team,
+        homeSnapshot: TeamUniformHistory? = null,
+        awaySnapshot: TeamUniformHistory? = null,
+    ): Boolean = ColorSimilarity.areSimilar(baseShell(homeTeam, homeSnapshot), baseShell(awayTeam, awaySnapshot))
+
     private fun baseShell(
         team: Team,
         snapshot: TeamUniformHistory?,

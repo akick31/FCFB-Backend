@@ -121,10 +121,15 @@ object FieldBackgroundPainter {
         }
 
         val endZoneFamily = EndZoneFonts.familyOf(theme.endZoneFont())
-        val endZoneFontSize =
-            minOf(fittedEndZoneFontSize(g, homeEndZone, endZoneFamily), fittedEndZoneFontSize(g, awayEndZone, endZoneFamily))
-        drawEndZoneText(g, homeEndZone, MARGIN / 2, clockwise = false, endZoneFontSize, endZoneFamily)
-        drawEndZoneText(g, awayEndZone, WIDTH - MARGIN / 2, clockwise = true, endZoneFontSize, endZoneFamily)
+        drawEndZoneText(g, homeEndZone, MARGIN / 2, clockwise = false, fittedEndZoneFontSize(g, homeEndZone, endZoneFamily), endZoneFamily)
+        drawEndZoneText(
+            g,
+            awayEndZone,
+            WIDTH - MARGIN / 2,
+            clockwise = true,
+            fittedEndZoneFontSize(g, awayEndZone, endZoneFamily),
+            endZoneFamily,
+        )
 
         val midX = FieldCoordinateMapper.toPixelX(50, WIDTH, MARGIN)
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
@@ -176,11 +181,11 @@ object FieldBackgroundPainter {
         theme: FieldTheme,
     ) {
         if (theme.style != FieldStyle.BOWL && theme.style != FieldStyle.HOME_FIELD) return
-        LogoLoader.load(theme.conferenceLogoOf(theme.leftSide()))?.let {
+        ConferenceLogoTint.load(theme.conferenceLogoOf(theme.leftSide()), theme.conferenceLogoTint())?.let {
             val x = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
             LogoFit.draw(g, it, x, bottomQuarterLogoY(), CONFERENCE_LOGO_SIZE)
         }
-        LogoLoader.load(theme.conferenceLogoOf(theme.rightSide()))?.let {
+        ConferenceLogoTint.load(theme.conferenceLogoOf(theme.rightSide()), theme.conferenceLogoTint())?.let {
             val x = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
             LogoFit.draw(g, it, x, topQuarterLogoY(), CONFERENCE_LOGO_SIZE)
         }
@@ -450,12 +455,12 @@ object FieldBackgroundPainter {
         fontSize: Int,
         family: String,
     ) {
-        val label = endZone.team.name?.uppercase()?.takeIf { it.isNotBlank() } ?: return
+        val label = endZoneLabel(endZone) ?: return
         val logo = LogoLoader.load(endZone.logoUrl)
         g.font = Font(family, Font.BOLD, fontSize)
         val metrics = g.fontMetrics
-        val logoSize = metrics.ascent
-        val start = -endZoneLength(g, label, logo) / 2
+        val logoSize = endZoneLogoPixels(endZone, logo, metrics)
+        val start = -endZoneLength(g, label, logoSize) / 2
         val textX = start + if (logo != null) logoSize + END_ZONE_LOGO_GAP else 0
 
         val transform = g.transform
@@ -465,11 +470,13 @@ object FieldBackgroundPainter {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
             LogoFit.draw(g, it, start + logoSize / 2, 0, logoSize)
         }
-        g.color = endZone.outlineColor
-        for (dx in -END_ZONE_OUTLINE_WIDTH..END_ZONE_OUTLINE_WIDTH) {
-            for (dy in -END_ZONE_OUTLINE_WIDTH..END_ZONE_OUTLINE_WIDTH) {
-                if (dx != 0 || dy != 0) {
-                    g.drawString(label, textX + dx, metrics.ascent / 2 + dy)
+        if (endZone.outlineEnabled) {
+            g.color = endZone.outlineColor
+            for (dx in -END_ZONE_OUTLINE_WIDTH..END_ZONE_OUTLINE_WIDTH) {
+                for (dy in -END_ZONE_OUTLINE_WIDTH..END_ZONE_OUTLINE_WIDTH) {
+                    if (dx != 0 || dy != 0) {
+                        g.drawString(label, textX + dx, metrics.ascent / 2 + dy)
+                    }
                 }
             }
         }
@@ -484,20 +491,32 @@ object FieldBackgroundPainter {
         family: String,
     ): Int {
         var fontSize = MARGIN - 16
-        val label = endZone.team.name?.uppercase()?.takeIf { it.isNotBlank() } ?: return fontSize
+        val label = endZoneLabel(endZone) ?: return fontSize
         val logo = LogoLoader.load(endZone.logoUrl)
         val availableHeight = (HEIGHT - 2 * END_ZONE_TEXT_PADDING).toFloat() - 2 * END_ZONE_OUTLINE_WIDTH
         g.font = Font(family, Font.BOLD, fontSize)
-        while (fontSize > 6 && endZoneLength(g, label, logo) > availableHeight) {
+        while (fontSize > 6 && endZoneLength(g, label, endZoneLogoPixels(endZone, logo, g.fontMetrics)) > availableHeight) {
             fontSize--
             g.font = Font(family, Font.BOLD, fontSize)
         }
         return fontSize
     }
 
+    private fun endZoneLabel(endZone: EndZoneDecoration): String? =
+        (endZone.text?.takeIf { it.isNotBlank() } ?: endZone.team.name)?.uppercase()?.takeIf { it.isNotBlank() }
+
+    private fun endZoneLogoPixels(
+        endZone: EndZoneDecoration,
+        logo: BufferedImage?,
+        metrics: java.awt.FontMetrics,
+    ): Int {
+        if (logo == null) return 0
+        return if (endZone.logoScale > 0f) (endZone.logoScale * (MARGIN - 8)).toInt() else metrics.ascent
+    }
+
     private fun endZoneLength(
         g: Graphics2D,
         label: String,
-        logo: BufferedImage?,
-    ): Int = g.fontMetrics.stringWidth(label) + if (logo != null) g.fontMetrics.ascent + END_ZONE_LOGO_GAP else 0
+        logoPixels: Int,
+    ): Int = g.fontMetrics.stringWidth(label) + if (logoPixels > 0) logoPixels + END_ZONE_LOGO_GAP else 0
 }

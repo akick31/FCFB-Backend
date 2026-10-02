@@ -45,6 +45,7 @@ class GameServiceTest {
     private val gameStatsRepository: GameStatsRepository = mockk(relaxed = true)
     private val rankingRepository: RankingRepository = mockk(relaxed = true)
     private val rankingService: RankingService = mockk()
+    private val gameFieldService: GameFieldService = mockk(relaxed = true)
 
     private lateinit var gameService: GameService
 
@@ -81,6 +82,7 @@ class GameServiceTest {
                 gameStatsRepository,
                 rankingRepository,
                 rankingService,
+                gameFieldService,
             )
 
         every { teamService.getTeamByName("Ohio State") } returns team(1, "Ohio State", "coachA", "111")

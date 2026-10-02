@@ -5,6 +5,7 @@ enum class LogoSource {
     CUSTOM,
     PRIMARY,
     SECONDARY,
+    NONE,
     ;
 
     companion object {

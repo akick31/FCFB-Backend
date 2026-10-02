@@ -171,6 +171,17 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
     @Query(value = "UPDATE game SET upset_alert_pinged = true WHERE game_id = ?", nativeQuery = true)
     fun markUpsetAlertPinged(gameId: Int)
 
+    @Transactional
+    @Modifying
+    @Query(
+        value = "UPDATE game SET postseason_game_name = ?2 WHERE postseason_game_name = ?1 AND game_type = 'BOWL'",
+        nativeQuery = true,
+    )
+    fun renameBowlGames(
+        oldName: String,
+        newName: String,
+    )
+
     fun findByHomeTeam(homeTeam: String): List<Game>
 
     fun findByAwayTeam(awayTeam: String): List<Game>

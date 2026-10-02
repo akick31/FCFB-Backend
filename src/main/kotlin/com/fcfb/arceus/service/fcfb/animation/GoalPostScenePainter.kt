@@ -103,7 +103,7 @@ object GoalPostScenePainter {
 
     private const val NET_COLS = 8
     private const val NET_ROWS = 6
-    private const val WALL_LOGO_SIZE = 60
+    private const val WALL_LOGO_SIZE = 57
     private const val WALL_LOGO_SPACING = 40
     private const val WALL_LOGO_HEIGHT_FRACTION = 0.8f
     private const val FIELD_WIDTH_YARDS = 53.3f
@@ -201,7 +201,7 @@ object GoalPostScenePainter {
 
         g.color = endZone.fill ?: theme.turf
         g.fillRect(0, layout.endZoneTopY, SCENE_WIDTH, layout.endZoneBottomY - layout.endZoneTopY)
-        drawEndZoneText(g, endZone, layout)
+        drawEndZoneText(g, endZone, layout, EndZoneFonts.familyOf(theme.endZoneFont()))
 
         drawGoalPost(g, theme, layout)
         drawBackOfEndZoneLine(g, layout)
@@ -682,10 +682,11 @@ object GoalPostScenePainter {
         g: Graphics2D,
         endZone: EndZoneDecoration,
         layout: Layout,
+        fontFamily: String,
     ) {
-        val label = endZone.team.name?.uppercase()?.takeIf { it.isNotBlank() } ?: return
+        val label = (endZone.text?.takeIf { it.isNotBlank() } ?: endZone.team.name)?.uppercase()?.takeIf { it.isNotBlank() } ?: return
         val logo = LogoLoader.load(endZone.logoUrl)
-        val glyphs = Font("Arial", Font.BOLD, GLYPH_REFERENCE_SIZE).createGlyphVector(g.fontRenderContext, label)
+        val glyphs = Font(fontFamily, Font.BOLD, GLYPH_REFERENCE_SIZE).createGlyphVector(g.fontRenderContext, label)
         val bounds = glyphs.visualBounds
         val letterHeight = bounds.height.toFloat()
         val glyphWidth = bounds.width.toFloat()
@@ -715,9 +716,16 @@ object GoalPostScenePainter {
                 translate(-bounds.x, -bounds.centerY)
             }
         val lettering = transform.createTransformedShape(glyphs.outline)
-        g.color = endZone.outlineColor
-        g.stroke = BasicStroke(END_ZONE_OUTLINE_STROKE * layout.scale.coerceAtLeast(0.6f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-        g.draw(lettering)
+        if (endZone.outlineEnabled) {
+            g.color = endZone.outlineColor
+            g.stroke =
+                BasicStroke(
+                    END_ZONE_OUTLINE_STROKE * layout.scale.coerceAtLeast(0.6f),
+                    BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND,
+                )
+            g.draw(lettering)
+        }
         g.color = endZone.textColor
         g.fill(lettering)
     }

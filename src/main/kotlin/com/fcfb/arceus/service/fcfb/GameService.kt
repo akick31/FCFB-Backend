@@ -89,6 +89,7 @@ class GameService(
     private val gameStatsRepository: GameStatsRepository,
     private val rankingRepository: RankingRepository,
     private val rankingService: RankingService,
+    private val gameFieldService: GameFieldService,
 ) {
     companion object {
         private val activeJobs = ConcurrentHashMap<String, GameWeekJob>()
@@ -936,6 +937,11 @@ class GameService(
     private fun endGame(game: Game): Game {
         try {
             game.gameStatus = GameStatus.FINAL
+            try {
+                gameFieldService.snapshotIfAbsent(game)
+            } catch (e: Exception) {
+                Logger.error("Error freezing game field for game ${game.gameId}: ${e.message}")
+            }
             appendEndOfGamePlay(game)
             if (game.gameType != GameType.SCRIMMAGE) {
                 teamService.updateTeamWinsAndLosses(game)

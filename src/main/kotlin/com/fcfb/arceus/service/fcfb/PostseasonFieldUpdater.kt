@@ -29,6 +29,16 @@ class PostseasonFieldUpdater {
         field.yardNumberOutlineColor = request.yardNumberOutlineColor
         field.redZoneBorderColor = request.redZoneBorderColor
         field.sidelineAccentColor = request.sidelineAccentColor
+        field.leftSidelineColor = request.leftSidelineColor
+        field.rightSidelineColor = request.rightSidelineColor
+        field.leftRedZoneColor = request.leftRedZoneColor
+        field.rightRedZoneColor = request.rightRedZoneColor
+        field.leftEndZoneText = request.leftEndZoneText
+        field.rightEndZoneText = request.rightEndZoneText
+        field.leftEndZoneLogoUrl = request.leftEndZoneLogoUrl
+        field.rightEndZoneLogoUrl = request.rightEndZoneLogoUrl
+        request.leftEndZoneLogoSource?.let { field.leftEndZoneLogoSource = it }
+        request.rightEndZoneLogoSource?.let { field.rightEndZoneLogoSource = it }
         requireVisibleWall(field)
         return field
     }

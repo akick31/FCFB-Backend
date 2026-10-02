@@ -27,9 +27,16 @@ object FieldGoalPlayerPainter {
     private const val FACE_HALF_WIDTH = 0.78f
     private const val FACE_TOP = -0.40f
     private const val FACE_BOTTOM = 0.98f
-    private const val MASK_TOP = 0.12f
-    private const val MASK_BOTTOM = 0.66f
-    private const val MASK_WIDTH_FRACTION = 0.82f
+    private const val MASK_TOP = 0.10f
+    private const val MASK_MID = 0.30f
+    private const val MASK_BOTTOM = 0.74f
+    private const val BAR_REACH = 0.95f
+    private const val SIDE_BAR_X = 0.80f
+    private const val CENTER_BAR_X = 0.26f
+    private const val BUMPER_Y = -0.58f
+    private const val BUMPER_WIDTH = 0.22f
+    private const val BUMPER_HEIGHT = 0.085f
+    private val BUMPER_COLOR = java.awt.Color(0xDD, 0xDD, 0xDD)
     private const val EYE_Y = -0.14f
     private const val EYE_X = 0.30f
     private const val EYE_SIZE = 0.16f
@@ -124,6 +131,7 @@ object FieldGoalPlayerPainter {
         if (figure.facingCamera) {
             drawFaceOpening(g, figure, x, centerY, radius)
             drawEyes(g, x, centerY, radius)
+            drawBumper(g, figure, x, centerY, radius)
             drawCage(g, figure, x, centerY, radius)
         } else {
             drawProfileCage(g, figure, x, centerY, radius)
@@ -181,13 +189,43 @@ object FieldGoalPlayerPainter {
         g.clip(Ellipse2D.Float(x - radius, centerY - radius, radius * 2, radius * 2))
         g.color = figure.uniform.facemask
         g.stroke = BasicStroke(maxOf(1f, MASK_BAR_WIDTH * figure.scale), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
-        val maskTop = centerY + radius * MASK_TOP
-        val maskBottom = centerY + radius * MASK_BOTTOM
-        val halfWidth = radius * FACE_HALF_WIDTH * MASK_WIDTH_FRACTION
-        listOf(0f, 0.5f, 1f).forEach { fraction ->
-            val barY = maskTop + (maskBottom - maskTop) * fraction
-            g.draw(Line2D.Float(x - halfWidth, barY, x + halfWidth, barY))
+        val topY = centerY + radius * MASK_TOP
+        val midY = centerY + radius * MASK_MID
+        val bottomY = centerY + radius * MASK_BOTTOM
+        val reach = radius * BAR_REACH
+        val sideX = radius * SIDE_BAR_X
+        val centerBarX = radius * CENTER_BAR_X
+        listOf(topY, midY, bottomY).forEach { barY -> g.draw(Line2D.Float(x - reach, barY, x + reach, barY)) }
+        listOf(-sideX, -centerBarX, centerBarX, sideX).forEach { barX ->
+            g.draw(Line2D.Float(x + barX, topY, x + barX, bottomY))
         }
+    }
+
+    /** The small square bumper pad on the front of the shell, above the facemask. */
+    private fun drawBumper(
+        g: Graphics2D,
+        figure: FieldGoalFigure,
+        x: Float,
+        centerY: Float,
+        radius: Float,
+    ) {
+        g.clip(Ellipse2D.Float(x - radius, centerY - radius, radius * 2, radius * 2))
+        val width = radius * BUMPER_WIDTH
+        val height = radius * BUMPER_HEIGHT
+        val pad =
+            RoundRectangle2D.Float(
+                x - width / 2,
+                centerY + radius * BUMPER_Y - height / 2,
+                width,
+                height,
+                height * 0.6f,
+                height * 0.6f,
+            )
+        g.color = BUMPER_COLOR
+        g.fill(pad)
+        g.color = GoalPostScenePainter.DEFENDER_COLOR
+        g.stroke = BasicStroke(maxOf(1f, OUTLINE_WIDTH * figure.scale))
+        g.draw(pad)
     }
 
     private fun skinTone(figure: FieldGoalFigure): java.awt.Color = if (figure.number % 2 == 0) DARK_SKIN else LIGHT_SKIN
@@ -215,7 +253,7 @@ object FieldGoalPlayerPainter {
         figure: FieldGoalFigure,
         shoulderY: Float,
     ) {
-        g.font = AnimationFonts.graduate.deriveFont((NUMBER_SIZE * figure.scale).coerceAtLeast(6f))
+        g.font = AnimationFonts.graduate.deriveFont(java.awt.Font.BOLD, (NUMBER_SIZE * figure.scale).coerceAtLeast(6f))
         val text = figure.number.toString()
         val metrics = g.fontMetrics
         val textX = figure.x - metrics.stringWidth(text) / 2f

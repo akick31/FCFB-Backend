@@ -5,6 +5,7 @@ import com.fcfb.arceus.dto.request.PostseasonPreviewRequest
 import com.fcfb.arceus.dto.request.TeamFieldRequest
 import com.fcfb.arceus.dto.request.TeamUniformRequest
 import com.fcfb.arceus.enums.game.GameStatus
+import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.TeamSide
@@ -19,12 +20,15 @@ import com.fcfb.arceus.model.TeamUniformHistory
 import com.fcfb.arceus.service.fcfb.animation.FieldBackgroundPainter
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalFigure
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalPlayerPainter
-import com.fcfb.arceus.service.fcfb.animation.FieldStyle
 import com.fcfb.arceus.service.fcfb.animation.FieldTheme
 import com.fcfb.arceus.service.fcfb.animation.GoalPostScenePainter
+import com.fcfb.arceus.service.fcfb.animation.HelmetFields
+import com.fcfb.arceus.service.fcfb.animation.HelmetLogoMode
 import com.fcfb.arceus.service.fcfb.animation.HelmetSprite
 import com.fcfb.arceus.service.fcfb.animation.LogoLoader
+import com.fcfb.arceus.service.fcfb.animation.LogoSource
 import com.fcfb.arceus.service.fcfb.animation.PlayerPose
+import com.fcfb.arceus.service.fcfb.animation.Uniforms
 import com.fcfb.arceus.service.fcfb.scorebug.EspnScorebugRenderer
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -61,7 +65,9 @@ class AppearancePreviewService(
         val image =
             when (request.view.uppercase()) {
                 HELMET_VIEW -> helmetImage(theme)
-                UNIFORM_VIEW -> uniformImage(theme)
+                SECONDARY_HELMET_VIEW -> secondaryHelmetImage(theme)
+                UNIFORM_VIEW -> uniformImage(theme, away = false)
+                AWAY_UNIFORM_VIEW -> uniformImage(theme, away = true)
                 else -> fieldWithWallImage(theme)
             }
         return respond(image)
@@ -119,9 +125,14 @@ class AppearancePreviewService(
         }
 
     /** The detailed helmet beside a uniformed player, so the uniform editor and the admin list show the whole kit at once. */
-    private fun uniformImage(theme: FieldTheme): BufferedImage {
-        val (home, _) = theme.uniforms()
-        val logo = if (home.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(theme.homeLogoUrl(), theme.homeTeam.scorebugLogo) else null
+    private fun uniformImage(
+        theme: FieldTheme,
+        away: Boolean,
+    ): BufferedImage {
+        val (homeUniform, awayUniform) = theme.uniforms()
+        val home = if (away) awayUniform else homeUniform
+        val logoUrl = if (away) theme.awayLogoUrl() else theme.homeLogoUrl()
+        val logo = if (home.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(logoUrl, theme.homeTeam.scorebugLogo) else null
         val helmet = HelmetSprite.render(home, logo, COMBINED_HELMET_SIZE).facingRight
         val canvas = BufferedImage(COMBINED_WIDTH, COMBINED_HEIGHT, BufferedImage.TYPE_INT_ARGB)
         val graphics = canvas.createGraphics()
@@ -152,22 +163,43 @@ class AppearancePreviewService(
         awayTeam: Team,
         field: TeamField,
         uniform: TeamUniformHistory,
-    ): FieldTheme =
-        FieldTheme(
-            style = FieldStyle.HOME_FIELD,
-            homeTeam = homeTeam,
-            awayTeam = awayTeam,
-            centerLogoUrl = field.midfieldLogoUrl ?: homeTeam.scorebugLogo,
-            turf = FieldBackgroundPainter.parseColor(field.turfColor),
-            homeUniform = uniform,
-            wallCaption = field.wallText,
-            homeField = field,
-        )
+    ): FieldTheme {
+        val game =
+            Game().apply {
+                this.homeTeam = homeTeam.name.orEmpty()
+                this.awayTeam = awayTeam.name.orEmpty()
+                gameType = GameType.OUT_OF_CONFERENCE
+            }
+        val play =
+            Play().apply {
+                possession = TeamSide.HOME
+                ballLocation = PAT_BALL_LOCATION
+                quarter = 1
+            }
+        return fieldThemeResolver.resolve(play, game, homeTeam, awayTeam, uniform, null, teamFieldOverride = field)
+    }
 
     private fun helmetImage(theme: FieldTheme): BufferedImage {
         val (home, _) = theme.uniforms()
         val logo = if (home.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(theme.homeLogoUrl(), theme.homeTeam.scorebugLogo) else null
         return HelmetSprite.render(home, logo, HELMET_PREVIEW_SIZE).facingRight
+    }
+
+    private fun secondaryHelmetImage(theme: FieldTheme): BufferedImage {
+        val uniform = Uniforms.secondaryHelmet(theme.homeTeam, theme.homeUniform)
+        val logo = if (uniform.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(altDecalUrl(theme), theme.homeTeam.scorebugLogo) else null
+        return HelmetSprite.render(uniform, logo, HELMET_PREVIEW_SIZE).facingRight
+    }
+
+    private fun altDecalUrl(theme: FieldTheme): String? {
+        val snapshot = theme.homeUniform
+        val team = theme.homeTeam
+        val mode = HelmetLogoMode.from(HelmetFields.helmetLogoMode(snapshot, true), HelmetFields.hasLogo(snapshot, true))
+        if (mode == HelmetLogoMode.UPLOAD) return HelmetFields.logoUrl(snapshot, true)
+        return when (LogoSource.from(HelmetFields.helmetLogoSource(snapshot, true))) {
+            LogoSource.SECONDARY -> team.secondaryLogo
+            else -> team.logo
+        }
     }
 
     /** Never persisted: a preview that wrote to the repository would save edits the user has not approved. */
@@ -183,6 +215,16 @@ class AppearancePreviewService(
             endZoneColor = draft.endZoneColor ?: stored.endZoneColor
             endZoneTextColor = draft.endZoneTextColor
             endZoneOutlineColor = draft.endZoneOutlineColor
+            endZoneTextLeft = draft.endZoneTextLeft
+            endZoneTextRight = draft.endZoneTextRight
+            endZoneLogoEnabled = draft.endZoneLogoEnabled ?: stored.endZoneLogoEnabled
+            endZoneLogoSource = draft.endZoneLogoSource ?: stored.endZoneLogoSource
+            endZoneLogoUrl = draft.endZoneLogoUrl
+            endZoneLogoSize = draft.endZoneLogoSize ?: stored.endZoneLogoSize
+            endZoneOutlineEnabled = draft.endZoneOutlineEnabled ?: stored.endZoneOutlineEnabled
+            wallLogoSource = draft.wallLogoSource ?: stored.wallLogoSource
+            wallLogoUrl = draft.wallLogoUrl
+            recolorConferenceLogo = draft.recolorConferenceLogo ?: stored.recolorConferenceLogo
             endZoneFont = draft.endZoneFont ?: stored.endZoneFont
             midfieldLogoUrl = draft.midfieldLogoUrl ?: stored.midfieldLogoUrl
             midfieldLogoSource = draft.midfieldLogoSource ?: stored.midfieldLogoSource
@@ -195,6 +237,8 @@ class AppearancePreviewService(
             wallDesign = draft.wallDesign ?: stored.wallDesign
             wallText = draft.wallText
             wallTextOutlineColor = draft.wallTextOutlineColor
+            goalPostColor = draft.goalPostColor ?: stored.goalPostColor
+            goalPostStyle = draft.goalPostStyle ?: stored.goalPostStyle
         }
     }
 
@@ -217,14 +261,33 @@ class AppearancePreviewService(
             jerseyColor = draft?.jerseyColor ?: stored.jerseyColor
             numberColor = draft?.numberColor ?: stored.numberColor
             numberOutlineColor = draft?.numberOutlineColor ?: stored.numberOutlineColor
+            awayNumberColor = draft?.awayNumberColor ?: stored.awayNumberColor
+            awayNumberOutlineColor = draft?.awayNumberOutlineColor ?: stored.awayNumberOutlineColor
+            altFacemaskColor = draft?.altFacemaskColor
+            altHelmetNumberColor = draft?.altHelmetNumberColor
+            altHelmetLogoMode = draft?.altHelmetLogoMode ?: stored.altHelmetLogoMode
+            altHelmetLogoSource = draft?.altHelmetLogoSource ?: stored.altHelmetLogoSource
+            altHasLogo = draft?.altHasLogo ?: stored.altHasLogo
+            altLogoUrl = draft?.altLogoUrl
+            altLogoSize = draft?.altLogoSize ?: stored.altLogoSize
+            altLogoX = draft?.altLogoX ?: stored.altLogoX
+            altLogoY = draft?.altLogoY ?: stored.altLogoY
+            altLogoRotation = draft?.altLogoRotation ?: stored.altLogoRotation
+            altHasStripe = draft?.altHasStripe ?: stored.altHasStripe
+            altStripeColor = draft?.altStripeColor
+            altStripeType = draft?.altStripeType ?: stored.altStripeType
+            altSecondaryStripeColor = draft?.altSecondaryStripeColor
             pantsColor = draft?.pantsColor ?: stored.pantsColor
             logoUrl = draft?.logoUrl ?: stored.logoUrl
             hasLogo = draft?.hasLogo ?: stored.hasLogo
             hasStripe = draft?.hasStripe ?: stored.hasStripe
             stripeColor = draft?.stripeColor ?: stored.stripeColor
+            stripeType = draft?.stripeType ?: stored.stripeType
+            secondaryStripeColor = draft?.secondaryStripeColor ?: stored.secondaryStripeColor
             logoSize = draft?.logoSize ?: stored.logoSize
             logoX = draft?.logoX ?: stored.logoX
             logoY = draft?.logoY ?: stored.logoY
+            logoRotation = draft?.logoRotation ?: stored.logoRotation
         }
     }
 
@@ -320,6 +383,10 @@ class AppearancePreviewService(
             endZoneFont = request?.endZoneFont ?: stored.endZoneFont
             leftEndZoneLogoUrl = request?.leftEndZoneLogoUrl ?: stored.leftEndZoneLogoUrl
             rightEndZoneLogoUrl = request?.rightEndZoneLogoUrl ?: stored.rightEndZoneLogoUrl
+            leftEndZoneText = request?.leftEndZoneText ?: stored.leftEndZoneText
+            rightEndZoneText = request?.rightEndZoneText ?: stored.rightEndZoneText
+            leftEndZoneLogoSource = request?.leftEndZoneLogoSource ?: stored.leftEndZoneLogoSource
+            rightEndZoneLogoSource = request?.rightEndZoneLogoSource ?: stored.rightEndZoneLogoSource
             showConferenceLogos = request?.showConferenceLogos ?: stored.showConferenceLogos
             yardNumberSource = request?.yardNumberSource ?: stored.yardNumberSource
             yardNumberOutlineColor = request?.yardNumberOutlineColor ?: stored.yardNumberOutlineColor
@@ -353,6 +420,16 @@ class AppearancePreviewService(
         target.yardNumberOutlineColor = request?.yardNumberOutlineColor ?: stored.yardNumberOutlineColor
         target.redZoneBorderColor = request?.redZoneBorderColor ?: stored.redZoneBorderColor
         target.sidelineAccentColor = request?.sidelineAccentColor ?: stored.sidelineAccentColor
+        target.leftSidelineColor = request?.leftSidelineColor ?: stored.leftSidelineColor
+        target.rightSidelineColor = request?.rightSidelineColor ?: stored.rightSidelineColor
+        target.leftRedZoneColor = request?.leftRedZoneColor ?: stored.leftRedZoneColor
+        target.rightRedZoneColor = request?.rightRedZoneColor ?: stored.rightRedZoneColor
+        target.leftEndZoneText = request?.leftEndZoneText ?: stored.leftEndZoneText
+        target.rightEndZoneText = request?.rightEndZoneText ?: stored.rightEndZoneText
+        target.leftEndZoneLogoUrl = request?.leftEndZoneLogoUrl ?: stored.leftEndZoneLogoUrl
+        target.rightEndZoneLogoUrl = request?.rightEndZoneLogoUrl ?: stored.rightEndZoneLogoUrl
+        target.leftEndZoneLogoSource = request?.leftEndZoneLogoSource ?: stored.leftEndZoneLogoSource
+        target.rightEndZoneLogoSource = request?.rightEndZoneLogoSource ?: stored.rightEndZoneLogoSource
         return target
     }
 
@@ -369,6 +446,8 @@ class AppearancePreviewService(
     companion object {
         private const val HELMET_VIEW = "HELMET"
         private const val UNIFORM_VIEW = "UNIFORM"
+        private const val SECONDARY_HELMET_VIEW = "SECONDARY_HELMET"
+        private const val AWAY_UNIFORM_VIEW = "AWAY_UNIFORM"
         private const val SCOREBUG_VIEW = "SCOREBUG"
         private const val SAMPLE_HOME_SCORE = 21
         private const val SAMPLE_AWAY_SCORE = 17

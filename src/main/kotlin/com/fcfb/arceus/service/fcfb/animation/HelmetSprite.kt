@@ -20,6 +20,8 @@ object HelmetSprite {
     private const val OPAQUE = 128
     private const val MARKER_HIGH = 200
     private const val MARKER_LOW = 60
+    private const val RED_MARKER_MIN = 90
+    private const val RED_MARKER_DELTA = 45
 
     private const val LOGO_FRACTION = 0.33f
     private const val LOGO_CENTER_X = 0.332f
@@ -27,7 +29,12 @@ object HelmetSprite {
     private const val NUMBER_FRACTION = 0.24f
     private const val NUMBER_TRACKING = 0.22f
     private const val STRIPE_EDGE_MARGIN = 0.02f
-    private const val STRIPE_THICKNESS = 0.11f
+    private const val STRIPE_THICKNESS = 0.1f
+    private const val SLOPE_MAX_FRACTION = 0.012f
+    private const val TRIPLE_OUTER_THICKNESS = 0.03f
+    private const val TRIPLE_INNER_THICKNESS = 0.055f
+    private const val TRIPLE_GAP = 0.016f
+    private val SHELL_GAP = java.awt.Color(0, 0, 0, 0)
 
     private val cache = ConcurrentHashMap<String, HelmetSprites>()
 
@@ -82,7 +89,7 @@ object HelmetSprite {
         val g = sprite.createGraphics()
         g.drawImage(if (facingRight) shell else mirror(shell), 0, 0, null)
         g.dispose()
-        uniform.stripe?.let { drawCenterStripe(sprite, it) }
+        if (uniform.stripe != null) drawCenterStripe(sprite, uniform)
         return sprite
     }
 
@@ -105,7 +112,7 @@ object HelmetSprite {
         when {
             uniform.helmetLogoMode == HelmetLogoMode.NUMBERS -> drawNumberDecal(g, uniform, centerX, centerY, size)
             uniform.helmetLogoMode.drawsLogo && logo != null ->
-                LogoFit.draw(g, logo, centerX, centerY, (LOGO_FRACTION * size * uniform.logoSize).toInt())
+                LogoFit.draw(g, logo, centerX, centerY, (LOGO_FRACTION * size * uniform.logoSize).toInt(), uniform.logoRotation)
         }
         g.dispose()
         return sprite
@@ -116,7 +123,15 @@ object HelmetSprite {
     private fun shellKey(
         uniform: Uniform,
         size: Int,
-    ): String = listOf(uniform.helmet.rgb, uniform.facemask.rgb, uniform.stripe?.rgb ?: 0, size).joinToString(":")
+    ): String =
+        listOf(
+            uniform.helmet.rgb,
+            uniform.facemask.rgb,
+            uniform.stripe?.rgb ?: 0,
+            uniform.stripeType.name,
+            uniform.outerStripe?.rgb ?: 0,
+            size,
+        ).joinToString(":")
 
     /** Every input that changes a pixel belongs here: two teams sharing a shell color would otherwise share a sprite. */
     private fun cacheKey(
@@ -128,42 +143,86 @@ object HelmetSprite {
             uniform.helmet.rgb,
             uniform.facemask.rgb,
             uniform.stripe?.rgb ?: 0,
+            uniform.stripeType.name,
+            uniform.outerStripe?.rgb ?: 0,
             uniform.helmetNumber.rgb,
             uniform.helmetLogoMode.name,
             uniform.logoSize,
             uniform.logoX,
             uniform.logoY,
+            uniform.logoRotation,
             logo?.hashCode() ?: 0,
             size,
         ).joinToString(":")
 
     /**
-     * The helmet template carries no stripe marker, so a center stripe is painted along the crown contour here: a band
-     * that hugs the top edge of the shell, which reads as the stripe running front-to-back in profile.
+     * A center stripe that hugs the crown: it follows the shell's top contour outward from the apex and stops where the
+     * silhouette starts to drop steeply (the front and back corners), so it reads as a stripe over the top rather than a
+     * band wrapped around the whole outline. A triple stripe stacks an outer / inner / outer set of bands.
      */
     private fun drawCenterStripe(
         sprite: BufferedImage,
-        stripe: java.awt.Color,
+        uniform: Uniform,
     ) {
         val size = sprite.width
+        val inner = uniform.stripe ?: return
+        val outer = uniform.outerStripe ?: inner
+        val top = IntArray(size) { topContourY(sprite, it) }
+        val apex = (0 until size).filter { top[it] >= 0 }.minByOrNull { top[it] } ?: return
+
         val margin = (STRIPE_EDGE_MARGIN * size).toInt()
-        val thickness = (STRIPE_THICKNESS * size).toInt()
-        val rgb = stripe.rgb and 0xFFFFFF
-        for (x in 0 until size) {
-            var topY = -1
-            for (y in 0 until size) {
-                if ((sprite.getRGB(x, y) ushr 24) >= OPAQUE) {
-                    topY = y
-                    break
+        val slopeMax = (SLOPE_MAX_FRACTION * size).coerceAtLeast(2f)
+        val bands = stripeBands(uniform.stripeType, size, inner, outer)
+
+        var left = apex
+        while (left > 0 && top[left - 1] >= 0 && top[left - 1] - top[left] <= slopeMax) left--
+        var right = apex
+        while (right < size - 1 && top[right + 1] >= 0 && top[right + 1] - top[right] <= slopeMax) right++
+
+        for (x in left..right) {
+            var y = top[x] + margin
+            for (band in bands) {
+                repeat(band.thickness) {
+                    if (band.color !== SHELL_GAP && y in 0 until size && (sprite.getRGB(x, y) ushr 24) >= OPAQUE) {
+                        sprite.setRGB(x, y, (0xFF shl 24) or (band.color.rgb and 0xFFFFFF))
+                    }
+                    y++
                 }
-            }
-            if (topY < 0) continue
-            for (y in topY + margin until minOf(size, topY + margin + thickness)) {
-                val alpha = sprite.getRGB(x, y) ushr 24
-                if (alpha >= OPAQUE) sprite.setRGB(x, y, (alpha shl 24) or rgb)
             }
         }
     }
+
+    private fun topContourY(
+        sprite: BufferedImage,
+        x: Int,
+    ): Int {
+        for (y in 0 until sprite.height) {
+            if ((sprite.getRGB(x, y) ushr 24) >= OPAQUE) return y
+        }
+        return -1
+    }
+
+    private fun stripeBands(
+        type: StripeType,
+        size: Int,
+        inner: java.awt.Color,
+        outer: java.awt.Color,
+    ): List<StripeBand> {
+        if (type == StripeType.SINGLE) return listOf(StripeBand((STRIPE_THICKNESS * size).toInt(), inner))
+        val outerThickness = (TRIPLE_OUTER_THICKNESS * size).toInt().coerceAtLeast(1)
+        val innerThickness = (TRIPLE_INNER_THICKNESS * size).toInt().coerceAtLeast(1)
+        val gap = (TRIPLE_GAP * size).toInt().coerceAtLeast(1)
+        val shell = StripeBand(gap, SHELL_GAP)
+        return listOf(
+            StripeBand(outerThickness, outer),
+            shell,
+            StripeBand(innerThickness, inner),
+            shell,
+            StripeBand(outerThickness, outer),
+        )
+    }
+
+    private data class StripeBand(val thickness: Int, val color: java.awt.Color)
 
     private fun drawNumberDecal(
         g: Graphics2D,
@@ -172,7 +231,7 @@ object HelmetSprite {
         centerY: Int,
         size: Int,
     ) {
-        val font = AnimationFonts.graduate.deriveFont((NUMBER_FRACTION * size).toFloat().coerceAtLeast(6f))
+        val font = AnimationFonts.graduate.deriveFont((NUMBER_FRACTION * size * uniform.logoSize).coerceAtLeast(6f))
         val glyphs = font.createGlyphVector(g.fontRenderContext, NUMBER_DECAL)
         tightenTracking(glyphs)
         val bounds = glyphs.visualBounds
@@ -210,7 +269,7 @@ object HelmetSprite {
                 val blue = argb and 0xFF
                 val replacement =
                     when {
-                        red > MARKER_HIGH && green < MARKER_LOW && blue < MARKER_LOW -> uniform.facemask.rgb
+                        red > RED_MARKER_MIN && red - green > RED_MARKER_DELTA && red - blue > RED_MARKER_DELTA -> uniform.facemask.rgb
                         green > MARKER_HIGH && red < MARKER_LOW && blue < MARKER_LOW -> stripe.rgb
                         red > MARKER_HIGH && green > MARKER_HIGH && blue > MARKER_HIGH -> uniform.helmet.rgb
                         else -> argb

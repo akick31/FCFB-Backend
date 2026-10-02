@@ -65,15 +65,35 @@ class TeamUniformService(
             jerseyColor = current?.jerseyColor ?: team.primaryColor,
             numberColor = current?.numberColor ?: NUMBER_COLOR,
             numberOutlineColor = current?.numberOutlineColor,
+            awayNumberColor = current?.awayNumberColor,
+            awayNumberOutlineColor = current?.awayNumberOutlineColor,
             pantsColor = current?.pantsColor ?: team.primaryColor,
             logoUrl = current?.logoUrl ?: team.scorebugLogo,
             hasLogo = current?.hasLogo ?: true,
             hasStripe = current?.hasStripe ?: false,
             stripeColor = current?.stripeColor,
+            stripeType = current?.stripeType ?: TeamUniformCurrent.DEFAULT_STRIPE_TYPE,
+            secondaryStripeColor = current?.secondaryStripeColor,
             logoSize = current?.logoSize ?: TeamUniformCurrent.DEFAULT_LOGO_SIZE,
             logoX = current?.logoX ?: 0.0,
             logoY = current?.logoY ?: 0.0,
-        )
+            logoRotation = current?.logoRotation ?: 0.0,
+        ).apply {
+            altFacemaskColor = current?.altFacemaskColor
+            altHelmetNumberColor = current?.altHelmetNumberColor
+            altHelmetLogoMode = current?.altHelmetLogoMode
+            altHelmetLogoSource = current?.altHelmetLogoSource
+            altHasLogo = current?.altHasLogo
+            altLogoUrl = current?.altLogoUrl
+            altLogoSize = current?.altLogoSize
+            altLogoX = current?.altLogoX
+            altLogoY = current?.altLogoY
+            altLogoRotation = current?.altLogoRotation
+            altHasStripe = current?.altHasStripe
+            altStripeColor = current?.altStripeColor
+            altStripeType = current?.altStripeType
+            altSecondaryStripeColor = current?.altSecondaryStripeColor
+        }
     }
 
     private fun hex(color: Color): String = String.format("#%06X", color.rgb and 0xFFFFFF)

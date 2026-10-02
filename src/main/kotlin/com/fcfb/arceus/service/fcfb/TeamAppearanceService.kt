@@ -16,7 +16,6 @@ import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.InvalidUniformException
 import com.fcfb.arceus.util.UserForbiddenException
 import org.springframework.stereotype.Service
-import java.awt.Color
 
 @Service
 class TeamAppearanceService(
@@ -24,6 +23,7 @@ class TeamAppearanceService(
     private val teamFieldRepository: TeamFieldRepository,
     private val teamService: TeamService,
     private val userService: UserService,
+    private val fieldAppearanceApplier: FieldAppearanceApplier,
 ) {
     fun getUniform(team: String): TeamUniformCurrent = teamUniformCurrentRepository.findById(team).orElseGet { newUniform(team) }
 
@@ -88,13 +88,32 @@ class TeamAppearanceService(
         request.hasLogo?.let { uniform.hasLogo = it }
         request.hasStripe?.let { uniform.hasStripe = it }
         request.stripeColor?.let { uniform.stripeColor = it }
+        request.stripeType?.let { uniform.stripeType = it }
+        request.secondaryStripeColor?.let { uniform.secondaryStripeColor = it }
         request.jerseyColor?.let { uniform.jerseyColor = it }
         request.numberColor?.let { uniform.numberColor = it }
         request.numberOutlineColor?.let { uniform.numberOutlineColor = it }
+        request.awayNumberColor?.let { uniform.awayNumberColor = it }
+        request.awayNumberOutlineColor?.let { uniform.awayNumberOutlineColor = it }
+        uniform.altFacemaskColor = request.altFacemaskColor
+        uniform.altHelmetNumberColor = request.altHelmetNumberColor
+        request.altHelmetLogoMode?.let { uniform.altHelmetLogoMode = it }
+        request.altHelmetLogoSource?.let { uniform.altHelmetLogoSource = it }
+        request.altHasLogo?.let { uniform.altHasLogo = it }
+        uniform.altLogoUrl = request.altLogoUrl
+        request.altLogoSize?.let { uniform.altLogoSize = it }
+        request.altLogoX?.let { uniform.altLogoX = it }
+        request.altLogoY?.let { uniform.altLogoY = it }
+        request.altLogoRotation?.let { uniform.altLogoRotation = it }
+        request.altHasStripe?.let { uniform.altHasStripe = it }
+        uniform.altStripeColor = request.altStripeColor
+        request.altStripeType?.let { uniform.altStripeType = it }
+        uniform.altSecondaryStripeColor = request.altSecondaryStripeColor
         request.pantsColor?.let { uniform.pantsColor = it }
         request.logoSize?.let { uniform.logoSize = it }
         request.logoX?.let { uniform.logoX = it }
         request.logoY?.let { uniform.logoY = it }
+        request.logoRotation?.let { uniform.logoRotation = it }
         requireDistinctShells(uniform)
         return teamUniformCurrentRepository.save(uniform)
     }
@@ -105,25 +124,7 @@ class TeamAppearanceService(
     ): TeamField {
         requireCanEdit(team)
         val field = getField(team)
-        request.turfColor?.let { field.turfColor = it }
-        request.endZoneColor?.let { field.endZoneColor = it }
-        field.endZoneTextColor = request.endZoneTextColor
-        field.endZoneOutlineColor = request.endZoneOutlineColor
-        request.endZoneFont?.let { field.endZoneFont = it }
-        request.midfieldLogoUrl?.let { field.midfieldLogoUrl = it }
-        request.midfieldLogoSource?.let { field.midfieldLogoSource = it }
-        request.quarterLogoUrl?.let { field.quarterLogoUrl = it }
-        request.quarterLogoSource?.let { field.quarterLogoSource = it }
-        request.wallDesign?.let { field.wallDesign = it }
-        request.wallColor?.let { field.wallColor = it }
-        request.goalPostColor?.let { field.goalPostColor = it }
-        request.goalPostStyle?.let { field.goalPostStyle = it }
-        field.fieldNumberOutlineColor = request.fieldNumberOutlineColor
-        field.redZoneBorderColor = request.redZoneBorderColor
-        field.oobLineColor = request.oobLineColor
-        field.wallText = request.wallText
-        field.wallTextOutlineColor = request.wallTextOutlineColor
-        requireVisibleWall(field)
+        fieldAppearanceApplier.apply(field, request)
         return teamFieldRepository.save(field)
     }
 
@@ -136,14 +137,6 @@ class TeamAppearanceService(
         val primary = uniform.helmetColor ?: return
         if (ColorSimilarity.areSimilar(FieldBackgroundPainter.parseColor(primary), FieldBackgroundPainter.parseColor(alternate))) {
             throw InvalidUniformException("The primary and secondary helmet colors are too similar to tell apart")
-        }
-    }
-
-    /** White would vanish against the net and the end zone lines, so it is not an allowed wall color. */
-    private fun requireVisibleWall(field: TeamField) {
-        val wall = field.wallColor ?: return
-        if (ColorSimilarity.areSimilar(FieldBackgroundPainter.parseColor(wall), Color.WHITE)) {
-            throw InvalidUniformException("The wall color cannot be white")
         }
     }
 

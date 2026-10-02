@@ -68,6 +68,10 @@ class TeamUniformCurrent {
     var logoY: Double = 0.0
 
     @Basic
+    @Column(name = "logo_rotation")
+    var logoRotation: Double = 0.0
+
+    @Basic
     @Column(name = "has_logo", columnDefinition = "tinyint(1)")
     var hasLogo: Boolean = true
 
@@ -98,6 +102,70 @@ class TeamUniformCurrent {
     @Basic
     @Column(name = "number_outline_color")
     var numberOutlineColor: String? = null
+
+    @Basic
+    @Column(name = "away_number_color")
+    var awayNumberColor: String? = null
+
+    @Basic
+    @Column(name = "away_number_outline_color")
+    var awayNumberOutlineColor: String? = null
+
+    @Basic
+    @Column(name = "alt_facemask_color")
+    var altFacemaskColor: String? = null
+
+    @Basic
+    @Column(name = "alt_helmet_number_color")
+    var altHelmetNumberColor: String? = null
+
+    @Basic
+    @Column(name = "alt_helmet_logo_mode")
+    var altHelmetLogoMode: String? = null
+
+    @Basic
+    @Column(name = "alt_helmet_logo_source")
+    var altHelmetLogoSource: String? = null
+
+    @Basic
+    @Column(name = "alt_has_logo", columnDefinition = "tinyint(1)")
+    var altHasLogo: Boolean? = null
+
+    @Basic
+    @Column(name = "alt_logo_url")
+    var altLogoUrl: String? = null
+
+    @Basic
+    @Column(name = "alt_logo_size")
+    var altLogoSize: Double? = null
+
+    @Basic
+    @Column(name = "alt_logo_x")
+    var altLogoX: Double? = null
+
+    @Basic
+    @Column(name = "alt_logo_y")
+    var altLogoY: Double? = null
+
+    @Basic
+    @Column(name = "alt_logo_rotation")
+    var altLogoRotation: Double? = null
+
+    @Basic
+    @Column(name = "alt_has_stripe", columnDefinition = "tinyint(1)")
+    var altHasStripe: Boolean? = null
+
+    @Basic
+    @Column(name = "alt_stripe_color")
+    var altStripeColor: String? = null
+
+    @Basic
+    @Column(name = "alt_stripe_type")
+    var altStripeType: String? = null
+
+    @Basic
+    @Column(name = "alt_secondary_stripe_color")
+    var altSecondaryStripeColor: String? = null
 
     @Basic
     @Column(name = "pants_color")

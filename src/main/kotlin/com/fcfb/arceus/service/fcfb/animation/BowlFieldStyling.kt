@@ -17,13 +17,28 @@ class BowlFieldStyling(
     ): EndZoneDecoration {
         val primary = FieldBackgroundPainter.parseColor(team.primaryColor)
         val secondary = FieldBackgroundPainter.parseColor(team.secondaryColor)
-        val logo = if (isHome) field.leftEndZoneLogoUrl else field.rightEndZoneLogoUrl
+        val source = if (isHome) field.leftEndZoneLogoSource else field.rightEndZoneLogoSource
+        val url = if (isHome) field.leftEndZoneLogoUrl else field.rightEndZoneLogoUrl
+        val logo = resolveLogo(source, url, team)
+        val text = (if (isHome) field.leftEndZoneText else field.rightEndZoneText)?.takeIf { it.isNotBlank() }
         return when (EndZoneFill.from(field.endZoneFill)) {
-            EndZoneFill.PRIMARY -> filled(team, primary, secondary, logo)
-            EndZoneFill.SECONDARY -> filled(team, secondary, primary, logo)
-            EndZoneFill.NONE -> onTurf(team, primary, secondary, logo)
+            EndZoneFill.PRIMARY -> filled(team, primary, secondary, logo, text)
+            EndZoneFill.SECONDARY -> filled(team, secondary, primary, logo, text)
+            EndZoneFill.NONE -> onTurf(team, primary, secondary, logo, text)
         }
     }
+
+    private fun resolveLogo(
+        source: String?,
+        url: String?,
+        team: Team,
+    ): String? =
+        when (LogoSource.from(source)) {
+            LogoSource.PRIMARY -> team.logo
+            LogoSource.SECONDARY -> team.secondaryLogo
+            LogoSource.CUSTOM -> url?.takeIf { it.isNotBlank() }
+            LogoSource.NONE -> null
+        }
 
     fun yardNumberOutline(
         yard: Int,
@@ -62,18 +77,27 @@ class BowlFieldStyling(
         fill: Color,
         outline: Color,
         logo: String?,
+        customText: String?,
     ): EndZoneDecoration =
-        EndZoneDecoration(team, fill, FieldBackgroundPainter.LINE_COLOR, outlineOf(FieldBackgroundPainter.LINE_COLOR, outline), logo)
+        EndZoneDecoration(
+            team,
+            fill,
+            FieldBackgroundPainter.LINE_COLOR,
+            outlineOf(FieldBackgroundPainter.LINE_COLOR, outline),
+            logo,
+            customText,
+        )
 
     private fun onTurf(
         team: Team,
         primary: Color,
         secondary: Color,
         logo: String?,
+        customText: String?,
     ): EndZoneDecoration {
         val text = listOf(primary, secondary).firstOrNull { !ColorSimilarity.areSimilar(it, turf) } ?: FieldBackgroundPainter.LINE_COLOR
         val outline = listOf(secondary, primary).firstOrNull { it != text && !ColorSimilarity.areSimilar(it, turf) } ?: Color.BLACK
-        return EndZoneDecoration(team, null, text, outlineOf(text, outline), logo)
+        return EndZoneDecoration(team, null, text, outlineOf(text, outline), logo, customText)
     }
 
     private fun outlineOf(

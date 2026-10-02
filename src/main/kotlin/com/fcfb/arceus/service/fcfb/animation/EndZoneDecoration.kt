@@ -9,4 +9,7 @@ data class EndZoneDecoration(
     val textColor: Color,
     val outlineColor: Color,
     val logoUrl: String?,
+    val text: String? = null,
+    val logoScale: Float = 0f,
+    val outlineEnabled: Boolean = true,
 )

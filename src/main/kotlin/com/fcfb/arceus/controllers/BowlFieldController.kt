@@ -1,6 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.BowlFieldRequest
+import com.fcfb.arceus.dto.request.BowlMetaRequest
 import com.fcfb.arceus.service.fcfb.BowlFieldService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -33,4 +34,11 @@ class BowlFieldController(
         @RequestParam bowl: String,
         @RequestBody request: BowlFieldRequest,
     ) = bowlFieldService.updateField(bowl, request)
+
+    @Operation(summary = "Rename a bowl or update its logo")
+    @PutMapping("/meta")
+    fun updateBowlMeta(
+        @RequestParam bowl: String,
+        @RequestBody request: BowlMetaRequest,
+    ) = bowlFieldService.updateMeta(bowl, request)
 }

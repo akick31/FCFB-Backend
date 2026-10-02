@@ -3,6 +3,7 @@ package com.fcfb.arceus.service.fcfb.animation
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.PlayoffRound
 import com.fcfb.arceus.model.BowlField
+import com.fcfb.arceus.model.FieldAppearance
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.PostseasonField
@@ -12,6 +13,7 @@ import com.fcfb.arceus.model.TeamUniformHistory
 import com.fcfb.arceus.repositories.BowlFieldRepository
 import com.fcfb.arceus.repositories.ConferenceChampionshipFieldRepository
 import com.fcfb.arceus.repositories.ConferenceRepository
+import com.fcfb.arceus.repositories.GameFieldRepository
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.PlayoffFieldRepository
 import com.fcfb.arceus.repositories.TeamFieldRepository
@@ -25,6 +27,7 @@ class FieldThemeResolver(
     private val conferenceRepository: ConferenceRepository,
     private val playoffFieldRepository: PlayoffFieldRepository,
     private val gameRepository: GameRepository,
+    private val gameFieldRepository: GameFieldRepository,
     private val teamFieldRepository: TeamFieldRepository,
 ) {
     fun resolve(
@@ -36,6 +39,7 @@ class FieldThemeResolver(
         awayUniform: TeamUniformHistory? = null,
         bowlFieldOverride: BowlField? = null,
         postseasonFieldOverride: PostseasonField? = null,
+        teamFieldOverride: TeamField? = null,
     ): FieldTheme {
         val style =
             when (game.gameType) {
@@ -45,13 +49,15 @@ class FieldThemeResolver(
                 GameType.BOWL -> FieldStyle.BOWL
                 else -> FieldStyle.HOME_FIELD
             }
-        val homeField = if (style == FieldStyle.HOME_FIELD) fieldFor(homeTeam) else null
+        val homeField: FieldAppearance? =
+            teamFieldOverride ?: if (style == FieldStyle.HOME_FIELD) gameFieldFor(game) ?: fieldFor(homeTeam) else null
         val bowlField = bowlFieldOverride ?: if (style == FieldStyle.BOWL) bowlFieldFor(game) else null
         val postseasonField = postseasonFieldOverride ?: postseasonFieldFor(style, game, homeTeam)
         val centerLogo =
             when (style) {
                 FieldStyle.HOME_FIELD ->
-                    resolveFieldLogo(homeField?.midfieldLogoSource, homeField?.midfieldLogoUrl, homeTeam) ?: homeTeam.scorebugLogo
+                    resolveFieldLogo(homeField?.midfieldLogoSource, homeField?.midfieldLogoUrl, homeTeam)
+                        ?: homeTeam.logo ?: homeTeam.scorebugLogo
                 FieldStyle.CONFERENCE_CHAMPIONSHIP -> postseasonField?.centerLogoUrl ?: conferenceLogo(homeTeam) ?: game.postseasonGameLogo
                 FieldStyle.PLAYOFF, FieldStyle.NATIONAL_CHAMPIONSHIP -> postseasonField?.centerLogoUrl ?: playoffLogo(game)
                 FieldStyle.BOWL -> game.postseasonGameLogo
@@ -70,10 +76,11 @@ class FieldThemeResolver(
             midfieldCaption = midfieldCaption(style, game),
             midfieldLocation = if (style == FieldStyle.NATIONAL_CHAMPIONSHIP) CHAMPIONSHIP_LOCATION else null,
             wallCaption = wallCaption(style, game, homeTeam, homeField, bowlField, postseasonField),
-            wallLogoUrl = null,
+            wallLogoUrl = wallLogo(style, homeField, homeTeam),
             homeField = homeField,
             bowlField = bowlField,
             postseasonField = postseasonField,
+            awayUsesAlternateHelmet = HelmetColors.awayUsesAlternate(homeTeam, awayTeam, homeUniform, awayUniform),
         )
     }
 
@@ -109,6 +116,15 @@ class FieldThemeResolver(
 
     private fun bowlFieldFor(game: Game): BowlField? = game.postseasonGameName?.let { bowlFieldRepository.findById(it).orElse(null) }
 
+    private fun wallLogo(
+        style: FieldStyle,
+        homeField: FieldAppearance?,
+        homeTeam: Team,
+    ): String? {
+        if (style != FieldStyle.HOME_FIELD) return null
+        return resolveFieldLogo(homeField?.wallLogoSource, homeField?.wallLogoUrl, homeTeam)
+    }
+
     private fun resolveFieldLogo(
         source: String?,
         customUrl: String?,
@@ -118,15 +134,18 @@ class FieldThemeResolver(
             LogoSource.PRIMARY -> team.logo
             LogoSource.SECONDARY -> team.secondaryLogo
             LogoSource.CUSTOM -> customUrl
+            LogoSource.NONE -> null
         }
 
     private fun fieldFor(team: Team): TeamField? = team.name?.let { teamFieldRepository.findById(it).orElse(null) }
+
+    private fun gameFieldFor(game: Game): FieldAppearance? = game.gameId?.let { gameFieldRepository.findById(it).orElse(null) }
 
     private fun wallCaption(
         style: FieldStyle,
         game: Game,
         homeTeam: Team,
-        homeField: TeamField?,
+        homeField: FieldAppearance?,
         bowlField: BowlField?,
         postseasonField: PostseasonField?,
     ): String? {
@@ -155,7 +174,7 @@ class FieldThemeResolver(
     }
 
     private fun fieldTurf(
-        homeField: TeamField?,
+        homeField: FieldAppearance?,
         bowlField: BowlField?,
         postseasonField: PostseasonField?,
     ): Color {

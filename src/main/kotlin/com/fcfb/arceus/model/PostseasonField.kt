@@ -54,4 +54,44 @@ abstract class PostseasonField {
     @Basic
     @Column(name = "sideline_accent_color")
     var sidelineAccentColor: String? = null
+
+    @Basic
+    @Column(name = "left_sideline_color")
+    var leftSidelineColor: String? = null
+
+    @Basic
+    @Column(name = "right_sideline_color")
+    var rightSidelineColor: String? = null
+
+    @Basic
+    @Column(name = "left_red_zone_color")
+    var leftRedZoneColor: String? = null
+
+    @Basic
+    @Column(name = "right_red_zone_color")
+    var rightRedZoneColor: String? = null
+
+    @Basic
+    @Column(name = "left_end_zone_text")
+    var leftEndZoneText: String? = null
+
+    @Basic
+    @Column(name = "right_end_zone_text")
+    var rightEndZoneText: String? = null
+
+    @Basic
+    @Column(name = "left_end_zone_logo_url")
+    var leftEndZoneLogoUrl: String? = null
+
+    @Basic
+    @Column(name = "right_end_zone_logo_url")
+    var rightEndZoneLogoUrl: String? = null
+
+    @Basic
+    @Column(name = "left_end_zone_logo_source")
+    var leftEndZoneLogoSource: String = "CUSTOM"
+
+    @Basic
+    @Column(name = "right_end_zone_logo_source")
+    var rightEndZoneLogoSource: String = "CUSTOM"
 }
