@@ -42,6 +42,13 @@ class FieldAppearanceApplier {
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
         request.recolorConferenceLogo?.let { field.recolorConferenceLogo = it }
+        request.midfieldLogoSize?.let { field.midfieldLogoSize = it }
+        request.leftEndZoneFont?.let { field.leftEndZoneFont = it }
+        request.rightEndZoneFont?.let { field.rightEndZoneFont = it }
+        request.rightWallDesign?.let { field.rightWallDesign = it }
+        field.rightWallText = request.rightWallText
+        request.yardNumberFont?.let { field.yardNumberFont = it }
+        field.conferenceLogoColorMap = request.conferenceLogoColorMap
         requireVisibleWall(field)
         return field
     }

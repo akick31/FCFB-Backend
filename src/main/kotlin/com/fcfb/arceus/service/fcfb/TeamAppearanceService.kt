@@ -8,6 +8,7 @@ import com.fcfb.arceus.dto.response.TeamColorsResponse
 import com.fcfb.arceus.dto.response.TeamLogosResponse
 import com.fcfb.arceus.model.TeamField
 import com.fcfb.arceus.model.TeamUniformCurrent
+import com.fcfb.arceus.repositories.ConferenceRepository
 import com.fcfb.arceus.repositories.TeamFieldRepository
 import com.fcfb.arceus.repositories.TeamUniformCurrentRepository
 import com.fcfb.arceus.service.fcfb.animation.ColorSimilarity
@@ -24,6 +25,7 @@ class TeamAppearanceService(
     private val teamService: TeamService,
     private val userService: UserService,
     private val fieldAppearanceApplier: FieldAppearanceApplier,
+    private val conferenceRepository: ConferenceRepository,
 ) {
     fun getUniform(team: String): TeamUniformCurrent = teamUniformCurrentRepository.findById(team).orElseGet { newUniform(team) }
 
@@ -116,6 +118,13 @@ class TeamAppearanceService(
         request.logoRotation?.let { uniform.logoRotation = it }
         requireDistinctShells(uniform)
         return teamUniformCurrentRepository.save(uniform)
+    }
+
+    fun getConferenceLogoColors(team: String): List<String> {
+        val found = teamService.getTeamByName(team)
+        val code = found.conference ?: return emptyList()
+        val url = conferenceRepository.findById(code).orElse(null)?.logoUrl ?: return emptyList()
+        return com.fcfb.arceus.service.fcfb.animation.ConferenceLogoTint.dominantColors(url)
     }
 
     fun updateField(

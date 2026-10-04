@@ -52,6 +52,26 @@ class BowlField {
     var rightEndZoneLogoSource: String = "CUSTOM"
 
     @Basic
+    @Column(name = "left_end_zone_font")
+    var leftEndZoneFont: String? = null
+
+    @Basic
+    @Column(name = "right_end_zone_font")
+    var rightEndZoneFont: String? = null
+
+    @Basic
+    @Column(name = "right_wall_design")
+    var rightWallDesign: String? = null
+
+    @Basic
+    @Column(name = "right_wall_text")
+    var rightWallText: String? = null
+
+    @Basic
+    @Column(name = "yard_number_font")
+    var yardNumberFont: String? = null
+
+    @Basic
     @Column(name = "show_conference_logos", columnDefinition = "tinyint(1)")
     var showConferenceLogos: Boolean = true
 

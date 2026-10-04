@@ -23,4 +23,10 @@ data class PostseasonFieldRequest(
     val rightEndZoneLogoUrl: String? = null,
     val leftEndZoneLogoSource: String? = null,
     val rightEndZoneLogoSource: String? = null,
+    val leftEndZoneFont: String? = null,
+    val rightEndZoneFont: String? = null,
+    val rightWallDesign: String? = null,
+    val rightWallText: String? = null,
+    val yardNumberFont: String? = null,
+    val yardNumberSource: String? = null,
 )

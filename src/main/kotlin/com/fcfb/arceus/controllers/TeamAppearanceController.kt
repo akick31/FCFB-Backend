@@ -47,6 +47,11 @@ class TeamAppearanceController(
     ) = teamAppearanceService.updateField(team, request)
 
     @Operation(summary = "Get a team's colors")
+    @GetMapping("/conference-logo-colors")
+    fun getConferenceLogoColors(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getConferenceLogoColors(team)
+
     @GetMapping("/colors")
     fun getColors(
         @RequestParam team: String,

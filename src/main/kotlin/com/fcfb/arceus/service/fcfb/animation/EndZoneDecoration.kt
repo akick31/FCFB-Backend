@@ -12,4 +12,7 @@ data class EndZoneDecoration(
     val text: String? = null,
     val logoScale: Float = 0f,
     val outlineEnabled: Boolean = true,
+    val fontFamily: String? = null,
+    val wallDesign: String? = null,
+    val wallText: String? = null,
 )

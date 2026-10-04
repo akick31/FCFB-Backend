@@ -119,6 +119,34 @@ abstract class FieldAppearance {
     @Column(name = "recolor_conference_logo", columnDefinition = "tinyint(1)")
     var recolorConferenceLogo: Boolean = false
 
+    @Basic
+    @Column(name = "midfield_logo_size")
+    var midfieldLogoSize: Double = 1.0
+
+    @Basic
+    @Column(name = "left_end_zone_font")
+    var leftEndZoneFont: String? = null
+
+    @Basic
+    @Column(name = "right_end_zone_font")
+    var rightEndZoneFont: String? = null
+
+    @Basic
+    @Column(name = "right_wall_design")
+    var rightWallDesign: String? = null
+
+    @Basic
+    @Column(name = "right_wall_text")
+    var rightWallText: String? = null
+
+    @Basic
+    @Column(name = "yard_number_font")
+    var yardNumberFont: String? = null
+
+    @Basic
+    @Column(name = "conference_logo_color_map", columnDefinition = "text")
+    var conferenceLogoColorMap: String? = null
+
     fun copyAppearanceInto(target: FieldAppearance) {
         target.turfColor = turfColor
         target.endZoneColor = endZoneColor
@@ -148,6 +176,13 @@ abstract class FieldAppearance {
         target.quarterLogoUrl = quarterLogoUrl
         target.quarterLogoSource = quarterLogoSource
         target.recolorConferenceLogo = recolorConferenceLogo
+        target.midfieldLogoSize = midfieldLogoSize
+        target.leftEndZoneFont = leftEndZoneFont
+        target.rightEndZoneFont = rightEndZoneFont
+        target.rightWallDesign = rightWallDesign
+        target.rightWallText = rightWallText
+        target.yardNumberFont = yardNumberFont
+        target.conferenceLogoColorMap = conferenceLogoColorMap
     }
 
     companion object {

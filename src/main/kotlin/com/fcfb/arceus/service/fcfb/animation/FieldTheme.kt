@@ -7,6 +7,7 @@ import com.fcfb.arceus.model.PostseasonField
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamUniformHistory
 import java.awt.Color
+import java.awt.image.BufferedImage
 
 data class FieldTheme(
     val style: FieldStyle,
@@ -49,9 +50,24 @@ data class FieldTheme(
     fun yardNumberOutline(
         yard: Int,
         top: Boolean,
-    ): Color? =
-        bowlStyling?.yardNumberOutline(yard, top, teamOf(leftSide()), teamOf(rightSide()))
-            ?: parsed(homeField?.fieldNumberOutlineColor ?: postseasonField?.yardNumberOutlineColor)
+    ): Color? {
+        bowlStyling?.let { return it.yardNumberOutline(yard, top, teamOf(leftSide()), teamOf(rightSide())) }
+        parsed(homeField?.fieldNumberOutlineColor)?.let { return it }
+        postseasonField?.let { field ->
+            if (YardNumberSource.from(field.yardNumberSource) == YardNumberSource.TEAM_PER_SIDE) {
+                val owner =
+                    when {
+                        yard < HALF_FIELD -> teamOf(leftSide())
+                        yard > HALF_FIELD -> teamOf(rightSide())
+                        top -> homeTeam
+                        else -> awayTeam
+                    }
+                return FieldBackgroundPainter.parseColor(owner.primaryColor)
+            }
+            return parsed(field.yardNumberOutlineColor)
+        }
+        return null
+    }
 
     fun redZoneBorder(yard: Int): Color? {
         bowlStyling?.let { return it.redZoneBorder(yard, teamOf(leftSide()), teamOf(rightSide())) }
@@ -112,65 +128,113 @@ data class FieldTheme(
 
     fun conferenceLogoOf(side: TeamSide): String? = if (side == TeamSide.HOME) homeConferenceLogoUrl else awayConferenceLogoUrl
 
-    fun conferenceLogoTint(): Color? =
-        if (style == FieldStyle.HOME_FIELD && homeField?.recolorConferenceLogo == true) {
-            FieldBackgroundPainter.parseColor(homeTeam.primaryColor)
-        } else {
-            null
-        }
+    fun conferenceLogoImage(side: TeamSide): BufferedImage? {
+        val url = conferenceLogoOf(side)
+        if (style != FieldStyle.HOME_FIELD) return LogoLoader.load(url)
+        return ConferenceLogoTint.load(
+            url,
+            homeField?.conferenceLogoColorMap,
+            FieldBackgroundPainter.parseColor(homeTeam.primaryColor),
+            FieldBackgroundPainter.parseColor(homeTeam.secondaryColor),
+            FieldBackgroundPainter.parseColor(homeTeam.tertiaryColor ?: homeTeam.secondaryColor),
+        )
+    }
 
     fun endZoneOf(side: TeamSide): EndZoneDecoration {
         val team = if (style == FieldStyle.HOME_FIELD || side == TeamSide.HOME) homeTeam else awayTeam
         val primary = FieldBackgroundPainter.parseColor(team.primaryColor)
         val secondary = FieldBackgroundPainter.parseColor(team.secondaryColor)
-        return when (style) {
-            FieldStyle.HOME_FIELD -> {
-                val text = homeField?.endZoneTextColor?.let { FieldBackgroundPainter.parseColor(it) } ?: FieldBackgroundPainter.LINE_COLOR
-                val outline = homeField?.endZoneOutlineColor?.let { FieldBackgroundPainter.parseColor(it) } ?: outlineOf(text, secondary)
-                val custom = if (side == leftSide()) homeField?.endZoneTextLeft else homeField?.endZoneTextRight
-                EndZoneDecoration(
-                    team,
-                    homeFieldEndZoneFill() ?: primary,
-                    text,
-                    outline,
-                    homeFieldEndZoneLogo(),
-                    custom?.takeIf { it.isNotBlank() },
-                    homeFieldEndZoneLogoScale(),
-                    homeField?.endZoneOutlineEnabled != false,
-                )
-            }
-            FieldStyle.BOWL ->
-                bowlStyling?.endZoneOf(team, side == TeamSide.HOME)
-                    ?: EndZoneDecoration(
+        val base =
+            when (style) {
+                FieldStyle.HOME_FIELD -> {
+                    val text =
+                        homeField?.endZoneTextColor?.let { FieldBackgroundPainter.parseColor(it) } ?: FieldBackgroundPainter.LINE_COLOR
+                    val outline =
+                        homeField?.endZoneOutlineColor?.let { FieldBackgroundPainter.parseColor(it) } ?: outlineOf(text, secondary)
+                    val custom = if (side == leftSide()) homeField?.endZoneTextLeft else homeField?.endZoneTextRight
+                    EndZoneDecoration(
+                        team,
+                        homeFieldEndZoneFill() ?: primary,
+                        text,
+                        outline,
+                        homeFieldEndZoneLogo(),
+                        custom?.takeIf { it.isNotBlank() },
+                        homeFieldEndZoneLogoScale(),
+                        homeField?.endZoneOutlineEnabled != false,
+                    )
+                }
+                FieldStyle.BOWL ->
+                    bowlStyling?.endZoneOf(team, side == TeamSide.HOME)
+                        ?: EndZoneDecoration(
+                            team,
+                            primary,
+                            FieldBackgroundPainter.LINE_COLOR,
+                            outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
+                            null,
+                        )
+                FieldStyle.PLAYOFF ->
+                    onGrass(
                         team,
                         primary,
-                        FieldBackgroundPainter.LINE_COLOR,
-                        outlineOf(FieldBackgroundPainter.LINE_COLOR, secondary),
-                        null,
+                        secondary,
+                        centerLogoUrl,
+                        PLAYOFF_END_ZONE_LOGO_SCALE,
+                        postseasonEndZoneText(side),
                     )
-            FieldStyle.PLAYOFF ->
-                onGrass(
-                    team,
-                    primary,
-                    secondary,
-                    centerLogoUrl,
-                    PLAYOFF_END_ZONE_LOGO_SCALE,
-                    postseasonEndZoneText(side),
-                )
-            FieldStyle.NATIONAL_CHAMPIONSHIP ->
-                EndZoneDecoration(
-                    team,
-                    Color.BLACK,
-                    FieldBackgroundPainter.LINE_COLOR,
-                    outlineOf(FieldBackgroundPainter.LINE_COLOR, primary),
-                    centerLogoUrl,
-                    null,
-                    POSTSEASON_END_ZONE_LOGO_SCALE,
-                )
-            FieldStyle.CONFERENCE_CHAMPIONSHIP ->
-                onGrass(team, primary, secondary, postseasonEndZoneLogo(side), 0f, postseasonEndZoneText(side))
-        }
+                FieldStyle.NATIONAL_CHAMPIONSHIP ->
+                    EndZoneDecoration(
+                        team,
+                        Color.BLACK,
+                        FieldBackgroundPainter.LINE_COLOR,
+                        outlineOf(FieldBackgroundPainter.LINE_COLOR, primary),
+                        centerLogoUrl,
+                        null,
+                        POSTSEASON_END_ZONE_LOGO_SCALE,
+                    )
+                FieldStyle.CONFERENCE_CHAMPIONSHIP ->
+                    onGrass(team, primary, secondary, postseasonEndZoneLogo(side), 0f, postseasonEndZoneText(side))
+            }
+        return base.copy(
+            fontFamily = EndZoneFonts.familyOf(endZoneFontFor(side)),
+            wallDesign = wallDesignFor(side),
+            wallText = wallTextFor(side),
+        )
     }
+
+    private fun endZoneFontFor(side: TeamSide): String? {
+        val perSide =
+            when (style) {
+                FieldStyle.HOME_FIELD -> if (side == leftSide()) homeField?.leftEndZoneFont else homeField?.rightEndZoneFont
+                FieldStyle.BOWL -> if (side == leftSide()) bowlField?.leftEndZoneFont else bowlField?.rightEndZoneFont
+                else -> if (side == leftSide()) postseasonField?.leftEndZoneFont else postseasonField?.rightEndZoneFont
+            }
+        return perSide ?: endZoneFont()
+    }
+
+    private fun wallDesignFor(side: TeamSide): String? {
+        val perSide =
+            when (style) {
+                FieldStyle.HOME_FIELD -> if (side == leftSide()) homeField?.wallDesign else homeField?.rightWallDesign
+                FieldStyle.BOWL -> if (side == leftSide()) bowlField?.wallDesign else bowlField?.rightWallDesign
+                else -> if (side == leftSide()) postseasonField?.wallDesign else postseasonField?.rightWallDesign
+            }
+        return perSide ?: wallDesign()
+    }
+
+    private fun wallTextFor(side: TeamSide): String? {
+        val perSide =
+            when (style) {
+                FieldStyle.HOME_FIELD -> if (side == leftSide()) homeField?.wallText else homeField?.rightWallText
+                FieldStyle.BOWL -> if (side == leftSide()) bowlField?.wallText else bowlField?.rightWallText
+                else -> if (side == leftSide()) postseasonField?.wallText else postseasonField?.rightWallText
+            }
+        return perSide?.takeIf { it.isNotBlank() }
+    }
+
+    fun yardNumberFontFamily(): String =
+        EndZoneFonts.familyOf(homeField?.yardNumberFont ?: bowlField?.yardNumberFont ?: postseasonField?.yardNumberFont)
+
+    fun midfieldLogoScale(): Float = (homeField?.midfieldLogoSize ?: 1.0).toFloat()
 
     private fun homeFieldEndZoneFill(): Color? = homeField?.endZoneColor?.let { FieldBackgroundPainter.parseColor(it) }
 

@@ -34,8 +34,8 @@ object FieldGoalPlayerPainter {
     private const val SIDE_BAR_X = 0.80f
     private const val CENTER_BAR_X = 0.26f
     private const val BUMPER_Y = -0.58f
-    private const val BUMPER_WIDTH = 0.22f
-    private const val BUMPER_HEIGHT = 0.085f
+    private const val BUMPER_WIDTH = 0.15f
+    private const val BUMPER_HEIGHT = 0.06f
     private val BUMPER_COLOR = java.awt.Color(0xDD, 0xDD, 0xDD)
     private const val EYE_Y = -0.14f
     private const val EYE_X = 0.30f

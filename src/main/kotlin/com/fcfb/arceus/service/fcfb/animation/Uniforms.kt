@@ -37,10 +37,7 @@ object Uniforms {
         team: Team,
         snapshot: TeamUniformHistory?,
     ): Uniform {
-        val shell =
-            snapshot?.secondaryHelmetColor?.let { FieldBackgroundPainter.parseColor(it) }
-                ?: snapshot?.helmetColor?.let { FieldBackgroundPainter.parseColor(it) }
-                ?: HelmetColors.shellColor(team)
+        val shell = HelmetColors.forMatchup(team, team, snapshot, snapshot).second
         return Uniform(
             jersey = jersey(team, snapshot),
             number = numberColor(snapshot),

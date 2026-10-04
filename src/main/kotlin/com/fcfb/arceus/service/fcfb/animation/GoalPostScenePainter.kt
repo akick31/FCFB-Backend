@@ -188,8 +188,8 @@ object GoalPostScenePainter {
         val wallPaint = wallColor(theme, endZone)
         g.color = wallPaint
         g.fillRect(0, wallTopY, SCENE_WIDTH, layout.endZoneTopY - wallTopY)
-        val wallText = (theme.wallCaption ?: theme.midfieldCaption.joinToString(" ")).uppercase()
-        val design = wallDesign(theme)
+        val wallText = (endZone.wallText ?: theme.wallCaption ?: theme.midfieldCaption.joinToString(" ")).uppercase()
+        val design = endZone.wallDesign?.let { WallDesign.from(it) } ?: wallDesign(theme)
         if (design.showsText && wallText.isNotBlank()) {
             val flankShare = if (cfpWall(theme.style)) CFP_FLANK_CENTER_SHARE else WALL_FLANK_CENTER_SHARE
             val flankLogo = if (design == WallDesign.TEXT_ONLY) null else theme.wallLogoUrl ?: theme.centerLogoUrl
@@ -201,7 +201,7 @@ object GoalPostScenePainter {
 
         g.color = endZone.fill ?: theme.turf
         g.fillRect(0, layout.endZoneTopY, SCENE_WIDTH, layout.endZoneBottomY - layout.endZoneTopY)
-        drawEndZoneText(g, endZone, layout, EndZoneFonts.familyOf(theme.endZoneFont()))
+        drawEndZoneText(g, endZone, layout, endZone.fontFamily ?: EndZoneFonts.familyOf(theme.endZoneFont()))
 
         drawGoalPost(g, theme, layout)
         drawBackOfEndZoneLine(g, layout)

@@ -101,7 +101,7 @@ object FieldBackgroundPainter {
         drawSidelineAccent(g, theme)
 
         drawHashMarks(g)
-        g.font = Font(EndZoneFonts.YARD_NUMBER_FAMILY, Font.BOLD, YARD_NUMBER_FONT_SIZE)
+        g.font = Font(theme.yardNumberFontFamily(), Font.BOLD, YARD_NUMBER_FONT_SIZE)
         for (yard in 0..100 step 5) {
             val x = FieldCoordinateMapper.toPixelX(yard, WIDTH, MARGIN)
             val redZone = if (yard == RED_ZONE_YARD || yard == 100 - RED_ZONE_YARD) theme.redZoneBorder(yard) else null
@@ -181,11 +181,11 @@ object FieldBackgroundPainter {
         theme: FieldTheme,
     ) {
         if (theme.style != FieldStyle.BOWL && theme.style != FieldStyle.HOME_FIELD) return
-        ConferenceLogoTint.load(theme.conferenceLogoOf(theme.leftSide()), theme.conferenceLogoTint())?.let {
+        theme.conferenceLogoImage(theme.leftSide())?.let {
             val x = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
             LogoFit.draw(g, it, x, bottomQuarterLogoY(), CONFERENCE_LOGO_SIZE)
         }
-        ConferenceLogoTint.load(theme.conferenceLogoOf(theme.rightSide()), theme.conferenceLogoTint())?.let {
+        theme.conferenceLogoImage(theme.rightSide())?.let {
             val x = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
             LogoFit.draw(g, it, x, topQuarterLogoY(), CONFERENCE_LOGO_SIZE)
         }
@@ -228,9 +228,10 @@ object FieldBackgroundPainter {
                 conference -> CONFERENCE_MIDFIELD_LOGO_HEIGHT
                 else -> MIDFIELD_LOGO_HEIGHT
             }
-        val maxWidth = if (conference) CONFERENCE_MIDFIELD_LOGO_MAX_WIDTH else MIDFIELD_LOGO_MAX_WIDTH
+        val scale = theme.midfieldLogoScale()
+        val maxWidth = (if (conference) CONFERENCE_MIDFIELD_LOGO_MAX_WIDTH else MIDFIELD_LOGO_MAX_WIDTH) * scale
         val aspect = logo.width.toFloat() / logo.height
-        val width = minOf(targetHeight * aspect, maxWidth)
+        val width = minOf(targetHeight * scale * aspect, maxWidth)
         val height = width / aspect
         g.drawImage(logo, (centerX - width / 2).toInt(), (HEIGHT / 2 - height / 2).toInt(), width.toInt(), height.toInt(), null)
         drawMidfieldCaption(g, theme, centerX, HEIGHT / 2 + HASH_OFFSET)

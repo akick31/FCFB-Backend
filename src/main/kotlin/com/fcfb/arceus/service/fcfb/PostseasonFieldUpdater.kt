@@ -39,6 +39,12 @@ class PostseasonFieldUpdater {
         field.rightEndZoneLogoUrl = request.rightEndZoneLogoUrl
         request.leftEndZoneLogoSource?.let { field.leftEndZoneLogoSource = it }
         request.rightEndZoneLogoSource?.let { field.rightEndZoneLogoSource = it }
+        request.leftEndZoneFont?.let { field.leftEndZoneFont = it }
+        request.rightEndZoneFont?.let { field.rightEndZoneFont = it }
+        request.rightWallDesign?.let { field.rightWallDesign = it }
+        field.rightWallText = request.rightWallText
+        request.yardNumberFont?.let { field.yardNumberFont = it }
+        request.yardNumberSource?.let { field.yardNumberSource = it }
         requireVisibleWall(field)
         return field
     }

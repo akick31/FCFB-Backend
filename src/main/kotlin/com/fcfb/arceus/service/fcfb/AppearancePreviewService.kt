@@ -225,6 +225,13 @@ class AppearancePreviewService(
             wallLogoSource = draft.wallLogoSource ?: stored.wallLogoSource
             wallLogoUrl = draft.wallLogoUrl
             recolorConferenceLogo = draft.recolorConferenceLogo ?: stored.recolorConferenceLogo
+            midfieldLogoSize = draft.midfieldLogoSize ?: stored.midfieldLogoSize
+            leftEndZoneFont = draft.leftEndZoneFont ?: stored.leftEndZoneFont
+            rightEndZoneFont = draft.rightEndZoneFont ?: stored.rightEndZoneFont
+            rightWallDesign = draft.rightWallDesign ?: stored.rightWallDesign
+            rightWallText = draft.rightWallText
+            yardNumberFont = draft.yardNumberFont ?: stored.yardNumberFont
+            conferenceLogoColorMap = draft.conferenceLogoColorMap
             endZoneFont = draft.endZoneFont ?: stored.endZoneFont
             midfieldLogoUrl = draft.midfieldLogoUrl ?: stored.midfieldLogoUrl
             midfieldLogoSource = draft.midfieldLogoSource ?: stored.midfieldLogoSource
@@ -387,6 +394,11 @@ class AppearancePreviewService(
             rightEndZoneText = request?.rightEndZoneText ?: stored.rightEndZoneText
             leftEndZoneLogoSource = request?.leftEndZoneLogoSource ?: stored.leftEndZoneLogoSource
             rightEndZoneLogoSource = request?.rightEndZoneLogoSource ?: stored.rightEndZoneLogoSource
+            leftEndZoneFont = request?.leftEndZoneFont ?: stored.leftEndZoneFont
+            rightEndZoneFont = request?.rightEndZoneFont ?: stored.rightEndZoneFont
+            rightWallDesign = request?.rightWallDesign ?: stored.rightWallDesign
+            rightWallText = request?.rightWallText ?: stored.rightWallText
+            yardNumberFont = request?.yardNumberFont ?: stored.yardNumberFont
             showConferenceLogos = request?.showConferenceLogos ?: stored.showConferenceLogos
             yardNumberSource = request?.yardNumberSource ?: stored.yardNumberSource
             yardNumberOutlineColor = request?.yardNumberOutlineColor ?: stored.yardNumberOutlineColor
@@ -430,6 +442,12 @@ class AppearancePreviewService(
         target.rightEndZoneLogoUrl = request?.rightEndZoneLogoUrl ?: stored.rightEndZoneLogoUrl
         target.leftEndZoneLogoSource = request?.leftEndZoneLogoSource ?: stored.leftEndZoneLogoSource
         target.rightEndZoneLogoSource = request?.rightEndZoneLogoSource ?: stored.rightEndZoneLogoSource
+        target.leftEndZoneFont = request?.leftEndZoneFont ?: stored.leftEndZoneFont
+        target.rightEndZoneFont = request?.rightEndZoneFont ?: stored.rightEndZoneFont
+        target.rightWallDesign = request?.rightWallDesign ?: stored.rightWallDesign
+        target.rightWallText = request?.rightWallText ?: stored.rightWallText
+        target.yardNumberFont = request?.yardNumberFont ?: stored.yardNumberFont
+        target.yardNumberSource = request?.yardNumberSource ?: stored.yardNumberSource
         return target
     }
 
