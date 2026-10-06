@@ -13,6 +13,7 @@ import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.service.fcfb.coach.CoachStintService
 import com.fcfb.arceus.service.log.UsernameHistoryService
 import io.mockk.every
 import io.mockk.mockk
@@ -42,15 +43,20 @@ class CoachStatsServiceTest {
 
     @BeforeEach
     fun setup() {
+        val coachStintService =
+            CoachStintService(
+                coachTransactionLogRepository,
+                teamRepository,
+                usernameHistoryService,
+            )
         coachStatsService =
             CoachStatsService(
                 gameStatsRepository,
                 gameRepository,
                 teamRepository,
-                coachTransactionLogRepository,
                 seasonStatsService,
                 userRepository,
-                usernameHistoryService,
+                coachStintService,
             )
         every { userRepository.findByUsername("cyclone_puffin") } returns currentUser
         every { usernameHistoryService.getHistoricalUsernames(1L) } returns emptyList()

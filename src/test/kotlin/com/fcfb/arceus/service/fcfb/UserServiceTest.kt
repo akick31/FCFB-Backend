@@ -7,6 +7,7 @@ import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.service.fcfb.coach.CoachStintService
 import com.fcfb.arceus.service.log.UsernameHistoryService
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.EncryptionUtils
@@ -28,6 +29,7 @@ class UserServiceTest {
     private val dtoConverter: DTOConverter = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
     private val usernameHistoryService: UsernameHistoryService = mockk()
+    private val coachStintService: CoachStintService = mockk()
     private lateinit var userService: UserService
 
     private val ownerUser =
@@ -70,7 +72,7 @@ class UserServiceTest {
 
     @BeforeEach
     fun setup() {
-        userService = UserService(userRepository, encryptionUtils, dtoConverter, passwordEncoder, usernameHistoryService)
+        userService = UserService(userRepository, encryptionUtils, dtoConverter, passwordEncoder, usernameHistoryService, coachStintService)
         every { userRepository.getById(1L) } returns ownerUser
         every { userRepository.save(any()) } returns ownerUser
         every { dtoConverter.convertToUserDTO(any()) } returns ownerUserDTO

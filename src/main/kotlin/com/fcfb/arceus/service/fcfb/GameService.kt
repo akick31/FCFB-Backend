@@ -936,6 +936,7 @@ class GameService(
 
     private fun endGame(game: Game): Game {
         try {
+            val wasAlreadyFinal = game.gameStatus == GameStatus.FINAL
             game.gameStatus = GameStatus.FINAL
             try {
                 gameFieldService.snapshotIfAbsent(game)
@@ -943,7 +944,7 @@ class GameService(
                 Logger.error("Error freezing game field for game ${game.gameId}: ${e.message}")
             }
             appendEndOfGamePlay(game)
-            if (game.gameType != GameType.SCRIMMAGE) {
+            if (game.gameType != GameType.SCRIMMAGE && !wasAlreadyFinal) {
                 teamService.updateTeamWinsAndLosses(game)
                 userService.updateUserWinsAndLosses(game)
 
