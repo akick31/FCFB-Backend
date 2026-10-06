@@ -1,7 +1,10 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.dto.request.AppearancePreviewRequest
+import com.fcfb.arceus.dto.request.BowlFieldRequest
+import com.fcfb.arceus.dto.request.PostseasonFieldRequest
 import com.fcfb.arceus.dto.request.PostseasonPreviewRequest
+import com.fcfb.arceus.dto.request.TeamColorsRequest
 import com.fcfb.arceus.dto.request.TeamFieldRequest
 import com.fcfb.arceus.dto.request.TeamUniformRequest
 import com.fcfb.arceus.enums.game.GameStatus
@@ -9,6 +12,7 @@ import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.model.BowlField
 import com.fcfb.arceus.model.ConferenceChampionshipField
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
@@ -21,6 +25,7 @@ import com.fcfb.arceus.service.fcfb.animation.FieldBackgroundPainter
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalFigure
 import com.fcfb.arceus.service.fcfb.animation.FieldGoalPlayerPainter
 import com.fcfb.arceus.service.fcfb.animation.FieldTheme
+import com.fcfb.arceus.service.fcfb.animation.FieldThemeResolver
 import com.fcfb.arceus.service.fcfb.animation.GoalPostScenePainter
 import com.fcfb.arceus.service.fcfb.animation.HelmetFields
 import com.fcfb.arceus.service.fcfb.animation.HelmetLogoMode
@@ -46,10 +51,12 @@ class AppearancePreviewService(
     private val teamAppearanceService: TeamAppearanceService,
     private val espnScorebugRenderer: EspnScorebugRenderer,
     private val gameRepository: com.fcfb.arceus.repositories.GameRepository,
-    private val fieldThemeResolver: com.fcfb.arceus.service.fcfb.animation.FieldThemeResolver,
+    private val fieldThemeResolver: FieldThemeResolver,
     private val bowlFieldService: BowlFieldService,
     private val playoffFieldService: PlayoffFieldService,
     private val conferenceChampionshipFieldService: ConferenceChampionshipFieldService,
+    private val fieldAppearanceApplier: FieldAppearanceApplier,
+    private val postseasonFieldUpdater: PostseasonFieldUpdater,
 ) {
     fun preview(request: AppearancePreviewRequest): ResponseEntity<ByteArray> {
         val homeTeam = teamService.getTeamByName(request.team)
@@ -76,7 +83,7 @@ class AppearancePreviewService(
     /** Draft colors are applied to the detached team instance only, so the preview never persists unsaved edits. */
     private fun applyDraftColors(
         team: Team,
-        colors: com.fcfb.arceus.dto.request.TeamColorsRequest?,
+        colors: TeamColorsRequest?,
     ) {
         colors ?: return
         colors.primaryColor?.let { team.primaryColor = it }
@@ -209,44 +216,9 @@ class AppearancePreviewService(
     ): TeamField {
         val stored = teamAppearanceService.getField(team)
         if (draft == null) return stored
-        return TeamField().apply {
-            this.team = stored.team
-            turfColor = draft.turfColor ?: stored.turfColor
-            endZoneColor = draft.endZoneColor ?: stored.endZoneColor
-            endZoneTextColor = draft.endZoneTextColor
-            endZoneOutlineColor = draft.endZoneOutlineColor
-            endZoneTextLeft = draft.endZoneTextLeft
-            endZoneTextRight = draft.endZoneTextRight
-            endZoneLogoEnabled = draft.endZoneLogoEnabled ?: stored.endZoneLogoEnabled
-            endZoneLogoSource = draft.endZoneLogoSource ?: stored.endZoneLogoSource
-            endZoneLogoUrl = draft.endZoneLogoUrl
-            endZoneLogoSize = draft.endZoneLogoSize ?: stored.endZoneLogoSize
-            endZoneOutlineEnabled = draft.endZoneOutlineEnabled ?: stored.endZoneOutlineEnabled
-            wallLogoSource = draft.wallLogoSource ?: stored.wallLogoSource
-            wallLogoUrl = draft.wallLogoUrl
-            recolorConferenceLogo = draft.recolorConferenceLogo ?: stored.recolorConferenceLogo
-            midfieldLogoSize = draft.midfieldLogoSize ?: stored.midfieldLogoSize
-            leftEndZoneFont = draft.leftEndZoneFont ?: stored.leftEndZoneFont
-            rightEndZoneFont = draft.rightEndZoneFont ?: stored.rightEndZoneFont
-            rightWallDesign = draft.rightWallDesign ?: stored.rightWallDesign
-            rightWallText = draft.rightWallText
-            yardNumberFont = draft.yardNumberFont ?: stored.yardNumberFont
-            conferenceLogoColorMap = draft.conferenceLogoColorMap
-            endZoneFont = draft.endZoneFont ?: stored.endZoneFont
-            midfieldLogoUrl = draft.midfieldLogoUrl ?: stored.midfieldLogoUrl
-            midfieldLogoSource = draft.midfieldLogoSource ?: stored.midfieldLogoSource
-            quarterLogoUrl = draft.quarterLogoUrl ?: stored.quarterLogoUrl
-            quarterLogoSource = draft.quarterLogoSource ?: stored.quarterLogoSource
-            fieldNumberOutlineColor = draft.fieldNumberOutlineColor
-            redZoneBorderColor = draft.redZoneBorderColor
-            oobLineColor = draft.oobLineColor
-            wallColor = draft.wallColor ?: stored.wallColor
-            wallDesign = draft.wallDesign ?: stored.wallDesign
-            wallText = draft.wallText
-            wallTextOutlineColor = draft.wallTextOutlineColor
-            goalPostColor = draft.goalPostColor ?: stored.goalPostColor
-            goalPostStyle = draft.goalPostStyle ?: stored.goalPostStyle
-        }
+        val clone = TeamField().apply { this.team = stored.team }
+        stored.copyAppearanceInto(clone)
+        return fieldAppearanceApplier.applyFields(clone, draft)
     }
 
     private fun draftUniform(
@@ -380,74 +352,23 @@ class AppearancePreviewService(
 
     private fun draftBowl(
         key: String,
-        request: com.fcfb.arceus.dto.request.BowlFieldRequest?,
-    ): com.fcfb.arceus.model.BowlField {
+        request: BowlFieldRequest?,
+    ): BowlField {
         val stored = bowlFieldService.getField(key)
-        return com.fcfb.arceus.model.BowlField().apply {
-            bowl = stored.bowl
-            turfColor = request?.turfColor ?: stored.turfColor
-            endZoneFill = request?.endZoneFill ?: stored.endZoneFill
-            endZoneFont = request?.endZoneFont ?: stored.endZoneFont
-            leftEndZoneLogoUrl = request?.leftEndZoneLogoUrl ?: stored.leftEndZoneLogoUrl
-            rightEndZoneLogoUrl = request?.rightEndZoneLogoUrl ?: stored.rightEndZoneLogoUrl
-            leftEndZoneText = request?.leftEndZoneText ?: stored.leftEndZoneText
-            rightEndZoneText = request?.rightEndZoneText ?: stored.rightEndZoneText
-            leftEndZoneLogoSource = request?.leftEndZoneLogoSource ?: stored.leftEndZoneLogoSource
-            rightEndZoneLogoSource = request?.rightEndZoneLogoSource ?: stored.rightEndZoneLogoSource
-            leftEndZoneFont = request?.leftEndZoneFont ?: stored.leftEndZoneFont
-            rightEndZoneFont = request?.rightEndZoneFont ?: stored.rightEndZoneFont
-            rightWallDesign = request?.rightWallDesign ?: stored.rightWallDesign
-            rightWallText = request?.rightWallText ?: stored.rightWallText
-            yardNumberFont = request?.yardNumberFont ?: stored.yardNumberFont
-            showConferenceLogos = request?.showConferenceLogos ?: stored.showConferenceLogos
-            yardNumberSource = request?.yardNumberSource ?: stored.yardNumberSource
-            yardNumberOutlineColor = request?.yardNumberOutlineColor ?: stored.yardNumberOutlineColor
-            leftOobLineColor = request?.leftOobLineColor ?: stored.leftOobLineColor
-            rightOobLineColor = request?.rightOobLineColor ?: stored.rightOobLineColor
-            redZoneEnabled = request?.redZoneEnabled ?: stored.redZoneEnabled
-            redZoneBorderColor = request?.redZoneBorderColor ?: stored.redZoneBorderColor
-            wallColor = request?.wallColor ?: stored.wallColor
-            wallDesign = request?.wallDesign ?: stored.wallDesign
-            wallText = request?.wallText ?: stored.wallText
-            wallTextOutlineColor = request?.wallTextOutlineColor ?: stored.wallTextOutlineColor
-            goalPostColor = request?.goalPostColor ?: stored.goalPostColor
-            goalPostStyle = request?.goalPostStyle ?: stored.goalPostStyle
-        }
+        if (request == null) return stored
+        val clone = BowlField().apply { bowl = stored.bowl }
+        stored.copyInto(clone)
+        bowlFieldService.applyFields(clone, request)
+        return clone
     }
 
     private fun <T : PostseasonField> draftPostseason(
         stored: PostseasonField,
         target: T,
-        request: com.fcfb.arceus.dto.request.PostseasonFieldRequest?,
+        request: PostseasonFieldRequest?,
     ): T {
-        target.turfColor = request?.turfColor ?: stored.turfColor
-        target.endZoneFont = request?.endZoneFont ?: stored.endZoneFont
-        target.centerLogoUrl = request?.centerLogoUrl ?: stored.centerLogoUrl
-        target.wallColor = request?.wallColor ?: stored.wallColor
-        target.wallDesign = request?.wallDesign ?: stored.wallDesign
-        target.wallText = request?.wallText ?: stored.wallText
-        target.wallTextOutlineColor = request?.wallTextOutlineColor ?: stored.wallTextOutlineColor
-        target.goalPostColor = request?.goalPostColor ?: stored.goalPostColor
-        target.goalPostStyle = request?.goalPostStyle ?: stored.goalPostStyle
-        target.yardNumberOutlineColor = request?.yardNumberOutlineColor ?: stored.yardNumberOutlineColor
-        target.redZoneBorderColor = request?.redZoneBorderColor ?: stored.redZoneBorderColor
-        target.sidelineAccentColor = request?.sidelineAccentColor ?: stored.sidelineAccentColor
-        target.leftSidelineColor = request?.leftSidelineColor ?: stored.leftSidelineColor
-        target.rightSidelineColor = request?.rightSidelineColor ?: stored.rightSidelineColor
-        target.leftRedZoneColor = request?.leftRedZoneColor ?: stored.leftRedZoneColor
-        target.rightRedZoneColor = request?.rightRedZoneColor ?: stored.rightRedZoneColor
-        target.leftEndZoneText = request?.leftEndZoneText ?: stored.leftEndZoneText
-        target.rightEndZoneText = request?.rightEndZoneText ?: stored.rightEndZoneText
-        target.leftEndZoneLogoUrl = request?.leftEndZoneLogoUrl ?: stored.leftEndZoneLogoUrl
-        target.rightEndZoneLogoUrl = request?.rightEndZoneLogoUrl ?: stored.rightEndZoneLogoUrl
-        target.leftEndZoneLogoSource = request?.leftEndZoneLogoSource ?: stored.leftEndZoneLogoSource
-        target.rightEndZoneLogoSource = request?.rightEndZoneLogoSource ?: stored.rightEndZoneLogoSource
-        target.leftEndZoneFont = request?.leftEndZoneFont ?: stored.leftEndZoneFont
-        target.rightEndZoneFont = request?.rightEndZoneFont ?: stored.rightEndZoneFont
-        target.rightWallDesign = request?.rightWallDesign ?: stored.rightWallDesign
-        target.rightWallText = request?.rightWallText ?: stored.rightWallText
-        target.yardNumberFont = request?.yardNumberFont ?: stored.yardNumberFont
-        target.yardNumberSource = request?.yardNumberSource ?: stored.yardNumberSource
+        stored.copyInto(target)
+        request?.let { postseasonFieldUpdater.applyFields(target, it) }
         return target
     }
 

@@ -14,6 +14,16 @@ class FieldAppearanceApplier {
         field: T,
         request: TeamFieldRequest,
     ): T {
+        applyFields(field, request)
+        requireVisibleWall(field)
+        return field
+    }
+
+    /** Merges a request onto a field without validation, for previews that must render even a not-yet-valid draft. */
+    fun <T : FieldAppearance> applyFields(
+        field: T,
+        request: TeamFieldRequest,
+    ): T {
         request.turfColor?.let { field.turfColor = it }
         request.endZoneColor?.let { field.endZoneColor = it }
         field.endZoneTextColor = request.endZoneTextColor
@@ -41,15 +51,16 @@ class FieldAppearanceApplier {
         field.oobLineColor = request.oobLineColor
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
-        request.recolorConferenceLogo?.let { field.recolorConferenceLogo = it }
         request.midfieldLogoSize?.let { field.midfieldLogoSize = it }
         request.leftEndZoneFont?.let { field.leftEndZoneFont = it }
         request.rightEndZoneFont?.let { field.rightEndZoneFont = it }
         request.rightWallDesign?.let { field.rightWallDesign = it }
         field.rightWallText = request.rightWallText
         request.yardNumberFont?.let { field.yardNumberFont = it }
-        field.conferenceLogoColorMap = request.conferenceLogoColorMap
-        requireVisibleWall(field)
+        field.conferenceLogoColorMap =
+            request.conferenceLogoColorMap?.also {
+                if (it.length > MAX_COLOR_MAP_LENGTH) throw InvalidUniformException("The conference logo color map is too large")
+            }
         return field
     }
 
@@ -59,5 +70,9 @@ class FieldAppearanceApplier {
         if (ColorSimilarity.areSimilar(FieldBackgroundPainter.parseColor(wall), Color.WHITE)) {
             throw InvalidUniformException("The wall color cannot be white")
         }
+    }
+
+    companion object {
+        private const val MAX_COLOR_MAP_LENGTH = 4000
     }
 }

@@ -125,6 +125,36 @@ class BowlField {
     @Column(name = "goal_post_style")
     var goalPostStyle: String = TeamField.DEFAULT_GOAL_POST_STYLE
 
+    fun copyInto(target: BowlField) {
+        target.turfColor = turfColor
+        target.endZoneFill = endZoneFill
+        target.endZoneFont = endZoneFont
+        target.leftEndZoneLogoUrl = leftEndZoneLogoUrl
+        target.rightEndZoneLogoUrl = rightEndZoneLogoUrl
+        target.leftEndZoneText = leftEndZoneText
+        target.rightEndZoneText = rightEndZoneText
+        target.leftEndZoneLogoSource = leftEndZoneLogoSource
+        target.rightEndZoneLogoSource = rightEndZoneLogoSource
+        target.leftEndZoneFont = leftEndZoneFont
+        target.rightEndZoneFont = rightEndZoneFont
+        target.rightWallDesign = rightWallDesign
+        target.rightWallText = rightWallText
+        target.yardNumberFont = yardNumberFont
+        target.showConferenceLogos = showConferenceLogos
+        target.yardNumberSource = yardNumberSource
+        target.yardNumberOutlineColor = yardNumberOutlineColor
+        target.leftOobLineColor = leftOobLineColor
+        target.rightOobLineColor = rightOobLineColor
+        target.redZoneEnabled = redZoneEnabled
+        target.redZoneBorderColor = redZoneBorderColor
+        target.wallColor = wallColor
+        target.wallDesign = wallDesign
+        target.wallText = wallText
+        target.wallTextOutlineColor = wallTextOutlineColor
+        target.goalPostColor = goalPostColor
+        target.goalPostStyle = goalPostStyle
+    }
+
     companion object {
         const val DEFAULT_END_ZONE_FILL = "PRIMARY"
         const val DEFAULT_YARD_NUMBER_SOURCE = "TEAM_PER_SIDE"

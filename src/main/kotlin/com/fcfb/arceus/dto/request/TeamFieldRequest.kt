@@ -15,7 +15,6 @@ data class TeamFieldRequest(
     val endZoneOutlineEnabled: Boolean? = null,
     val wallLogoSource: String? = null,
     val wallLogoUrl: String? = null,
-    val recolorConferenceLogo: Boolean? = null,
     val midfieldLogoSize: Double? = null,
     val leftEndZoneFont: String? = null,
     val rightEndZoneFont: String? = null,

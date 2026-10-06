@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.animation
 
+import com.fcfb.arceus.util.BoundedCache
 import com.fcfb.arceus.util.Logger
 import java.awt.Graphics2D
 import java.awt.RenderingHints
@@ -7,7 +8,6 @@ import java.awt.geom.AffineTransform
 import java.awt.geom.Ellipse2D
 import java.awt.image.BufferedImage
 import java.io.IOException
-import java.util.concurrent.ConcurrentHashMap
 import javax.imageio.ImageIO
 
 /**
@@ -19,6 +19,7 @@ object HelmetSprite {
 
     private const val TEMPLATE = "/images/helmet-template.png"
     private const val OPAQUE = 128
+    private const val CACHE_SIZE = 512
     private const val MARKER_HIGH = 200
     private const val MARKER_LOW = 60
     private const val RED_MARKER_MIN = 90
@@ -38,7 +39,7 @@ object HelmetSprite {
     private const val TRIPLE_GAP = 0.016f
     private const val MIN_CONTOUR_COLUMNS = 8
 
-    private val cache = ConcurrentHashMap<String, HelmetSprites>()
+    private val cache = BoundedCache<String, HelmetSprites>(CACHE_SIZE)
 
     private val template: BufferedImage? by lazy {
         try {
@@ -49,7 +50,7 @@ object HelmetSprite {
         }
     }
 
-    private val shellCache = ConcurrentHashMap<String, HelmetSprites>()
+    private val shellCache = BoundedCache<String, HelmetSprites>(CACHE_SIZE)
 
     fun render(
         uniform: Uniform,

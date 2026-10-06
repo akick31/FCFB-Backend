@@ -17,6 +17,16 @@ class PostseasonFieldUpdater {
         request: PostseasonFieldRequest,
     ): T {
         requireAdmin()
+        applyFields(field, request)
+        requireVisibleWall(field)
+        return field
+    }
+
+    /** Merges a request onto a postseason field without validation, for previews that must render even a not-yet-valid draft. */
+    fun <T : PostseasonField> applyFields(
+        field: T,
+        request: PostseasonFieldRequest,
+    ): T {
         request.turfColor?.let { field.turfColor = it }
         request.endZoneFont?.let { field.endZoneFont = it }
         request.wallDesign?.let { field.wallDesign = it }
@@ -45,7 +55,6 @@ class PostseasonFieldUpdater {
         field.rightWallText = request.rightWallText
         request.yardNumberFont?.let { field.yardNumberFont = it }
         request.yardNumberSource?.let { field.yardNumberSource = it }
-        requireVisibleWall(field)
         return field
     }
 

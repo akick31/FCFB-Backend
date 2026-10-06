@@ -31,6 +31,16 @@ class BowlFieldService(
     ): BowlField {
         requireAdmin()
         val field = getField(bowl)
+        applyFields(field, request)
+        requireVisibleWall(field)
+        return bowlFieldRepository.save(field)
+    }
+
+    /** Merges a request onto a bowl field without validation, for previews that must render even a not-yet-valid draft. */
+    fun applyFields(
+        field: BowlField,
+        request: BowlFieldRequest,
+    ) {
         request.turfColor?.let { field.turfColor = it }
         request.endZoneFill?.let { field.endZoneFill = it }
         request.endZoneFont?.let { field.endZoneFont = it }
@@ -58,8 +68,6 @@ class BowlFieldService(
         field.wallColor = request.wallColor
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
-        requireVisibleWall(field)
-        return bowlFieldRepository.save(field)
     }
 
     @Transactional

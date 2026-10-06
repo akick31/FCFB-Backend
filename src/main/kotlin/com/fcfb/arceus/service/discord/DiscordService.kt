@@ -26,11 +26,14 @@ class DiscordService(
     private val guildId: String,
     @Value("\${discord.bot.token}")
     private val botToken: String,
+    @Value("\${bot.service.key}")
+    private val botServiceKey: String,
 ) {
     suspend fun createGameThread(game: Game): List<String>? {
         val discordBotUrl = "$discordBotUrl/start_game"
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
+        headers.set("X-Service-Key", botServiceKey)
         val requestEntity = HttpEntity(game, headers)
 
         return try {
@@ -52,6 +55,7 @@ class DiscordService(
         val discordBotUrl = "$discordBotUrl/delay_of_game?isDelayOfGameOut=$isDelayofGameOut"
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
+        headers.set("X-Service-Key", botServiceKey)
         val requestEntity = HttpEntity(game, headers)
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
@@ -64,6 +68,7 @@ class DiscordService(
         val discordBotUrl = "$discordBotUrl/game_mode"
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
+        headers.set("X-Service-Key", botServiceKey)
         val requestEntity = HttpEntity(game, headers)
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
@@ -79,6 +84,7 @@ class DiscordService(
         val discordBotUrl = "$discordBotUrl/delay_of_game_warning?instance=$instance"
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
+        headers.set("X-Service-Key", botServiceKey)
         val requestEntity = HttpEntity(game, headers)
         return try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
@@ -93,6 +99,7 @@ class DiscordService(
         val discordBotUrl = "$discordBotUrl/new_signup"
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
+        headers.set("X-Service-Key", botServiceKey)
         val requestEntity = HttpEntity(signupInfo, headers)
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)

@@ -116,10 +116,6 @@ abstract class FieldAppearance {
     var quarterLogoSource: String = "CUSTOM"
 
     @Basic
-    @Column(name = "recolor_conference_logo", columnDefinition = "tinyint(1)")
-    var recolorConferenceLogo: Boolean = false
-
-    @Basic
     @Column(name = "midfield_logo_size")
     var midfieldLogoSize: Double = 1.0
 
@@ -175,7 +171,6 @@ abstract class FieldAppearance {
         target.goalPostStyle = goalPostStyle
         target.quarterLogoUrl = quarterLogoUrl
         target.quarterLogoSource = quarterLogoSource
-        target.recolorConferenceLogo = recolorConferenceLogo
         target.midfieldLogoSize = midfieldLogoSize
         target.leftEndZoneFont = leftEndZoneFont
         target.rightEndZoneFont = rightEndZoneFont

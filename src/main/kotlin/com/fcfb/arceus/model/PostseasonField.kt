@@ -118,4 +118,35 @@ abstract class PostseasonField {
     @Basic
     @Column(name = "yard_number_source")
     var yardNumberSource: String = "FIXED"
+
+    fun copyInto(target: PostseasonField) {
+        target.turfColor = turfColor
+        target.endZoneFont = endZoneFont
+        target.centerLogoUrl = centerLogoUrl
+        target.wallColor = wallColor
+        target.wallDesign = wallDesign
+        target.wallText = wallText
+        target.wallTextOutlineColor = wallTextOutlineColor
+        target.goalPostColor = goalPostColor
+        target.goalPostStyle = goalPostStyle
+        target.yardNumberOutlineColor = yardNumberOutlineColor
+        target.redZoneBorderColor = redZoneBorderColor
+        target.sidelineAccentColor = sidelineAccentColor
+        target.leftSidelineColor = leftSidelineColor
+        target.rightSidelineColor = rightSidelineColor
+        target.leftRedZoneColor = leftRedZoneColor
+        target.rightRedZoneColor = rightRedZoneColor
+        target.leftEndZoneText = leftEndZoneText
+        target.rightEndZoneText = rightEndZoneText
+        target.leftEndZoneLogoUrl = leftEndZoneLogoUrl
+        target.rightEndZoneLogoUrl = rightEndZoneLogoUrl
+        target.leftEndZoneLogoSource = leftEndZoneLogoSource
+        target.rightEndZoneLogoSource = rightEndZoneLogoSource
+        target.leftEndZoneFont = leftEndZoneFont
+        target.rightEndZoneFont = rightEndZoneFont
+        target.rightWallDesign = rightWallDesign
+        target.rightWallText = rightWallText
+        target.yardNumberFont = yardNumberFont
+        target.yardNumberSource = yardNumberSource
+    }
 }

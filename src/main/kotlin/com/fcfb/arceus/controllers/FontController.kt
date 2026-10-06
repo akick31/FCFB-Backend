@@ -4,10 +4,12 @@ import com.fcfb.arceus.dto.request.FontUploadRequest
 import com.fcfb.arceus.service.fcfb.FontService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @CrossOrigin(origins = ["*"])
@@ -25,4 +27,10 @@ class FontController(
     fun upload(
         @RequestBody request: FontUploadRequest,
     ) = fontService.upload(request)
+
+    @Operation(summary = "Remove a custom font (admins only)")
+    @DeleteMapping("")
+    fun delete(
+        @RequestParam name: String,
+    ) = fontService.delete(name)
 }

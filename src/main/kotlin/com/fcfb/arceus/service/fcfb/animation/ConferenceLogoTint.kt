@@ -1,16 +1,18 @@
 package com.fcfb.arceus.service.fcfb.animation
 
+import com.fcfb.arceus.util.BoundedCache
 import java.awt.Color
 import java.awt.image.BufferedImage
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Recolors chosen parts of a conference logo. The user maps specific source colors in the logo to one of their team
  * tokens (PRIMARY/SECONDARY/TERTIARY/WHITE/BLACK); every other color, including whites they did not map, is left alone.
  */
 object ConferenceLogoTint {
-    private val cache = ConcurrentHashMap<String, BufferedImage>()
+    private val cache = BoundedCache<String, BufferedImage>(CACHE_SIZE)
     private const val MATCH_TOLERANCE = 60 * 60 * 3
+    private const val MAX_ENTRIES = 32
+    private const val CACHE_SIZE = 256
     private val ENTRY = Regex("\"(#[0-9A-Fa-f]{6})\"\\s*:\\s*\"([A-Za-z]+)\"")
 
     fun load(
@@ -73,7 +75,7 @@ object ConferenceLogoTint {
                     else -> return@mapNotNull null
                 }
             source to target
-        }.toList()
+        }.take(MAX_ENTRIES).toList()
     }
 
     private fun remap(

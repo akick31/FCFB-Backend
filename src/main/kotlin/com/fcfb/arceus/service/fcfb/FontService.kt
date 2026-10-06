@@ -8,13 +8,13 @@ import com.fcfb.arceus.service.fcfb.animation.FontRegistry
 import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.InvalidUniformException
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.SafeUrl
 import com.fcfb.arceus.util.UserForbiddenException
 import org.springframework.stereotype.Service
 import java.awt.Font
 import java.awt.GraphicsEnvironment
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.net.URL
 import java.time.LocalDateTime
 import javax.annotation.PostConstruct
 
@@ -23,6 +23,10 @@ class FontService(
     private val customFontRepository: CustomFontRepository,
 ) {
     @PostConstruct
+    fun scheduleLoad() {
+        Thread({ loadAll() }, "custom-font-loader").apply { isDaemon = true }.start()
+    }
+
     fun loadAll() {
         customFontRepository.findAll().forEach { font ->
             runCatching { registerUrl(font.url, font.name) }
@@ -36,6 +40,7 @@ class FontService(
         val userId = AuthContext.currentUserId() ?: throw UserForbiddenException()
         if (!request.acknowledged) throw InvalidUniformException("You must confirm you have the right to share this font")
         val label = request.label.trim().takeIf { it.isNotBlank() } ?: throw InvalidUniformException("A font name is required")
+        if (label.length > MAX_LABEL_LENGTH) throw InvalidUniformException("That font name is too long")
         val url = request.url.trim().takeIf { it.isNotBlank() } ?: throw InvalidUniformException("A font URL is required")
         val name = uniqueName(label)
         val family = registerUrl(url, name)
@@ -52,6 +57,12 @@ class FontService(
         return FontOption(name, label)
     }
 
+    fun delete(name: String) {
+        if (!AuthContext.isAdmin()) throw UserForbiddenException()
+        customFontRepository.deleteById(name)
+        FontRegistry.unregister(name)
+    }
+
     private fun registerUrl(
         url: String,
         name: String,
@@ -65,10 +76,7 @@ class FontService(
     }
 
     private fun download(url: String): ByteArray {
-        val connection = URL(url).openConnection()
-        connection.connectTimeout = CONNECT_TIMEOUT_MS
-        connection.readTimeout = READ_TIMEOUT_MS
-        connection.getInputStream().use { stream ->
+        SafeUrl.openStream(url, CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS).use { stream ->
             val out = ByteArrayOutputStream()
             val buffer = ByteArray(8192)
             var total = 0
@@ -93,6 +101,7 @@ class FontService(
 
     companion object {
         private const val MAX_FONT_BYTES = 1024 * 1024
+        private const val MAX_LABEL_LENGTH = 60
         private const val CONNECT_TIMEOUT_MS = 5000
         private const val READ_TIMEOUT_MS = 8000
         private val BUILT_IN =

@@ -108,7 +108,6 @@ data class FieldTheme(
 
     fun awayLogoUrl(): String? = helmetDecalUrl(awayUniform, awayTeam, alt = awayUsesAlternateHelmet)
 
-    /** The helmet decal: an uploaded logo if the mode is UPLOAD, otherwise the team's primary or secondary logo. */
     private fun helmetDecalUrl(
         uniform: TeamUniformHistory?,
         team: Team,
