@@ -26,7 +26,7 @@ object EndZoneFonts {
             "GEORGIA" to "Georgia",
         )
 
-    fun familyOf(name: String?): String = families[name?.uppercase()] ?: families.getValue(DEFAULT_KEY)
+    fun familyOf(name: String?): String = FontRegistry.familyFor(name) ?: families[name?.uppercase()] ?: families.getValue(DEFAULT_KEY)
 
     fun choices(): Set<String> = families.keys
 }
