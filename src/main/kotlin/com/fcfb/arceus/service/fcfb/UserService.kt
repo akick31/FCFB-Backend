@@ -9,12 +9,12 @@ import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.service.fcfb.coach.CoachStintService
 import com.fcfb.arceus.service.log.UsernameHistoryService
 import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.DiscordAlreadyLinkedException
 import com.fcfb.arceus.util.EncryptionUtils
-import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.UserForbiddenException
 import com.fcfb.arceus.util.UserNotFoundException
 import com.fcfb.arceus.util.UserUnauthorizedException
@@ -34,33 +34,27 @@ class UserService(
     private val dtoConverter: DTOConverter,
     private val passwordEncoder: PasswordEncoder,
     private val usernameHistoryService: UsernameHistoryService,
+    private val coachStintService: CoachStintService,
 ) {
     fun updateUserWinsAndLosses(game: Game) {
-        val homeUsers =
-            try {
-                getUsersByTeam(game.homeTeam)
-            } catch (e: Exception) {
-                Logger.error("Error looking up home team users for game ${game.gameId}: ${e.message}")
-                emptyList()
-            }
-        val awayUsers =
-            try {
-                getUsersByTeam(game.awayTeam)
-            } catch (e: Exception) {
-                Logger.error("Error looking up away team users for game ${game.gameId}: ${e.message}")
-                emptyList()
-            }
+        val gameType = game.gameType ?: GameType.SCRIMMAGE
+        val timestamp = coachStintService.parseGameTimestamp(game.timestamp) ?: return
+        creditCoaches(game.homeCoachDiscordIds, game.homeTeam, game.homeScore > game.awayScore, gameType, timestamp)
+        creditCoaches(game.awayCoachDiscordIds, game.awayTeam, game.awayScore > game.homeScore, gameType, timestamp)
+    }
 
-        for (user in homeUsers + awayUsers) {
-            val isHomeUser = user.team == game.homeTeam
-            val isAwayUser = user.team == game.awayTeam
-            if (!isHomeUser && !isAwayUser) {
-                continue
-            }
-            val isWin = if (isHomeUser) game.homeScore > game.awayScore else game.awayScore > game.homeScore
-            val gameType = game.gameType
-
-            updateUserRecord(user, gameType ?: GameType.SCRIMMAGE, isWin)
+    private fun creditCoaches(
+        coachDiscordIds: List<String>?,
+        team: String,
+        isWin: Boolean,
+        gameType: GameType,
+        timestamp: LocalDateTime,
+    ) {
+        for (discordId in coachDiscordIds ?: emptyList()) {
+            val user = userRepository.getByDiscordId(discordId) ?: continue
+            val stints = coachStintService.getStintsForCoach(user.username, user)
+            if (!coachStintService.countsForCoach(stints, user.team, team, timestamp)) continue
+            updateUserRecord(dtoConverter.convertToUserDTO(user), gameType, isWin)
         }
     }
 
