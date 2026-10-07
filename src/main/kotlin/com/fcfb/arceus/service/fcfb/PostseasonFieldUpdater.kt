@@ -36,8 +36,10 @@ class PostseasonFieldUpdater {
         field.wallColor = request.wallColor
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
+        field.wallTextFont = request.wallTextFont
         field.yardNumberOutlineColor = request.yardNumberOutlineColor
         field.redZoneBorderColor = request.redZoneBorderColor
+        field.midfieldBorderColor = request.midfieldBorderColor
         field.sidelineAccentColor = request.sidelineAccentColor
         field.leftSidelineColor = request.leftSidelineColor
         field.rightSidelineColor = request.rightSidelineColor
@@ -54,7 +56,12 @@ class PostseasonFieldUpdater {
         request.rightWallDesign?.let { field.rightWallDesign = it }
         field.rightWallText = request.rightWallText
         request.yardNumberFont?.let { field.yardNumberFont = it }
+        request.yardNumberArrowAlign?.let { field.yardNumberArrowAlign = it }
+        request.yardNumberOutlineWidth?.let { field.yardNumberOutlineWidth = it }
+        request.endZoneOutlineWidth?.let { field.endZoneOutlineWidth = it }
+        request.wallTextOutlineWidth?.let { field.wallTextOutlineWidth = it }
         request.yardNumberSource?.let { field.yardNumberSource = it }
+        field.yardNumberTeamSlot = request.yardNumberTeamSlot
         return field
     }
 

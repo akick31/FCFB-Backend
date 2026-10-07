@@ -4,6 +4,7 @@ package com.fcfb.arceus.service.fcfb.animation
 enum class StripeType {
     SINGLE,
     TRIPLE,
+    TRIPLE_FLUSH,
     ;
 
     companion object {

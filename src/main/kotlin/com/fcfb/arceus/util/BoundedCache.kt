@@ -24,4 +24,10 @@ class BoundedCache<K : Any, V : Any>(private val maxSize: Int) {
         key: K,
         supplier: () -> V,
     ): V = get(key) ?: supplier().also { put(key, it) }
+
+    fun removeMatching(predicate: (K) -> Boolean) {
+        synchronized(map) {
+            map.keys.filter(predicate).forEach { map.remove(it) }
+        }
+    }
 }

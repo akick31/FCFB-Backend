@@ -57,27 +57,48 @@ class AppearancePreviewService(
     private val conferenceChampionshipFieldService: ConferenceChampionshipFieldService,
     private val fieldAppearanceApplier: FieldAppearanceApplier,
     private val postseasonFieldUpdater: PostseasonFieldUpdater,
+    private val thumbnailCache: AppearanceThumbnailCache,
 ) {
-    fun preview(request: AppearancePreviewRequest): ResponseEntity<ByteArray> {
+    fun preview(request: AppearancePreviewRequest): ResponseEntity<ByteArray> = respond(renderImage(request))
+
+    fun thumbnail(
+        team: String,
+        view: String,
+    ): ResponseEntity<ByteArray> {
+        val bytes =
+            thumbnailCache.getOrRender(thumbnailCache.key(team, view)) {
+                toPng(renderImage(AppearancePreviewRequest(team = team, view = view)))
+            }
+        val headers =
+            HttpHeaders().apply {
+                contentType = MediaType.IMAGE_PNG
+                contentLength = bytes.size.toLong()
+                cacheControl = "public, max-age=300"
+                eTag = "\"${Integer.toHexString(bytes.contentHashCode())}\""
+            }
+        return ResponseEntity(bytes, headers, HttpStatus.OK)
+    }
+
+    private fun renderImage(request: AppearancePreviewRequest): BufferedImage {
         val homeTeam = teamService.getTeamByName(request.team)
         applyDraftColors(homeTeam, request.colors)
         applyDraftLogos(homeTeam, request)
         val awayTeam = request.opponent?.let { teamService.getTeamByName(it) } ?: homeTeam
         if (request.view.uppercase() == SCOREBUG_VIEW) {
-            return respond(scorebugImage(homeTeam, awayTeam))
+            return scorebugImage(homeTeam, awayTeam)
         }
         val field = draftField(request.team, request.field)
         val uniform = draftUniform(request.team, request.uniform)
         val theme = themeFor(homeTeam, awayTeam, field, uniform)
-        val image =
-            when (request.view.uppercase()) {
-                HELMET_VIEW -> helmetImage(theme)
-                SECONDARY_HELMET_VIEW -> secondaryHelmetImage(theme)
-                UNIFORM_VIEW -> uniformImage(theme, away = false)
-                AWAY_UNIFORM_VIEW -> uniformImage(theme, away = true)
-                else -> fieldWithWallImage(theme)
-            }
-        return respond(image)
+        return when (request.view.uppercase()) {
+            HELMET_VIEW -> helmetImage(theme)
+            SECONDARY_HELMET_VIEW -> secondaryHelmetImage(theme)
+            UNIFORM_VIEW -> uniformImage(theme, away = false)
+            AWAY_UNIFORM_VIEW -> uniformImage(theme, away = true)
+            JERSEY_VIEW -> jerseyImage(theme, away = false)
+            AWAY_JERSEY_VIEW -> jerseyImage(theme, away = true)
+            else -> fieldWithWallImage(theme)
+        }
     }
 
     /** Draft colors are applied to the detached team instance only, so the preview never persists unsaved edits. */
@@ -186,6 +207,26 @@ class AppearancePreviewService(
         return fieldThemeResolver.resolve(play, game, homeTeam, awayTeam, uniform, null, teamFieldOverride = field)
     }
 
+    private fun jerseyImage(
+        theme: FieldTheme,
+        away: Boolean,
+    ): BufferedImage {
+        val uniform = if (away) Uniforms.awayJerseyPreview(theme.homeTeam, theme.homeUniform) else theme.uniforms().first
+        val canvas = BufferedImage(JERSEY_WIDTH, JERSEY_HEIGHT, BufferedImage.TYPE_INT_ARGB)
+        val figure =
+            FieldGoalFigure(
+                x = JERSEY_WIDTH / 2f,
+                footY = JERSEY_HEIGHT - PLAYER_FOOT_MARGIN,
+                scale = JERSEY_PLAYER_SCALE,
+                uniform = uniform,
+                number = PLAYER_NUMBER,
+                pose = PlayerPose.STANDING,
+                facingCamera = true,
+            )
+        FieldGoalPlayerPainter.draw(canvas, figure)
+        return canvas
+    }
+
     private fun helmetImage(theme: FieldTheme): BufferedImage {
         val (home, _) = theme.uniforms()
         val logo = if (home.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(theme.homeLogoUrl(), theme.homeTeam.scorebugLogo) else null
@@ -234,14 +275,16 @@ class AppearancePreviewService(
             helmetColor = draft?.helmetColor ?: stored.helmetColor
             secondaryHelmetColor = draft?.secondaryHelmetColor ?: stored.secondaryHelmetColor
             helmetNumberColor = draft?.helmetNumberColor ?: stored.helmetNumberColor
+            helmetNumberFont = if (draft != null) draft.helmetNumberFont else stored.helmetNumberFont
             facemaskColor = draft?.facemaskColor ?: stored.facemaskColor
             helmetLogoMode = draft?.helmetLogoMode ?: stored.helmetLogoMode
             helmetLogoSource = draft?.helmetLogoSource ?: stored.helmetLogoSource
             jerseyColor = draft?.jerseyColor ?: stored.jerseyColor
             numberColor = draft?.numberColor ?: stored.numberColor
-            numberOutlineColor = draft?.numberOutlineColor ?: stored.numberOutlineColor
+            jerseyNumberFont = if (draft != null) draft.jerseyNumberFont else stored.jerseyNumberFont
+            numberOutlineColor = if (draft != null) draft.numberOutlineColor else stored.numberOutlineColor
             awayNumberColor = draft?.awayNumberColor ?: stored.awayNumberColor
-            awayNumberOutlineColor = draft?.awayNumberOutlineColor ?: stored.awayNumberOutlineColor
+            awayNumberOutlineColor = if (draft != null) draft.awayNumberOutlineColor else stored.awayNumberOutlineColor
             altFacemaskColor = draft?.altFacemaskColor
             altHelmetNumberColor = draft?.altHelmetNumberColor
             altHelmetLogoMode = draft?.altHelmetLogoMode ?: stored.altHelmetLogoMode
@@ -257,6 +300,7 @@ class AppearancePreviewService(
             altStripeType = draft?.altStripeType ?: stored.altStripeType
             altSecondaryStripeColor = draft?.altSecondaryStripeColor
             pantsColor = draft?.pantsColor ?: stored.pantsColor
+            awayPantsColor = draft?.awayPantsColor ?: stored.awayPantsColor
             logoUrl = draft?.logoUrl ?: stored.logoUrl
             hasLogo = draft?.hasLogo ?: stored.hasLogo
             hasStripe = draft?.hasStripe ?: stored.hasStripe
@@ -373,7 +417,7 @@ class AppearancePreviewService(
     }
 
     private fun respond(image: BufferedImage): ResponseEntity<ByteArray> {
-        val bytes = ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
+        val bytes = toPng(image)
         val headers =
             HttpHeaders().apply {
                 contentType = MediaType.IMAGE_PNG
@@ -382,11 +426,18 @@ class AppearancePreviewService(
         return ResponseEntity(bytes, headers, HttpStatus.OK)
     }
 
+    private fun toPng(image: BufferedImage): ByteArray = ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
+
     companion object {
         private const val HELMET_VIEW = "HELMET"
         private const val UNIFORM_VIEW = "UNIFORM"
         private const val SECONDARY_HELMET_VIEW = "SECONDARY_HELMET"
         private const val AWAY_UNIFORM_VIEW = "AWAY_UNIFORM"
+        private const val JERSEY_VIEW = "JERSEY"
+        private const val AWAY_JERSEY_VIEW = "AWAY_JERSEY"
+        private const val JERSEY_WIDTH = 200
+        private const val JERSEY_HEIGHT = 240
+        private const val JERSEY_PLAYER_SCALE = 2.7f
         private const val SCOREBUG_VIEW = "SCOREBUG"
         private const val SAMPLE_HOME_SCORE = 21
         private const val SAMPLE_AWAY_SCORE = 17

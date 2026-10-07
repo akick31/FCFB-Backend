@@ -59,6 +59,23 @@ abstract class FieldAppearance {
     @Column(name = "wall_logo_url")
     var wallLogoUrl: String? = null
 
+    /** Right-wall overrides; when null the right end falls back to the shared (left) wall value. */
+    @Basic
+    @Column(name = "right_wall_logo_source")
+    var rightWallLogoSource: String? = null
+
+    @Basic
+    @Column(name = "right_wall_logo_url")
+    var rightWallLogoUrl: String? = null
+
+    @Basic
+    @Column(name = "right_wall_color")
+    var rightWallColor: String? = null
+
+    @Basic
+    @Column(name = "right_wall_text_outline_color")
+    var rightWallTextOutlineColor: String? = null
+
     @Basic
     @Column(name = "end_zone_font")
     var endZoneFont: String = DEFAULT_END_ZONE_FONT
@@ -78,6 +95,10 @@ abstract class FieldAppearance {
     @Basic
     @Column(name = "red_zone_border_color")
     var redZoneBorderColor: String? = null
+
+    @Basic
+    @Column(name = "midfield_border_color")
+    var midfieldBorderColor: String? = null
 
     @Basic
     @Column(name = "oob_line_color")
@@ -100,6 +121,10 @@ abstract class FieldAppearance {
     var wallTextOutlineColor: String? = null
 
     @Basic
+    @Column(name = "wall_text_font")
+    var wallTextFont: String? = null
+
+    @Basic
     @Column(name = "goal_post_color")
     var goalPostColor: String = DEFAULT_GOAL_POST_COLOR
 
@@ -118,6 +143,10 @@ abstract class FieldAppearance {
     @Basic
     @Column(name = "midfield_logo_size")
     var midfieldLogoSize: Double = 1.0
+
+    @Basic
+    @Column(name = "conference_logo_size")
+    var conferenceLogoSize: Double = 1.0
 
     @Basic
     @Column(name = "left_end_zone_font")
@@ -143,6 +172,22 @@ abstract class FieldAppearance {
     @Column(name = "conference_logo_color_map", columnDefinition = "text")
     var conferenceLogoColorMap: String? = null
 
+    @Basic
+    @Column(name = "yard_number_arrow_align")
+    var yardNumberArrowAlign: String? = null
+
+    @Basic
+    @Column(name = "yard_number_outline_width")
+    var yardNumberOutlineWidth: Double = 1.0
+
+    @Basic
+    @Column(name = "end_zone_outline_width")
+    var endZoneOutlineWidth: Double = 1.0
+
+    @Basic
+    @Column(name = "wall_text_outline_width")
+    var wallTextOutlineWidth: Double = 1.0
+
     fun copyAppearanceInto(target: FieldAppearance) {
         target.turfColor = turfColor
         target.endZoneColor = endZoneColor
@@ -157,27 +202,38 @@ abstract class FieldAppearance {
         target.endZoneOutlineEnabled = endZoneOutlineEnabled
         target.wallLogoSource = wallLogoSource
         target.wallLogoUrl = wallLogoUrl
+        target.rightWallLogoSource = rightWallLogoSource
+        target.rightWallLogoUrl = rightWallLogoUrl
+        target.rightWallColor = rightWallColor
+        target.rightWallTextOutlineColor = rightWallTextOutlineColor
         target.endZoneFont = endZoneFont
         target.midfieldLogoUrl = midfieldLogoUrl
         target.midfieldLogoSource = midfieldLogoSource
         target.fieldNumberOutlineColor = fieldNumberOutlineColor
         target.redZoneBorderColor = redZoneBorderColor
+        target.midfieldBorderColor = midfieldBorderColor
         target.oobLineColor = oobLineColor
         target.wallColor = wallColor
         target.wallDesign = wallDesign
         target.wallText = wallText
         target.wallTextOutlineColor = wallTextOutlineColor
+        target.wallTextFont = wallTextFont
         target.goalPostColor = goalPostColor
         target.goalPostStyle = goalPostStyle
         target.quarterLogoUrl = quarterLogoUrl
         target.quarterLogoSource = quarterLogoSource
         target.midfieldLogoSize = midfieldLogoSize
+        target.conferenceLogoSize = conferenceLogoSize
         target.leftEndZoneFont = leftEndZoneFont
         target.rightEndZoneFont = rightEndZoneFont
         target.rightWallDesign = rightWallDesign
         target.rightWallText = rightWallText
         target.yardNumberFont = yardNumberFont
         target.conferenceLogoColorMap = conferenceLogoColorMap
+        target.yardNumberArrowAlign = yardNumberArrowAlign
+        target.yardNumberOutlineWidth = yardNumberOutlineWidth
+        target.endZoneOutlineWidth = endZoneOutlineWidth
+        target.wallTextOutlineWidth = wallTextOutlineWidth
     }
 
     companion object {

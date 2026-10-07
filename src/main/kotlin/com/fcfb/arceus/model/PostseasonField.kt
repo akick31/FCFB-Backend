@@ -36,6 +36,10 @@ abstract class PostseasonField {
     var wallTextOutlineColor: String? = null
 
     @Basic
+    @Column(name = "wall_text_font")
+    var wallTextFont: String? = null
+
+    @Basic
     @Column(name = "goal_post_color")
     var goalPostColor: String = TeamField.DEFAULT_GOAL_POST_COLOR
 
@@ -50,6 +54,10 @@ abstract class PostseasonField {
     @Basic
     @Column(name = "red_zone_border_color")
     var redZoneBorderColor: String? = null
+
+    @Basic
+    @Column(name = "midfield_border_color")
+    var midfieldBorderColor: String? = null
 
     @Basic
     @Column(name = "sideline_accent_color")
@@ -116,8 +124,28 @@ abstract class PostseasonField {
     var yardNumberFont: String? = null
 
     @Basic
+    @Column(name = "yard_number_arrow_align")
+    var yardNumberArrowAlign: String? = null
+
+    @Basic
+    @Column(name = "yard_number_outline_width")
+    var yardNumberOutlineWidth: Double = 1.0
+
+    @Basic
+    @Column(name = "end_zone_outline_width")
+    var endZoneOutlineWidth: Double = 1.0
+
+    @Basic
+    @Column(name = "wall_text_outline_width")
+    var wallTextOutlineWidth: Double = 1.0
+
+    @Basic
     @Column(name = "yard_number_source")
     var yardNumberSource: String = "FIXED"
+
+    @Basic
+    @Column(name = "yard_number_team_slot")
+    var yardNumberTeamSlot: String? = null
 
     fun copyInto(target: PostseasonField) {
         target.turfColor = turfColor
@@ -127,10 +155,12 @@ abstract class PostseasonField {
         target.wallDesign = wallDesign
         target.wallText = wallText
         target.wallTextOutlineColor = wallTextOutlineColor
+        target.wallTextFont = wallTextFont
         target.goalPostColor = goalPostColor
         target.goalPostStyle = goalPostStyle
         target.yardNumberOutlineColor = yardNumberOutlineColor
         target.redZoneBorderColor = redZoneBorderColor
+        target.midfieldBorderColor = midfieldBorderColor
         target.sidelineAccentColor = sidelineAccentColor
         target.leftSidelineColor = leftSidelineColor
         target.rightSidelineColor = rightSidelineColor
@@ -147,6 +177,11 @@ abstract class PostseasonField {
         target.rightWallDesign = rightWallDesign
         target.rightWallText = rightWallText
         target.yardNumberFont = yardNumberFont
+        target.yardNumberArrowAlign = yardNumberArrowAlign
+        target.yardNumberOutlineWidth = yardNumberOutlineWidth
+        target.endZoneOutlineWidth = endZoneOutlineWidth
+        target.wallTextOutlineWidth = wallTextOutlineWidth
         target.yardNumberSource = yardNumberSource
+        target.yardNumberTeamSlot = yardNumberTeamSlot
     }
 }

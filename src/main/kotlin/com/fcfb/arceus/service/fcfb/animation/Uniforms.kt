@@ -20,17 +20,36 @@ object Uniforms {
                 helmet = homeHelmet,
                 pants = pants(homeTeam, homeSnapshot),
                 numberOutline = numberOutline(homeSnapshot),
+                helmetNumberFont = homeSnapshot?.helmetNumberFont,
+                jerseyNumberFont = homeSnapshot?.jerseyNumberFont,
             ).withHelmet(homeTeam, homeSnapshot, alt = false)
         val away =
             Uniform(
                 jersey = Color.WHITE,
                 number = awayNumber(awayTeam, awaySnapshot),
                 helmet = awayHelmet,
-                pants = pants(awayTeam, awaySnapshot),
+                pants = awayPants(awayTeam, awaySnapshot),
                 numberOutline = awayNumberOutline(awaySnapshot),
+                helmetNumberFont = awaySnapshot?.helmetNumberFont,
+                jerseyNumberFont = awaySnapshot?.jerseyNumberFont,
             ).withHelmet(awayTeam, awaySnapshot, alt = awayAlt)
         return home to away
     }
+
+    /**
+     * The away (white) jersey paired with the team's secondary helmet, for the appearance editor preview only. A real
+     * game picks the away helmet by clash in [forMatchup]; the editor always shows the secondary helmet here.
+     */
+    fun awayJerseyPreview(
+        team: Team,
+        snapshot: TeamUniformHistory?,
+    ): Uniform =
+        secondaryHelmet(team, snapshot).copy(
+            jersey = Color.WHITE,
+            number = awayNumber(team, snapshot),
+            numberOutline = awayNumberOutline(snapshot),
+            pants = awayPants(team, snapshot),
+        )
 
     /** The secondary helmet rendered on its own, for the appearance editor preview. */
     fun secondaryHelmet(
@@ -44,6 +63,8 @@ object Uniforms {
             helmet = shell,
             pants = pants(team, snapshot),
             numberOutline = numberOutline(snapshot),
+            helmetNumberFont = snapshot?.helmetNumberFont,
+            jerseyNumberFont = snapshot?.jerseyNumberFont,
         ).withHelmet(team, snapshot, alt = true)
     }
 
@@ -74,6 +95,11 @@ object Uniforms {
         team: Team,
         snapshot: TeamUniformHistory?,
     ): Color = FieldBackgroundPainter.parseColor(snapshot?.pantsColor ?: team.primaryColor)
+
+    private fun awayPants(
+        team: Team,
+        snapshot: TeamUniformHistory?,
+    ): Color = FieldBackgroundPainter.parseColor(snapshot?.awayPantsColor ?: snapshot?.pantsColor ?: team.primaryColor)
 
     /** The road team wears white, so its numbers stay the team color; only the home set honors a configured number color. */
     private fun awayNumber(

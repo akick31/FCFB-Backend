@@ -47,7 +47,7 @@ class BowlFieldStyling(
         rightTeam: Team,
     ): Color? {
         if (YardNumberSource.from(field.yardNumberSource) == YardNumberSource.FIXED) {
-            return field.yardNumberOutlineColor?.let { FieldBackgroundPainter.parseColor(it) }
+            return token(field.yardNumberOutlineColor, homeTeam)
         }
         val owner =
             when {
@@ -56,8 +56,19 @@ class BowlFieldStyling(
                 top -> homeTeam
                 else -> awayTeam
             }
-        return visibleTeamColor(owner)
+        return teamSlotColor(owner, field.yardNumberTeamSlot)
     }
+
+    private fun teamSlotColor(
+        team: Team,
+        slot: String?,
+    ): Color =
+        when (slot?.uppercase()) {
+            "SECONDARY" -> FieldBackgroundPainter.parseColor(team.secondaryColor)
+            "TERTIARY" -> FieldBackgroundPainter.parseColor(team.tertiaryColor ?: team.secondaryColor)
+            "PRIMARY" -> FieldBackgroundPainter.parseColor(team.primaryColor)
+            else -> visibleTeamColor(team)
+        }
 
     fun redZoneBorder(
         yard: Int,
@@ -65,12 +76,23 @@ class BowlFieldStyling(
         rightTeam: Team,
     ): Color? {
         if (!field.redZoneEnabled) return null
-        field.redZoneBorderColor?.let { return FieldBackgroundPainter.parseColor(it) }
+        token(field.redZoneBorderColor, homeTeam)?.let { return it }
         return visibleTeamColor(if (yard < MIDFIELD_YARD) leftTeam else rightTeam)
     }
 
     fun sidelineAccent(homeEnd: Boolean): Color? =
-        (if (homeEnd) field.leftOobLineColor else field.rightOobLineColor)?.let { FieldBackgroundPainter.parseColor(it) }
+        token(if (homeEnd) field.leftOobLineColor else field.rightOobLineColor, if (homeEnd) homeTeam else awayTeam)
+
+    private fun token(
+        value: String?,
+        team: Team,
+    ): Color? =
+        ColorToken.resolve(
+            value,
+            FieldBackgroundPainter.parseColor(team.primaryColor),
+            FieldBackgroundPainter.parseColor(team.secondaryColor),
+            FieldBackgroundPainter.parseColor(team.tertiaryColor ?: team.secondaryColor),
+        )
 
     private fun filled(
         team: Team,

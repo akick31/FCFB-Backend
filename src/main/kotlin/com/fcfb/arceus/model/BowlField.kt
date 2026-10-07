@@ -72,12 +72,37 @@ class BowlField {
     var yardNumberFont: String? = null
 
     @Basic
+    @Column(name = "yard_number_arrow_align")
+    var yardNumberArrowAlign: String? = null
+
+    @Basic
+    @Column(name = "yard_number_outline_width")
+    var yardNumberOutlineWidth: Double = 1.0
+
+    @Basic
+    @Column(name = "end_zone_outline_width")
+    var endZoneOutlineWidth: Double = 1.0
+
+    @Basic
+    @Column(name = "wall_text_outline_width")
+    var wallTextOutlineWidth: Double = 1.0
+
+    @Basic
+    @Column(name = "conference_logo_size")
+    var conferenceLogoSize: Double = 1.0
+
+    @Basic
     @Column(name = "show_conference_logos", columnDefinition = "tinyint(1)")
     var showConferenceLogos: Boolean = true
 
     @Basic
     @Column(name = "yard_number_source")
     var yardNumberSource: String = DEFAULT_YARD_NUMBER_SOURCE
+
+    /** Which team color slot each defending team contributes when the source is the defending team. */
+    @Basic
+    @Column(name = "yard_number_team_slot")
+    var yardNumberTeamSlot: String? = null
 
     /** Only consulted when the source is FIXED. */
     @Basic
@@ -94,12 +119,16 @@ class BowlField {
 
     @Basic
     @Column(name = "red_zone_enabled", columnDefinition = "tinyint(1)")
-    var redZoneEnabled: Boolean = true
+    var redZoneEnabled: Boolean = false
 
     /** Null keeps the red zone marker team colored per side. */
     @Basic
     @Column(name = "red_zone_border_color")
     var redZoneBorderColor: String? = null
+
+    @Basic
+    @Column(name = "midfield_border_color")
+    var midfieldBorderColor: String? = null
 
     @Basic
     @Column(name = "wall_color")
@@ -116,6 +145,10 @@ class BowlField {
     @Basic
     @Column(name = "wall_text_outline_color")
     var wallTextOutlineColor: String? = null
+
+    @Basic
+    @Column(name = "wall_text_font")
+    var wallTextFont: String? = null
 
     @Basic
     @Column(name = "goal_post_color")
@@ -140,17 +173,25 @@ class BowlField {
         target.rightWallDesign = rightWallDesign
         target.rightWallText = rightWallText
         target.yardNumberFont = yardNumberFont
+        target.yardNumberArrowAlign = yardNumberArrowAlign
+        target.yardNumberOutlineWidth = yardNumberOutlineWidth
+        target.endZoneOutlineWidth = endZoneOutlineWidth
+        target.wallTextOutlineWidth = wallTextOutlineWidth
+        target.conferenceLogoSize = conferenceLogoSize
         target.showConferenceLogos = showConferenceLogos
         target.yardNumberSource = yardNumberSource
+        target.yardNumberTeamSlot = yardNumberTeamSlot
         target.yardNumberOutlineColor = yardNumberOutlineColor
         target.leftOobLineColor = leftOobLineColor
         target.rightOobLineColor = rightOobLineColor
         target.redZoneEnabled = redZoneEnabled
         target.redZoneBorderColor = redZoneBorderColor
+        target.midfieldBorderColor = midfieldBorderColor
         target.wallColor = wallColor
         target.wallDesign = wallDesign
         target.wallText = wallText
         target.wallTextOutlineColor = wallTextOutlineColor
+        target.wallTextFont = wallTextFont
         target.goalPostColor = goalPostColor
         target.goalPostStyle = goalPostStyle
     }

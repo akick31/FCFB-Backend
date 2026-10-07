@@ -116,6 +116,7 @@ class FontService(
                 FontOption("GEORGIA", "Georgia"),
                 FontOption("TYPEWRITER", "Typewriter"),
                 FontOption("MONOSPACE", "Monospace"),
+                FontOption("WYOMING", "Wyoming Cowboys"),
             )
     }
 }

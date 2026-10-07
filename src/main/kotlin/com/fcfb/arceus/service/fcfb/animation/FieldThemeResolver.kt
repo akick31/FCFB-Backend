@@ -81,6 +81,8 @@ class FieldThemeResolver(
             bowlField = bowlField,
             postseasonField = postseasonField,
             awayUsesAlternateHelmet = HelmetColors.awayUsesAlternate(homeTeam, awayTeam, homeUniform, awayUniform),
+            homeTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(homeTeam)?.endZoneFont else null,
+            awayTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(awayTeam)?.endZoneFont else null,
         )
     }
 

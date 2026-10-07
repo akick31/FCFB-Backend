@@ -40,6 +40,14 @@ class TeamUniformCurrent {
     var helmetNumberColor: String = DEFAULT_HELMET_NUMBER_COLOR
 
     @Basic
+    @Column(name = "helmet_number_font")
+    var helmetNumberFont: String? = null
+
+    @Basic
+    @Column(name = "jersey_number_font")
+    var jerseyNumberFont: String? = null
+
+    @Basic
     @Column(name = "facemask_color")
     var facemaskColor: String = DEFAULT_FACEMASK_COLOR
 
@@ -170,6 +178,10 @@ class TeamUniformCurrent {
     @Basic
     @Column(name = "pants_color")
     var pantsColor: String? = null
+
+    @Basic
+    @Column(name = "away_pants_color")
+    var awayPantsColor: String? = null
 
     companion object {
         const val DEFAULT_FACEMASK_COLOR = "#FFFFFF"

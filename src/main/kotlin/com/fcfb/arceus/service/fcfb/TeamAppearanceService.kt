@@ -26,6 +26,7 @@ class TeamAppearanceService(
     private val userService: UserService,
     private val fieldAppearanceApplier: FieldAppearanceApplier,
     private val conferenceRepository: ConferenceRepository,
+    private val thumbnailCache: AppearanceThumbnailCache,
 ) {
     fun getUniform(team: String): TeamUniformCurrent = teamUniformCurrentRepository.findById(team).orElseGet { newUniform(team) }
 
@@ -47,6 +48,7 @@ class TeamAppearanceService(
         request.secondaryColor?.let { found.secondaryColor = it }
         request.tertiaryColor?.let { found.tertiaryColor = it }
         teamService.saveTeam(found)
+        thumbnailCache.evictTeam(team)
         return TeamColorsResponse(found.primaryColor, found.secondaryColor, found.tertiaryColor)
     }
 
@@ -65,6 +67,7 @@ class TeamAppearanceService(
         found.logoDark = request.logoDark
         found.secondaryLogo = request.secondaryLogo
         teamService.saveTeam(found)
+        thumbnailCache.evictTeam(team)
         return TeamLogosResponse(found.logo, found.logoDark, found.secondaryLogo)
     }
 
@@ -86,6 +89,7 @@ class TeamAppearanceService(
         request.helmetLogoMode?.let { uniform.helmetLogoMode = it }
         request.helmetLogoSource?.let { uniform.helmetLogoSource = it }
         request.helmetNumberColor?.let { uniform.helmetNumberColor = it }
+        uniform.helmetNumberFont = request.helmetNumberFont
         request.logoUrl?.let { uniform.logoUrl = it }
         request.hasLogo?.let { uniform.hasLogo = it }
         request.hasStripe?.let { uniform.hasStripe = it }
@@ -94,9 +98,10 @@ class TeamAppearanceService(
         request.secondaryStripeColor?.let { uniform.secondaryStripeColor = it }
         request.jerseyColor?.let { uniform.jerseyColor = it }
         request.numberColor?.let { uniform.numberColor = it }
-        request.numberOutlineColor?.let { uniform.numberOutlineColor = it }
+        uniform.jerseyNumberFont = request.jerseyNumberFont
+        uniform.numberOutlineColor = request.numberOutlineColor
         request.awayNumberColor?.let { uniform.awayNumberColor = it }
-        request.awayNumberOutlineColor?.let { uniform.awayNumberOutlineColor = it }
+        uniform.awayNumberOutlineColor = request.awayNumberOutlineColor
         uniform.altFacemaskColor = request.altFacemaskColor
         uniform.altHelmetNumberColor = request.altHelmetNumberColor
         request.altHelmetLogoMode?.let { uniform.altHelmetLogoMode = it }
@@ -112,11 +117,13 @@ class TeamAppearanceService(
         request.altStripeType?.let { uniform.altStripeType = it }
         uniform.altSecondaryStripeColor = request.altSecondaryStripeColor
         request.pantsColor?.let { uniform.pantsColor = it }
+        uniform.awayPantsColor = request.awayPantsColor
         request.logoSize?.let { uniform.logoSize = it }
         request.logoX?.let { uniform.logoX = it }
         request.logoY?.let { uniform.logoY = it }
         request.logoRotation?.let { uniform.logoRotation = it }
         requireDistinctShells(uniform)
+        thumbnailCache.evictTeam(team)
         return teamUniformCurrentRepository.save(uniform)
     }
 
@@ -134,6 +141,7 @@ class TeamAppearanceService(
         requireCanEdit(team)
         val field = getField(team)
         fieldAppearanceApplier.apply(field, request)
+        thumbnailCache.evictTeam(team)
         return teamFieldRepository.save(field)
     }
 

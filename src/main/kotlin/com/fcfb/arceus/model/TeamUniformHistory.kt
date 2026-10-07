@@ -54,6 +54,10 @@ class TeamUniformHistory {
     var helmetNumberColor: String? = null
 
     @Basic
+    @Column(name = "helmet_number_font")
+    var helmetNumberFont: String? = null
+
+    @Basic
     @Column(name = "facemask_color")
     var facemaskColor: String? = null
 
@@ -72,6 +76,10 @@ class TeamUniformHistory {
     @Basic
     @Column(name = "number_color")
     var numberColor: String? = null
+
+    @Basic
+    @Column(name = "jersey_number_font")
+    var jerseyNumberFont: String? = null
 
     @Basic
     @Column(name = "number_outline_color")
@@ -146,6 +154,10 @@ class TeamUniformHistory {
     var pantsColor: String? = null
 
     @Basic
+    @Column(name = "away_pants_color")
+    var awayPantsColor: String? = null
+
+    @Basic
     @Column(name = "logo_url")
     var logoUrl: String? = null
 
@@ -215,6 +227,9 @@ class TeamUniformHistory {
         logoX: Double,
         logoY: Double,
         logoRotation: Double,
+        helmetNumberFont: String? = null,
+        jerseyNumberFont: String? = null,
+        awayPantsColor: String? = null,
     ) {
         this.team = team
         this.seasonNumber = seasonNumber
@@ -244,6 +259,9 @@ class TeamUniformHistory {
         this.logoX = logoX
         this.logoY = logoY
         this.logoRotation = logoRotation
+        this.helmetNumberFont = helmetNumberFont
+        this.jerseyNumberFont = jerseyNumberFont
+        this.awayPantsColor = awayPantsColor
     }
 
     constructor()

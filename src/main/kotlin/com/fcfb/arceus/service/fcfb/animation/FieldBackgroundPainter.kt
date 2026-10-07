@@ -7,10 +7,12 @@ import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
 import java.awt.geom.Line2D
+import java.awt.geom.Path2D
 import java.awt.image.BufferedImage
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 object FieldBackgroundPainter {
@@ -19,9 +21,14 @@ object FieldBackgroundPainter {
     const val MARGIN = 80
 
     private const val OOB_INSET = 28
-    private const val TOP_NUMBER_Y = 68
-    private const val BOTTOM_NUMBER_Y = 386
+    private const val TOP_NUMBER_Y = 84
+    private const val BOTTOM_NUMBER_Y = 370
     private const val DIGIT_GAP = 4
+    private const val ARROW_HEIGHT_RATIO = 0.475f
+    private const val ARROW_WIDTH_RATIO = 0.4f
+    private const val ARROW_GAP_RATIO = 0.22f
+    private const val ARROW_GAP_OUTLINED_RATIO = 0.3f
+    private const val ARROW_EDGE_GAP_RATIO = 0.1f
     private const val YARD_NUMBER_FONT_SIZE = 26
     private const val DIGIT_CAP_FRACTION = 0.72f
     private const val CONFERENCE_LOGO_YARD = 25
@@ -41,7 +48,7 @@ object FieldBackgroundPainter {
     private const val OOB_STROKE_WIDTH = 6f
     private const val BACK_LINE_INSET = 3
     private const val END_ZONE_OUTLINE_WIDTH = 2
-    private const val END_ZONE_TEXT_PADDING = OOB_INSET + 8 + END_ZONE_OUTLINE_WIDTH
+    private const val END_ZONE_TEXT_PADDING = OOB_INSET + 24 + END_ZONE_OUTLINE_WIDTH
     private const val END_ZONE_LOGO_GAP = 8
     private const val BALL_HALF_LENGTH = 12f
     private const val BALL_HALF_WIDTH = 7.5f
@@ -101,12 +108,20 @@ object FieldBackgroundPainter {
         drawSidelineAccent(g, theme)
 
         drawHashMarks(g)
-        g.font = Font(theme.yardNumberFontFamily(), Font.BOLD, YARD_NUMBER_FONT_SIZE)
+        val yardFont = theme.yardNumberFont()
+        g.font = Font(EndZoneFonts.familyOf(yardFont), EndZoneFonts.styleFor(yardFont), YARD_NUMBER_FONT_SIZE)
+        val arrowAlign = theme.yardNumberArrowAlign()
+        val yardOutlineWidth = (NUMBER_OUTLINE_WIDTH * theme.yardNumberOutlineScale()).roundToInt().coerceAtLeast(0)
         for (yard in 0..100 step 5) {
             val x = FieldCoordinateMapper.toPixelX(yard, WIDTH, MARGIN)
-            val redZone = if (yard == RED_ZONE_YARD || yard == 100 - RED_ZONE_YARD) theme.redZoneBorder(yard) else null
-            if (redZone != null) {
-                g.color = redZone
+            val border =
+                when {
+                    yard == RED_ZONE_YARD || yard == 100 - RED_ZONE_YARD -> theme.redZoneBorder(yard)
+                    yard == 50 -> theme.midfieldBorder()
+                    else -> null
+                }
+            if (border != null) {
+                g.color = border
                 val inner = (OOB_STROKE_WIDTH / 2).toInt()
                 g.stroke = BasicStroke(RED_ZONE_STROKE_WIDTH, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER)
                 g.drawLine(x, OOB_INSET + inner, x, HEIGHT - OOB_INSET - inner)
@@ -116,19 +131,58 @@ object FieldBackgroundPainter {
             g.drawLine(x, OOB_INSET, x, HEIGHT - OOB_INSET)
             if (yard == 0 || yard == 100 || yard % 10 != 0) continue
             val label = (if (yard <= 50) yard else 100 - yard).toString()
-            drawSplitYardNumber(g, label, x, TOP_NUMBER_Y, theme.yardNumberOutline(yard, top = true))
-            drawSplitYardNumber(g, label, x, BOTTOM_NUMBER_Y, theme.yardNumberOutline(yard, top = false))
+            val arrowDir =
+                if (yard < 50) {
+                    -1
+                } else if (yard > 50) {
+                    1
+                } else {
+                    0
+                }
+            drawSplitYardNumber(
+                g,
+                label,
+                x,
+                TOP_NUMBER_Y,
+                theme.yardNumberOutline(yard, top = true),
+                arrowDir,
+                arrowAlign,
+                flip = true,
+                outlineWidth = yardOutlineWidth,
+            )
+            drawSplitYardNumber(
+                g,
+                label,
+                x,
+                BOTTOM_NUMBER_Y,
+                theme.yardNumberOutline(yard, top = false),
+                arrowDir,
+                arrowAlign,
+                flip = false,
+                outlineWidth = yardOutlineWidth,
+            )
         }
 
-        val endZoneFamily = EndZoneFonts.familyOf(theme.endZoneFont())
-        drawEndZoneText(g, homeEndZone, MARGIN / 2, clockwise = false, fittedEndZoneFontSize(g, homeEndZone, endZoneFamily), endZoneFamily)
+        val homeValue = homeEndZone.fontValue ?: theme.endZoneFont()
+        val awayValue = awayEndZone.fontValue ?: theme.endZoneFont()
+        val endZoneOutlineWidth = (END_ZONE_OUTLINE_WIDTH * theme.endZoneOutlineScale()).roundToInt().coerceAtLeast(0)
+        drawEndZoneText(
+            g,
+            homeEndZone,
+            MARGIN / 2,
+            clockwise = false,
+            fittedEndZoneFontSize(g, homeEndZone, homeValue),
+            homeValue,
+            endZoneOutlineWidth,
+        )
         drawEndZoneText(
             g,
             awayEndZone,
             WIDTH - MARGIN / 2,
             clockwise = true,
-            fittedEndZoneFontSize(g, awayEndZone, endZoneFamily),
-            endZoneFamily,
+            fittedEndZoneFontSize(g, awayEndZone, awayValue),
+            awayValue,
+            endZoneOutlineWidth,
         )
 
         val midX = FieldCoordinateMapper.toPixelX(50, WIDTH, MARGIN)
@@ -181,13 +235,17 @@ object FieldBackgroundPainter {
         theme: FieldTheme,
     ) {
         if (theme.style != FieldStyle.BOWL && theme.style != FieldStyle.HOME_FIELD) return
-        theme.conferenceLogoImage(theme.leftSide())?.let {
+        val leftLogo = theme.conferenceLogoImage(theme.leftSide())
+        val rightLogo = theme.conferenceLogoImage(theme.rightSide())
+        if (theme.style == FieldStyle.BOWL && (leftLogo == null || rightLogo == null)) return
+        val size = (CONFERENCE_LOGO_SIZE * theme.conferenceLogoScale()).toInt()
+        leftLogo?.let {
             val x = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-            LogoFit.draw(g, it, x, bottomQuarterLogoY(), CONFERENCE_LOGO_SIZE)
+            LogoFit.draw(g, it, x, bottomQuarterLogoY(), size)
         }
-        theme.conferenceLogoImage(theme.rightSide())?.let {
+        rightLogo?.let {
             val x = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-            LogoFit.draw(g, it, x, topQuarterLogoY(), CONFERENCE_LOGO_SIZE)
+            LogoFit.draw(g, it, x, topQuarterLogoY(), size)
         }
     }
 
@@ -427,25 +485,91 @@ object FieldBackgroundPainter {
         lineX: Int,
         y: Int,
         outline: Color?,
+        arrowDir: Int,
+        arrowAlign: YardNumberArrowAlign,
+        flip: Boolean,
+        outlineWidth: Int,
     ) {
         val left = label.substring(0, 1)
         val right = label.substring(1)
         val leftWidth = g.fontMetrics.stringWidth(left)
+        val rightWidth = g.fontMetrics.stringWidth(right)
         val leftX = lineX - leftWidth - DIGIT_GAP
         val rightX = lineX + DIGIT_GAP
+        val drawDigits = {
+            outline?.let {
+                g.color = it
+                for (dx in -outlineWidth..outlineWidth) {
+                    for (dy in -outlineWidth..outlineWidth) {
+                        if (dx == 0 && dy == 0) continue
+                        g.drawString(left, leftX + dx, y + dy)
+                        g.drawString(right, rightX + dx, y + dy)
+                    }
+                }
+            }
+            g.color = LINE_COLOR
+            g.drawString(left, leftX, y)
+            g.drawString(right, rightX, y)
+        }
+        if (flip) {
+            val bounds = g.font.createGlyphVector(g.fontRenderContext, "0").visualBounds
+            val saved = g.transform
+            g.rotate(Math.PI, (leftX + rightX + rightWidth) / 2.0, y + bounds.minY + bounds.height / 2.0)
+            drawDigits()
+            g.transform = saved
+        } else {
+            drawDigits()
+        }
+        if (arrowDir != 0) {
+            drawYardArrow(g, arrowDir, leftX.toFloat(), (rightX + rightWidth).toFloat(), y, outline, arrowAlign, outlineWidth)
+        }
+    }
+
+    private fun drawYardArrow(
+        g: Graphics2D,
+        direction: Int,
+        numberLeft: Float,
+        numberRight: Float,
+        baselineY: Int,
+        outline: Color?,
+        arrowAlign: YardNumberArrowAlign,
+        outlineWidth: Int,
+    ) {
+        val glyphBounds = g.font.createGlyphVector(g.fontRenderContext, "0").visualBounds
+        val numberHeight = glyphBounds.height.toFloat()
+        val numberTop = baselineY + glyphBounds.minY.toFloat()
+        val numberBottom = numberTop + numberHeight
+        val height = numberHeight * ARROW_HEIGHT_RATIO
+        val length = numberHeight * ARROW_WIDTH_RATIO
+        val gap = numberHeight * (if (outline != null) ARROW_GAP_OUTLINED_RATIO else ARROW_GAP_RATIO)
+        val edge = numberHeight * ARROW_EDGE_GAP_RATIO
+        val midY =
+            when (arrowAlign) {
+                YardNumberArrowAlign.TOP -> numberTop + edge + height / 2
+                YardNumberArrowAlign.BOTTOM -> numberBottom - edge - height / 2
+                else -> numberTop + numberHeight / 2
+            }
+        val baseX = if (direction < 0) numberLeft - gap else numberRight + gap
+        val tipX = if (direction < 0) baseX - length else baseX + length
+        val shape = { dx: Int, dy: Int ->
+            Path2D.Float().apply {
+                moveTo((tipX + dx).toDouble(), (midY + dy).toDouble())
+                lineTo((baseX + dx).toDouble(), (midY - height / 2 + dy).toDouble())
+                lineTo((baseX + dx).toDouble(), (midY + height / 2 + dy).toDouble())
+                closePath()
+            }
+        }
         outline?.let {
             g.color = it
-            for (dx in -NUMBER_OUTLINE_WIDTH..NUMBER_OUTLINE_WIDTH) {
-                for (dy in -NUMBER_OUTLINE_WIDTH..NUMBER_OUTLINE_WIDTH) {
+            for (dx in -outlineWidth..outlineWidth) {
+                for (dy in -outlineWidth..outlineWidth) {
                     if (dx == 0 && dy == 0) continue
-                    g.drawString(left, leftX + dx, y + dy)
-                    g.drawString(right, rightX + dx, y + dy)
+                    g.fill(shape(dx, dy))
                 }
             }
         }
         g.color = LINE_COLOR
-        g.drawString(left, leftX, y)
-        g.drawString(right, rightX, y)
+        g.fill(shape(0, 0))
     }
 
     private fun drawEndZoneText(
@@ -454,11 +578,12 @@ object FieldBackgroundPainter {
         centerX: Int,
         clockwise: Boolean,
         fontSize: Int,
-        family: String,
+        value: String?,
+        outlineWidth: Int,
     ) {
         val label = endZoneLabel(endZone) ?: return
         val logo = LogoLoader.load(endZone.logoUrl)
-        g.font = Font(family, Font.BOLD, fontSize)
+        g.font = Font(EndZoneFonts.familyOf(value), EndZoneFonts.styleFor(value), fontSize)
         val metrics = g.fontMetrics
         val logoSize = endZoneLogoPixels(endZone, logo, metrics)
         val start = -endZoneLength(g, label, logoSize) / 2
@@ -473,8 +598,8 @@ object FieldBackgroundPainter {
         }
         if (endZone.outlineEnabled) {
             g.color = endZone.outlineColor
-            for (dx in -END_ZONE_OUTLINE_WIDTH..END_ZONE_OUTLINE_WIDTH) {
-                for (dy in -END_ZONE_OUTLINE_WIDTH..END_ZONE_OUTLINE_WIDTH) {
+            for (dx in -outlineWidth..outlineWidth) {
+                for (dy in -outlineWidth..outlineWidth) {
                     if (dx != 0 || dy != 0) {
                         g.drawString(label, textX + dx, metrics.ascent / 2 + dy)
                     }
@@ -489,16 +614,16 @@ object FieldBackgroundPainter {
     private fun fittedEndZoneFontSize(
         g: Graphics2D,
         endZone: EndZoneDecoration,
-        family: String,
+        value: String?,
     ): Int {
         var fontSize = MARGIN - 16
         val label = endZoneLabel(endZone) ?: return fontSize
         val logo = LogoLoader.load(endZone.logoUrl)
         val availableHeight = (HEIGHT - 2 * END_ZONE_TEXT_PADDING).toFloat() - 2 * END_ZONE_OUTLINE_WIDTH
-        g.font = Font(family, Font.BOLD, fontSize)
+        g.font = Font(EndZoneFonts.familyOf(value), EndZoneFonts.styleFor(value), fontSize)
         while (fontSize > 6 && endZoneLength(g, label, endZoneLogoPixels(endZone, logo, g.fontMetrics)) > availableHeight) {
             fontSize--
-            g.font = Font(family, Font.BOLD, fontSize)
+            g.font = Font(EndZoneFonts.familyOf(value), EndZoneFonts.styleFor(value), fontSize)
         }
         return fontSize
     }

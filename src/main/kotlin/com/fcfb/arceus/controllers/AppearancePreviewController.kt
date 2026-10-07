@@ -5,9 +5,11 @@ import com.fcfb.arceus.dto.request.PostseasonPreviewRequest
 import com.fcfb.arceus.service.fcfb.AppearancePreviewService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @CrossOrigin(origins = ["*"])
@@ -21,6 +23,13 @@ class AppearancePreviewController(
     fun preview(
         @RequestBody request: AppearancePreviewRequest,
     ) = appearancePreviewService.preview(request)
+
+    @Operation(summary = "A cacheable thumbnail of a team's saved appearance, for the team grids")
+    @GetMapping("/thumb")
+    fun thumbnail(
+        @RequestParam team: String,
+        @RequestParam view: String,
+    ) = appearancePreviewService.thumbnail(team, view)
 
     @Operation(summary = "Render a postseason field using the last-played matchup")
     @PostMapping("/postseason")

@@ -68,6 +68,7 @@ class TeamUniformService(
             awayNumberColor = current?.awayNumberColor,
             awayNumberOutlineColor = current?.awayNumberOutlineColor,
             pantsColor = current?.pantsColor ?: team.primaryColor,
+            awayPantsColor = current?.awayPantsColor,
             logoUrl = current?.logoUrl ?: team.scorebugLogo,
             hasLogo = current?.hasLogo ?: true,
             hasStripe = current?.hasStripe ?: false,
@@ -78,6 +79,8 @@ class TeamUniformService(
             logoX = current?.logoX ?: 0.0,
             logoY = current?.logoY ?: 0.0,
             logoRotation = current?.logoRotation ?: 0.0,
+            helmetNumberFont = current?.helmetNumberFont,
+            jerseyNumberFont = current?.jerseyNumberFont,
         ).apply {
             altFacemaskColor = current?.altFacemaskColor
             altHelmetNumberColor = current?.altHelmetNumberColor

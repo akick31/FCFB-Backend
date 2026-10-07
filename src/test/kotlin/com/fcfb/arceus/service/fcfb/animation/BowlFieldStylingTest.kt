@@ -42,10 +42,11 @@ class BowlFieldStylingTest {
 
     @Test
     fun `red zone marker follows the defending team unless a color is set or it is disabled`() {
-        assertEquals(Color.decode("#CC0000"), styling(BowlField()).redZoneBorder(20, home, away))
-        assertEquals(Color.decode("#0000CC"), styling(BowlField()).redZoneBorder(80, home, away))
-        assertEquals(Color.decode("#00FF00"), styling(BowlField().apply { redZoneBorderColor = "#00FF00" }).redZoneBorder(20, home, away))
-        assertNull(styling(BowlField().apply { redZoneEnabled = false }).redZoneBorder(20, home, away))
+        val enabled = { BowlField().apply { redZoneEnabled = true } }
+        assertEquals(Color.decode("#CC0000"), styling(enabled()).redZoneBorder(20, home, away))
+        assertEquals(Color.decode("#0000CC"), styling(enabled()).redZoneBorder(80, home, away))
+        assertEquals(Color.decode("#00FF00"), styling(enabled().apply { redZoneBorderColor = "#00FF00" }).redZoneBorder(20, home, away))
+        assertNull(styling(BowlField()).redZoneBorder(20, home, away))
     }
 
     @Test

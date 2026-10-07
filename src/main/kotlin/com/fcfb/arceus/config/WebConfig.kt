@@ -45,6 +45,7 @@ private val PRE_AUTH_GET_PATHS =
         "$FULL_PATH/auth/verify-email",
         "$FULL_PATH/discord/redirect",
         "$FULL_PATH/health",
+        "$FULL_PATH/appearance-preview/thumb",
     )
 
 private const val ACTUATOR_HEALTH_PATH = "/actuator/health"

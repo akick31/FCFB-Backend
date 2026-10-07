@@ -48,15 +48,26 @@ class FieldAppearanceApplier {
         request.goalPostStyle?.let { field.goalPostStyle = it }
         field.fieldNumberOutlineColor = request.fieldNumberOutlineColor
         field.redZoneBorderColor = request.redZoneBorderColor
+        field.midfieldBorderColor = request.midfieldBorderColor
         field.oobLineColor = request.oobLineColor
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
+        field.wallTextFont = request.wallTextFont
+        field.rightWallLogoSource = request.rightWallLogoSource
+        field.rightWallLogoUrl = request.rightWallLogoUrl
+        field.rightWallColor = request.rightWallColor
+        field.rightWallTextOutlineColor = request.rightWallTextOutlineColor
         request.midfieldLogoSize?.let { field.midfieldLogoSize = it }
+        request.conferenceLogoSize?.let { field.conferenceLogoSize = it }
         request.leftEndZoneFont?.let { field.leftEndZoneFont = it }
         request.rightEndZoneFont?.let { field.rightEndZoneFont = it }
         request.rightWallDesign?.let { field.rightWallDesign = it }
         field.rightWallText = request.rightWallText
         request.yardNumberFont?.let { field.yardNumberFont = it }
+        request.yardNumberArrowAlign?.let { field.yardNumberArrowAlign = it }
+        request.yardNumberOutlineWidth?.let { field.yardNumberOutlineWidth = it }
+        request.endZoneOutlineWidth?.let { field.endZoneOutlineWidth = it }
+        request.wallTextOutlineWidth?.let { field.wallTextOutlineWidth = it }
         field.conferenceLogoColorMap =
             request.conferenceLogoColorMap?.also {
                 if (it.length > MAX_COLOR_MAP_LENGTH) throw InvalidUniformException("The conference logo color map is too large")

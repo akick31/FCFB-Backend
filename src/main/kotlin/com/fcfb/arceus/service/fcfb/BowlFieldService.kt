@@ -46,6 +46,7 @@ class BowlFieldService(
         request.endZoneFont?.let { field.endZoneFont = it }
         request.showConferenceLogos?.let { field.showConferenceLogos = it }
         request.yardNumberSource?.let { field.yardNumberSource = it }
+        field.yardNumberTeamSlot = request.yardNumberTeamSlot
         request.redZoneEnabled?.let { field.redZoneEnabled = it }
         request.wallDesign?.let { field.wallDesign = it }
         request.goalPostColor?.let { field.goalPostColor = it }
@@ -61,13 +62,20 @@ class BowlFieldService(
         request.rightWallDesign?.let { field.rightWallDesign = it }
         field.rightWallText = request.rightWallText
         request.yardNumberFont?.let { field.yardNumberFont = it }
+        request.yardNumberArrowAlign?.let { field.yardNumberArrowAlign = it }
+        request.yardNumberOutlineWidth?.let { field.yardNumberOutlineWidth = it }
+        request.endZoneOutlineWidth?.let { field.endZoneOutlineWidth = it }
+        request.wallTextOutlineWidth?.let { field.wallTextOutlineWidth = it }
+        request.conferenceLogoSize?.let { field.conferenceLogoSize = it }
         field.yardNumberOutlineColor = request.yardNumberOutlineColor
         field.leftOobLineColor = request.leftOobLineColor
         field.rightOobLineColor = request.rightOobLineColor
         field.redZoneBorderColor = request.redZoneBorderColor
+        field.midfieldBorderColor = request.midfieldBorderColor
         field.wallColor = request.wallColor
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
+        field.wallTextFont = request.wallTextFont
     }
 
     @Transactional

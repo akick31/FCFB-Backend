@@ -5,7 +5,7 @@ import com.fcfb.arceus.util.Logger
 import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
-import java.awt.geom.Ellipse2D
+import java.awt.geom.Path2D
 import java.awt.image.BufferedImage
 import java.io.IOException
 import javax.imageio.ImageIO
@@ -30,13 +30,16 @@ object HelmetSprite {
     private const val LOGO_CENTER_Y = 0.367f
     private const val NUMBER_FRACTION = 0.24f
     private const val NUMBER_TRACKING = 0.22f
-    private const val STRIPE_EDGE_MARGIN = 0.02f
-    private const val STRIPE_THICKNESS = 0.1f
-    private const val STRIPE_ARC_HALF_DEG = 62f
-    private const val CIRCLE_FIT_SPAN = 0.28f
-    private const val TRIPLE_OUTER_THICKNESS = 0.03f
-    private const val TRIPLE_INNER_THICKNESS = 0.055f
-    private const val TRIPLE_GAP = 0.016f
+    private const val STRIPE_EDGE_MARGIN = -0.006f
+    private const val STRIPE_THICKNESS = 0.04f
+    private const val TAPER_POWER = 1.3
+    private const val STRIPE_SPAN_DROP_BACK = 0.76f
+    private const val STRIPE_SPAN_DROP_FRONT = 0.24f
+    private const val BACK_EDGE_JUMP = 0.055f
+    private const val NORMAL_PROBE = 3f
+    private const val TRIPLE_OUTER_THICKNESS = 0.016f
+    private const val TRIPLE_INNER_THICKNESS = 0.03f
+    private const val TRIPLE_GAP = 0.01f
     private const val MIN_CONTOUR_COLUMNS = 8
 
     private val cache = BoundedCache<String, HelmetSprites>(CACHE_SIZE)
@@ -159,85 +162,167 @@ object HelmetSprite {
         ).joinToString(":")
 
     /**
-     * A center stripe that follows the crown. A circle is fitted through three points of the shell's top silhouette, and
-     * the stripe is stamped as a constant-width band along that circle's top arc, from the front of the dome to the back,
-     * so it reads as a stripe arcing over the helmet. A triple stripe lays an outer / inner / outer set of parallel arcs.
+     * A center stripe that hugs the shell's silhouette: the outer edge is walked from the front of the dome, over the
+     * crown, and down the back edge of the shell, with a band of constant perpendicular width laid just inside it. The
+     * front stops short of the facemask; the back runs long. A triple stripe stacks the center band and one outer band
+     * (the crown-side band is implied by the shell color).
      */
     private fun drawCenterStripe(
         sprite: BufferedImage,
         uniform: Uniform,
     ) {
-        val size = sprite.width
         val inner = uniform.stripe ?: return
         val outer = uniform.outerStripe ?: inner
+        val size = sprite.width
         val top = IntArray(size) { topContourY(sprite, it) }
         val valid = (0 until size).filter { top[it] >= 0 }
         if (valid.size < MIN_CONTOUR_COLUMNS) return
-        val minX = valid.first()
-        val maxX = valid.last()
         val apex = valid.minByOrNull { top[it] } ?: return
-        val span = ((maxX - minX) * CIRCLE_FIT_SPAN).toInt().coerceAtLeast(2)
-        val leftX = (apex - span).coerceIn(minX, maxX)
-        val rightX = (apex + span).coerceIn(minX, maxX)
-        if (leftX == rightX || top[leftX] < 0 || top[rightX] < 0) return
-
-        val circle =
-            circleThrough(
-                leftX.toDouble(), top[leftX].toDouble(),
-                apex.toDouble(), top[apex].toDouble(),
-                rightX.toDouble(), top[rightX].toDouble(),
-            ) ?: return
-        val (cx, cy, radius) = circle
-        if (cy <= top[apex]) return
+        val path = stripeEdgePath(sprite, top, valid, apex)
+        if (path.size < 2) return
+        val margin = STRIPE_EDGE_MARGIN * size
+        val bands = stripeBands(uniform, inner, outer, size)
+        val normals = path.indices.map { inwardNormal(sprite, path, it) }
+        val apexIndex = path.indices.minByOrNull { path[it][1] } ?: 0
 
         val layer = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
         val g = layer.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        val apexAngle = Math.atan2(cy - top[apex].toDouble(), apex - cx)
-        val halfArc = Math.toRadians(STRIPE_ARC_HALF_DEG.toDouble())
-        val start = apexAngle - halfArc
-        val end = apexAngle + halfArc
-        val edge = STRIPE_EDGE_MARGIN * size
-        if (uniform.stripeType == StripeType.SINGLE) {
-            val thickness = STRIPE_THICKNESS * size
-            stampArc(g, cx, cy, radius - edge - thickness / 2, start, end, thickness, inner)
-        } else {
-            val outerT = TRIPLE_OUTER_THICKNESS * size
-            val innerT = TRIPLE_INNER_THICKNESS * size
-            val gap = TRIPLE_GAP * size
-            val baseR = radius - edge - innerT / 2
-            val step = innerT / 2 + gap + outerT / 2
-            stampArc(g, cx, cy, baseR + step, start, end, outerT, outer)
-            stampArc(g, cx, cy, baseR, start, end, innerT, inner)
-            stampArc(g, cx, cy, baseR - step, start, end, outerT, outer)
+        for (band in bands) {
+            g.color = band.color
+            g.fill(edgeBand(path, normals, margin, margin + band.offset, margin + band.offset + band.thickness, apexIndex))
         }
         g.dispose()
         compositeOnShell(sprite, layer)
     }
 
-    private fun stampArc(
-        g: Graphics2D,
-        cx: Double,
-        cy: Double,
-        radius: Double,
-        start: Double,
-        end: Double,
-        thickness: Float,
-        color: java.awt.Color,
-    ) {
-        if (radius <= 0) return
-        g.color = color
-        val steps = (Math.abs(end - start) * radius).toInt().coerceAtLeast(16)
-        val t = thickness.toDouble()
-        for (i in 0..steps) {
-            val a = start + (end - start) * i / steps
-            val px = cx + radius * Math.cos(a)
-            val py = cy - radius * Math.sin(a)
-            g.fill(Ellipse2D.Double(px - t / 2, py - t / 2, t, t))
-        }
+    /** Full width from the front to the crown, then fades to a point down the back so the stripe reads as receding in perspective. */
+    private fun backTaper(
+        i: Int,
+        apexIndex: Int,
+        last: Int,
+    ): Float {
+        if (i <= apexIndex || last <= apexIndex) return 1f
+        val ratio = ((i - apexIndex).toFloat() / (last - apexIndex)).coerceIn(0f, 1f)
+        return Math.pow((1f - ratio).toDouble(), TAPER_POWER).toFloat()
     }
 
-    /** Lays the stamped arc onto the shell, only over opaque shell pixels, so the stripe stops cleanly at the edges. */
+    private fun stripeEdgePath(
+        sprite: BufferedImage,
+        top: IntArray,
+        valid: List<Int>,
+        apex: Int,
+    ): List<FloatArray> {
+        val size = sprite.width
+        val apexY = top[apex]
+        val minX = valid.first()
+        var rightX = apex
+        for (x in apex + 1..valid.last()) {
+            if (top[x] < 0 || top[x] - apexY > STRIPE_SPAN_DROP_FRONT * size) break
+            rightX = x
+        }
+        val points = ArrayList<FloatArray>()
+        for (x in rightX downTo minX) {
+            if (top[x] >= 0) points.add(floatArrayOf(x.toFloat(), top[x].toFloat()))
+        }
+        var prevX = minX
+        var y = top[minX] + 1
+        while (y < sprite.height && y - apexY <= STRIPE_SPAN_DROP_BACK * size) {
+            val lx = leftmostOpaque(sprite, y)
+            if (lx < 0 || lx - prevX > BACK_EDGE_JUMP * size) break
+            points.add(floatArrayOf(lx.toFloat(), y.toFloat()))
+            prevX = lx
+            y++
+        }
+        return points
+    }
+
+    private fun leftmostOpaque(
+        sprite: BufferedImage,
+        y: Int,
+    ): Int {
+        for (x in 0 until sprite.width) {
+            if ((sprite.getRGB(x, y) ushr 24) >= OPAQUE) return x
+        }
+        return -1
+    }
+
+    private fun edgeBand(
+        path: List<FloatArray>,
+        normals: List<FloatArray>,
+        base: Float,
+        from: Float,
+        to: Float,
+        apexIndex: Int,
+    ): Path2D.Float {
+        val p = Path2D.Float()
+        val last = path.size - 1
+        path.forEachIndexed { i, pt ->
+            val n = normals[i]
+            val f = base + (from - base) * backTaper(i, apexIndex, last)
+            if (i == 0) p.moveTo(pt[0] + n[0] * f, pt[1] + n[1] * f) else p.lineTo(pt[0] + n[0] * f, pt[1] + n[1] * f)
+        }
+        for (i in path.indices.reversed()) {
+            val pt = path[i]
+            val n = normals[i]
+            val t = base + (to - base) * backTaper(i, apexIndex, last)
+            p.lineTo(pt[0] + n[0] * t, pt[1] + n[1] * t)
+        }
+        p.closePath()
+        return p
+    }
+
+    /** Perpendicular to the local edge direction, pointing into the shell (chosen by sampling an opaque pixel). */
+    private fun inwardNormal(
+        sprite: BufferedImage,
+        path: List<FloatArray>,
+        i: Int,
+    ): FloatArray {
+        val a = path[(i - 2).coerceAtLeast(0)]
+        val b = path[(i + 2).coerceAtMost(path.size - 1)]
+        val tx = b[0] - a[0]
+        val ty = b[1] - a[1]
+        val len = Math.hypot(tx.toDouble(), ty.toDouble()).toFloat()
+        if (len < 1e-3f) return floatArrayOf(0f, 1f)
+        val nx = -ty / len
+        val ny = tx / len
+        val px = path[i][0] + nx * NORMAL_PROBE
+        val py = path[i][1] + ny * NORMAL_PROBE
+        return if (isOpaqueAt(sprite, px, py)) floatArrayOf(nx, ny) else floatArrayOf(-nx, -ny)
+    }
+
+    private fun isOpaqueAt(
+        sprite: BufferedImage,
+        x: Float,
+        y: Float,
+    ): Boolean {
+        val xi = x.toInt()
+        val yi = y.toInt()
+        if (xi < 0 || yi < 0 || xi >= sprite.width || yi >= sprite.height) return false
+        return (sprite.getRGB(xi, yi) ushr 24) >= OPAQUE
+    }
+
+    private fun stripeBands(
+        uniform: Uniform,
+        inner: java.awt.Color,
+        outer: java.awt.Color,
+        size: Int,
+    ): List<StripeBand> {
+        if (uniform.stripeType == StripeType.SINGLE) {
+            return listOf(StripeBand(0f, STRIPE_THICKNESS * size, inner))
+        }
+        val outerT = TRIPLE_OUTER_THICKNESS * size
+        val innerT = TRIPLE_INNER_THICKNESS * size
+        val gap = if (uniform.stripeType == StripeType.TRIPLE_FLUSH) 0f else TRIPLE_GAP * size
+        val list = mutableListOf<StripeBand>()
+        list.add(StripeBand(0f, innerT, inner))
+        list.add(StripeBand(innerT + gap, outerT, outer))
+        return list
+    }
+
+    private data class StripeBand(val offset: Float, val thickness: Float, val color: java.awt.Color)
+
+    /** Lays the stamped stripe onto the shell, only over opaque shell pixels, so it stops cleanly at the edges. */
     private fun compositeOnShell(
         sprite: BufferedImage,
         layer: BufferedImage,
@@ -258,24 +343,6 @@ object HelmetSprite {
         }
     }
 
-    private fun circleThrough(
-        x1: Double,
-        y1: Double,
-        x2: Double,
-        y2: Double,
-        x3: Double,
-        y3: Double,
-    ): Triple<Double, Double, Double>? {
-        val d = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
-        if (Math.abs(d) < 1e-6) return null
-        val s1 = x1 * x1 + y1 * y1
-        val s2 = x2 * x2 + y2 * y2
-        val s3 = x3 * x3 + y3 * y3
-        val ux = (s1 * (y2 - y3) + s2 * (y3 - y1) + s3 * (y1 - y2)) / d
-        val uy = (s1 * (x3 - x2) + s2 * (x1 - x3) + s3 * (x2 - x1)) / d
-        return Triple(ux, uy, Math.hypot(x1 - ux, y1 - uy))
-    }
-
     private fun topContourY(
         sprite: BufferedImage,
         x: Int,
@@ -293,7 +360,7 @@ object HelmetSprite {
         centerY: Int,
         size: Int,
     ) {
-        val font = AnimationFonts.graduate.deriveFont((NUMBER_FRACTION * size * uniform.logoSize).coerceAtLeast(6f))
+        val font = NumberFonts.font(uniform.helmetNumberFont, (NUMBER_FRACTION * size * uniform.logoSize).coerceAtLeast(6f))
         val glyphs = font.createGlyphVector(g.fontRenderContext, NUMBER_DECAL)
         tightenTracking(glyphs)
         val bounds = glyphs.visualBounds
@@ -325,7 +392,7 @@ object HelmetSprite {
             for (x in 0 until source.width) {
                 val argb = source.getRGB(x, y)
                 val alpha = argb ushr 24
-                if (alpha < OPAQUE) continue
+                if (alpha == 0) continue
                 val red = (argb shr 16) and 0xFF
                 val green = (argb shr 8) and 0xFF
                 val blue = argb and 0xFF

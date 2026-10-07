@@ -33,7 +33,7 @@ object FieldGoalPlayerPainter {
     private const val BAR_REACH = 0.95f
     private const val SIDE_BAR_X = 0.80f
     private const val CENTER_BAR_X = 0.26f
-    private const val BUMPER_Y = -0.58f
+    private const val BUMPER_Y = -0.42f
     private const val BUMPER_WIDTH = 0.15f
     private const val BUMPER_HEIGHT = 0.06f
     private val BUMPER_COLOR = java.awt.Color(0xDD, 0xDD, 0xDD)
@@ -46,6 +46,9 @@ object FieldGoalPlayerPainter {
     private val DARK_SKIN = java.awt.Color(0x6B, 0x4A, 0x33)
     private const val STRIPE_HALF_WIDTH = 0.22f
     private const val STRIPE_BAND_HEIGHT = 0.5f
+    private const val TRIPLE_CENTER_SCALE = 0.72f
+    private const val TRIPLE_OUTER_WIDTH = 0.09f
+    private const val TRIPLE_STRIPE_GAP = 0.04f
 
     fun draw(
         image: BufferedImage,
@@ -102,16 +105,35 @@ object FieldGoalPlayerPainter {
         centerY: Float,
         radius: Float,
     ) {
-        val stripe = figure.uniform.stripe ?: return
+        val inner = figure.uniform.stripe ?: return
+        val outer = figure.uniform.outerStripe ?: inner
+        val triple = figure.uniform.stripeType != StripeType.SINGLE
+        val flush = figure.uniform.stripeType == StripeType.TRIPLE_FLUSH
         val clip = g.clip
         g.clip(helmet)
-        g.color = stripe
         if (figure.facingCamera) {
-            val halfWidth = radius * STRIPE_HALF_WIDTH
-            g.fill(Rectangle2D.Float(figure.x - halfWidth, centerY - radius, halfWidth * 2, radius * 2))
+            val top = centerY - radius
+            val height = radius * 2
+            val centerHalf = radius * STRIPE_HALF_WIDTH * (if (triple) TRIPLE_CENTER_SCALE else 1f)
+            g.color = inner
+            g.fill(Rectangle2D.Float(figure.x - centerHalf, top, centerHalf * 2, height))
+            if (triple) {
+                val outerW = radius * TRIPLE_OUTER_WIDTH
+                val gap = if (flush) 0f else radius * TRIPLE_STRIPE_GAP
+                g.color = outer
+                g.fill(Rectangle2D.Float(figure.x - centerHalf - gap - outerW, top, outerW, height))
+                g.fill(Rectangle2D.Float(figure.x + centerHalf + gap, top, outerW, height))
+            }
         } else {
             val bandTop = centerY - radius
-            g.fill(Rectangle2D.Float(figure.x - radius, bandTop, radius * 2, radius * STRIPE_BAND_HEIGHT))
+            val innerHeight = radius * STRIPE_BAND_HEIGHT * (if (triple) TRIPLE_CENTER_SCALE else 1f)
+            g.color = inner
+            g.fill(Rectangle2D.Float(figure.x - radius, bandTop, radius * 2, innerHeight))
+            if (triple) {
+                val outerTop = bandTop + innerHeight + (if (flush) 0f else radius * TRIPLE_STRIPE_GAP)
+                g.color = outer
+                g.fill(Rectangle2D.Float(figure.x - radius, outerTop, radius * 2, radius * TRIPLE_OUTER_WIDTH))
+            }
         }
         g.clip = clip
     }
@@ -253,7 +275,7 @@ object FieldGoalPlayerPainter {
         figure: FieldGoalFigure,
         shoulderY: Float,
     ) {
-        g.font = AnimationFonts.graduate.deriveFont(java.awt.Font.BOLD, (NUMBER_SIZE * figure.scale).coerceAtLeast(6f))
+        g.font = NumberFonts.font(figure.uniform.jerseyNumberFont, (NUMBER_SIZE * figure.scale).coerceAtLeast(6f))
         val text = figure.number.toString()
         val metrics = g.fontMetrics
         val textX = figure.x - metrics.stringWidth(text) / 2f
