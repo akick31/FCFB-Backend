@@ -4,6 +4,30 @@ import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamUniformHistory
 import java.awt.Color
 
+data class Uniform(
+    val jersey: Color,
+    val number: Color,
+    val helmet: Color,
+    val pants: Color,
+    val numberOutline: Color?,
+    val helmetNumberFont: String?,
+    val jerseyNumberFont: String?,
+    val shoulderStripe: Color?,
+    val jerseyText: String?,
+    val numberTopText: String? = null,
+) {
+    var facemask: Color = Color.WHITE
+    var stripe: Color? = null
+    var stripeType: StripeType = StripeType.SINGLE
+    var outerStripe: Color? = null
+    var helmetNumber: Color = Color.WHITE
+    var helmetLogoMode: HelmetLogoMode = HelmetLogoMode.NONE
+    var logoSize: Float = 0f
+    var logoX: Float = 0f
+    var logoY: Float = 0f
+    var logoRotation: Float = 0f
+}
+
 object Uniforms {
     fun forMatchup(
         homeTeam: Team,
@@ -24,6 +48,7 @@ object Uniforms {
                 jerseyNumberFont = homeSnapshot?.jerseyNumberFont,
                 shoulderStripe = shoulderStripe(homeSnapshot),
                 jerseyText = homeSnapshot?.jerseyText,
+                numberTopText = numberTopText(homeSnapshot),
             ).withHelmet(homeTeam, homeSnapshot, alt = false)
         val away =
             Uniform(
@@ -36,6 +61,7 @@ object Uniforms {
                 jerseyNumberFont = awaySnapshot?.jerseyNumberFont,
                 shoulderStripe = shoulderStripe(awaySnapshot),
                 jerseyText = awaySnapshot?.jerseyText,
+                numberTopText = numberTopText(awaySnapshot),
             ).withHelmet(awayTeam, awaySnapshot, alt = awayAlt)
         return home to away
     }
@@ -71,6 +97,7 @@ object Uniforms {
             jerseyNumberFont = snapshot?.jerseyNumberFont,
             shoulderStripe = shoulderStripe(snapshot),
             jerseyText = snapshot?.jerseyText,
+            numberTopText = numberTopText(snapshot),
         ).withHelmet(team, snapshot, alt = true)
     }
 
@@ -154,4 +181,6 @@ object Uniforms {
         if (snapshot?.hasShoulderStripe != true) return null
         return FieldBackgroundPainter.parseColor(snapshot.shoulderStripeColor)
     }
+
+    private fun numberTopText(snapshot: TeamUniformHistory?): String? = snapshot?.numberTopText
 }

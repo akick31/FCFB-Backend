@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation
 
 import java.awt.BasicStroke
+import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
@@ -79,6 +80,18 @@ object FieldGoalPlayerPainter {
             )
         g.color = figure.uniform.jersey
         g.fill(torso)
+
+        // Draw shoulder stripes if configured
+        figure.uniform.shoulderStripe?.let { stripeColor ->
+            g.color = stripeColor
+            val stripeW = TORSO_WIDTH * scale * 0.12f
+            val stripeH = TORSO_HEIGHT * scale * 0.18f
+            // Left shoulder
+            g.fillRect(x - TORSO_WIDTH * scale / 2 + 3f * scale, shoulderY + 2f * scale, stripeW, stripeH)
+            // Right shoulder
+            g.fillRect(x + TORSO_WIDTH * scale / 2 - stripeW - 3f * scale, shoulderY + 2f * scale, stripeW, stripeH)
+        }
+
         g.color = GoalPostScenePainter.DEFENDER_COLOR
         g.stroke = BasicStroke(OUTLINE_WIDTH)
         g.draw(torso)
@@ -275,11 +288,33 @@ object FieldGoalPlayerPainter {
         figure: FieldGoalFigure,
         shoulderY: Float,
     ) {
-        g.font = NumberFonts.font(figure.uniform.jerseyNumberFont, (NUMBER_SIZE * figure.scale).coerceAtLeast(6f))
         val text = figure.number.toString()
         val metrics = g.fontMetrics
         val textX = figure.x - metrics.stringWidth(text) / 2f
         val textY = shoulderY + (TORSO_HEIGHT * figure.scale + metrics.ascent * 0.8f) / 2f
+        
+        // Draw top text if present
+        figure.uniform.numberTopText?.takeIf { it.isNotBlank() }?.let { topText ->
+            val topFont = NumberFonts.font(figure.uniform.jerseyNumberFont, (NUMBER_SIZE * figure.scale * 0.6f).coerceAtLeast(4f))
+            g.font = topFont
+            val topMetrics = g.fontMetrics
+            val topTextX = figure.x - topMetrics.stringWidth(topText) / 2f
+            val topTextY = shoulderY + (TORSO_HEIGHT * figure.scale * 0.15f)
+            
+            // Outline
+            g.color = figure.uniform.numberOutline ?: Color.BLACK
+            for (dx in -1..1) {
+                for (dy in -1..1) {
+                    if (dx == 0 && dy == 0) continue
+                    g.drawString(topText, topTextX + dx, topTextY + dy)
+                }
+            }
+            // Fill
+            g.color = figure.uniform.number
+            g.drawString(topText, topTextX, topTextY)
+        }
+
+        // Outline number
         figure.uniform.numberOutline?.let { outline ->
             g.color = outline
             for (dx in -1..1) {
@@ -289,6 +324,7 @@ object FieldGoalPlayerPainter {
                 }
             }
         }
+        // Fill number
         g.color = figure.uniform.number
         g.drawString(text, textX, textY)
     }
