@@ -83,7 +83,7 @@ object FieldGoalPlayerPainter {
         g.fill(torso)
 
         // Draw shoulder stripes if configured
-        figure.uniform.shoulderStripe?.let { stripeColor ->
+        figure.uniform.shoulderStripeColor?.let { stripeColor ->
             g.color = stripeColor
             val stripeW = TORSO_WIDTH * scale * 0.12f
             val stripeH = TORSO_HEIGHT * scale * 0.18f

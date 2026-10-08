@@ -22,7 +22,7 @@ object Uniforms {
                 numberOutline = numberOutline(homeSnapshot),
                 helmetNumberFont = homeSnapshot?.helmetNumberFont,
                 jerseyNumberFont = homeSnapshot?.jerseyNumberFont,
-                shoulderStripe = shoulderStripe(homeSnapshot),
+                shoulderStripeColor = shoulderStripe(homeSnapshot),
                 jerseyText = homeSnapshot?.jerseyText,
                 numberTopText = numberTopText(homeSnapshot),
             ).withHelmet(homeTeam, homeSnapshot, alt = false)
@@ -35,7 +35,7 @@ object Uniforms {
                 numberOutline = awayNumberOutline(awaySnapshot),
                 helmetNumberFont = awaySnapshot?.helmetNumberFont,
                 jerseyNumberFont = awaySnapshot?.jerseyNumberFont,
-                shoulderStripe = shoulderStripe(awaySnapshot),
+                shoulderStripeColor = shoulderStripe(awaySnapshot),
                 jerseyText = awaySnapshot?.jerseyText,
                 numberTopText = numberTopText(awaySnapshot),
             ).withHelmet(awayTeam, awaySnapshot, alt = awayAlt)
@@ -71,7 +71,7 @@ object Uniforms {
             numberOutline = numberOutline(snapshot),
             helmetNumberFont = snapshot?.helmetNumberFont,
             jerseyNumberFont = snapshot?.jerseyNumberFont,
-            shoulderStripe = shoulderStripe(snapshot),
+            shoulderStripeColor = shoulderStripe(snapshot),
             jerseyText = snapshot?.jerseyText,
             numberTopText = numberTopText(snapshot),
         ).withHelmet(team, snapshot, alt = true)
