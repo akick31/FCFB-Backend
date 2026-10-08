@@ -85,6 +85,7 @@ class TeamUniformService(
             hasShoulderStripe = current?.hasShoulderStripe,
             shoulderStripeColor = current?.shoulderStripeColor,
             jerseyText = current?.jerseyText,
+            numberTopText = current?.numberTopText,
         ).apply {
             altFacemaskColor = current?.altFacemaskColor
             altHelmetNumberColor = current?.altHelmetNumberColor

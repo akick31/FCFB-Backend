@@ -48,4 +48,5 @@ data class TeamUniformRequest(
     val hasShoulderStripe: Boolean? = null,
     val shoulderStripeColor: String? = null,
     val jerseyText: String? = null,
+    val numberTopText: String? = null,
 )

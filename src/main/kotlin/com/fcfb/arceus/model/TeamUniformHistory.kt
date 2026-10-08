@@ -170,6 +170,10 @@ class TeamUniformHistory {
     var jerseyText: String? = null
 
     @Basic
+    @Column(name = "number_top_text")
+    var numberTopText: String? = null
+
+    @Basic
     @Column(name = "logo_url")
     var logoUrl: String? = null
 
@@ -245,6 +249,7 @@ class TeamUniformHistory {
         hasShoulderStripe: Boolean? = null,
         shoulderStripeColor: String? = null,
         jerseyText: String? = null,
+        numberTopText: String? = null,
     ) {
         this.team = team
         this.seasonNumber = seasonNumber
@@ -280,6 +285,7 @@ class TeamUniformHistory {
         this.hasShoulderStripe = hasShoulderStripe
         this.shoulderStripeColor = shoulderStripeColor
         this.jerseyText = jerseyText
+        this.numberTopText = numberTopText
     }
 
     constructor()

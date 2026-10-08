@@ -195,6 +195,10 @@ class TeamUniformCurrent {
     @Column(name = "jersey_text")
     var jerseyText: String? = null
 
+    @Basic
+    @Column(name = "number_top_text")
+    var numberTopText: String? = null
+
     companion object {
         const val DEFAULT_FACEMASK_COLOR = "#FFFFFF"
         const val DEFAULT_HELMET_NUMBER_COLOR = "#FFFFFF"
