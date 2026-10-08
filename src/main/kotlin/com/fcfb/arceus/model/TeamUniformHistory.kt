@@ -158,6 +158,18 @@ class TeamUniformHistory {
     var awayPantsColor: String? = null
 
     @Basic
+    @Column(name = "has_shoulder_stripe", columnDefinition = "tinyint(1)")
+    var hasShoulderStripe: Boolean? = null
+
+    @Basic
+    @Column(name = "shoulder_stripe_color")
+    var shoulderStripeColor: String? = null
+
+    @Basic
+    @Column(name = "jersey_text")
+    var jerseyText: String? = null
+
+    @Basic
     @Column(name = "logo_url")
     var logoUrl: String? = null
 
@@ -230,6 +242,9 @@ class TeamUniformHistory {
         helmetNumberFont: String? = null,
         jerseyNumberFont: String? = null,
         awayPantsColor: String? = null,
+        hasShoulderStripe: Boolean? = null,
+        shoulderStripeColor: String? = null,
+        jerseyText: String? = null,
     ) {
         this.team = team
         this.seasonNumber = seasonNumber
@@ -262,6 +277,9 @@ class TeamUniformHistory {
         this.helmetNumberFont = helmetNumberFont
         this.jerseyNumberFont = jerseyNumberFont
         this.awayPantsColor = awayPantsColor
+        this.hasShoulderStripe = hasShoulderStripe
+        this.shoulderStripeColor = shoulderStripeColor
+        this.jerseyText = jerseyText
     }
 
     constructor()
