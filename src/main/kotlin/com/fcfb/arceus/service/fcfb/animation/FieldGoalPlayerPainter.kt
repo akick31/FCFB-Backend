@@ -38,14 +38,14 @@ object FieldGoalPlayerPainter {
     private const val BUMPER_Y = -0.42f
     private const val BUMPER_WIDTH = 0.15f
     private const val BUMPER_HEIGHT = 0.06f
-    private val BUMPER_COLOR = java.awt.Color(0xDD, 0xDD, 0xDD)
+    private val BUMPER_COLOR = Color(0xDD, 0xDD, 0xDD)
     private const val EYE_Y = -0.14f
     private const val EYE_X = 0.30f
     private const val EYE_SIZE = 0.16f
-    private val EYE_COLOR = java.awt.Color(0x2A, 0x20, 0x18)
+    private val EYE_COLOR = Color(0x2A, 0x20, 0x18)
     private const val PROFILE_FRONT = 1.02f
-    private val LIGHT_SKIN = java.awt.Color(0xE0, 0xB8, 0x98)
-    private val DARK_SKIN = java.awt.Color(0x6B, 0x4A, 0x33)
+    private val LIGHT_SKIN = Color(0xE0, 0xB8, 0x98)
+    private val DARK_SKIN = Color(0x6B, 0x4A, 0x33)
     private const val STRIPE_HALF_WIDTH = 0.22f
     private const val STRIPE_BAND_HEIGHT = 0.5f
     private const val TRIPLE_CENTER_SCALE = 0.72f
@@ -264,7 +264,7 @@ object FieldGoalPlayerPainter {
         g.draw(pad)
     }
 
-    private fun skinTone(figure: FieldGoalFigure): java.awt.Color = if (figure.number % 2 == 0) DARK_SKIN else LIGHT_SKIN
+    private fun skinTone(figure: FieldGoalFigure): Color = if (figure.number % 2 == 0) DARK_SKIN else LIGHT_SKIN
 
     private fun drawProfileCage(
         g: Graphics2D,
