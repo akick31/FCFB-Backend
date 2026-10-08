@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb.animation
 
 import java.awt.BasicStroke
 import java.awt.Color
+import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
@@ -289,7 +290,7 @@ object FieldGoalPlayerPainter {
         shoulderY: Float,
     ) {
         val text = figure.number.toString()
-        val metrics = g.fontMetrics
+        val metrics = g.getFontMetrics()
         val textX = figure.x - metrics.stringWidth(text) / 2f
         val textY = shoulderY + (TORSO_HEIGHT * figure.scale + metrics.ascent * 0.8f) / 2f
         
@@ -297,7 +298,7 @@ object FieldGoalPlayerPainter {
         figure.uniform.numberTopText?.takeIf { it.isNotBlank() }?.let { topText ->
             val topFont = NumberFonts.font(figure.uniform.jerseyNumberFont, (NUMBER_SIZE * figure.scale * 0.6f).coerceAtLeast(4f))
             g.font = topFont
-            val topMetrics = g.fontMetrics
+            val topMetrics = g.getFontMetrics()
             val topTextX = figure.x - topMetrics.stringWidth(topText) / 2f
             val topTextY = shoulderY + (TORSO_HEIGHT * figure.scale * 0.15f)
             

@@ -81,7 +81,6 @@ class TeamUniformService(
             logoRotation = current?.logoRotation ?: 0.0,
             helmetNumberFont = current?.helmetNumberFont,
             jerseyNumberFont = current?.jerseyNumberFont,
-            awayPantsColor = current?.awayPantsColor,
             hasShoulderStripe = current?.hasShoulderStripe,
             shoulderStripeColor = current?.shoulderStripeColor,
             jerseyText = current?.jerseyText,
