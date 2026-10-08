@@ -38,14 +38,14 @@ object FieldGoalPlayerPainter {
     private const val BUMPER_Y = -0.42f
     private const val BUMPER_WIDTH = 0.15f
     private const val BUMPER_HEIGHT = 0.06f
-    private val BUMPER_COLOR = Color(0xDD, 0xDD, 0xDD)
+    private val BUMPER_COLOR = java.awt.Color(0xDD, 0xDD, 0xDD)
     private const val EYE_Y = -0.14f
     private const val EYE_X = 0.30f
     private const val EYE_SIZE = 0.16f
-    private val EYE_COLOR = Color(0x2A, 0x20, 0x18)
+    private val EYE_COLOR = java.awt.Color(0x2A, 0x20, 0x18)
     private const val PROFILE_FRONT = 1.02f
-    private val LIGHT_SKIN = Color(0xE0, 0xB8, 0x98)
-    private val DARK_SKIN = Color(0x6B, 0x4A, 0x33)
+    private val LIGHT_SKIN = java.awt.Color(0xE0, 0xB8, 0x98)
+    private val DARK_SKIN = java.awt.Color(0x6B, 0x4A, 0x33)
     private const val STRIPE_HALF_WIDTH = 0.22f
     private const val STRIPE_BAND_HEIGHT = 0.5f
     private const val TRIPLE_CENTER_SCALE = 0.72f
@@ -85,12 +85,12 @@ object FieldGoalPlayerPainter {
         // Draw shoulder stripes if configured
         figure.uniform.shoulderStripeColor?.let { stripeColor ->
             g.color = stripeColor
-            val stripeW = TORSO_WIDTH * scale * 0.12f
-            val stripeH = TORSO_HEIGHT * scale * 0.18f
+            val stripeW = (TORSO_WIDTH * scale * 0.12f).toInt()
+            val stripeH = (TORSO_HEIGHT * scale * 0.18f).toInt()
             // Left shoulder
-            g.fillRect(x - TORSO_WIDTH * scale / 2 + 3f * scale, shoulderY + 2f * scale, stripeW, stripeH)
+            g.fillRect(x.toInt() - (TORSO_WIDTH * scale / 2).toInt() + 3, shoulderY.toInt() + 2, stripeW, stripeH)
             // Right shoulder
-            g.fillRect(x + TORSO_WIDTH * scale / 2 - stripeW - 3f * scale, shoulderY + 2f * scale, stripeW, stripeH)
+            g.fillRect(x.toInt() + (TORSO_WIDTH * scale / 2).toInt() - stripeW - 3, shoulderY.toInt() + 2, stripeW, stripeH)
         }
 
         g.color = GoalPostScenePainter.DEFENDER_COLOR
@@ -264,7 +264,7 @@ object FieldGoalPlayerPainter {
         g.draw(pad)
     }
 
-    private fun skinTone(figure: FieldGoalFigure): Color = if (figure.number % 2 == 0) DARK_SKIN else LIGHT_SKIN
+    private fun skinTone(figure: FieldGoalFigure): java.awt.Color = if (figure.number % 2 == 0) DARK_SKIN else LIGHT_SKIN
 
     private fun drawProfileCage(
         g: Graphics2D,
@@ -290,17 +290,17 @@ object FieldGoalPlayerPainter {
         shoulderY: Float,
     ) {
         val text = figure.number.toString()
-        val metrics = g.getFontMetrics()
-        val textX = figure.x - metrics.stringWidth(text) / 2f
-        val textY = shoulderY + (TORSO_HEIGHT * figure.scale + metrics.ascent * 0.8f) / 2f
+        val metrics = g.getFontMetrics(g.font)
+        val textX = (figure.x - metrics.stringWidth(text) / 2f).toInt()
+        val textY = (shoulderY + (TORSO_HEIGHT * figure.scale + metrics.ascent * 0.8f) / 2f).toInt()
         
         // Draw top text if present
         figure.uniform.numberTopText?.takeIf { it.isNotBlank() }?.let { topText ->
             val topFont = NumberFonts.font(figure.uniform.jerseyNumberFont, (NUMBER_SIZE * figure.scale * 0.6f).coerceAtLeast(4f))
             g.font = topFont
-            val topMetrics = g.getFontMetrics()
-            val topTextX = figure.x - topMetrics.stringWidth(topText) / 2f
-            val topTextY = shoulderY + (TORSO_HEIGHT * figure.scale * 0.15f)
+            val topMetrics = g.getFontMetrics(g.font)
+            val topTextX = (figure.x - topMetrics.stringWidth(topText) / 2f).toInt()
+            val topTextY = (shoulderY + (TORSO_HEIGHT * figure.scale * 0.15f)).toInt()
             
             // Outline
             g.color = figure.uniform.numberOutline ?: Color.BLACK
