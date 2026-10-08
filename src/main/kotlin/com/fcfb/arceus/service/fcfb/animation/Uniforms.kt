@@ -4,30 +4,6 @@ import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamUniformHistory
 import java.awt.Color
 
-data class Uniform(
-    val jersey: Color,
-    val number: Color,
-    val helmet: Color,
-    val pants: Color,
-    val numberOutline: Color?,
-    val helmetNumberFont: String?,
-    val jerseyNumberFont: String?,
-    val shoulderStripe: Color?,
-    val jerseyText: String?,
-    val numberTopText: String? = null,
-) {
-    var facemask: Color = Color.WHITE
-    var stripe: Color? = null
-    var stripeType: StripeType = StripeType.SINGLE
-    var outerStripe: Color? = null
-    var helmetNumber: Color = Color.WHITE
-    var helmetLogoMode: HelmetLogoMode = HelmetLogoMode.NONE
-    var logoSize: Float = 0f
-    var logoX: Float = 0f
-    var logoY: Float = 0f
-    var logoRotation: Float = 0f
-}
-
 object Uniforms {
     fun forMatchup(
         homeTeam: Team,

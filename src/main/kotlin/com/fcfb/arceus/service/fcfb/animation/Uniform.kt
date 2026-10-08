@@ -23,4 +23,5 @@ data class Uniform(
     val hasShoulderStripe: Boolean = false,
     val shoulderStripeColor: Color? = null,
     val jerseyText: String? = null,
+    val numberTopText: String? = null,
 )
