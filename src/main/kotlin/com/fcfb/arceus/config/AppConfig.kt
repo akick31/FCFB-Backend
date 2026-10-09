@@ -18,7 +18,9 @@ open class AppConfig {
         factory.setReadTimeout(20000)
         val restTemplate = RestTemplate()
         restTemplate.requestFactory = factory
-        restTemplate.messageConverters.add(0, isoDateJsonConverter())
+        restTemplate.messageConverters.replaceAll { converter ->
+            if (converter is MappingJackson2HttpMessageConverter) isoDateJsonConverter() else converter
+        }
         return restTemplate
     }
 
