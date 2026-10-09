@@ -134,6 +134,8 @@ private fun PlaybookStats.toPostseason(): PostseasonPlaybookStats {
         rushTouchdowns = rushTouchdowns,
         longestRun = longestRun,
         totalYards = totalYards,
+        offensivePlayYards = offensivePlayYards,
+        offensivePlayCount = offensivePlayCount,
         averageYardsPerPlay = averageYardsPerPlay,
         firstDowns = firstDowns,
         sacksAllowed = sacksAllowed,

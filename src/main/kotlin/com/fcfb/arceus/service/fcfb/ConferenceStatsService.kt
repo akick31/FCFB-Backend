@@ -5,6 +5,7 @@ import com.fcfb.arceus.model.ConferenceStats
 import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.ConferenceStatsRepository
 import com.fcfb.arceus.repositories.SeasonStatsRepository
+import com.fcfb.arceus.service.fcfb.gamestats.StatsAverageCalculator
 import com.fcfb.arceus.service.specification.ConferenceStatsSpecificationService
 import com.fcfb.arceus.util.Logger
 import org.springframework.data.domain.Page
@@ -112,6 +113,15 @@ class ConferenceStatsService(
         val totalTeams = seasonStatsList.size
         val totalGames = seasonStatsList.sumOf { it.wins + it.losses }
 
+        val offensivePlayYards = seasonStatsList.sumOf { it.offensivePlayYards }
+        val offensivePlayCount = seasonStatsList.sumOf { it.offensivePlayCount }
+        val puntYards = seasonStatsList.sumOf { it.puntYards }
+        val puntCount = seasonStatsList.sumOf { it.puntCount }
+        val opponentOffensivePlayYards = seasonStatsList.sumOf { it.opponentOffensivePlayYards }
+        val opponentOffensivePlayCount = seasonStatsList.sumOf { it.opponentOffensivePlayCount }
+        val opponentPuntYards = seasonStatsList.sumOf { it.opponentPuntYards }
+        val opponentPuntCount = seasonStatsList.sumOf { it.opponentPuntCount }
+
         return ConferenceStats(
             subdivision = subdivision,
             conference = conference,
@@ -145,7 +155,13 @@ class ConferenceStatsService(
             longestRun = seasonStatsList.maxOfOrNull { it.longestRun } ?: 0,
             rushTouchdowns = seasonStatsList.sumOf { it.rushTouchdowns },
             totalYards = seasonStatsList.sumOf { it.totalYards },
-            averageYardsPerPlay = calculateAverage(seasonStatsList.mapNotNull { it.averageYardsPerPlay }),
+            offensivePlayYards = offensivePlayYards,
+            offensivePlayCount = offensivePlayCount,
+            averageYardsPerPlay =
+                StatsAverageCalculator.average(
+                    offensivePlayYards,
+                    offensivePlayCount,
+                ),
             firstDowns = seasonStatsList.sumOf { it.firstDowns },
             sacksAllowed = seasonStatsList.sumOf { it.sacksAllowed },
             sacksForced = seasonStatsList.sumOf { it.sacksForced },
@@ -174,7 +190,13 @@ class ConferenceStatsService(
             fieldGoalTouchdown = seasonStatsList.sumOf { it.fieldGoalTouchdown },
             puntsAttempted = seasonStatsList.sumOf { it.puntsAttempted },
             longestPunt = seasonStatsList.maxOfOrNull { it.longestPunt } ?: 0,
-            averagePuntLength = calculateAverage(seasonStatsList.mapNotNull { it.averagePuntLength }),
+            puntYards = puntYards,
+            puntCount = puntCount,
+            averagePuntLength =
+                StatsAverageCalculator.average(
+                    puntYards,
+                    puntCount,
+                ),
             blockedOpponentPunt = seasonStatsList.sumOf { it.blockedOpponentPunt },
             puntReturnTd = seasonStatsList.sumOf { it.puntReturnTd },
             puntReturnTdPercentage =
@@ -269,7 +291,13 @@ class ConferenceStatsService(
             opponentLongestRun = seasonStatsList.maxOfOrNull { it.opponentLongestRun } ?: 0,
             opponentRushTouchdowns = seasonStatsList.sumOf { it.opponentRushTouchdowns },
             opponentTotalYards = seasonStatsList.sumOf { it.opponentTotalYards },
-            opponentAverageYardsPerPlay = calculateAverage(seasonStatsList.mapNotNull { it.opponentAverageYardsPerPlay }),
+            opponentOffensivePlayYards = opponentOffensivePlayYards,
+            opponentOffensivePlayCount = opponentOffensivePlayCount,
+            opponentAverageYardsPerPlay =
+                StatsAverageCalculator.average(
+                    opponentOffensivePlayYards,
+                    opponentOffensivePlayCount,
+                ),
             opponentFirstDowns = seasonStatsList.sumOf { it.opponentFirstDowns },
             opponentFieldGoalMade = seasonStatsList.sumOf { it.opponentFieldGoalMade },
             opponentFieldGoalAttempts = seasonStatsList.sumOf { it.opponentFieldGoalAttempts },
@@ -282,7 +310,13 @@ class ConferenceStatsService(
             opponentFieldGoalTouchdown = seasonStatsList.sumOf { it.opponentFieldGoalTouchdown },
             opponentPuntsAttempted = seasonStatsList.sumOf { it.opponentPuntsAttempted },
             opponentLongestPunt = seasonStatsList.maxOfOrNull { it.opponentLongestPunt } ?: 0,
-            opponentAveragePuntLength = calculateAverage(seasonStatsList.mapNotNull { it.opponentAveragePuntLength }),
+            opponentPuntYards = opponentPuntYards,
+            opponentPuntCount = opponentPuntCount,
+            opponentAveragePuntLength =
+                StatsAverageCalculator.average(
+                    opponentPuntYards,
+                    opponentPuntCount,
+                ),
             opponentPuntReturnTd = seasonStatsList.sumOf { it.opponentPuntReturnTd },
             opponentPuntReturnTdPercentage =
                 calculatePercentage(

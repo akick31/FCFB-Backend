@@ -6,6 +6,7 @@ import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.SeasonStatsRepository
 import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.service.fcfb.gamestats.StatsAverageCalculator
 import com.fcfb.arceus.service.specification.SeasonStatsSpecificationService
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.POSTSEASON_START_WEEK
@@ -201,7 +202,6 @@ class SeasonStatsService(
             longestRun = gameStatsList.maxOfOrNull { it.longestRun } ?: 0,
             rushTouchdowns = gameStatsList.sumOf { it.rushTouchdowns },
             totalYards = gameStatsList.sumOf { it.totalYards },
-            averageYardsPerPlay = calculateAverage(gameStatsList.mapNotNull { it.averageYardsPerPlay }),
             firstDowns = gameStatsList.sumOf { it.firstDowns },
             sacksAllowed = gameStatsList.sumOf { it.sacksAllowed },
             sacksForced = gameStatsList.sumOf { it.sacksForced },
@@ -230,7 +230,6 @@ class SeasonStatsService(
             fieldGoalTouchdown = gameStatsList.sumOf { it.fieldGoalTouchdown },
             puntsAttempted = gameStatsList.sumOf { it.puntsAttempted },
             longestPunt = gameStatsList.maxOfOrNull { it.longestPunt } ?: 0,
-            averagePuntLength = calculateAverage(gameStatsList.mapNotNull { it.averagePuntLength }),
             blockedOpponentPunt = gameStatsList.sumOf { it.blockedOpponentPunt },
             puntReturnTd = gameStatsList.sumOf { it.puntReturnTd },
             puntReturnTdPercentage =
@@ -361,12 +360,6 @@ class SeasonStatsService(
                 gameStatsList.sumOf {
                     getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.totalYards ?: 0
                 },
-            opponentAverageYardsPerPlay =
-                calculateAverage(
-                    gameStatsList.mapNotNull {
-                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.averageYardsPerPlay
-                    },
-                ),
             opponentFirstDowns =
                 gameStatsList.sumOf {
                     getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.firstDowns ?: 0
@@ -400,12 +393,6 @@ class SeasonStatsService(
                 gameStatsList.mapNotNull {
                     getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.longestPunt
                 }.maxOrNull() ?: 0,
-            opponentAveragePuntLength =
-                calculateAverage(
-                    gameStatsList.mapNotNull {
-                        getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.averagePuntLength
-                    },
-                ),
             opponentPuntReturnTd =
                 gameStatsList.sumOf {
                     getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team)?.puntReturnTd ?: 0
@@ -521,7 +508,10 @@ class SeasonStatsService(
             lastModifiedTs =
                 ZonedDateTime.now(ZoneId.of("America/New_York"))
                     .format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss")),
-        )
+        ).also { stats ->
+            updateOffensiveAverages(stats, gameStatsList)
+            updateOpponentAverages(stats, gameStatsList.mapNotNull { getOpponentGameStatsByGameId(it.gameId, gameStatsByGameId, team) })
+        }
     }
 
     private fun calculateAverage(values: List<Double>): Double? {
@@ -530,6 +520,31 @@ class SeasonStatsService(
         } else {
             null
         }
+    }
+
+    private fun updateOffensiveAverages(
+        stats: SeasonStats,
+        games: List<GameStats>,
+    ) {
+        stats.offensivePlayYards = games.sumOf { it.offensivePlayYards }
+        stats.offensivePlayCount = games.sumOf { it.offensivePlayCount }
+        stats.averageYardsPerPlay = StatsAverageCalculator.average(stats.offensivePlayYards, stats.offensivePlayCount)
+        stats.puntYards = games.sumOf { it.puntYards }
+        stats.puntCount = games.sumOf { it.puntCount }
+        stats.averagePuntLength = StatsAverageCalculator.average(stats.puntYards, stats.puntCount)
+    }
+
+    private fun updateOpponentAverages(
+        stats: SeasonStats,
+        opponents: List<GameStats>,
+    ) {
+        stats.opponentOffensivePlayYards = opponents.sumOf { it.offensivePlayYards }
+        stats.opponentOffensivePlayCount = opponents.sumOf { it.offensivePlayCount }
+        stats.opponentAverageYardsPerPlay =
+            StatsAverageCalculator.average(stats.opponentOffensivePlayYards, stats.opponentOffensivePlayCount)
+        stats.opponentPuntYards = opponents.sumOf { it.puntYards }
+        stats.opponentPuntCount = opponents.sumOf { it.puntCount }
+        stats.opponentAveragePuntLength = StatsAverageCalculator.average(stats.opponentPuntYards, stats.opponentPuntCount)
     }
 
     private fun getOpponentGameStatsByGameId(

@@ -250,20 +250,19 @@ object GameStatsCalculator {
             } ?: 0
     }
 
-    fun calculateAveragePuntLength(allPlays: List<Play>): Double {
-        val average =
-            allPlays
-                .filter { play ->
-                    play.playCall == PlayCall.PUNT &&
-                        play.result?.description?.contains(" YARD PUNT") ?: false
-                }
-                .map { play ->
-                    play.result?.description?.substringBefore(" YARD PUNT")?.toInt() ?: 0
-                }
-                .average()
+    fun calculatePuntYards(allPlays: List<Play>): Int = puntLengths(allPlays).sum()
 
-        return if (average.isNaN()) 0.0 else average
-    }
+    fun calculatePuntCount(allPlays: List<Play>): Int = puntLengths(allPlays).size
+
+    fun calculateAveragePuntLength(allPlays: List<Play>): Double =
+        StatsAverageCalculator.average(calculatePuntYards(allPlays), calculatePuntCount(allPlays))
+
+    private fun puntLengths(allPlays: List<Play>): List<Int> =
+        allPlays.filter { it.playCall == PlayCall.PUNT }
+            .mapNotNull { play ->
+                play.result?.description?.takeIf { it.contains(" YARD PUNT") }
+                    ?.substringBefore(" YARD PUNT")?.toInt()
+            }
 
     fun calculateBlockedOpponentPunt(allPlays: List<Play>): Int {
         return allPlays.count { play ->
@@ -420,15 +419,14 @@ object GameStatsCalculator {
         return if (differences.isEmpty()) null else differences.average()
     }
 
-    fun calculateAverageYardsPerPlay(allPlays: List<Play>): Double {
-        val average =
-            allPlays
-                .filter { play -> play.playCall == PlayCall.RUN || play.playCall == PlayCall.PASS }
-                .map { it.yards }
-                .average()
+    fun calculateOffensivePlayYards(allPlays: List<Play>): Int =
+        allPlays.filter { it.playCall == PlayCall.RUN || it.playCall == PlayCall.PASS }.sumOf { it.yards }
 
-        return if (average.isNaN()) 0.0 else average
-    }
+    fun calculateOffensivePlayCount(allPlays: List<Play>): Int =
+        allPlays.count { it.playCall == PlayCall.RUN || it.playCall == PlayCall.PASS }
+
+    fun calculateAverageYardsPerPlay(allPlays: List<Play>): Double =
+        StatsAverageCalculator.average(calculateOffensivePlayYards(allPlays), calculateOffensivePlayCount(allPlays))
 
     fun calculateFirstDowns(allPlays: List<Play>): Int {
         return allPlays.count { play -> play.actualResult == ActualResult.FIRST_DOWN }

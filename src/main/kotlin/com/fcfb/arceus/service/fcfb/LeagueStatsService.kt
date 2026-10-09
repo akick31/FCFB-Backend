@@ -5,6 +5,7 @@ import com.fcfb.arceus.model.LeagueStats
 import com.fcfb.arceus.model.SeasonStats
 import com.fcfb.arceus.repositories.LeagueStatsRepository
 import com.fcfb.arceus.repositories.SeasonStatsRepository
+import com.fcfb.arceus.service.fcfb.gamestats.StatsAverageCalculator
 import com.fcfb.arceus.service.specification.LeagueStatsSpecificationService
 import com.fcfb.arceus.util.Logger
 import org.springframework.data.domain.Page
@@ -94,6 +95,9 @@ class LeagueStatsService(
         val totalTeams = seasonStatsList.size
         val totalGames = seasonStatsList.sumOf { it.wins + it.losses }
 
+        val offensivePlayYards = seasonStatsList.sumOf { it.offensivePlayYards }
+        val offensivePlayCount = seasonStatsList.sumOf { it.offensivePlayCount }
+
         return LeagueStats(
             subdivision = subdivision,
             seasonNumber = seasonNumber,
@@ -127,7 +131,13 @@ class LeagueStatsService(
             rushTouchdowns = seasonStatsList.sumOf { it.rushTouchdowns },
             longestRun = seasonStatsList.maxOfOrNull { it.longestRun } ?: 0,
             totalYards = seasonStatsList.sumOf { it.totalYards },
-            averageYardsPerPlay = calculateAverage(seasonStatsList.mapNotNull { it.averageYardsPerPlay }) ?: 0.0,
+            offensivePlayYards = offensivePlayYards,
+            offensivePlayCount = offensivePlayCount,
+            averageYardsPerPlay =
+                StatsAverageCalculator.average(
+                    offensivePlayYards,
+                    offensivePlayCount,
+                ),
             firstDowns = seasonStatsList.sumOf { it.firstDowns },
             sacksAllowed = seasonStatsList.sumOf { it.sacksAllowed },
             sacksForced = seasonStatsList.sumOf { it.sacksForced },
