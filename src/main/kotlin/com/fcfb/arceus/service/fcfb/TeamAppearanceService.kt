@@ -118,6 +118,9 @@ class TeamAppearanceService(
         uniform.altSecondaryStripeColor = request.altSecondaryStripeColor
         request.pantsColor?.let { uniform.pantsColor = it }
         uniform.awayPantsColor = request.awayPantsColor
+        uniform.jerseyText = request.jerseyText
+        uniform.numberTopText = request.numberTopText
+        uniform.awayNumberTopText = request.awayNumberTopText
         request.logoSize?.let { uniform.logoSize = it }
         request.logoX?.let { uniform.logoX = it }
         request.logoY?.let { uniform.logoY = it }

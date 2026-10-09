@@ -2,7 +2,6 @@ package com.fcfb.arceus.service.fcfb.animation
 
 import java.awt.BasicStroke
 import java.awt.Color
-import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
@@ -24,7 +23,6 @@ object FieldGoalPlayerPainter {
     private const val SHOULDER_DROP = 6f
     private const val LIMB_WIDTH = 7f
     private const val OUTLINE_WIDTH = 1.5f
-    private const val NUMBER_SIZE = 18f
     private const val MASK_BAR_WIDTH = 1.2f
     private const val FACE_HALF_WIDTH = 0.78f
     private const val FACE_TOP = -0.40f
@@ -82,21 +80,10 @@ object FieldGoalPlayerPainter {
         g.color = figure.uniform.jersey
         g.fill(torso)
 
-        // Draw shoulder stripes if configured
-        figure.uniform.shoulderStripeColor?.let { stripeColor ->
-            g.color = stripeColor
-            val stripeW = (TORSO_WIDTH * scale * 0.12f).toInt()
-            val stripeH = (TORSO_HEIGHT * scale * 0.18f).toInt()
-            // Left shoulder
-            g.fillRect(x.toInt() - (TORSO_WIDTH * scale / 2).toInt() + 3, shoulderY.toInt() + 2, stripeW, stripeH)
-            // Right shoulder
-            g.fillRect(x.toInt() + (TORSO_WIDTH * scale / 2).toInt() - stripeW - 3, shoulderY.toInt() + 2, stripeW, stripeH)
-        }
-
         g.color = GoalPostScenePainter.DEFENDER_COLOR
         g.stroke = BasicStroke(OUTLINE_WIDTH)
         g.draw(torso)
-        drawNumber(g, figure, shoulderY)
+        JerseyPainter.drawNumber(g, figure, shoulderY)
 
         val helmetRadius = HELMET_RADIUS * scale
         val helmetCenterY = shoulderY - helmetRadius + 3 * scale
@@ -282,52 +269,6 @@ object FieldGoalPlayerPainter {
         g.draw(Line2D.Float(x + radius * 0.2f, bottom, front, bottom - radius * 0.12f))
         g.draw(Line2D.Float(front, top + radius * 0.12f, front, bottom - radius * 0.12f))
         g.draw(Line2D.Float(x + radius * 0.2f, (top + bottom) / 2f, front, (top + bottom) / 2f))
-    }
-
-    private fun drawNumber(
-        g: Graphics2D,
-        figure: FieldGoalFigure,
-        shoulderY: Float,
-    ) {
-        val text = figure.number.toString()
-        val metrics = g.getFontMetrics(g.font)
-        val textX = (figure.x - metrics.stringWidth(text) / 2f).toInt()
-        val textY = (shoulderY + (TORSO_HEIGHT * figure.scale + metrics.ascent * 0.8f) / 2f).toInt()
-        
-        // Draw top text if present
-        figure.uniform.numberTopText?.takeIf { it.isNotBlank() }?.let { topText ->
-            val topFont = NumberFonts.font(figure.uniform.jerseyNumberFont, (NUMBER_SIZE * figure.scale * 0.6f).coerceAtLeast(4f))
-            g.font = topFont
-            val topMetrics = g.getFontMetrics(g.font)
-            val topTextX = (figure.x - topMetrics.stringWidth(topText) / 2f).toInt()
-            val topTextY = (shoulderY + (TORSO_HEIGHT * figure.scale * 0.15f)).toInt()
-            
-            // Outline
-            g.color = figure.uniform.numberOutline ?: Color.BLACK
-            for (dx in -1..1) {
-                for (dy in -1..1) {
-                    if (dx == 0 && dy == 0) continue
-                    g.drawString(topText, topTextX + dx, topTextY + dy)
-                }
-            }
-            // Fill
-            g.color = figure.uniform.number
-            g.drawString(topText, topTextX, topTextY)
-        }
-
-        // Outline number
-        figure.uniform.numberOutline?.let { outline ->
-            g.color = outline
-            for (dx in -1..1) {
-                for (dy in -1..1) {
-                    if (dx == 0 && dy == 0) continue
-                    g.drawString(text, textX + dx, textY + dy)
-                }
-            }
-        }
-        // Fill number
-        g.color = figure.uniform.number
-        g.drawString(text, textX, textY)
     }
 
     private fun drawLegs(

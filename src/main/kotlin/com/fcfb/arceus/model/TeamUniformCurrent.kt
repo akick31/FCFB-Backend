@@ -184,20 +184,16 @@ class TeamUniformCurrent {
     var awayPantsColor: String? = null
 
     @Basic
-    @Column(name = "has_shoulder_stripe", columnDefinition = "tinyint(1)")
-    var hasShoulderStripe: Boolean? = null
-
-    @Basic
-    @Column(name = "shoulder_stripe_color")
-    var shoulderStripeColor: String? = null
-
-    @Basic
     @Column(name = "jersey_text")
     var jerseyText: String? = null
 
     @Basic
     @Column(name = "number_top_text")
     var numberTopText: String? = null
+
+    @Basic
+    @Column(name = "away_number_top_text")
+    var awayNumberTopText: String? = null
 
     companion object {
         const val DEFAULT_FACEMASK_COLOR = "#FFFFFF"

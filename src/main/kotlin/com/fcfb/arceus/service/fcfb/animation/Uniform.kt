@@ -20,8 +20,5 @@ data class Uniform(
     val logoX: Float = 0f,
     val logoY: Float = 0f,
     val logoRotation: Float = 0f,
-    val hasShoulderStripe: Boolean = false,
-    val shoulderStripeColor: Color? = null,
-    val jerseyText: String? = null,
     val numberTopText: String? = null,
 )

@@ -81,10 +81,9 @@ class TeamUniformService(
             logoRotation = current?.logoRotation ?: 0.0,
             helmetNumberFont = current?.helmetNumberFont,
             jerseyNumberFont = current?.jerseyNumberFont,
-            hasShoulderStripe = current?.hasShoulderStripe,
-            shoulderStripeColor = current?.shoulderStripeColor,
             jerseyText = current?.jerseyText,
             numberTopText = current?.numberTopText,
+            awayNumberTopText = current?.awayNumberTopText,
         ).apply {
             altFacemaskColor = current?.altFacemaskColor
             altHelmetNumberColor = current?.altHelmetNumberColor

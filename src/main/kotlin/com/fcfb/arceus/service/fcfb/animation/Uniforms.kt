@@ -22,9 +22,7 @@ object Uniforms {
                 numberOutline = numberOutline(homeSnapshot),
                 helmetNumberFont = homeSnapshot?.helmetNumberFont,
                 jerseyNumberFont = homeSnapshot?.jerseyNumberFont,
-                shoulderStripeColor = shoulderStripe(homeSnapshot),
-                jerseyText = homeSnapshot?.jerseyText,
-                numberTopText = numberTopText(homeSnapshot),
+                numberTopText = homeSnapshot?.numberTopText,
             ).withHelmet(homeTeam, homeSnapshot, alt = false)
         val away =
             Uniform(
@@ -35,9 +33,7 @@ object Uniforms {
                 numberOutline = awayNumberOutline(awaySnapshot),
                 helmetNumberFont = awaySnapshot?.helmetNumberFont,
                 jerseyNumberFont = awaySnapshot?.jerseyNumberFont,
-                shoulderStripeColor = shoulderStripe(awaySnapshot),
-                jerseyText = awaySnapshot?.jerseyText,
-                numberTopText = numberTopText(awaySnapshot),
+                numberTopText = awaySnapshot?.awayNumberTopText ?: awaySnapshot?.numberTopText,
             ).withHelmet(awayTeam, awaySnapshot, alt = awayAlt)
         return home to away
     }
@@ -55,6 +51,7 @@ object Uniforms {
             number = awayNumber(team, snapshot),
             numberOutline = awayNumberOutline(snapshot),
             pants = awayPants(team, snapshot),
+            numberTopText = snapshot?.awayNumberTopText ?: snapshot?.numberTopText,
         )
 
     /** The secondary helmet rendered on its own, for the appearance editor preview. */
@@ -71,9 +68,7 @@ object Uniforms {
             numberOutline = numberOutline(snapshot),
             helmetNumberFont = snapshot?.helmetNumberFont,
             jerseyNumberFont = snapshot?.jerseyNumberFont,
-            shoulderStripeColor = shoulderStripe(snapshot),
-            jerseyText = snapshot?.jerseyText,
-            numberTopText = numberTopText(snapshot),
+            numberTopText = snapshot?.numberTopText,
         ).withHelmet(team, snapshot, alt = true)
     }
 
@@ -152,11 +147,4 @@ object Uniforms {
         if (!HelmetFields.hasStripe(snapshot, alt)) return null
         return FieldBackgroundPainter.parseColor(HelmetFields.secondaryStripeColor(snapshot, alt) ?: team.secondaryColor)
     }
-
-    private fun shoulderStripe(snapshot: TeamUniformHistory?): Color? {
-        if (snapshot?.hasShoulderStripe != true) return null
-        return FieldBackgroundPainter.parseColor(snapshot.shoulderStripeColor)
-    }
-
-    private fun numberTopText(snapshot: TeamUniformHistory?): String? = snapshot?.numberTopText
 }

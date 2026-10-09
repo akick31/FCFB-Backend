@@ -157,9 +157,8 @@ class AppearancePreviewService(
         theme: FieldTheme,
         away: Boolean,
     ): BufferedImage {
-        val (homeUniform, awayUniform) = theme.uniforms()
-        val home = if (away) awayUniform else homeUniform
-        val logoUrl = if (away) theme.awayLogoUrl() else theme.homeLogoUrl()
+        val home = if (away) Uniforms.awayJerseyPreview(theme.homeTeam, theme.homeUniform) else theme.uniforms().first
+        val logoUrl = if (away) altDecalUrl(theme) else theme.homeLogoUrl()
         val logo = if (home.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(logoUrl, theme.homeTeam.scorebugLogo) else null
         val helmet = HelmetSprite.render(home, logo, COMBINED_HELMET_SIZE).facingRight
         val canvas = BufferedImage(COMBINED_WIDTH, COMBINED_HEIGHT, BufferedImage.TYPE_INT_ARGB)
@@ -301,6 +300,9 @@ class AppearancePreviewService(
             altSecondaryStripeColor = draft?.altSecondaryStripeColor
             pantsColor = draft?.pantsColor ?: stored.pantsColor
             awayPantsColor = draft?.awayPantsColor ?: stored.awayPantsColor
+            jerseyText = if (draft != null) draft.jerseyText else stored.jerseyText
+            numberTopText = if (draft != null) draft.numberTopText else stored.numberTopText
+            awayNumberTopText = if (draft != null) draft.awayNumberTopText else stored.awayNumberTopText
             logoUrl = draft?.logoUrl ?: stored.logoUrl
             hasLogo = draft?.hasLogo ?: stored.hasLogo
             hasStripe = draft?.hasStripe ?: stored.hasStripe
