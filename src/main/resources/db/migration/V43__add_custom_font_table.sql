@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS custom_font (
+    name VARCHAR(64) NOT NULL PRIMARY KEY,
+    label VARCHAR(100) NOT NULL,
+    family VARCHAR(160) NOT NULL,
+    url VARCHAR(512) NOT NULL,
+    uploaded_by BIGINT DEFAULT NULL,
+    created_at DATETIME DEFAULT NULL
+);
