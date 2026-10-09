@@ -86,11 +86,12 @@ class WinProbabilityChartRenderer(
                 chartWidth
             }
 
-        g.color = Color(40, 40, 40)
+        val plotBackground = Color(40, 40, 40)
+        g.color = plotBackground
         g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
-        val homeColor = parseColor(homeTeam.primaryColor ?: "#FF0000")
-        val awayColor = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        val homeColor = selectTeamColor(homeTeam, plotBackground)
+        val awayColor = selectTeamColor(awayTeam, plotBackground)
 
         drawQuarterDivisions(g, plays, padding, chartWidth, chartHeight)
 
@@ -99,11 +100,16 @@ class WinProbabilityChartRenderer(
         val winProbabilitiesResponse = winProbabilityService.getWinProbabilitiesForGame(plays[0].gameId, plays)
         val winProbabilities = winProbabilitiesResponse.plays
 
-        drawWinProbabilityAxes(g, padding, chartWidth, chartHeight, homeTeam, awayTeam, winProbabilities, game)
+        drawWinProbabilityAxes(g, padding, chartWidth, chartHeight, homeTeam, awayTeam, homeColor, awayColor, winProbabilities, game)
 
         g.dispose()
         return image
     }
+
+    private fun selectTeamColor(
+        team: Team,
+        background: Color,
+    ): Color = ChartColor.select(team.primaryColor?.let { parseColor(it) }, team.secondaryColor?.let { parseColor(it) }, background)
 
     private fun drawWinProbabilityLine(
         g: Graphics2D,
@@ -302,6 +308,8 @@ class WinProbabilityChartRenderer(
         chartHeight: Int,
         homeTeam: Team,
         awayTeam: Team,
+        homeColor: Color,
+        awayColor: Color,
         winProbabilities: List<PlayWinProbabilityResponse>,
         game: Game,
     ) {
@@ -315,12 +323,12 @@ class WinProbabilityChartRenderer(
 
         g.font = Font("Arial", Font.BOLD, 15)
 
-        g.color = parseColor(homeTeam.primaryColor ?: "#FF0000")
+        g.color = homeColor
         g.fillRect(padding + 20, padding + 20, 12, 12)
         g.color = Color.WHITE
         g.drawString(homeTeamAbbr, padding + 40, padding + 32)
 
-        g.color = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        g.color = awayColor
         g.fillRect(padding + 20, padding + chartHeight - 25, 12, 12)
         g.color = Color.WHITE
         g.drawString(awayTeamAbbr, padding + 40, padding + chartHeight - 13)
