@@ -51,6 +51,8 @@ build/
 
 ### Claude Code ###
 .claude/
+.agents/
+.aider.tags.cache*/
 
 ### Animation previews ###
 /animation-previews/
