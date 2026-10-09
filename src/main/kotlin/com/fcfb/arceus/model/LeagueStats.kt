@@ -80,6 +80,12 @@ class LeagueStats(
     @Column(name = "total_yards")
     var totalYards: Int = 0,
     @Basic
+    @Column(name = "offensive_play_yards")
+    var offensivePlayYards: Int = 0,
+    @Basic
+    @Column(name = "offensive_play_count")
+    var offensivePlayCount: Int = 0,
+    @Basic
     @Column(name = "average_yards_per_play")
     var averageYardsPerPlay: Double = 0.0,
     @Basic
