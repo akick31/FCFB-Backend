@@ -155,6 +155,12 @@ class GameStats(
     @Column(name = "longest_punt")
     var longestPunt: Int = 0,
     @Basic
+    @Column(name = "punt_yards")
+    var puntYards: Int = 0,
+    @Basic
+    @Column(name = "punt_count")
+    var puntCount: Int = 0,
+    @Basic
     @Column(name = "average_punt_length")
     var averagePuntLength: Double = 0.0,
     @Basic
@@ -229,6 +235,12 @@ class GameStats(
     @Basic
     @Column(name = "average_defensive_special_teams_diff")
     var averageDefensiveSpecialTeamsDiff: Double? = null,
+    @Basic
+    @Column(name = "offensive_play_yards")
+    var offensivePlayYards: Int = 0,
+    @Basic
+    @Column(name = "offensive_play_count")
+    var offensivePlayCount: Int = 0,
     @Basic
     @Column(name = "average_yards_per_play")
     var averageYardsPerPlay: Double = 0.0,

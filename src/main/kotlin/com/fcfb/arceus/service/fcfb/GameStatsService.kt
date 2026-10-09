@@ -13,6 +13,7 @@ import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.fcfb.elo.EloCalculator
 import com.fcfb.arceus.service.fcfb.elo.EloService
 import com.fcfb.arceus.service.fcfb.gamestats.GameStatsCalculator
+import com.fcfb.arceus.service.fcfb.gamestats.StatsAverageCalculator
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameStatsNotFoundException
 import com.fcfb.arceus.util.InvalidGameStatsRequestException
@@ -360,7 +361,9 @@ class GameStatsService(
         stats.fieldGoalTouchdown = GameStatsCalculator.calculateFieldGoalTouchdown(allOffensivePlays)
         stats.puntsAttempted = GameStatsCalculator.calculatePuntsAttempted(allOffensivePlays)
         stats.longestPunt = GameStatsCalculator.calculateLongestPunt(allOffensivePlays)
-        stats.averagePuntLength = GameStatsCalculator.calculateAveragePuntLength(allOffensivePlays)
+        stats.puntYards = GameStatsCalculator.calculatePuntYards(allOffensivePlays)
+        stats.puntCount = GameStatsCalculator.calculatePuntCount(allOffensivePlays)
+        stats.averagePuntLength = StatsAverageCalculator.average(stats.puntYards, stats.puntCount)
         stats.blockedOpponentPunt = GameStatsCalculator.calculateBlockedOpponentPunt(allOffensivePlays)
         stats.puntReturnTd = GameStatsCalculator.calculatePuntReturnTd(allOffensivePlays)
         stats.puntReturnTdPercentage =
@@ -388,7 +391,9 @@ class GameStatsService(
         stats.averageDefensiveDiff = GameStatsCalculator.calculateAverageNormalPlayDiff(allDefensivePlays)
         stats.averageOffensiveSpecialTeamsDiff = GameStatsCalculator.calculateAverageSpecialTeamsDiff(allOffensivePlays)
         stats.averageDefensiveSpecialTeamsDiff = GameStatsCalculator.calculateAverageSpecialTeamsDiff(allDefensivePlays)
-        stats.averageYardsPerPlay = GameStatsCalculator.calculateAverageYardsPerPlay(allOffensivePlays)
+        stats.offensivePlayYards = GameStatsCalculator.calculateOffensivePlayYards(allOffensivePlays)
+        stats.offensivePlayCount = GameStatsCalculator.calculateOffensivePlayCount(allOffensivePlays)
+        stats.averageYardsPerPlay = StatsAverageCalculator.average(stats.offensivePlayYards, stats.offensivePlayCount)
         stats.firstDowns = GameStatsCalculator.calculateFirstDowns(allOffensivePlays)
         stats.thirdDownConversionSuccess = GameStatsCalculator.calculateThirdDownConversionSuccess(allOffensivePlays)
         stats.thirdDownConversionAttempts = GameStatsCalculator.calculateThirdDownConversionAttempts(allOffensivePlays)

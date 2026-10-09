@@ -6,6 +6,7 @@ import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.PlaybookStats
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlaybookStatsRepository
+import com.fcfb.arceus.service.fcfb.gamestats.StatsAverageCalculator
 import com.fcfb.arceus.service.specification.PlaybookStatsSpecificationService
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.POSTSEASON_START_WEEK
@@ -119,6 +120,9 @@ class PlaybookStatsService(
         val totalTeams = gameStatsList.map { it.team }.distinct().size
         val totalGames = gameStatsList.size
 
+        val offensivePlayYards = gameStatsList.sumOf { it.offensivePlayYards }
+        val offensivePlayCount = gameStatsList.sumOf { it.offensivePlayCount }
+
         return PlaybookStats(
             offensivePlaybook = offensivePlaybook,
             defensivePlaybook = defensivePlaybook,
@@ -153,7 +157,13 @@ class PlaybookStatsService(
             rushTouchdowns = gameStatsList.sumOf { it.rushTouchdowns },
             longestRun = gameStatsList.maxOfOrNull { it.longestRun } ?: 0,
             totalYards = gameStatsList.sumOf { it.totalYards },
-            averageYardsPerPlay = calculateAverage(gameStatsList.mapNotNull { it.averageYardsPerPlay }) ?: 0.0,
+            offensivePlayYards = offensivePlayYards,
+            offensivePlayCount = offensivePlayCount,
+            averageYardsPerPlay =
+                StatsAverageCalculator.average(
+                    offensivePlayYards,
+                    offensivePlayCount,
+                ),
             firstDowns = gameStatsList.sumOf { it.firstDowns },
             sacksAllowed = gameStatsList.sumOf { it.sacksAllowed },
             sacksForced = gameStatsList.sumOf { it.sacksForced },

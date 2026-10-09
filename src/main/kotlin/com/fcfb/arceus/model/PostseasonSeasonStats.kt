@@ -91,6 +91,12 @@ class PostseasonSeasonStats(
     @Column(name = "total_yards")
     var totalYards: Int = 0,
     @Basic
+    @Column(name = "offensive_play_yards")
+    var offensivePlayYards: Int = 0,
+    @Basic
+    @Column(name = "offensive_play_count")
+    var offensivePlayCount: Int = 0,
+    @Basic
     @Column(name = "average_yards_per_play")
     var averageYardsPerPlay: Double? = null,
     @Basic
@@ -165,6 +171,12 @@ class PostseasonSeasonStats(
     @Basic
     @Column(name = "longest_punt")
     var longestPunt: Int = 0,
+    @Basic
+    @Column(name = "punt_yards")
+    var puntYards: Int = 0,
+    @Basic
+    @Column(name = "punt_count")
+    var puntCount: Int = 0,
     @Basic
     @Column(name = "average_punt_length")
     var averagePuntLength: Double? = null,
@@ -319,6 +331,12 @@ class PostseasonSeasonStats(
     @Column(name = "opponent_total_yards")
     var opponentTotalYards: Int = 0,
     @Basic
+    @Column(name = "opponent_offensive_play_yards")
+    var opponentOffensivePlayYards: Int = 0,
+    @Basic
+    @Column(name = "opponent_offensive_play_count")
+    var opponentOffensivePlayCount: Int = 0,
+    @Basic
     @Column(name = "opponent_average_yards_per_play", columnDefinition = "decimal(5,2)")
     var opponentAverageYardsPerPlay: Double? = null,
     @Basic
@@ -345,6 +363,12 @@ class PostseasonSeasonStats(
     @Basic
     @Column(name = "opponent_longest_punt")
     var opponentLongestPunt: Int = 0,
+    @Basic
+    @Column(name = "opponent_punt_yards")
+    var opponentPuntYards: Int = 0,
+    @Basic
+    @Column(name = "opponent_punt_count")
+    var opponentPuntCount: Int = 0,
     @Basic
     @Column(name = "opponent_average_punt_length", columnDefinition = "decimal(5,2)")
     var opponentAveragePuntLength: Double? = null,
