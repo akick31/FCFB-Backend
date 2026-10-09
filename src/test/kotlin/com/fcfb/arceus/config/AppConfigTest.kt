@@ -2,8 +2,13 @@ package com.fcfb.arceus.config
 
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.http.MediaType
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+import org.springframework.test.web.client.MockRestServiceServer
+import org.springframework.test.web.client.match.MockRestRequestMatchers.content
+import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
+import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import org.springframework.web.client.RestTemplate
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
@@ -116,6 +121,25 @@ class AppConfigTest {
 
         assertEquals("\"2026-09-15T21:24:59\"", serialized, "Dates must serialize as ISO strings so the Discord bot's Gson can parse them")
         assertFalse(serialized.startsWith("["), "Dates must not serialize as a numeric timestamp array")
+    }
+
+    @Test
+    fun `HTTP requests serialize dates as ISO strings and read plain text responses`() {
+        val restTemplate = appConfig.restTemplate()
+        val server = MockRestServiceServer.bindTo(restTemplate).build()
+        server.expect(requestTo("http://localhost/start_game"))
+            .andExpect(content().json("""{"startTime":"2026-09-15T21:24:59"}"""))
+            .andRespond(withSuccess("123,456", MediaType.TEXT_PLAIN))
+
+        val response =
+            restTemplate.postForEntity(
+                "http://localhost/start_game",
+                mapOf("startTime" to LocalDateTime.of(2026, 9, 15, 21, 24, 59)),
+                String::class.java,
+            )
+
+        assertEquals("123,456", response.body)
+        server.verify()
     }
 
     @Test
