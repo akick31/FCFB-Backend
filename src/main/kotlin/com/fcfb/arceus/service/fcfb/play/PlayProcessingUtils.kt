@@ -11,9 +11,9 @@ import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.repositories.PlayRepository
-import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.GameStatsService
-import com.fcfb.arceus.service.fcfb.ScorebugService
+import com.fcfb.arceus.service.fcfb.game.GameService
+import com.fcfb.arceus.service.fcfb.media.ScorebugService
+import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import org.springframework.stereotype.Component
 
 @Component

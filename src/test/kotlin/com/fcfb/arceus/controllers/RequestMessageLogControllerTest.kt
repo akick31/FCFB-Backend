@@ -2,9 +2,9 @@ package com.fcfb.arceus.controllers
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fcfb.arceus.enums.system.MessageType
+import com.fcfb.arceus.exception.GlobalExceptionHandler
 import com.fcfb.arceus.model.RequestMessageLog
 import com.fcfb.arceus.service.log.RequestMessageLogService
-import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

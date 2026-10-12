@@ -1,6 +1,6 @@
 package com.fcfb.arceus.config
 
-import com.fcfb.arceus.service.fcfb.animation.LogoLoader
+import com.fcfb.arceus.rendering.animation.assets.LogoLoader
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
 import javax.annotation.PostConstruct

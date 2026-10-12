@@ -7,12 +7,12 @@ object AuthContext {
 
     fun currentPrincipal(): String = SecurityContextHolder.getContext().authentication?.name ?: "unauthenticated"
 
-    fun isAdmin(): Boolean {
+    fun isAdminOrCommissioner(): Boolean {
         val authorities = SecurityContextHolder.getContext().authentication?.authorities ?: return false
         return authorities.any { it.authority == "ROLE_ADMIN" || it.authority == "ROLE_CONFERENCE_COMMISSIONER" }
     }
 
-    fun isFullAdmin(): Boolean {
+    fun isAdmin(): Boolean {
         val authorities = SecurityContextHolder.getContext().authentication?.authorities ?: return false
         return authorities.any { it.authority == "ROLE_ADMIN" }
     }

@@ -211,9 +211,9 @@ pipeline {
         stage('Swap Containers') {
             steps {
                 sh """
-                    docker stop ${CONTAINER_NAME} || true
+                    docker stop -t -1 ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
-                    docker stop ${CONTAINER_NAME_BLUE} || true
+                    docker stop -t -1 ${CONTAINER_NAME_BLUE} || true
                     docker rm ${CONTAINER_NAME_BLUE} || true
                     docker run --network="host" -d --memory=1536m --restart=always --name ${CONTAINER_NAME} \\
                         -v /var/images:/app/images \\

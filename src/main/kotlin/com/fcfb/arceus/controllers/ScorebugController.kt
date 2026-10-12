@@ -1,10 +1,10 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.enums.game.GameCategory
+import com.fcfb.arceus.enums.game.GameFilter
 import com.fcfb.arceus.enums.game.GameMode
-import com.fcfb.arceus.service.fcfb.ScorebugService
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
+import com.fcfb.arceus.enums.game.GameSort
+import com.fcfb.arceus.service.fcfb.media.ScorebugService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/scorebug")
 class ScorebugController(
-    private var scorebugService: ScorebugService,
+    private val scorebugService: ScorebugService,
 ) {
     @Operation(summary = "Generate all scorebugs")
     @PostMapping("/generate/all")

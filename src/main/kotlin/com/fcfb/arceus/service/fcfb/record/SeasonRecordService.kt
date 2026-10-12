@@ -5,6 +5,8 @@ import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Record
+import com.fcfb.arceus.model.record.SeasonCandidate
+import com.fcfb.arceus.model.record.TeamSeason
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
 import com.fcfb.arceus.repositories.UserRepository
@@ -19,8 +21,6 @@ class SeasonRecordService(
     private val recordStatUtils: RecordStatUtils,
     private val userRepository: UserRepository,
 ) {
-    private data class TeamSeason(val team: String, val season: Int, val value: Double)
-
     fun generateSeasonRecord(
         statName: Stats,
         gameStatsList: List<GameStats>,
@@ -105,8 +105,6 @@ class SeasonRecordService(
         return gameStatsRepository.findAll()
             .filter { it.team == team && it.season == season && (it.week ?: 0) >= POSTSEASON_START_WEEK }
     }
-
-    private data class SeasonCandidate(val team: String, val season: Int, val value: Double, val games: List<GameStats>)
 
     fun checkAndUpdateSeasonRecord(
         statName: Stats,

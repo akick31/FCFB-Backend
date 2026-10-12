@@ -1,9 +1,10 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.service.fcfb.CoachStatsService
+import com.fcfb.arceus.service.fcfb.statistics.CoachStatsService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -19,4 +20,14 @@ class CoachStatsController(
     fun getCoachStats(
         @RequestParam coach: String,
     ) = coachStatsService.getCoachStats(coach)
+
+    @Operation(summary = "Generate all coach season stats")
+    @PostMapping("/generate/all")
+    fun generateAllCoachSeasonStats() = coachStatsService.generateAllCoachSeasonStats()
+
+    @Operation(summary = "Generate coach season stats for a single coach")
+    @PostMapping("/generate/coach")
+    fun generateCoachSeasonStatsForCoach(
+        @RequestParam coach: String,
+    ) = coachStatsService.regenerateForCoach(coach)
 }

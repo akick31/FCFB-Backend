@@ -9,7 +9,6 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.http.ResponseEntity
 
 class CoachTransactionLogControllerTest {
     private val coachTransactionLogService: CoachTransactionLogService = mockk()
@@ -39,18 +38,18 @@ class CoachTransactionLogControllerTest {
 
         every { coachTransactionLogService.getEntireCoachTransactionLog() } returns mockLogs
 
-        val response: ResponseEntity<List<CoachTransactionLog>> = controller.getEntireCoachTransactionLog()
+        val response: List<CoachTransactionLog> = controller.getEntireCoachTransactionLog()
 
-        assertEquals(ResponseEntity.ok(mockLogs), response)
+        assertEquals(mockLogs, response)
     }
 
     @Test
     fun `should return empty list when no coach transaction logs exist`() {
         every { coachTransactionLogService.getEntireCoachTransactionLog() } returns emptyList()
 
-        val response: ResponseEntity<List<CoachTransactionLog>> = controller.getEntireCoachTransactionLog()
+        val response: List<CoachTransactionLog> = controller.getEntireCoachTransactionLog()
 
-        assertEquals(ResponseEntity.ok(emptyList<CoachTransactionLog>()), response)
+        assertEquals(emptyList<CoachTransactionLog>(), response)
     }
 
     @Test
@@ -81,8 +80,8 @@ class CoachTransactionLogControllerTest {
 
         every { coachTransactionLogService.getEntireCoachTransactionLog() } returns mockLogs
 
-        val response: ResponseEntity<List<CoachTransactionLog>> = controller.getEntireCoachTransactionLog()
+        val response: List<CoachTransactionLog> = controller.getEntireCoachTransactionLog()
 
-        assertEquals(ResponseEntity.ok(mockLogs), response)
+        assertEquals(mockLogs, response)
     }
 }

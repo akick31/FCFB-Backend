@@ -11,11 +11,12 @@ import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
-import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.GameStatsService
-import com.fcfb.arceus.service.fcfb.PlayService
-import com.fcfb.arceus.service.fcfb.ScorebugService
-import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.service.fcfb.account.UserService
+import com.fcfb.arceus.service.fcfb.game.GameFinalizationService
+import com.fcfb.arceus.service.fcfb.game.GameService
+import com.fcfb.arceus.service.fcfb.media.ScorebugService
+import com.fcfb.arceus.service.fcfb.play.PlayService
+import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import com.fcfb.arceus.util.Logger
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service
 @Service
 class DelayOfGameMonitor(
     private val gameService: GameService,
+    private val gameFinalizationService: GameFinalizationService,
     private val gameStatsService: GameStatsService,
     private val userService: UserService,
     private val playService: PlayService,
@@ -85,7 +87,7 @@ class DelayOfGameMonitor(
             val delayOfGameInstances = getDelayOfGameInstances(updatedGame)
             val isDelayOfGameOut = delayOfGameInstances.first >= 3 || delayOfGameInstances.second >= 3
             if (isDelayOfGameOut) {
-                gameService.endDOGOutGame(updatedGame, delayOfGameInstances)
+                gameFinalizationService.endDOGOutGame(updatedGame, delayOfGameInstances)
             }
             val allPlays = playRepository.getAllPlaysByGameId(updatedGame.gameId)
             val (homeStats, awayStats) = gameStatsService.updateGameStats(updatedGame, allPlays)

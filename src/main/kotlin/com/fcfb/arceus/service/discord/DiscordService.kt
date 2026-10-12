@@ -1,13 +1,15 @@
 package com.fcfb.arceus.service.discord
 
+import com.fcfb.arceus.dto.request.GameFinalizationRollbackRequest
 import com.fcfb.arceus.dto.standard.SignupInfo
+import com.fcfb.arceus.exception.discord.DiscordUserNotFoundException
 import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.util.DiscordUserNotFoundException
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.ServerUtils
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.entity.User
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.toList
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
@@ -31,10 +33,7 @@ class DiscordService(
 ) {
     suspend fun createGameThread(game: Game): List<String>? {
         val discordBotUrl = "$discordBotUrl/start_game"
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-        headers.set("X-Service-Key", botServiceKey)
-        val requestEntity = HttpEntity(game, headers)
+        val requestEntity = HttpEntity(game, botRequestHeaders())
 
         return try {
             val response =
@@ -42,6 +41,8 @@ class DiscordService(
                     restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
                 }
             response.body?.split(",")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Logger.error("There was an error starting the game thread for ${game.gameId}: ${e.message}")
             null
@@ -53,10 +54,7 @@ class DiscordService(
         isDelayofGameOut: Boolean,
     ) {
         val discordBotUrl = "$discordBotUrl/delay_of_game?isDelayOfGameOut=$isDelayofGameOut"
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-        headers.set("X-Service-Key", botServiceKey)
-        val requestEntity = HttpEntity(game, headers)
+        val requestEntity = HttpEntity(game, botRequestHeaders())
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
         } catch (e: Exception) {
@@ -66,10 +64,7 @@ class DiscordService(
 
     fun notifyGameModeChange(game: Game) {
         val discordBotUrl = "$discordBotUrl/game_mode"
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-        headers.set("X-Service-Key", botServiceKey)
-        val requestEntity = HttpEntity(game, headers)
+        val requestEntity = HttpEntity(game, botRequestHeaders())
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
         } catch (e: Exception) {
@@ -82,10 +77,7 @@ class DiscordService(
         instance: Int,
     ): Boolean {
         val discordBotUrl = "$discordBotUrl/delay_of_game_warning?instance=$instance"
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-        headers.set("X-Service-Key", botServiceKey)
-        val requestEntity = HttpEntity(game, headers)
+        val requestEntity = HttpEntity(game, botRequestHeaders())
         return try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
             true
@@ -97,10 +89,7 @@ class DiscordService(
 
     fun sendRegistrationNotice(signupInfo: SignupInfo) {
         val discordBotUrl = "$discordBotUrl/new_signup"
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_JSON
-        headers.set("X-Service-Key", botServiceKey)
-        val requestEntity = HttpEntity(signupInfo, headers)
+        val requestEntity = HttpEntity(signupInfo, botRequestHeaders())
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
         } catch (e: Exception) {
@@ -108,10 +97,29 @@ class DiscordService(
         }
     }
 
+    fun notifyFinalizationRollback(game: Game) {
+        val request = GameFinalizationRollbackRequest(game.gameId, game.homeTeam, game.awayTeam)
+        try {
+            restTemplate.postForEntity(
+                "$discordBotUrl/game_finalization_rollback",
+                HttpEntity(request, botRequestHeaders()),
+                String::class.java,
+            )
+        } catch (e: Exception) {
+            Logger.error("Unable to report finalization rollback for game ${game.gameId}", e)
+        }
+    }
+
+    private fun botRequestHeaders(): HttpHeaders =
+        HttpHeaders().apply {
+            contentType = MediaType.APPLICATION_JSON
+            set("X-Service-Key", botServiceKey)
+        }
+
     suspend fun getUserByDiscordTag(tag: String): User {
         try {
-            val client = Kord(botToken!!)
-            val guild = client.getGuild(Snowflake(guildId!!))
+            val client = Kord(botToken)
+            val guild = client.getGuild(Snowflake(guildId))
             val members = guild.members.toList()
             for (member in members) {
                 if (member.username == tag) {

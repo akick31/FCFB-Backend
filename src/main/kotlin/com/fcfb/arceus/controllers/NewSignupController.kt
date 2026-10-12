@@ -1,8 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.enums.user.CoachPosition
-import com.fcfb.arceus.service.fcfb.NewSignupService
-import com.fcfb.arceus.service.fcfb.TeamService
+import com.fcfb.arceus.service.fcfb.account.NewSignupManagementService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -16,18 +15,17 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/new_signups")
 class NewSignupController(
-    private var newSignupService: NewSignupService,
-    private val teamService: TeamService,
+    private val newSignupManagementService: NewSignupManagementService,
 ) {
     @Operation(summary = "List pending signups")
     @GetMapping("")
-    fun getNewSignups() = newSignupService.getNewSignups()
+    fun getNewSignups() = newSignupManagementService.getNewSignups()
 
     @Operation(summary = "Delete signup")
     @DeleteMapping("")
     fun deleteNewSignup(
         @RequestParam id: Long,
-    ) = newSignupService.deleteNewSignupById(id)
+    ) = newSignupManagementService.deleteNewSignupById(id)
 
     @Operation(summary = "Hire coach to team")
     @PostMapping("/hire")
@@ -36,5 +34,5 @@ class NewSignupController(
         @RequestParam team: String,
         @RequestParam coachPosition: CoachPosition,
         @RequestParam processedBy: String,
-    ) = teamService.hireCoachFromSignup(id, team, coachPosition, processedBy)
+    ) = newSignupManagementService.hireCoachFromSignup(id, team, coachPosition, processedBy)
 }

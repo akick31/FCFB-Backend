@@ -3,8 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.service.fcfb.DelayOfGameReportService
-import com.fcfb.arceus.service.fcfb.PlayService
+import com.fcfb.arceus.service.fcfb.play.PlayService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -19,8 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/play")
 class PlayController(
-    private var playService: PlayService,
-    private var delayOfGameReportService: DelayOfGameReportService,
+    private val playService: PlayService,
 ) {
     @Operation(summary = "Submit defensive number")
     @PostMapping("/submit_defense")
@@ -106,7 +104,7 @@ class PlayController(
     fun getUserDelayOfGameInstances(
         @RequestParam("season") season: Int,
         @RequestParam(value = "week", required = false) week: Int?,
-    ) = delayOfGameReportService.getUserDelayOfGameInstances(season, week)
+    ) = playService.getUserDelayOfGameInstances(season, week)
 
     @Operation(summary = "Update play")
     @PutMapping("")

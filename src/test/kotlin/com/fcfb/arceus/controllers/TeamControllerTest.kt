@@ -3,9 +3,10 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
+import com.fcfb.arceus.exception.GlobalExceptionHandler
+import com.fcfb.arceus.exception.team.TeamNotFoundException
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.service.fcfb.TeamService
-import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.service.fcfb.team.TeamService
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -266,10 +267,10 @@ class TeamControllerTest {
 
     @Test
     fun `should error when get team by id missing`() {
-        every { teamService.getTeamById(1) } throws RuntimeException("Team not found")
+        every { teamService.getTeamById(1) } throws TeamNotFoundException("Team not found")
 
         mockMvc.perform(get("/api/v1/arceus/team").param("teamId", "1"))
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error").value("Team not found"))
     }
 }

@@ -1,9 +1,8 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.response.TeamResumeMetricResponse
-import com.fcfb.arceus.service.fcfb.TeamResumeMetricService
+import com.fcfb.arceus.service.fcfb.ranking.TeamResumeMetricService
 import io.swagger.v3.oas.annotations.Operation
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -21,5 +20,5 @@ class TeamResumeMetricController(
     fun getMetrics(
         @RequestParam("season") season: Int,
         @RequestParam("week") week: Int,
-    ): ResponseEntity<List<TeamResumeMetricResponse>> = ResponseEntity.ok(teamResumeMetricService.getMetrics(season, week))
+    ): List<TeamResumeMetricResponse> = teamResumeMetricService.getMetrics(season, week)
 }

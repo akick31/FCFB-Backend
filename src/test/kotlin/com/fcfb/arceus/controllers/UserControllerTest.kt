@@ -7,9 +7,10 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.UserRole
-import com.fcfb.arceus.service.fcfb.UserService
-import com.fcfb.arceus.util.GlobalExceptionHandler
-import com.fcfb.arceus.util.UserForbiddenException
+import com.fcfb.arceus.exception.GlobalExceptionHandler
+import com.fcfb.arceus.exception.user.UserForbiddenException
+import com.fcfb.arceus.exception.user.UserNotFoundException
+import com.fcfb.arceus.service.fcfb.account.UserService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.AfterEach
@@ -404,10 +405,10 @@ class UserControllerTest {
 
     @Test
     fun `getUserById handles error`() {
-        every { userService.getUserDTOById(1L) } throws RuntimeException("User not found")
+        every { userService.getUserDTOById(1L) } throws UserNotFoundException("User not found")
 
         mockMvc.perform(get("/api/v1/arceus/user").param("userId", "1"))
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error").value("User not found"))
     }
 }

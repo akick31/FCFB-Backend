@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.TeamFieldRequest
-import com.fcfb.arceus.service.fcfb.GameFieldService
+import com.fcfb.arceus.service.fcfb.appearance.GameFieldService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping

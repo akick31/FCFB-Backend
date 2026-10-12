@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.service.fcfb.ScorebugService
-import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.exception.GlobalExceptionHandler
+import com.fcfb.arceus.service.fcfb.media.ScorebugService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

@@ -28,8 +28,8 @@ private val docsExcludedPathsByMethod =
                 "$FULL_PATH/discord/redirect",
                 "$FULL_PATH/season/**",
                 "$FULL_PATH/offseason/**",
-                "$FULL_PATH/schedule/generate-all-conferences/status",
-                "$FULL_PATH/game/week/status",
+                "$FULL_PATH/conference-schedule-generation-job/status",
+                "$FULL_PATH/start-game-week-job/status",
             ),
         HttpMethod.POST to
             arrayOf(
@@ -40,7 +40,7 @@ private val docsExcludedPathsByMethod =
                 "$FULL_PATH/user/validate",
                 "$FULL_PATH/user/api-key",
                 "$FULL_PATH/user/api-key/revoke",
-                "$FULL_PATH/game/week/retry",
+                "$FULL_PATH/start-game-week-job/retry",
             ),
         HttpMethod.PUT to
             arrayOf(

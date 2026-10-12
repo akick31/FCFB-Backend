@@ -1,6 +1,6 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.service.fcfb.WinProbabilityOrchestrationService
+import com.fcfb.arceus.service.fcfb.probability.WinProbabilityOrchestrationService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping

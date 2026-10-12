@@ -2,7 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.BowlFieldRequest
 import com.fcfb.arceus.dto.request.BowlMetaRequest
-import com.fcfb.arceus.service.fcfb.BowlFieldService
+import com.fcfb.arceus.service.fcfb.appearance.BowlFieldService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping

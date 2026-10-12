@@ -1,29 +1,32 @@
 package com.fcfb.arceus.service.specification
 
+import com.fcfb.arceus.enums.game.GameCategory
+import com.fcfb.arceus.enums.game.GameCategory.ONGOING
+import com.fcfb.arceus.enums.game.GameCategory.PAST
+import com.fcfb.arceus.enums.game.GameCategory.PAST_SCRIMMAGE
+import com.fcfb.arceus.enums.game.GameCategory.SCRIMMAGE
+import com.fcfb.arceus.enums.game.GameFilter
+import com.fcfb.arceus.enums.game.GameFilter.BOWL
+import com.fcfb.arceus.enums.game.GameFilter.CONFERENCE_CHAMPIONSHIP
+import com.fcfb.arceus.enums.game.GameFilter.CONFERENCE_GAME
+import com.fcfb.arceus.enums.game.GameFilter.IN_PROGRESS
+import com.fcfb.arceus.enums.game.GameFilter.NATIONAL_CHAMPIONSHIP
+import com.fcfb.arceus.enums.game.GameFilter.OPENING_KICKOFF
+import com.fcfb.arceus.enums.game.GameFilter.OUT_OF_CONFERENCE
+import com.fcfb.arceus.enums.game.GameFilter.OVERTIME
+import com.fcfb.arceus.enums.game.GameFilter.PLAYOFFS
+import com.fcfb.arceus.enums.game.GameFilter.PREGAME
+import com.fcfb.arceus.enums.game.GameFilter.RANKED_GAME
 import com.fcfb.arceus.enums.game.GameMode
+import com.fcfb.arceus.enums.game.GameSort
+import com.fcfb.arceus.enums.game.GameSort.CLOSEST_TO_END
+import com.fcfb.arceus.enums.game.GameSort.MOST_TIME_REMAINING
+import com.fcfb.arceus.enums.game.GameSort.NEWEST
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.service.fcfb.TeamService
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory.ONGOING
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory.PAST
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory.PAST_SCRIMMAGE
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory.SCRIMMAGE
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.BOWL
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.CONFERENCE_CHAMPIONSHIP
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.CONFERENCE_GAME
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.IN_PROGRESS
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.NATIONAL_CHAMPIONSHIP
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.OPENING_KICKOFF
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.OUT_OF_CONFERENCE
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.OVERTIME
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.PLAYOFFS
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.PREGAME
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameFilter.RANKED_GAME
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort.CLOSEST_TO_END
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort.MOST_TIME_REMAINING
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort.NEWEST
+import com.fcfb.arceus.service.fcfb.team.TeamService
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import javax.persistence.criteria.CriteriaBuilder
@@ -36,33 +39,6 @@ class GameSpecificationService(
     private val teamService: TeamService,
     private val gameRepository: GameRepository,
 ) {
-    enum class GameFilter {
-        RANKED_GAME,
-        CONFERENCE_GAME,
-        OUT_OF_CONFERENCE,
-        CONFERENCE_CHAMPIONSHIP,
-        BOWL,
-        PLAYOFFS,
-        NATIONAL_CHAMPIONSHIP,
-        PREGAME,
-        OPENING_KICKOFF,
-        IN_PROGRESS,
-        OVERTIME,
-    }
-
-    enum class GameCategory {
-        ONGOING,
-        PAST,
-        SCRIMMAGE,
-        PAST_SCRIMMAGE,
-    }
-
-    enum class GameSort {
-        CLOSEST_TO_END,
-        MOST_TIME_REMAINING,
-        NEWEST,
-    }
-
     fun createSpecification(
         filters: List<GameFilter>,
         category: GameCategory?,

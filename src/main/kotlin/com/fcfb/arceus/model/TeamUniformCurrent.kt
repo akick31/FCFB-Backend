@@ -184,10 +184,6 @@ class TeamUniformCurrent {
     var awayPantsColor: String? = null
 
     @Basic
-    @Column(name = "jersey_text")
-    var jerseyText: String? = null
-
-    @Basic
     @Column(name = "number_top_text")
     var numberTopText: String? = null
 

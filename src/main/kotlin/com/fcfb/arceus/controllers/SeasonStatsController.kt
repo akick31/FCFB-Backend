@@ -1,7 +1,6 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.service.fcfb.PostseasonSeasonStatsService
-import com.fcfb.arceus.service.fcfb.SeasonStatsService
+import com.fcfb.arceus.service.fcfb.statistics.SeasonStatsService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController
 @CrossOrigin(origins = ["*"])
 class SeasonStatsController(
     private val seasonStatsService: SeasonStatsService,
-    private val postseasonSeasonStatsService: PostseasonSeasonStatsService,
 ) {
     @Operation(summary = "List season stats")
     @GetMapping
@@ -59,7 +57,7 @@ class SeasonStatsController(
         @RequestParam(required = false) team: String?,
         @RequestParam(required = false) season: Int?,
         @PageableDefault(size = 20) pageable: Pageable,
-    ) = postseasonSeasonStatsService.getFilteredPostseasonSeasonStats(
+    ) = seasonStatsService.getFilteredPostseasonSeasonStats(
         team = team,
         season = season,
         pageable = pageable,
@@ -67,5 +65,5 @@ class SeasonStatsController(
 
     @Operation(summary = "Generate postseason season stats")
     @PostMapping("/postseason/generate/all")
-    fun generateAllPostseasonSeasonStats() = postseasonSeasonStatsService.generateAllPostseasonSeasonStats()
+    fun generateAllPostseasonSeasonStats() = seasonStatsService.generateAllPostseasonSeasonStats()
 }

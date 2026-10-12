@@ -6,10 +6,11 @@ import com.fcfb.arceus.dto.response.EloRebuildResult
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.elo.EloReplayResult
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.service.fcfb.gamestats.GameStatsCalculator
+import com.fcfb.arceus.service.fcfb.statistics.GameStatsCalculator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import kotlin.math.abs
@@ -50,6 +51,12 @@ class EloService(
                 }
             }
 
+        return toEntries(gameStatsList)
+    }
+
+    fun getEloHistoryForTeams(teams: List<String>): List<EloHistoryEntry> = toEntries(gameStatsRepository.findByTeamIn(teams))
+
+    private fun toEntries(gameStatsList: List<GameStats>): List<EloHistoryEntry> {
         if (gameStatsList.isEmpty()) {
             return emptyList()
         }
@@ -85,15 +92,8 @@ class EloService(
                     val teamScore = if (game.homeTeam == teamName) game.homeScore else game.awayScore
                     val oppScore = if (game.homeTeam == teamName) game.awayScore else game.homeScore
                     when {
-                        teamScore != null && oppScore != null -> {
-                            if (teamScore > oppScore) {
-                                "W"
-                            } else if (teamScore < oppScore) {
-                                "L"
-                            } else {
-                                null
-                            }
-                        }
+                        teamScore > oppScore -> "W"
+                        teamScore < oppScore -> "L"
                         else -> null
                     }
                 } else {

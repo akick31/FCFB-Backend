@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.model.Offseason
-import com.fcfb.arceus.service.fcfb.OffseasonService
+import com.fcfb.arceus.service.fcfb.season.OffseasonService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach

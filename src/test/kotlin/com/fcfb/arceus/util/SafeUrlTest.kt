@@ -1,5 +1,6 @@
 package com.fcfb.arceus.util
 
+import com.fcfb.arceus.exception.team.InvalidUniformException
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 

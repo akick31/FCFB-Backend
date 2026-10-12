@@ -5,10 +5,10 @@ import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.exception.GlobalExceptionHandler
+import com.fcfb.arceus.exception.play.PlayNotFoundException
 import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.service.fcfb.DelayOfGameReportService
-import com.fcfb.arceus.service.fcfb.PlayService
-import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.service.fcfb.play.PlayService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -26,12 +26,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 class PlayControllerTest {
     private lateinit var mockMvc: MockMvc
     private val playService: PlayService = mockk()
-    private val delayOfGameReportService: DelayOfGameReportService = mockk()
     private lateinit var playController: PlayController
 
     @BeforeEach
     fun setup() {
-        playController = PlayController(playService, delayOfGameReportService)
+        playController = PlayController(playService)
         mockMvc =
             MockMvcBuilders.standaloneSetup(playController)
                 .setControllerAdvice(GlobalExceptionHandler())
@@ -190,10 +189,10 @@ class PlayControllerTest {
 
     @Test
     fun `should return error when play not found`() {
-        every { playService.getPlayById(1) } throws RuntimeException("Play not found")
+        every { playService.getPlayById(1) } throws PlayNotFoundException("Play not found")
 
         mockMvc.perform(get("/api/v1/arceus/play").param("playId", "1"))
-            .andExpect(status().isInternalServerError)
+            .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error").value("Play not found"))
     }
 

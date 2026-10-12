@@ -2,17 +2,17 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.response.ScheduleValidationResult
 import com.fcfb.arceus.dto.response.TeamScheduleGap
+import com.fcfb.arceus.exception.GlobalExceptionHandler
 import com.fcfb.arceus.model.Season
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.SeasonRepository
-import com.fcfb.arceus.service.fcfb.OffseasonService
-import com.fcfb.arceus.service.fcfb.RankingMetricService
-import com.fcfb.arceus.service.fcfb.SeasonService
-import com.fcfb.arceus.service.fcfb.TeamSeasonConferenceService
-import com.fcfb.arceus.service.fcfb.TeamService
-import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.service.fcfb.account.UserService
+import com.fcfb.arceus.service.fcfb.ranking.RankingMetricService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleValidationService
-import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.service.fcfb.season.OffseasonService
+import com.fcfb.arceus.service.fcfb.season.SeasonService
+import com.fcfb.arceus.service.fcfb.team.TeamSeasonConferenceService
+import com.fcfb.arceus.service.fcfb.team.TeamService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -268,7 +268,7 @@ class SeasonControllerTest {
 
         mockMvc.perform(post("/api/v1/arceus/season").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isInternalServerError)
-            .andExpect(jsonPath("$.error").value("Failed to start season"))
+            .andExpect(jsonPath("$.error").value("An unexpected error occurred"))
     }
 
     @Test

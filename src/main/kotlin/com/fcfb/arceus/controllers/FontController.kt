@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.dto.request.FontUploadRequest
-import com.fcfb.arceus.service.fcfb.FontService
+import com.fcfb.arceus.service.fcfb.appearance.FontService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -28,7 +28,7 @@ class FontController(
         @RequestBody request: FontUploadRequest,
     ) = fontService.upload(request)
 
-    @Operation(summary = "Remove a custom font (admins only)")
+    @Operation(summary = "Remove a custom font")
     @DeleteMapping("")
     fun delete(
         @RequestParam name: String,

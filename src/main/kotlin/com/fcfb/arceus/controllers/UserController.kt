@@ -4,7 +4,7 @@ import com.fcfb.arceus.dto.request.UpdateUserRequest
 import com.fcfb.arceus.dto.request.UserValidationRequest
 import com.fcfb.arceus.dto.response.ApiKeyResponse
 import com.fcfb.arceus.dto.response.UserDTO
-import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.service.fcfb.account.UserService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/user")
 class UserController(
-    private var userService: UserService,
+    private val userService: UserService,
 ) {
     @Operation(summary = "Get user by ID")
     @GetMapping(params = ["userId"])
@@ -100,7 +100,7 @@ class UserController(
     @PutMapping("/update")
     fun updateUserRole(
         @RequestBody request: UpdateUserRequest,
-    ): UserDTO = userService.updateUserAsRequester(request.toUserDTO())
+    ): UserDTO = userService.updateUserAsRequester(request)
 
     @Operation(summary = "Hash user emails")
     @PostMapping("/hash_emails")

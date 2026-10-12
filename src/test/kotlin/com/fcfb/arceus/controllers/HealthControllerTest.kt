@@ -1,7 +1,7 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.exception.GlobalExceptionHandler
 import com.fcfb.arceus.service.HealthService
-import com.fcfb.arceus.util.GlobalExceptionHandler
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.BeforeEach

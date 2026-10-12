@@ -1,22 +1,23 @@
 import com.fcfb.arceus.controllers.GameController
+import com.fcfb.arceus.controllers.GameCreationController
+import com.fcfb.arceus.controllers.GameFinalizationController
 import com.fcfb.arceus.dto.request.StartRequest
-import com.fcfb.arceus.dto.response.GameWeekJobResponse
 import com.fcfb.arceus.enums.game.GameMode
+import com.fcfb.arceus.enums.game.GameSort
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.GameWarning
 import com.fcfb.arceus.enums.game.TVChannel
-import com.fcfb.arceus.enums.gameflow.CoinTossCall
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
-import com.fcfb.arceus.enums.gameflow.OvertimeCoinTossChoice
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.specification.GameSpecificationService.GameSort
+import com.fcfb.arceus.service.fcfb.game.GameCreationService
+import com.fcfb.arceus.service.fcfb.game.GameFinalizationService
+import com.fcfb.arceus.service.fcfb.game.GameService
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -30,11 +31,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
-import org.springframework.http.ResponseEntity
 
 class GameControllerTest {
     private lateinit var gameService: GameService
     private lateinit var gameController: GameController
+    private val creation = mockk<GameCreationService>()
+    private val finalization = mockk<GameFinalizationService>()
+    private val creationController = GameCreationController(creation)
+    private val finalizationController = GameFinalizationController(finalization)
 
     @BeforeEach
     fun setUp() {
@@ -50,7 +54,7 @@ class GameControllerTest {
 
         val response = gameController.getOngoingGameById(gameId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.getGameById(gameId) }
     }
 
@@ -72,7 +76,7 @@ class GameControllerTest {
                 pageable,
             )
 
-        assertEquals(ResponseEntity.ok(mockPage), response)
+        assertEquals(mockPage, response)
         verify { gameService.getFilteredGames(any(), any(), any(), any(), any(), any(), any(), pageable) }
     }
 
@@ -81,12 +85,12 @@ class GameControllerTest {
         runBlocking {
             val startRequest = mockk<StartRequest>()
             val mockGame = mockk<Game>()
-            coEvery { gameService.startSingleGame(startRequest, null) } returns mockGame
+            coEvery { creation.startSingleGame(startRequest, null) } returns mockGame
 
-            val response = gameController.startGame(startRequest)
+            val response = creationController.startGame(startRequest)
 
-            assertEquals(ResponseEntity.status(201).body(mockGame), response)
-            coVerify { gameService.startSingleGame(startRequest, null) }
+            assertEquals(mockGame, response)
+            coVerify { creation.startSingleGame(startRequest, null) }
         }
 
     @Test
@@ -94,48 +98,35 @@ class GameControllerTest {
         runBlocking {
             val startRequest = mockk<StartRequest>()
             val mockGame = mockk<Game>()
-            coEvery { gameService.startOvertimeGame(startRequest) } returns mockGame
+            coEvery { creation.startOvertimeGame(startRequest) } returns mockGame
 
-            val response = gameController.startOvertimeGame(startRequest)
+            val response = creationController.startOvertimeGame(startRequest)
 
-            assertEquals(ResponseEntity.status(201).body(mockGame), response)
-            coVerify { gameService.startOvertimeGame(startRequest) }
+            assertEquals(mockGame, response)
+            coVerify { creation.startOvertimeGame(startRequest) }
         }
-
-    @Test
-    fun `startWeek should return job response`() {
-        val season = 2023
-        val week = 1
-        val mockResponse = GameWeekJobResponse("job-123", "Started processing games")
-        every { gameService.startWeekAsync(season, week) } returns mockResponse
-
-        val response = gameController.startWeek(season, week)
-
-        assertEquals(ResponseEntity.status(202).body(mockResponse), response)
-        verify { gameService.startWeekAsync(season, week) }
-    }
 
     @Test
     fun `endGame should return ended game`() {
         val channelId = 1234UL
         val mockGame = mockk<Game>()
-        every { gameService.endSingleGameByChannelId(channelId) } returns mockGame
+        every { finalization.endSingleGameByChannelId(channelId) } returns mockGame
 
-        val response = gameController.endGameByChannelId(channelId)
+        val response = finalizationController.endGameByChannelId(channelId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
-        verify { gameService.endSingleGameByChannelId(channelId) }
+        assertEquals(mockGame, response)
+        verify { finalization.endSingleGameByChannelId(channelId) }
     }
 
     @Test
     fun `endAllGames should return list of ended games`() {
         val mockGames = listOf(mockk<Game>())
-        every { gameService.endAllGames() } returns mockGames
+        every { finalization.endAllGames() } returns mockGames
 
-        val response = gameController.endAllGames()
+        val response = finalizationController.endAllGames()
 
-        assertEquals(ResponseEntity.ok(mockGames), response)
-        verify { gameService.endAllGames() }
+        assertEquals(mockGames, response)
+        verify { finalization.endAllGames() }
     }
 
     @Test
@@ -146,7 +137,7 @@ class GameControllerTest {
 
         val response = gameController.chewGameByPlatformId(channelId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.chewGameByPlatformId(channelId) }
     }
 
@@ -157,7 +148,7 @@ class GameControllerTest {
 
         val response = gameController.chewAllGames()
 
-        assertEquals(ResponseEntity.ok(mockGames), response)
+        assertEquals(mockGames, response)
         verify { gameService.chewAllGames() }
     }
 
@@ -169,7 +160,7 @@ class GameControllerTest {
 
         val response = gameController.unchewGameByPlatformId(channelId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.unchewGameByPlatformId(channelId) }
     }
 
@@ -180,47 +171,8 @@ class GameControllerTest {
 
         val response = gameController.unchewAllGames()
 
-        assertEquals(ResponseEntity.ok(mockGames), response)
+        assertEquals(mockGames, response)
         verify { gameService.unchewAllGames() }
-    }
-
-    @Test
-    fun `runCoinToss should return updated game`() {
-        val gameId = 1
-        val coinTossCall = CoinTossCall.HEADS
-        val mockGame = mockk<Game>()
-        every { gameService.runCoinToss(gameId, coinTossCall) } returns mockGame
-
-        val response = gameController.runCoinToss(gameId, coinTossCall)
-
-        assertEquals(ResponseEntity.ok(mockGame), response)
-        verify { gameService.runCoinToss(gameId, coinTossCall) }
-    }
-
-    @Test
-    fun `makeCoinTossChoice should return updated game`() {
-        val gameId = 1
-        val coinTossChoice = CoinTossChoice.RECEIVE
-        val mockGame = mockk<Game>()
-        every { gameService.makeCoinTossChoice(gameId, coinTossChoice) } returns mockGame
-
-        val response = gameController.makeCoinTossChoice(gameId, coinTossChoice)
-
-        assertEquals(ResponseEntity.ok(mockGame), response)
-        verify { gameService.makeCoinTossChoice(gameId, coinTossChoice) }
-    }
-
-    @Test
-    fun `makeOvertimeCoinTossChoice should return updated game`() {
-        val gameId = 1
-        val coinTossChoice = OvertimeCoinTossChoice.DEFENSE
-        val mockGame = mockk<Game>()
-        every { gameService.makeOvertimeCoinTossChoice(gameId, coinTossChoice) } returns mockGame
-
-        val response = gameController.makeOvertimeCoinTossChoice(gameId, coinTossChoice)
-
-        assertEquals(ResponseEntity.ok(mockGame), response)
-        verify { gameService.makeOvertimeCoinTossChoice(gameId, coinTossChoice) }
     }
 
     @Test
@@ -232,7 +184,7 @@ class GameControllerTest {
 
         val response = gameController.updateRequestMessageId(gameId, requestMessageId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.updateRequestMessageId(gameId, requestMessageId) }
     }
 
@@ -244,7 +196,7 @@ class GameControllerTest {
 
         val response = gameController.updateLastMessageTimestamp(gameId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.updateLastMessageTimestamp(gameId) }
     }
 
@@ -327,7 +279,7 @@ class GameControllerTest {
 
         val response = gameController.getGameByPlatformId(platformId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.getGameByPlatformId(platformId) }
     }
 
@@ -341,7 +293,7 @@ class GameControllerTest {
 
         val response = gameController.subCoachIntoGame(gameId, team, discordId)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.subCoachIntoGame(gameId, team, discordId) }
     }
 
@@ -350,12 +302,12 @@ class GameControllerTest {
         runBlocking {
             val channelId = 1234UL
             val mockGame = mockk<Game>()
-            coEvery { gameService.restartGame(channelId) } returns mockGame
+            coEvery { creation.restartGame(channelId.toString()) } returns mockGame
 
-            val response = gameController.restartGame(channelId)
+            val response = creationController.restartGame(channelId.toString())
 
-            assertEquals(ResponseEntity.ok(mockGame), response)
-            coVerify { gameService.restartGame(channelId) }
+            assertEquals(mockGame, response)
+            coVerify { creation.restartGame(channelId.toString()) }
         }
 
     @Test
@@ -365,7 +317,7 @@ class GameControllerTest {
 
         val response = gameController.markCloseGamePinged(gameId)
 
-        assertEquals(ResponseEntity.noContent().build<Void>(), response)
+        assertEquals(Unit, response)
         verify { gameService.markCloseGamePinged(gameId) }
     }
 
@@ -376,7 +328,7 @@ class GameControllerTest {
 
         val response = gameController.markUpsetAlertPinged(gameId)
 
-        assertEquals(ResponseEntity.noContent().build<Void>(), response)
+        assertEquals(Unit, response)
         verify { gameService.markUpsetAlertPinged(gameId) }
     }
 
@@ -387,7 +339,7 @@ class GameControllerTest {
 
         val response = gameController.deleteOngoingGame(channelId)
 
-        assertEquals(ResponseEntity.ok(true), response)
+        assertEquals(true, response)
         verify { gameService.deleteOngoingGame(channelId) }
     }
 
@@ -398,7 +350,7 @@ class GameControllerTest {
 
         val response = gameController.updateGame(mockGame)
 
-        assertEquals(ResponseEntity.ok(mockGame), response)
+        assertEquals(mockGame, response)
         verify { gameService.updateGame(mockGame) }
     }
 }

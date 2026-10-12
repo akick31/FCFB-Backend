@@ -5,6 +5,7 @@ import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
 import com.fcfb.arceus.model.GameStats
 import com.fcfb.arceus.model.Record
+import com.fcfb.arceus.model.record.TeamSeasonAgainst
 import com.fcfb.arceus.repositories.RecordRepository
 import org.springframework.stereotype.Service
 
@@ -77,8 +78,6 @@ class AgainstRecordService(
         }
         return map
     }
-
-    private data class TeamSeasonAgainst(val team: String, val season: Int, val value: Double, val ownRow: GameStats)
 
     private fun generateSeasonAgainst(
         againstStat: Stats,

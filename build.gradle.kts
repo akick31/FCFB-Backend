@@ -15,6 +15,10 @@ version = "1.0.0"
 description = "FCFB-Arceus"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
+kotlin {
+    jvmToolchain(17)
+}
+
 repositories {
     mavenCentral()
 

@@ -158,10 +158,6 @@ class TeamUniformHistory {
     var awayPantsColor: String? = null
 
     @Basic
-    @Column(name = "jersey_text")
-    var jerseyText: String? = null
-
-    @Basic
     @Column(name = "number_top_text")
     var numberTopText: String? = null
 
@@ -242,7 +238,6 @@ class TeamUniformHistory {
         helmetNumberFont: String? = null,
         jerseyNumberFont: String? = null,
         awayPantsColor: String? = null,
-        jerseyText: String? = null,
         numberTopText: String? = null,
         awayNumberTopText: String? = null,
     ) {
@@ -277,7 +272,6 @@ class TeamUniformHistory {
         this.helmetNumberFont = helmetNumberFont
         this.jerseyNumberFont = jerseyNumberFont
         this.awayPantsColor = awayPantsColor
-        this.jerseyText = jerseyText
         this.numberTopText = numberTopText
         this.awayNumberTopText = awayNumberTopText
     }

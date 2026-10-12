@@ -3,6 +3,7 @@ package com.fcfb.arceus.service.fcfb.elo
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.model.Game
+import com.fcfb.arceus.model.elo.EloReplayResult
 import kotlin.math.pow
 import kotlin.math.roundToInt
 

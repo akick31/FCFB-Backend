@@ -1,16 +1,20 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.exception.GlobalExceptionHandler
 import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.service.fcfb.ScheduleService
-import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.service.fcfb.schedule.ScheduleService
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
@@ -28,6 +32,34 @@ class ScheduleControllerTest {
             MockMvcBuilders.standaloneSetup(scheduleController)
                 .setControllerAdvice(GlobalExceptionHandler())
                 .build()
+    }
+
+    @Test
+    fun `bulk creation retains created status and list response`() {
+        every { scheduleService.createBulkScheduleEntries(any()) } returns emptyList()
+
+        mockMvc.perform(
+            post("${ApiConstants.FULL_PATH}/schedule/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"entries":[]}"""),
+        ).andExpect(status().isCreated)
+            .andExpect(content().json("[]"))
+    }
+
+    @Test
+    fun `delete routes retain empty no-content responses`() {
+        every { scheduleService.deleteScheduleEntry(7) } just Runs
+        every { scheduleService.deleteScheduleBySeason(10) } just Runs
+
+        mockMvc.perform(delete("${ApiConstants.FULL_PATH}/schedule").param("id", "7"))
+            .andExpect(status().isNoContent)
+            .andExpect(content().string(""))
+        mockMvc.perform(delete("${ApiConstants.FULL_PATH}/schedule/season").param("season", "10"))
+            .andExpect(status().isNoContent)
+            .andExpect(content().string(""))
+
+        verify { scheduleService.deleteScheduleEntry(7) }
+        verify { scheduleService.deleteScheduleBySeason(10) }
     }
 
     @Test

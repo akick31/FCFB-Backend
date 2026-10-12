@@ -124,14 +124,40 @@ class CoachStintServiceTest {
     }
 
     @Test
-    fun `a game at the coach's current team counts even without a covering stint`() {
+    fun `a game at the coach's current team with no transaction log counts via the unlogged stint`() {
+        every { coachTransactionLogRepository.getEntireCoachTransactionLog() } returns emptyList()
+
+        val coachAtMontanaState =
+            User().apply {
+                id = 1L
+                username = "buttersqauch"
+                discordId = this@CoachStintServiceTest.discordId
+                team = "Montana State"
+            }
+        val stints = coachStintService.getStintsForCoach("buttersqauch", coachAtMontanaState)
+
+        assertTrue(coachStintService.countsForCoach(stints, "Montana State", at("2026-09-24 14:00:00")))
+    }
+
+    @Test
+    fun `a game at the coach's current team before their logged hire does not count`() {
         every { coachTransactionLogRepository.getEntireCoachTransactionLog() } returns
-            listOf(entry("Marshall", TransactionType.FIRED, "01/01/2020 00:00:00"))
+            listOf(
+                entry("Air Force", TransactionType.FIRED, "01/01/2025 00:00:00"),
+                entry("Air Force", TransactionType.HIRED, "09/01/2026 00:00:00"),
+            )
 
-        val stints = coachStintService.getStintsForCoach("buttersqauch", coach)
+        val coachAtAirForce =
+            User().apply {
+                id = 1L
+                username = "buttersqauch"
+                discordId = this@CoachStintServiceTest.discordId
+                team = "Air Force"
+            }
+        val stints = coachStintService.getStintsForCoach("buttersqauch", coachAtAirForce)
 
-        assertFalse(coachStintService.isPrimaryTeamAt(stints, "Montana State", at("2026-09-24 14:00:00")))
-        assertTrue(coachStintService.countsForCoach(stints, "Montana State", "Montana State", at("2026-09-24 14:00:00")))
+        assertFalse(coachStintService.countsForCoach(stints, "Air Force", at("2025-06-01 12:00:00")))
+        assertTrue(coachStintService.countsForCoach(stints, "Air Force", at("2026-09-24 14:00:00")))
     }
 
     @Test

@@ -9,7 +9,7 @@ import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.ScheduleRepository
 import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.service.fcfb.SeasonService
+import com.fcfb.arceus.service.fcfb.season.SeasonService
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 

@@ -13,7 +13,7 @@ private const val ANONYMOUS_PRINCIPAL = "anonymousUser"
 private const val CLIENT_NAME_HEADER = "X-Client-Name"
 private val EXCLUDED_ROLES = setOf("ROLE_SERVICE", "ROLE_WEBSITE")
 private val EXCLUDED_CLIENT_NAMES = setOf("fcfb-website")
-private val EXCLUDED_PATH_SUFFIXES = setOf("/discord/redirect")
+private val EXCLUDED_PATH_SUFFIXES = setOf("/discord/redirect", "/appearance-preview/thumb")
 private val SENSITIVE_PARAM_KEYS = listOf("token", "code", "secret", "password", "key", "number")
 
 @Component

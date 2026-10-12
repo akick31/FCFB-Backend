@@ -6,7 +6,7 @@ import com.fcfb.arceus.dto.response.ConferenceRulesResponse
 import com.fcfb.arceus.dto.standard.ProtectedRivalry
 import com.fcfb.arceus.model.ConferenceRules
 import com.fcfb.arceus.repositories.ConferenceRulesRepository
-import com.fcfb.arceus.service.fcfb.ConferenceService
+import com.fcfb.arceus.service.fcfb.team.ConferenceService
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 

@@ -1,5 +1,6 @@
 package com.fcfb.arceus.util
 
+import com.fcfb.arceus.exception.team.InvalidUniformException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.InetAddress

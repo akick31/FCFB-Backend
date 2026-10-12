@@ -4,6 +4,7 @@ import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.enums.user.TransactionType
 import com.fcfb.arceus.model.CoachTransactionLog
 import com.fcfb.arceus.model.User
+import com.fcfb.arceus.model.coach.CoachStint
 import com.fcfb.arceus.repositories.CoachTransactionLogRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.log.UsernameHistoryService
@@ -27,10 +28,9 @@ class CoachStintService(
 
     fun countsForCoach(
         stints: List<CoachStint>,
-        currentTeam: String?,
         team: String,
         timestamp: LocalDateTime,
-    ): Boolean = team == currentTeam || isPrimaryTeamAt(stints, team, timestamp)
+    ): Boolean = isPrimaryTeamAt(stints, team, timestamp)
 
     fun isPrimaryTeamAt(
         stints: List<CoachStint>,

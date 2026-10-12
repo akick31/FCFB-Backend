@@ -1,5 +1,6 @@
 package com.fcfb.arceus.util
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import org.springframework.stereotype.Component
 
@@ -16,6 +17,8 @@ class ServerUtils {
         repeat(retries - 1) { attempt ->
             try {
                 return block()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Logger.warn("Attempt ${attempt + 1} failed: ${e.message}. Retrying in ${currentDelay}ms...")
             }

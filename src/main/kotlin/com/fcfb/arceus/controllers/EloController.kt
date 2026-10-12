@@ -26,6 +26,12 @@ class EloController(
         @RequestParam(required = false) season: Int?,
     ) = eloService.getEloHistory(team, season)
 
+    @Operation(summary = "Get ELO history for a set of teams in one call")
+    @GetMapping("/history/teams")
+    fun getEloHistoryForTeams(
+        @RequestParam teams: String,
+    ) = eloService.getEloHistoryForTeams(teams.split(","))
+
     @Operation(summary = "Rebuild ELO from game results (dry run unless apply=true)")
     @PostMapping("/rebuild")
     fun rebuildElo(

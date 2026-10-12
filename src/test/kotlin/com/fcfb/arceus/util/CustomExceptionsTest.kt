@@ -1,5 +1,7 @@
 package com.fcfb.arceus.util
 
+import com.fcfb.arceus.exception.game.GameNotFoundException
+import com.fcfb.arceus.exception.team.TeamNotFoundException
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 

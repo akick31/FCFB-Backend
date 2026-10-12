@@ -4,7 +4,7 @@ import com.fcfb.arceus.dto.request.TeamColorsRequest
 import com.fcfb.arceus.dto.request.TeamFieldRequest
 import com.fcfb.arceus.dto.request.TeamLogosRequest
 import com.fcfb.arceus.dto.request.TeamUniformRequest
-import com.fcfb.arceus.service.fcfb.TeamAppearanceService
+import com.fcfb.arceus.service.fcfb.appearance.TeamAppearanceService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping

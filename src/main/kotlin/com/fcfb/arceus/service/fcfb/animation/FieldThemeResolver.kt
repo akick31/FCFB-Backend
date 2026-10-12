@@ -1,5 +1,7 @@
 package com.fcfb.arceus.service.fcfb.animation
 
+import com.fcfb.arceus.enums.animation.FieldStyle
+import com.fcfb.arceus.enums.animation.LogoSource
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.PlayoffRound
 import com.fcfb.arceus.model.BowlField
@@ -10,6 +12,9 @@ import com.fcfb.arceus.model.PostseasonField
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.TeamField
 import com.fcfb.arceus.model.TeamUniformHistory
+import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.rendering.animation.appearance.FieldColors
+import com.fcfb.arceus.rendering.animation.appearance.HelmetColors
 import com.fcfb.arceus.repositories.BowlFieldRepository
 import com.fcfb.arceus.repositories.ConferenceChampionshipFieldRepository
 import com.fcfb.arceus.repositories.ConferenceRepository
@@ -181,7 +186,7 @@ class FieldThemeResolver(
         postseasonField: PostseasonField?,
     ): Color {
         val configured = homeField?.turfColor ?: bowlField?.turfColor ?: postseasonField?.turfColor
-        return configured?.let { FieldBackgroundPainter.parseColor(it) } ?: FieldBackgroundPainter.TURF_COLOR
+        return configured?.let { FieldColors.parseColor(it) } ?: FieldColors.TURF_COLOR
     }
 
     private fun drivesRightToLeft(play: Play): Boolean = play.quarter > FIRST_HALF_QUARTERS

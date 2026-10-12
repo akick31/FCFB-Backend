@@ -3,7 +3,7 @@ package com.fcfb.arceus.service.discord
 import com.fcfb.arceus.config.AppConfig
 import com.fcfb.arceus.service.auth.AuthService
 import com.fcfb.arceus.service.auth.SessionService
-import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.service.fcfb.account.UserService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Test

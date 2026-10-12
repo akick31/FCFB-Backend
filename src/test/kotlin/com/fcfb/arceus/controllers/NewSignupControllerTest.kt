@@ -4,10 +4,11 @@ import com.fcfb.arceus.dto.response.NewSignupDTO
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
+import com.fcfb.arceus.exception.GlobalExceptionHandler
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.service.fcfb.NewSignupService
-import com.fcfb.arceus.service.fcfb.TeamService
-import com.fcfb.arceus.util.GlobalExceptionHandler
+import com.fcfb.arceus.service.fcfb.account.NewSignupManagementService
+import com.fcfb.arceus.service.fcfb.account.NewSignupService
+import com.fcfb.arceus.service.fcfb.team.TeamService
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -29,7 +30,7 @@ class NewSignupControllerTest {
 
     @BeforeEach
     fun setup() {
-        newSignupController = NewSignupController(newSignupService, teamService)
+        newSignupController = NewSignupController(NewSignupManagementService(newSignupService, teamService))
         mockMvc =
             MockMvcBuilders.standaloneSetup(newSignupController)
                 .setControllerAdvice(GlobalExceptionHandler())
@@ -88,7 +89,7 @@ class NewSignupControllerTest {
 
         mockMvc.perform(get("/api/v1/arceus/new_signups").contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isInternalServerError)
-            .andExpect(jsonPath("$.error").value("Failed to get signups"))
+            .andExpect(jsonPath("$.error").value("An unexpected error occurred"))
     }
 
     @Test

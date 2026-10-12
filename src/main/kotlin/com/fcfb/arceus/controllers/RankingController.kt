@@ -3,9 +3,8 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.dto.request.UploadRankingsRequest
 import com.fcfb.arceus.dto.response.RankingResponse
 import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.service.fcfb.RankingService
+import com.fcfb.arceus.service.fcfb.ranking.RankingService
 import io.swagger.v3.oas.annotations.Operation
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -26,39 +25,38 @@ class RankingController(
         @RequestParam("season") season: Int,
         @RequestParam("week") week: Int,
         @RequestParam("pollType") pollType: String,
-    ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getRankings(season, week, pollType))
+    ): List<RankingResponse> = rankingService.getRankings(season, week, pollType)
 
     @Operation(summary = "Get a team's rank in every uploaded week of a poll")
     @GetMapping("/team")
     fun getTeamRankings(
         @RequestParam("teamId") teamId: Int,
         @RequestParam("pollType") pollType: String,
-    ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getTeamRankings(teamId, pollType))
+    ): List<RankingResponse> = rankingService.getTeamRankings(teamId, pollType)
 
     @Operation(summary = "Get games where a team was ranked")
     @GetMapping("/games")
     fun getRankedGames(
         @RequestParam(required = false) team: String?,
         @RequestParam(required = false) season: Int?,
-    ): ResponseEntity<List<Game>> = ResponseEntity.ok(rankingService.getRankedGames(team, season))
+    ): List<Game> = rankingService.getRankedGames(team, season)
 
     @Operation(summary = "Get the most recently uploaded rankings for a poll")
     @GetMapping("/latest")
     fun getLatest(
         @RequestParam("pollType") pollType: String,
-    ): ResponseEntity<List<RankingResponse>> = ResponseEntity.ok(rankingService.getLatestRankings(pollType))
+    ): List<RankingResponse> = rankingService.getLatestRankings(pollType)
 
     @Operation(summary = "Get available ranked weeks")
     @GetMapping("/weeks")
     fun getWeeks(
         @RequestParam("season") season: Int,
         @RequestParam("pollType") pollType: String,
-    ): ResponseEntity<List<Int>> = ResponseEntity.ok(rankingService.getAvailableWeeks(season, pollType))
+    ): List<Int> = rankingService.getAvailableWeeks(season, pollType)
 
     @Operation(summary = "Upload rankings")
     @PostMapping
     fun uploadRankings(
         @RequestBody request: UploadRankingsRequest,
-    ): ResponseEntity<List<RankingResponse>> =
-        ResponseEntity.ok(rankingService.uploadRankings(request.season, request.week, request.pollType, request.teams))
+    ): List<RankingResponse> = rankingService.uploadRankings(request.season, request.week, request.pollType, request.teams)
 }

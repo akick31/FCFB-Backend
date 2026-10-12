@@ -2,7 +2,7 @@ package com.fcfb.arceus.controllers
 
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.service.fcfb.TeamService
+import com.fcfb.arceus.service.fcfb.team.TeamService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/team")
 class TeamController(
-    private var teamService: TeamService,
+    private val teamService: TeamService,
 ) {
     @Operation(summary = "Get team by ID")
     @GetMapping(params = ["teamId"])

@@ -6,20 +6,21 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.UserRole
+import com.fcfb.arceus.exception.user.UserUnauthorizedException
 import com.fcfb.arceus.model.NewSignup
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.service.auth.AuthService
 import com.fcfb.arceus.service.auth.SessionService
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.email.EmailService
-import com.fcfb.arceus.service.fcfb.NewSignupService
-import com.fcfb.arceus.service.fcfb.UserService
-import com.fcfb.arceus.util.UserUnauthorizedException
+import com.fcfb.arceus.service.fcfb.account.NewSignupService
+import com.fcfb.arceus.service.fcfb.account.UserService
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -114,16 +115,20 @@ class AuthControllerTest {
             )
 
         mockkStatic(UUID::class)
-        every { UUID.randomUUID().toString() } returns fixedToken
+        try {
+            every { UUID.randomUUID().toString() } returns fixedToken
 
-        every { newSignupService.getNewSignupById(id) } returns newSignup
-        every { newSignupService.saveNewSignup(newSignup) } returns newSignup
-        every { emailService.sendVerificationEmail(newSignup.email, newSignup.id, fixedToken) } just Runs
+            every { newSignupService.getNewSignupById(id) } returns newSignup
+            every { newSignupService.saveNewSignup(newSignup) } returns newSignup
+            every { emailService.sendVerificationEmail(newSignup.email, newSignup.id, fixedToken) } just Runs
 
-        val result = authService.resetVerificationToken(id)
+            val result = authService.resetVerificationToken(id)
 
-        assertEquals(fixedToken, result.verificationToken)
-        verify { emailService.sendVerificationEmail(newSignup.email, newSignup.id, fixedToken) }
+            assertEquals(fixedToken, result.verificationToken)
+            verify { emailService.sendVerificationEmail(newSignup.email, newSignup.id, fixedToken) }
+        } finally {
+            unmockkStatic(UUID::class)
+        }
     }
 
     @Test

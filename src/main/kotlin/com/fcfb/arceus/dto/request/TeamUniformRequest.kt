@@ -45,7 +45,6 @@ data class TeamUniformRequest(
     val logoX: Double? = null,
     val logoY: Double? = null,
     val logoRotation: Double? = null,
-    val jerseyText: String? = null,
     val numberTopText: String? = null,
     val awayNumberTopText: String? = null,
 )

@@ -1,8 +1,7 @@
 package com.fcfb.arceus.controllers
 
-import com.fcfb.arceus.service.fcfb.GameStatsService
+import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import io.swagger.v3.oas.annotations.Operation
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -14,15 +13,21 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/game-stats")
 class GameStatsController(
-    private var gameStatsService: GameStatsService,
+    private val gameStatsService: GameStatsService,
 ) {
     @Operation(summary = "Get team game stats")
-    @GetMapping("")
-    fun getGameStats(
+    @GetMapping("/by-game")
+    fun getGameStatsByGame(
         @RequestParam(required = false) gameId: Int?,
         @RequestParam team: String,
+    ) = gameStatsService.getGameStatsForGame(gameId, team)
+
+    @Operation(summary = "Get team game stats for a season")
+    @GetMapping("/by-team-season")
+    fun getGameStatsByTeamAndSeason(
+        @RequestParam team: String,
         @RequestParam(required = false) season: Int?,
-    ): ResponseEntity<Any> = ResponseEntity.ok(gameStatsService.getGameStats(gameId, team, season))
+    ) = gameStatsService.getGameStatsForTeamSeason(team, season)
 
     @Operation(summary = "Generate game stats")
     @PostMapping("/generate")

@@ -3,7 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
-import com.fcfb.arceus.service.fcfb.RecordService
+import com.fcfb.arceus.service.fcfb.record.RecordService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault

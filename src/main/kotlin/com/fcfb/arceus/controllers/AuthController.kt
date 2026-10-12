@@ -3,6 +3,7 @@ package com.fcfb.arceus.controllers
 import com.fcfb.arceus.dto.request.ForgotPasswordRequest
 import com.fcfb.arceus.dto.request.LoginRequest
 import com.fcfb.arceus.dto.request.ResetPasswordRequest
+import com.fcfb.arceus.dto.response.LoginResponse
 import com.fcfb.arceus.model.NewSignup
 import com.fcfb.arceus.service.auth.AuthService
 import io.swagger.v3.oas.annotations.Operation
@@ -26,31 +27,31 @@ class AuthController(
     @PostMapping("/register")
     fun registerUser(
         @RequestBody newSignup: NewSignup,
-    ): ResponseEntity<NewSignup> = ResponseEntity.ok(authService.createNewSignup(newSignup))
+    ): NewSignup = authService.createNewSignup(newSignup)
 
     @Operation(summary = "Log in user")
     @PostMapping("/login")
     fun login(
         @RequestBody request: LoginRequest,
-    ): ResponseEntity<Any> = ResponseEntity.ok(authService.login(request.usernameOrEmail, request.password))
+    ): LoginResponse = authService.login(request.usernameOrEmail, request.password)
 
     @Operation(summary = "Log out user")
     @PostMapping("/logout")
     fun logout(
         @RequestHeader("Authorization") authHeader: String,
-    ): ResponseEntity<String> = ResponseEntity.ok(authService.logout(authHeader))
+    ): String = authService.logout(authHeader)
 
     @Operation(summary = "Verify email address")
     @GetMapping("/verify-email")
     fun verifyEmail(
         @RequestParam("token") token: String,
-    ): ResponseEntity<Boolean> = ResponseEntity.ok(authService.verifyEmail(token))
+    ): Boolean = authService.verifyEmail(token)
 
     @Operation(summary = "Resend verification email")
     @PostMapping("/verification-email/resend")
     fun resetVerificationToken(
         @RequestParam("newSignupId") newSignupId: Long,
-    ): ResponseEntity<NewSignup> = ResponseEntity.ok(authService.resetVerificationToken(newSignupId))
+    ): NewSignup = authService.resetVerificationToken(newSignupId)
 
     @Operation(summary = "Send password reset email")
     @PostMapping("/forgot-password")

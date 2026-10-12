@@ -6,10 +6,15 @@ import ml.dmlc.xgboost4j.java.XGBoost
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.File
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import javax.annotation.PreDestroy
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 @Component
 class XGBoostPredictor {
     private val logger = LoggerFactory.getLogger(XGBoostPredictor::class.java)
+    private val modelLock = ReentrantReadWriteLock()
     private var booster: Booster? = null
 
     init {
@@ -24,17 +29,7 @@ class XGBoostPredictor {
             if (classpathResource != null) {
                 logger.info("Found model in classpath: ${classpathResource.path}")
 
-                val tempFile = File.createTempFile("wpmodel", ".json")
-                tempFile.deleteOnExit()
-
-                classpathResource.openStream().use { inputStream ->
-                    tempFile.outputStream().use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-
-                logger.info("Copied model to temporary file: ${tempFile.absolutePath}")
-                booster = XGBoost.loadModel(tempFile.absolutePath)
+                booster = classpathResource.openStream().use { XGBoost.loadModel(it) }
                 logger.info("XGBoost model loaded successfully from classpath")
                 return
             }
@@ -53,29 +48,41 @@ class XGBoostPredictor {
         }
     }
 
-    fun predict(features: DoubleArray): Double {
-        val model =
-            booster ?: run {
-                logger.error("Model not loaded, returning default probability")
-                return 0.5
+    fun predict(features: DoubleArray): Double =
+        modelLock.read {
+            val model =
+                booster ?: run {
+                    logger.error("Model not loaded, returning default probability")
+                    return@read 0.5
+                }
+
+            if (features.size != 9) {
+                logger.error("Expected 9 features, got ${features.size}")
+                return@read 0.5
             }
 
-        if (features.size != 9) {
-            logger.error("Expected 9 features, got ${features.size}")
-            return 0.5
+            try {
+                val floatFeatures = features.map { it.toFloat() }.toFloatArray()
+                val dMatrix = DMatrix(floatFeatures, 1, features.size, Float.NaN)
+
+                try {
+                    val predictions = model.predict(dMatrix)
+                    predictions[0][0].toDouble()
+                } finally {
+                    dMatrix.dispose()
+                }
+            } catch (e: Exception) {
+                logger.error("Error during prediction", e)
+                0.5
+            }
         }
 
-        try {
-            val floatFeatures = features.map { it.toFloat() }.toFloatArray()
-            val dMatrix = DMatrix(floatFeatures, 1, features.size)
-
-            val predictions = model.predict(dMatrix)
-
-            val rawPrediction = predictions[0][0].toDouble()
-            return rawPrediction
-        } catch (e: Exception) {
-            logger.error("Error during prediction", e)
-            return 0.5
+    @PreDestroy
+    internal fun releaseModel() {
+        modelLock.write {
+            val model = booster
+            booster = null
+            model?.dispose()
         }
     }
 

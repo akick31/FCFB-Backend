@@ -11,11 +11,11 @@ import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.User
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
-import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.GameStatsService
-import com.fcfb.arceus.service.fcfb.PlayService
-import com.fcfb.arceus.service.fcfb.ScorebugService
-import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.service.fcfb.account.UserService
+import com.fcfb.arceus.service.fcfb.game.GameService
+import com.fcfb.arceus.service.fcfb.media.ScorebugService
+import com.fcfb.arceus.service.fcfb.play.PlayService
+import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -33,7 +33,16 @@ class DelayOfGameMonitorTest {
     private val scorebugService = mockk<ScorebugService>(relaxed = true)
     private val playRepository = mockk<PlayRepository>(relaxed = true)
     private val monitor =
-        DelayOfGameMonitor(gameService, gameStatsService, userService, playService, discordService, scorebugService, playRepository)
+        DelayOfGameMonitor(
+            gameService,
+            mockk(relaxed = true),
+            gameStatsService,
+            userService,
+            playService,
+            discordService,
+            scorebugService,
+            playRepository,
+        )
 
     private val homeCoach = User().apply { delayOfGameInstances = 0 }
     private val awayCoach = User().apply { delayOfGameInstances = 0 }

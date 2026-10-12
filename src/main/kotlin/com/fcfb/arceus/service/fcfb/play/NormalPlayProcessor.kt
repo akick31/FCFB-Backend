@@ -6,15 +6,14 @@ import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.exception.play.InvalidActualResultException
+import com.fcfb.arceus.exception.play.InvalidPlayTypeException
+import com.fcfb.arceus.exception.play.NumberNotFoundException
+import com.fcfb.arceus.exception.play.ResultNotFoundException
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Ranges
-import com.fcfb.arceus.service.fcfb.GameService
-import com.fcfb.arceus.service.fcfb.RangesService
-import com.fcfb.arceus.util.InvalidActualResultException
-import com.fcfb.arceus.util.InvalidPlayTypeException
-import com.fcfb.arceus.util.NumberNotFoundException
-import com.fcfb.arceus.util.ResultNotFoundException
+import com.fcfb.arceus.service.fcfb.game.GameService
 import org.springframework.stereotype.Component
 
 @Component

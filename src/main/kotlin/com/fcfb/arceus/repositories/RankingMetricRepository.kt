@@ -44,6 +44,30 @@ interface RankingMetricRepository : CrudRepository<RankingMetric, Int> {
 
     @Query(
         value = """
+            SELECT *
+            FROM ranking_metric
+            WHERE season = :season
+            AND week = :week
+        """,
+        nativeQuery = true,
+    )
+    fun findBySeasonAndWeek(
+        season: Int,
+        week: Int,
+    ): List<RankingMetric>
+
+    @Query(
+        value = """
+            SELECT *
+            FROM ranking_metric
+            WHERE season = :season
+        """,
+        nativeQuery = true,
+    )
+    fun findBySeason(season: Int): List<RankingMetric>
+
+    @Query(
+        value = """
             SELECT DISTINCT week
             FROM ranking_metric
             WHERE season = :season

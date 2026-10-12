@@ -5,7 +5,7 @@ import com.fcfb.arceus.dto.response.LoginResponse
 import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.service.auth.AuthService
 import com.fcfb.arceus.service.auth.SessionService
-import com.fcfb.arceus.service.fcfb.UserService
+import com.fcfb.arceus.service.fcfb.account.UserService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic

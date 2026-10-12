@@ -1,0 +1,61 @@
+package com.fcfb.arceus.rendering.animation.choreography.script
+
+import com.fcfb.arceus.model.animation.choreography.Choreography
+import com.fcfb.arceus.model.animation.choreography.FieldPoint
+import com.fcfb.arceus.model.animation.choreography.PlayContext
+import com.fcfb.arceus.model.animation.choreography.ScrimmageScene
+import com.fcfb.arceus.rendering.animation.choreography.DefensiveReaction
+import com.fcfb.arceus.rendering.animation.choreography.DownfieldEscort
+import com.fcfb.arceus.rendering.animation.choreography.OffensiveAlignments
+import com.fcfb.arceus.rendering.animation.choreography.PlayScript
+import com.fcfb.arceus.rendering.animation.choreography.Pursuit
+import com.fcfb.arceus.rendering.animation.choreography.carryOffset
+import kotlin.math.abs
+
+class SackScript : PlayScript {
+    override fun choreograph(context: PlayContext): Choreography {
+        val scene = ScrimmageScene.from(context)
+        val concept = PassConcept(context, scene)
+        val forward = context.forward
+        val sackSpot = FieldPoint(context.endSpot, context.side) - carryOffset(forward)
+        val quarterback = concept.quarterback(HOLD_BALL_UNTIL to concept.setPoint, SACK_AT to sackSpot)
+        val blocking = concept.offense(quarterback, emptyMap())
+        val offense =
+            DownfieldEscort.follow(
+                before = blocking,
+                carrier = quarterback,
+                from = PROTECT_FROM,
+                until = SACK_AT,
+                exclude = setOf(scene.offensiveAlignment.quarterback) + scene.offensiveAlignment.receivers,
+                speed = { if (it in OffensiveAlignments.LINEMEN) Pursuit.LINEMAN_SPEED else Pursuit.DEFENSIVE_BACK_SPEED },
+            )
+        val before = DefensiveReaction.before(context, scene, offense, dropping = true)
+        val rushers = scene.defensiveAlignment.linemen.sortedByDescending { abs(scene.defense[it].lateral) }.take(RUSHER_COUNT)
+        val defense =
+            before.mapIndexed { index, track ->
+                val slot = rushers.indexOf(index)
+                if (slot >= 0) {
+                    Pursuit.chase(track, BEAT_BLOCK_AT, EDGE_RUSH_SPEED, Pursuit.tackle(quarterback, forward, slot, SACK_AT))
+                } else {
+                    track
+                }
+            }
+        return Choreography(
+            offense,
+            defense,
+            concept.heldBall(quarterback),
+            facingLocked = CompletedPassScript.facingLocked(scene),
+            endsAt = minOf(1f, SACK_AT + SACK_SETTLE),
+        )
+    }
+
+    companion object {
+        private const val PROTECT_FROM = 0.3f
+        private const val HOLD_BALL_UNTIL = 0.42f
+        private const val SACK_AT = 0.62f
+        private const val SACK_SETTLE = 0.05f
+        private const val BEAT_BLOCK_AT = 0.25f
+        private const val EDGE_RUSH_SPEED = 26f
+        private const val RUSHER_COUNT = 2
+    }
+}

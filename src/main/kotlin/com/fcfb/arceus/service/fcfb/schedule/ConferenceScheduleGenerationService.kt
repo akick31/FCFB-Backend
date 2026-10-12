@@ -2,41 +2,28 @@ package com.fcfb.arceus.service.fcfb.schedule
 
 import com.fcfb.arceus.dto.request.ConferenceScheduleRequest
 import com.fcfb.arceus.dto.request.ScheduleEntry
-import com.fcfb.arceus.dto.response.ScheduleGenJob
-import com.fcfb.arceus.dto.response.ScheduleGenJobResponse
-import com.fcfb.arceus.dto.response.ScheduleGenJobStatus
-import com.fcfb.arceus.dto.response.ScheduleGenLog
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
-import com.fcfb.arceus.enums.team.Subdivision
-import com.fcfb.arceus.model.Conference
 import com.fcfb.arceus.model.Schedule
 import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.ConferenceRepository
 import com.fcfb.arceus.repositories.ScheduleRepository
-import com.fcfb.arceus.service.fcfb.SeasonService
-import com.fcfb.arceus.service.fcfb.TeamService
+import com.fcfb.arceus.service.fcfb.season.SeasonService
+import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.util.Logger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.springframework.stereotype.Service
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 
 @Service
 class ConferenceScheduleGenerationService(
     private val seasonService: SeasonService,
     private val scheduleRepository: ScheduleRepository,
     private val teamService: TeamService,
-    private val conferenceRepository: ConferenceRepository,
-    private val conferenceRulesService: ConferenceRulesService,
+    transactionManager: PlatformTransactionManager,
 ) {
+    private val transactionTemplate = TransactionTemplate(transactionManager)
+
     companion object {
-        private val activeGenJobs = ConcurrentHashMap<String, ScheduleGenJob>()
         private const val RECENT_OPPONENT_LOOKBACK_SEASONS = 5
     }
 
@@ -56,7 +43,12 @@ class ConferenceScheduleGenerationService(
         return generateConferenceScheduleForTeams(request, conferenceTeams)
     }
 
-    private fun generateConferenceScheduleForTeams(
+    internal fun generateConferenceScheduleForTeams(
+        request: ConferenceScheduleRequest,
+        conferenceTeams: List<Team>,
+    ): List<Schedule> = transactionTemplate.execute { generateConferenceScheduleInTransaction(request, conferenceTeams) }!!
+
+    private fun generateConferenceScheduleInTransaction(
         request: ConferenceScheduleRequest,
         conferenceTeams: List<Team>,
     ): List<Schedule> {
@@ -504,12 +496,7 @@ class ConferenceScheduleGenerationService(
 
         for (seasonsAgo in 1..RECENT_OPPONENT_LOOKBACK_SEASONS) {
             val season = currentSeason - seasonsAgo
-            val schedule =
-                try {
-                    scheduleRepository.getScheduleBySeason(season) ?: emptyList()
-                } catch (_: Exception) {
-                    emptyList()
-                }
+            val schedule = scheduleRepository.getScheduleBySeason(season) ?: emptyList()
             for (game in schedule) {
                 val home = game.homeTeam ?: continue
                 val away = game.awayTeam ?: continue
@@ -644,12 +631,7 @@ class ConferenceScheduleGenerationService(
         season: Int,
         teamSet: Set<String>,
     ): Map<String, String> {
-        val schedule =
-            try {
-                scheduleRepository.getScheduleBySeason(season) ?: emptyList()
-            } catch (_: Exception) {
-                emptyList()
-            }
+        val schedule = scheduleRepository.getScheduleBySeason(season) ?: emptyList()
         val result = mutableMapOf<String, String>()
         for (game in schedule) {
             val home = game.homeTeam ?: continue
@@ -660,118 +642,4 @@ class ConferenceScheduleGenerationService(
         }
         return result
     }
-
-    fun startAllConferenceGenerationAsync(season: Int): ScheduleGenJobResponse {
-        val jobId = UUID.randomUUID().toString()
-        val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-
-        val skipConferences = setOf("FBS_INDEPENDENT", "FAKE_TEAM")
-        val conferencesToGenerate = conferenceRepository.findAllByActiveTrueOrderByLabelAsc().filter { it.code !in skipConferences }
-        val validConferences =
-            conferencesToGenerate.filter { conf ->
-                val teams = teamService.getTeamsInConference(conf.code)
-                teams?.any { it.active } == true
-            }
-
-        val job =
-            ScheduleGenJob(
-                jobId = jobId,
-                season = season,
-                status = ScheduleGenJobStatus.PENDING,
-                totalConferences = validConferences.size,
-                startedAt = now,
-            )
-        activeGenJobs[jobId] = job
-
-        Logger.info("=== STARTING ALL-CONFERENCE SCHEDULE GENERATION (async) ===")
-        Logger.info("Job ID: $jobId, Season: $season, Conferences: ${validConferences.size}")
-
-        CoroutineScope(Dispatchers.IO).launch {
-            processAllConferenceGeneration(
-                jobId,
-                season,
-                validConferences,
-            )
-        }
-
-        return ScheduleGenJobResponse(
-            jobId = jobId,
-            message =
-                "Started generating schedules for ${validConferences.size} conferences. " +
-                    "Poll /schedule/generate-all-conferences/status/$jobId for progress.",
-        )
-    }
-
-    private fun processAllConferenceGeneration(
-        jobId: String,
-        season: Int,
-        conferences: List<Conference>,
-    ) {
-        val job = activeGenJobs[jobId] ?: return
-        job.status = ScheduleGenJobStatus.IN_PROGRESS
-
-        for ((index, conference) in conferences.withIndex()) {
-            val timestamp =
-                ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-
-            try {
-                Logger.info("[${index + 1}/${conferences.size}] Generating schedule for ${conference.code}...")
-                val teams = (teamService.getTeamsInConference(conference.code) ?: emptyList()).filter { it.active }
-                val subdivision = teams.firstOrNull()?.subdivision ?: Subdivision.FCFB
-                val rules = conferenceRulesService.getConferenceRules(conference.code)
-
-                val request =
-                    ConferenceScheduleRequest(
-                        season = season,
-                        conference = conference.code,
-                        subdivision = subdivision,
-                        numConferenceGames = rules?.numConferenceGames ?: 9,
-                        protectedRivalries = rules?.protectedRivalries ?: emptyList(),
-                        startWeek = 1,
-                        divisions = rules?.divisions ?: emptyList(),
-                    )
-
-                val generated = generateConferenceScheduleForTeams(request, teams)
-                job.completedConferences++
-                job.totalGamesGenerated += generated.size
-
-                job.logs.add(
-                    ScheduleGenLog(
-                        conference = conference.code,
-                        status = "SUCCESS",
-                        gamesGenerated = generated.size,
-                        message = "Generated ${generated.size} games",
-                        timestamp = timestamp,
-                    ),
-                )
-                Logger.info("[${index + 1}/${conferences.size}] ${conference.code}: ${generated.size} games generated")
-            } catch (e: Exception) {
-                job.failedConferences++
-                val errorMsg = e.message ?: "Unknown error"
-
-                job.logs.add(
-                    ScheduleGenLog(
-                        conference = conference.code,
-                        status = "FAILED",
-                        gamesGenerated = 0,
-                        message = errorMsg,
-                        timestamp = timestamp,
-                    ),
-                )
-                Logger.error("[${index + 1}/${conferences.size}] FAILED ${conference.code}: $errorMsg")
-            }
-        }
-
-        val completedAt = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-        job.completedAt = completedAt
-        job.status = ScheduleGenJobStatus.COMPLETED
-
-        Logger.info("=== ALL-CONFERENCE GENERATION COMPLETE ===")
-        Logger.info(
-            "Job: $jobId — Conferences: ${job.completedConferences}/${job.totalConferences} succeeded, " +
-                "${job.failedConferences} failed, ${job.totalGamesGenerated} total games",
-        )
-    }
-
-    fun getScheduleGenJobStatus(jobId: String): ScheduleGenJob? = activeGenJobs[jobId]
 }
