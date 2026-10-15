@@ -1,8 +1,8 @@
 package com.fcfb.arceus.service.log
 
-import com.fcfb.arceus.model.CoachTransactionLog
-import com.fcfb.arceus.repositories.CoachTransactionLogRepository
-import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.model.log.CoachTransactionLog
+import com.fcfb.arceus.repositories.account.UserRepository
+import com.fcfb.arceus.repositories.log.CoachTransactionLogRepository
 import com.fcfb.arceus.service.fcfb.statistics.CoachStatsService
 import org.springframework.stereotype.Component
 

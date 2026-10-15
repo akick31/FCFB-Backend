@@ -3,23 +3,18 @@ package com.fcfb.arceus.service.fcfb.appearance
 import com.fcfb.arceus.dto.request.AppearancePreviewRequest
 import com.fcfb.arceus.dto.request.TeamUniformRequest
 import com.fcfb.arceus.enums.animation.FieldStyle
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamField
-import com.fcfb.arceus.model.TeamUniformCurrent
-import com.fcfb.arceus.model.TeamUniformHistory
 import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.appearance.TeamField
+import com.fcfb.arceus.model.appearance.TeamUniformCurrent
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.animation.appearance.Uniforms
-import com.fcfb.arceus.repositories.TeamUniformCurrentRepository
-import com.fcfb.arceus.repositories.TeamUniformHistoryRepository
-import com.fcfb.arceus.service.fcfb.animation.FieldThemeResolver
-import com.fcfb.arceus.service.fcfb.appearance.AppearancePreviewService
-import com.fcfb.arceus.service.fcfb.appearance.AppearanceThumbnailCache
-import com.fcfb.arceus.service.fcfb.appearance.FieldAppearanceApplier
-import com.fcfb.arceus.service.fcfb.appearance.PostseasonFieldUpdater
-import com.fcfb.arceus.service.fcfb.appearance.TeamAppearanceService
-import com.fcfb.arceus.service.fcfb.appearance.TeamUniformService
+import com.fcfb.arceus.repositories.appearance.TeamUniformCurrentRepository
+import com.fcfb.arceus.repositories.appearance.TeamUniformHistoryRepository
+import com.fcfb.arceus.service.fcfb.animation.FieldThemeService
 import com.fcfb.arceus.service.fcfb.team.TeamService
+import com.fcfb.arceus.util.appearance.AppearanceThumbnailCache
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -54,7 +49,7 @@ class JerseyAppearanceTest {
             mockk(),
             teamService,
             mockk(),
-            FieldAppearanceApplier(),
+            FieldAppearanceService(),
             mockk(),
             cache,
         )
@@ -91,7 +86,7 @@ class JerseyAppearanceTest {
                 week = 1
             },
         )
-        val (home, away) = Uniforms.forMatchup(team, team, captured.captured, captured.captured)
+        val (home, away) = Uniforms().forMatchup(team, team, captured.captured, captured.captured)
         assertEquals("HOME", home.numberTopText)
         assertEquals("AWAY", away.numberTopText)
 
@@ -107,7 +102,7 @@ class JerseyAppearanceTest {
                 week = 2
             },
         )
-        val cleared = Uniforms.forMatchup(team, team, captured.captured, captured.captured)
+        val cleared = Uniforms().forMatchup(team, team, captured.captured, captured.captured)
         assertNull(cleared.first.numberTopText)
         assertEquals("", cleared.second.numberTopText)
     }
@@ -118,15 +113,15 @@ class JerseyAppearanceTest {
         val appearance = mockk<TeamAppearanceService>()
         every { appearance.getUniform("Test") } returns current
         every { appearance.getField("Test") } returns TeamField().apply { team = "Test" }
-        val resolver = mockk<FieldThemeResolver>()
+        val resolver = mockk<FieldThemeService>()
         val captured = slot<TeamUniformHistory>()
         every { resolver.resolve(any(), any(), any(), any(), capture(captured), any(), any(), any(), any()) } answers {
             FieldTheme(FieldStyle.HOME_FIELD, team, team, null, homeUniform = captured.captured)
         }
         val preview =
             AppearancePreviewService(
-                teamService, appearance, mockk(), mockk(), resolver, mockk(), mockk(), mockk(), FieldAppearanceApplier(),
-                PostseasonFieldUpdater(), cache,
+                teamService, appearance, mockk(), mockk(), resolver, mockk(), mockk(), mockk(), FieldAppearanceService(),
+                PostseasonFieldUpdateService(), cache,
             )
         preview.preview(AppearancePreviewRequest(team = "Test", view = "JERSEY"))
         assertEquals("STORED", captured.captured.numberTopText)

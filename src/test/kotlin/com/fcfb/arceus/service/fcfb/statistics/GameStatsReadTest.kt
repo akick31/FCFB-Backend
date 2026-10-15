@@ -2,9 +2,8 @@ package com.fcfb.arceus.service.fcfb.statistics
 
 import com.fcfb.arceus.exception.statistics.GameStatsNotFoundException
 import com.fcfb.arceus.exception.statistics.InvalidGameStatsRequestException
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk

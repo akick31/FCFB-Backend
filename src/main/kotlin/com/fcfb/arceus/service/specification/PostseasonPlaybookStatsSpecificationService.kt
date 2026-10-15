@@ -2,7 +2,7 @@ package com.fcfb.arceus.service.specification
 
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
-import com.fcfb.arceus.model.PostseasonPlaybookStats
+import com.fcfb.arceus.model.statistics.PostseasonPlaybookStats
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import javax.persistence.criteria.CriteriaBuilder

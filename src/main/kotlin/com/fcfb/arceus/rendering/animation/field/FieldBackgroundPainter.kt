@@ -115,7 +115,7 @@ object FieldBackgroundPainter {
         val arrowAlign = theme.yardNumberArrowAlign()
         val yardOutlineWidth = (NUMBER_OUTLINE_WIDTH * theme.yardNumberOutlineScale()).roundToInt().coerceAtLeast(0)
         for (yard in 0..100 step 5) {
-            val x = FieldCoordinateMapper.toPixelX(yard, WIDTH, MARGIN)
+            val x = FieldCoordinateMapper().toPixelX(yard, WIDTH, MARGIN)
             val border =
                 when {
                     yard == RED_ZONE_YARD || yard == 100 - RED_ZONE_YARD -> theme.redZoneBorder(yard)
@@ -187,7 +187,7 @@ object FieldBackgroundPainter {
             endZoneOutlineWidth,
         )
 
-        val midX = FieldCoordinateMapper.toPixelX(50, WIDTH, MARGIN)
+        val midX = FieldCoordinateMapper().toPixelX(50, WIDTH, MARGIN)
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
         LogoLoader.load(theme.centerLogoUrl)?.let { logo -> drawMidfieldLogo(g, logo, midX, theme) }
         drawConferenceLogos(g, theme)
@@ -197,11 +197,6 @@ object FieldBackgroundPainter {
         return image
     }
 
-    /**
-     * Team color fills the out-of-bounds margin out to each 20, off the field of play. Filled to the image edge rather
-     * than stroked at a fixed width, so no strip of turf is left showing outside it whatever the margin depth is.
-     * Restores color: anything left set here bleeds into the hash marks and yard lines drawn afterwards.
-     */
     private fun drawSidelineAccent(
         g: Graphics2D,
         theme: FieldTheme,
@@ -209,8 +204,8 @@ object FieldBackgroundPainter {
         val leftAccent = theme.sidelineAccent(physicalLeft = true)
         val rightAccent = theme.sidelineAccent(physicalLeft = false)
         if (leftAccent == null && rightAccent == null) return
-        val left = FieldCoordinateMapper.toPixelX(RED_ZONE_YARD, WIDTH, MARGIN)
-        val right = FieldCoordinateMapper.toPixelX(100 - RED_ZONE_YARD, WIDTH, MARGIN)
+        val left = FieldCoordinateMapper().toPixelX(RED_ZONE_YARD, WIDTH, MARGIN)
+        val right = FieldCoordinateMapper().toPixelX(100 - RED_ZONE_YARD, WIDTH, MARGIN)
         val color = g.color
         val edge = (OOB_STROKE_WIDTH / 2).toInt()
         val bandDepth = ((OOB_INSET - edge) * SIDELINE_BAND_FRACTION).toInt()
@@ -242,32 +237,27 @@ object FieldBackgroundPainter {
         if (theme.style == FieldStyle.BOWL && (leftLogo == null || rightLogo == null)) return
         val size = (CONFERENCE_LOGO_SIZE * theme.conferenceLogoScale()).toInt()
         leftLogo?.let {
-            val x = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-            LogoFit.draw(g, it, x, bottomQuarterLogoY(), size)
+            val x = FieldCoordinateMapper().toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+            LogoFit().draw(g, it, x, bottomQuarterLogoY(), size)
         }
         rightLogo?.let {
-            val x = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-            LogoFit.draw(g, it, x, topQuarterLogoY(), size)
+            val x = FieldCoordinateMapper().toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+            LogoFit().draw(g, it, x, topQuarterLogoY(), size)
         }
     }
 
-    /** The team's own mark sits opposite the conference logo at each 25: left side top, right side bottom. */
     private fun drawQuarterLogos(
         g: Graphics2D,
         theme: FieldTheme,
     ) {
         if (theme.style != FieldStyle.HOME_FIELD) return
         val logo = LogoLoader.load(theme.quarterLogoUrl) ?: return
-        val leftX = FieldCoordinateMapper.toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-        val rightX = FieldCoordinateMapper.toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
-        LogoFit.draw(g, logo, leftX, topQuarterLogoY(), QUARTER_LOGO_SIZE)
-        LogoFit.draw(g, logo, rightX, bottomQuarterLogoY(), QUARTER_LOGO_SIZE)
+        val leftX = FieldCoordinateMapper().toPixelX(CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+        val rightX = FieldCoordinateMapper().toPixelX(100 - CONFERENCE_LOGO_YARD, WIDTH, MARGIN)
+        LogoFit().draw(g, logo, leftX, topQuarterLogoY(), QUARTER_LOGO_SIZE)
+        LogoFit().draw(g, logo, rightX, bottomQuarterLogoY(), QUARTER_LOGO_SIZE)
     }
 
-    /**
-     * Centred in the bare turf between the hash line and the yard numbers rather than the full hash-to-sideline band,
-     * whose outboard half the numbers already occupy. The two bands differ because the number rows are not symmetric.
-     */
     private fun topQuarterLogoY(): Int = (TOP_NUMBER_Y + (HEIGHT / 2 - HASH_OFFSET)) / 2
 
     private fun bottomQuarterLogoY(): Int = ((HEIGHT / 2 + HASH_OFFSET) + (BOTTOM_NUMBER_Y - digitCapHeight())) / 2
@@ -370,11 +360,11 @@ object FieldBackgroundPainter {
         val bottomY = HEIGHT - OOB_INSET - sidelineHalfWidth
 
         val shown = { abs: Int -> if (flipped) 100 - abs.coerceIn(0, 100) else abs.coerceIn(0, 100) }
-        val losX = FieldCoordinateMapper.toPixelX(shown(losAbs), WIDTH, MARGIN)
+        val losX = FieldCoordinateMapper().toPixelX(shown(losAbs), WIDTH, MARGIN)
         g.color = FieldColors.LOS_COLOR
         g.drawLine(losX, topY, losX, bottomY)
 
-        val firstDownX = FieldCoordinateMapper.toPixelX(shown(firstDownAbs), WIDTH, MARGIN)
+        val firstDownX = FieldCoordinateMapper().toPixelX(shown(firstDownAbs), WIDTH, MARGIN)
         g.color = FieldColors.FIRST_DOWN_COLOR
         g.drawLine(firstDownX, topY, firstDownX, bottomY)
 
@@ -464,7 +454,7 @@ object FieldBackgroundPainter {
         val halfTick = HASH_TICK_LENGTH / 2
         for (yard in 1 until 100) {
             if (yard % 5 == 0) continue
-            val x = FieldCoordinateMapper.toPixelX(yard, WIDTH, MARGIN)
+            val x = FieldCoordinateMapper().toPixelX(yard, WIDTH, MARGIN)
             g.drawLine(x, centerY - HASH_OFFSET - halfTick, x, centerY - HASH_OFFSET + halfTick)
             g.drawLine(x, centerY + HASH_OFFSET - halfTick, x, centerY + HASH_OFFSET + halfTick)
             g.drawLine(x, OOB_INSET, x, OOB_INSET + SIDELINE_TICK_LENGTH)
@@ -588,7 +578,7 @@ object FieldBackgroundPainter {
         g.rotate(if (clockwise) PI / 2 else -PI / 2)
         logo?.let {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-            LogoFit.draw(g, it, start + logoSize / 2, 0, logoSize)
+            LogoFit().draw(g, it, start + logoSize / 2, 0, logoSize)
         }
         if (endZone.outlineEnabled) {
             g.color = endZone.outlineColor

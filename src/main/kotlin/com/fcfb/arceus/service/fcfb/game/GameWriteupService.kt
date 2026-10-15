@@ -1,6 +1,6 @@
 package com.fcfb.arceus.service.fcfb.game
 
-import com.fcfb.arceus.repositories.GameWriteupRepository
+import com.fcfb.arceus.repositories.game.GameWriteupRepository
 import org.springframework.stereotype.Service
 
 @Service

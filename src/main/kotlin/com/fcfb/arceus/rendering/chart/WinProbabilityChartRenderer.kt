@@ -2,9 +2,9 @@ package com.fcfb.arceus.rendering.chart
 
 import com.fcfb.arceus.dto.response.PlayWinProbabilityResponse
 import com.fcfb.arceus.enums.game.GameStatus
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import org.springframework.stereotype.Component
 import java.awt.BasicStroke
 import java.awt.Color
@@ -50,8 +50,14 @@ class WinProbabilityChartRenderer : ChartRendererBase() {
         g.color = plotBackground
         g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
-        val homeColor = selectTeamColor(homeTeam, plotBackground)
-        val awayColor = selectTeamColor(awayTeam, plotBackground)
+        val (homeColor, awayColor) =
+            ChartColor().selectPair(
+                homeTeam.primaryColor?.let { parseColor(it) },
+                homeTeam.secondaryColor?.let { parseColor(it) },
+                awayTeam.primaryColor?.let { parseColor(it) },
+                awayTeam.secondaryColor?.let { parseColor(it) },
+                plotBackground,
+            )
 
         drawQuarterDivisions(g, plays, padding, chartWidth, chartHeight)
 
@@ -64,11 +70,6 @@ class WinProbabilityChartRenderer : ChartRendererBase() {
         g.dispose()
         return image
     }
-
-    private fun selectTeamColor(
-        team: Team,
-        background: Color,
-    ): Color = ChartColor.select(team.primaryColor?.let { parseColor(it) }, team.secondaryColor?.let { parseColor(it) }, background)
 
     private fun drawWinProbabilityFilledArea(
         g: Graphics2D,

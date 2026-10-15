@@ -2,8 +2,8 @@ package com.fcfb.arceus.rendering.preview
 
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.field.FieldBackgroundPainter
 import com.fcfb.arceus.rendering.animation.fieldgoal.GoalPostScenePainter
 import java.awt.RenderingHints

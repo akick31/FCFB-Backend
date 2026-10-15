@@ -86,14 +86,14 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(UnableToCreateGameThreadException::class)
     fun handleDiscordUnavailable(e: Exception): ResponseEntity<Map<String, String>> {
-        Logger.error("Discord rejected a game thread creation", e)
+        Logger().error("Discord rejected a game thread creation", e)
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
             .body(mapOf("error" to (e.message ?: "Discord is unavailable")))
     }
 
     @ExceptionHandler(Exception::class)
     fun handleException(e: Exception): ResponseEntity<Map<String, String>> {
-        Logger.error("Unhandled exception reached the controller boundary", e)
+        Logger().error("Unhandled exception reached the controller boundary", e)
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(mapOf("error" to "An unexpected error occurred"))
     }
@@ -103,7 +103,7 @@ class GlobalExceptionHandler {
         e: Exception,
     ): ResponseEntity<Map<String, String>> {
         val message = e.message ?: status.reasonPhrase
-        Logger.info("Request rejected with ${status.value()}: $message")
+        Logger().info("Request rejected with ${status.value()}: $message")
         return ResponseEntity.status(status).body(mapOf("error" to message))
     }
 }

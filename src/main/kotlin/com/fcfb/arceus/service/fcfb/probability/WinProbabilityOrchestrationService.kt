@@ -7,9 +7,9 @@ import com.fcfb.arceus.dto.response.SingleGameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.SinglePlayWinProbabilityResponse
 import com.fcfb.arceus.dto.response.WinProbabilitiesForAllGamesResponse
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.service.fcfb.game.GameService
 import com.fcfb.arceus.service.fcfb.play.PlayService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService

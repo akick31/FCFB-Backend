@@ -6,7 +6,9 @@ import com.fcfb.arceus.enums.gameflow.CoinTossChoice
 import com.fcfb.arceus.enums.gameflow.OvertimeCoinTossChoice
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.exception.game.InvalidCoinTossChoiceException
-import com.fcfb.arceus.model.Game
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.game.GameCoinToss
+import com.fcfb.arceus.repositories.game.GameCoinTossRepository
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 import java.util.Random
@@ -14,7 +16,20 @@ import java.util.Random
 @Service
 class GameCoinTossService(
     private val gameService: GameService,
+    private val gameCoinTossRepository: GameCoinTossRepository,
 ) {
+    private fun syncCoinToss(game: Game) {
+        gameCoinTossRepository.save(
+            GameCoinToss(
+                gameId = game.gameId,
+                coinTossWinner = game.coinTossWinner,
+                coinTossChoice = game.coinTossChoice,
+                overtimeCoinTossWinner = game.overtimeCoinTossWinner,
+                overtimeCoinTossChoice = game.overtimeCoinTossChoice,
+            ),
+        )
+    }
+
     fun runCoinToss(
         gameId: Int,
         coinTossCall: CoinTossCall,
@@ -40,15 +55,16 @@ class GameCoinTossService(
                 game.waitingOn = coinTossWinner
             }
             game.gameTimer = gameService.calculateDelayOfGameTimer()
-            Logger.info(
+            Logger().info(
                 "Coin toss finished.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Coin Toss Winner: $coinTossWinner",
             )
             gameService.saveGame(game)
+            syncCoinToss(game)
             return game
         } catch (e: Exception) {
-            Logger.error(
+            Logger().error(
                 "Coin toss error.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Error Message: ${e.message ?: "Unknown error"}",
@@ -80,15 +96,15 @@ class GameCoinTossService(
             }
             game.gameStatus = GameStatus.OPENING_KICKOFF
             game.gameTimer = gameService.calculateDelayOfGameTimer()
-            Logger.info(
+            Logger().info(
                 "Coin toss choice made.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Coin Toss Winner: ${game.coinTossWinner}\n" +
                     "Coin Toss Choice: $coinTossChoice",
             )
-            return gameService.saveGame(game)
+            return gameService.saveGame(game).also { syncCoinToss(it) }
         } catch (e: Exception) {
-            Logger.error("Error in ${game.gameId}: ${e.message ?: "Unknown error"}")
+            Logger().error("Error in ${game.gameId}: ${e.message ?: "Unknown error"}")
             if (e is IllegalArgumentException) {
                 throw InvalidCoinTossChoiceException("Invalid coin toss choice: $coinTossChoice")
             }
@@ -118,15 +134,15 @@ class GameCoinTossService(
                 game.waitingOn = TeamSide.HOME
             }
             game.gameStatus = GameStatus.OVERTIME
-            Logger.info(
+            Logger().info(
                 "Overtime coin toss choice made.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Coin Toss Winner: ${game.overtimeCoinTossWinner}\n" +
                     "Overtime Coin Toss Choice: $coinTossChoice",
             )
-            return gameService.saveGame(game)
+            return gameService.saveGame(game).also { syncCoinToss(it) }
         } catch (e: Exception) {
-            Logger.error(
+            Logger().error(
                 "Overtime coin toss choice error.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Error Message: ${e.message ?: "Unknown error"}",

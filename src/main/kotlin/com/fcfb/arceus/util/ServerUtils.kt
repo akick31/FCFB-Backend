@@ -20,7 +20,7 @@ class ServerUtils {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Logger.warn("Attempt ${attempt + 1} failed: ${e.message}. Retrying in ${currentDelay}ms...")
+                Logger().warn("Attempt ${attempt + 1} failed: ${e.message}. Retrying in ${currentDelay}ms...")
             }
             delay(currentDelay)
             currentDelay = (currentDelay * factor).toLong().coerceAtMost(maxDelay)

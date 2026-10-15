@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.log
 
-import com.fcfb.arceus.model.UsernameHistory
-import com.fcfb.arceus.repositories.UsernameHistoryRepository
+import com.fcfb.arceus.model.log.UsernameHistory
+import com.fcfb.arceus.repositories.log.UsernameHistoryRepository
 import org.springframework.stereotype.Component
 import java.time.ZoneId
 import java.time.ZonedDateTime

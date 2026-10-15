@@ -3,7 +3,7 @@ package com.fcfb.arceus.rendering.animation.assets
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 
-object LogoFit {
+class LogoFit {
     fun draw(
         g: Graphics2D,
         logo: BufferedImage,

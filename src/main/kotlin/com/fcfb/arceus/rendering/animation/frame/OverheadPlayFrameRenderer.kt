@@ -5,12 +5,12 @@ import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.animation.FieldTheme
 import com.fcfb.arceus.model.animation.MatchupHelmets
 import com.fcfb.arceus.model.animation.Uniform
 import com.fcfb.arceus.model.animation.choreography.Choreography
 import com.fcfb.arceus.model.animation.choreography.PlayContext
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.PlayAnimationClassifier
 import com.fcfb.arceus.rendering.animation.appearance.HelmetSprite
 import com.fcfb.arceus.rendering.animation.assets.LogoLoader

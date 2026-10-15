@@ -2,7 +2,7 @@ package com.fcfb.arceus.util
 
 import org.slf4j.LoggerFactory
 
-object Logger {
+class Logger {
     private val logger = LoggerFactory.getLogger(Logger::class.java)
 
     fun debug(

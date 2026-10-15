@@ -1,15 +1,16 @@
 package com.fcfb.arceus.service.fcfb.ranking
 
+import com.fcfb.arceus.domain.ranking.PowerRatingsCalculator
 import com.fcfb.arceus.enums.ranking.RankingMetricType
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.model.RankingMetric
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.repositories.RankingMetricBatchRepository
-import com.fcfb.arceus.repositories.RankingMetricRepository
-import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.ranking.RankingMetric
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.ranking.RankingMetricBatchRepository
+import com.fcfb.arceus.repositories.ranking.RankingMetricRepository
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -132,8 +133,8 @@ class RankingMetricServiceTest {
 
     @Test
     fun `test power rating weights the play-read differential at a fifth of the metric`() {
-        assertEquals(1.0, RankingMetricService.POWER_RATING_BASE_WEIGHT + RankingMetricService.POWER_RATING_DIFFERENTIAL_WEIGHT, 1e-9)
-        assertEquals(0.2, RankingMetricService.POWER_RATING_DIFFERENTIAL_WEIGHT, 1e-9)
+        assertEquals(1.0, PowerRatingsCalculator.POWER_RATING_BASE_WEIGHT + PowerRatingsCalculator.POWER_RATING_DIFFERENTIAL_WEIGHT, 1e-9)
+        assertEquals(0.2, PowerRatingsCalculator.POWER_RATING_DIFFERENTIAL_WEIGHT, 1e-9)
     }
 
     @Test

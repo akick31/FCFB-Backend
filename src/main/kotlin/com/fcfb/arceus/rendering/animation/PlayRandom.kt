@@ -1,6 +1,6 @@
 package com.fcfb.arceus.rendering.animation
 
-import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.play.Play
 import java.util.Random
 
 class PlayRandom(play: Play) {

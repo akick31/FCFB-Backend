@@ -5,10 +5,10 @@ import com.fcfb.arceus.enums.animation.GoalPostStyle
 import com.fcfb.arceus.enums.animation.WallDesign
 import com.fcfb.arceus.enums.animation.YardNumberArrowAlign
 import com.fcfb.arceus.enums.play.PlayCall
-import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.animation.EndZoneDecoration
 import com.fcfb.arceus.model.animation.FieldTheme
 import com.fcfb.arceus.model.animation.GoalPostSceneLayout
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.appearance.ColorSimilarity
 import com.fcfb.arceus.rendering.animation.appearance.FieldColors
 import com.fcfb.arceus.rendering.animation.assets.EndZoneFonts
@@ -215,7 +215,6 @@ object GoalPostScenePainter {
         return image
     }
 
-    /** Redrawn over the ball once it clears the bar, so it has to match the post painted into the scene beneath. */
     fun drawPost(
         image: BufferedImage,
         theme: FieldTheme,
@@ -335,7 +334,7 @@ object GoalPostScenePainter {
         for (slot in 0 until logosPerSide) {
             val offset = step / 2 + slot * step
             for (centerX in listOf(CENTER_X + offset, CENTER_X - offset)) {
-                LogoFit.draw(g, logo, centerX, logoCenterY, size)
+                LogoFit().draw(g, logo, centerX, logoCenterY, size)
                 captionFont?.let { drawWallCaption(g, lines, it, centerX, logoCenterY + size / 2 + WALL_CAPTION_GAP) }
             }
         }
@@ -366,7 +365,6 @@ object GoalPostScenePainter {
         g.font = previousFont
     }
 
-    /** Postseason styles keep their built-in look; a home field follows whatever the team configured. */
     private fun wallDesign(theme: FieldTheme): WallDesign {
         if (theme.style != FieldStyle.HOME_FIELD && !theme.hasCustomField) return WallDesign.TEXT_WITH_LOGOS
         return WallDesign.from(theme.wallDesign())
@@ -445,14 +443,10 @@ object GoalPostScenePainter {
     ) {
         val logo = LogoLoader.load(logoUrl) ?: return
         val size = (wallHeight * WALL_FLANK_LOGO_FRACTION).toInt().coerceAtLeast(8)
-        LogoFit.draw(g, logo, textX - WALL_FLANK_GAP - size / 2, centerY, size)
-        LogoFit.draw(g, logo, textX + textWidth + WALL_FLANK_GAP + size / 2, centerY, size)
+        LogoFit().draw(g, logo, textX - WALL_FLANK_GAP - size / 2, centerY, size)
+        LogoFit().draw(g, logo, textX + textWidth + WALL_FLANK_GAP + size / 2, centerY, size)
     }
 
-    /**
-     * A configured wall color wins outright. The heuristics below only pick something sensible when nothing is set, so
-     * letting them veto an explicit choice would hand a team black for picking its own pale primary.
-     */
     private fun wallColor(
         theme: FieldTheme,
         endZone: EndZoneDecoration,

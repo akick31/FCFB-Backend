@@ -2,7 +2,6 @@ package com.fcfb.arceus.util
 
 import java.util.Collections
 
-/** A thread-safe, size-bounded LRU cache; the eldest entry is evicted once the cap is exceeded. */
 class BoundedCache<K : Any, V : Any>(private val maxSize: Int) {
     private val map =
         Collections.synchronizedMap(

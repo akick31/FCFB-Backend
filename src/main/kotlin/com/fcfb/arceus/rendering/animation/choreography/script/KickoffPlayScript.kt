@@ -133,7 +133,13 @@ class KickoffPlayScript : PlayScript {
                 when {
                     index == returnerIndex -> returner
                     !returning -> if (blocking) wall else hold(start)
-                    else -> Pursuit.chase(wall, catchAt, escortSpeed, Pursuit.trail(returner, ESCORT_RADIUS + (index % 3) * ESCORT_STEP))
+                    else ->
+                        Pursuit.chase(
+                            wall,
+                            catchAt,
+                            escortSpeed,
+                            Pursuit.trail(returner, ESCORT_RADIUS + (index % 3) * ESCORT_STEP),
+                        )
                 }
             }
 

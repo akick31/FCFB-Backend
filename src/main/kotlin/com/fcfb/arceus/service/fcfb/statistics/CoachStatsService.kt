@@ -1,18 +1,20 @@
 package com.fcfb.arceus.service.fcfb.statistics
 
+import com.fcfb.arceus.domain.statistics.SeasonStatsCalculator
 import com.fcfb.arceus.enums.game.GameType
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.model.SeasonStats
-import com.fcfb.arceus.model.User
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.statistics.CoachSeasonStats
-import com.fcfb.arceus.repositories.CoachSeasonStatsRepository
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.model.statistics.SeasonStats
+import com.fcfb.arceus.repositories.account.UserRepository
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.statistics.CoachSeasonStatsRepository
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import com.fcfb.arceus.service.fcfb.coach.CoachStintService
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.statistics.StatsAverageCalculator
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -25,6 +27,8 @@ class CoachStatsService(
     private val coachStintService: CoachStintService,
     private val coachSeasonStatsRepository: CoachSeasonStatsRepository,
 ) {
+    private val seasonStatsCalculator = SeasonStatsCalculator(StatsAverageCalculator())
+
     fun getCoachStats(coach: String): List<CoachSeasonStats> {
         val user = userRepository.findByUsername(coach) ?: return emptyList()
         return coachSeasonStatsRepository.findByUserIdOrderBySeasonNumberDescTeamAsc(user.id)
@@ -53,13 +57,13 @@ class CoachStatsService(
     }
 
     fun generateAllCoachSeasonStats() {
-        Logger.info("Starting generation of all coach season stats")
+        Logger().info("Starting generation of all coach season stats")
         val users = userRepository.findAll().filterNotNull()
         users.forEachIndexed { index, user ->
-            Logger.info("Generating coach season stats for ${user.username} (${index + 1}/${users.size})")
+            Logger().info("Generating coach season stats for ${user.username} (${index + 1}/${users.size})")
             regenerateForCoach(user)
         }
-        Logger.info("Completed generation of all coach season stats")
+        Logger().info("Completed generation of all coach season stats")
     }
 
     private fun computeSeasonStats(user: User): List<SeasonStats> {
@@ -99,7 +103,7 @@ class CoachStatsService(
             .groupBy { "${it.team}_${it.season}" }
             .map { (_, rows) ->
                 val first = rows.first()
-                SeasonStatsCalculator.aggregateGameStatsToSeasonStats(
+                seasonStatsCalculator.aggregateGameStatsToSeasonStats(
                     rows,
                     first.team!!,
                     first.season!!,

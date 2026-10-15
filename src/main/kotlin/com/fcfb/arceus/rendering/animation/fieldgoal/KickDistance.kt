@@ -1,7 +1,7 @@
 package com.fcfb.arceus.rendering.animation.fieldgoal
 
 import com.fcfb.arceus.enums.play.PlayCall
-import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.play.Play
 
 object KickDistance {
     const val RETURNABLE_SHORT_KICK_YARDS = 55f

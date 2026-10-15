@@ -1,6 +1,5 @@
 package com.fcfb.arceus.enums.animation
 
-/** What a team paints on the wall behind the end zone. Text outlining is a separate color, not a design of its own. */
 enum class WallDesign {
     BLANK,
     REPEATING_LOGOS,

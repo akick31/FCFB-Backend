@@ -3,7 +3,7 @@ package com.fcfb.arceus.service.specification
 import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
-import com.fcfb.arceus.model.Record
+import com.fcfb.arceus.model.record.Record
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import javax.persistence.criteria.CriteriaBuilder

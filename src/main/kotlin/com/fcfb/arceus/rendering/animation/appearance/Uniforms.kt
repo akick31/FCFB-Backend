@@ -2,12 +2,12 @@ package com.fcfb.arceus.rendering.animation.appearance
 
 import com.fcfb.arceus.enums.animation.HelmetLogoMode
 import com.fcfb.arceus.enums.animation.StripeType
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamUniformHistory
 import com.fcfb.arceus.model.animation.Uniform
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
+import com.fcfb.arceus.model.team.Team
 import java.awt.Color
 
-object Uniforms {
+class Uniforms {
     fun forMatchup(
         homeTeam: Team,
         awayTeam: Team,
@@ -41,10 +41,6 @@ object Uniforms {
         return home to away
     }
 
-    /**
-     * The away (white) jersey paired with the team's secondary helmet, for the appearance editor preview only. A real
-     * game picks the away helmet by clash in [forMatchup]; the editor always shows the secondary helmet here.
-     */
     fun awayJerseyPreview(
         team: Team,
         snapshot: TeamUniformHistory?,
@@ -57,7 +53,6 @@ object Uniforms {
             numberTopText = snapshot?.awayNumberTopText ?: snapshot?.numberTopText,
         )
 
-    /** The secondary helmet rendered on its own, for the appearance editor preview. */
     fun secondaryHelmet(
         team: Team,
         snapshot: TeamUniformHistory?,
@@ -83,14 +78,14 @@ object Uniforms {
         copy(
             facemask = facemask(snapshot, alt),
             stripe = stripe(team, snapshot, alt),
-            stripeType = StripeType.from(HelmetFields.stripeType(snapshot, alt)),
+            stripeType = StripeType.from(HelmetFields().stripeType(snapshot, alt)),
             outerStripe = outerStripe(team, snapshot, alt),
             helmetNumber = helmetNumber(snapshot, alt),
-            helmetLogoMode = HelmetLogoMode.from(HelmetFields.helmetLogoMode(snapshot, alt), HelmetFields.hasLogo(snapshot, alt)),
-            logoSize = HelmetFields.logoSize(snapshot, alt).toFloat(),
-            logoX = HelmetFields.logoX(snapshot, alt).toFloat(),
-            logoY = HelmetFields.logoY(snapshot, alt).toFloat(),
-            logoRotation = HelmetFields.logoRotation(snapshot, alt).toFloat(),
+            helmetLogoMode = HelmetLogoMode.from(HelmetFields().helmetLogoMode(snapshot, alt), HelmetFields().hasLogo(snapshot, alt)),
+            logoSize = HelmetFields().logoSize(snapshot, alt).toFloat(),
+            logoX = HelmetFields().logoX(snapshot, alt).toFloat(),
+            logoY = HelmetFields().logoY(snapshot, alt).toFloat(),
+            logoRotation = HelmetFields().logoRotation(snapshot, alt).toFloat(),
         )
 
     private fun jersey(
@@ -108,7 +103,6 @@ object Uniforms {
         snapshot: TeamUniformHistory?,
     ): Color = FieldColors.parseColor(snapshot?.awayPantsColor ?: snapshot?.pantsColor ?: team.primaryColor)
 
-    /** The road team wears white, so its numbers stay the team color; only the home set honors a configured number color. */
     private fun awayNumber(
         team: Team,
         snapshot: TeamUniformHistory?,
@@ -124,20 +118,20 @@ object Uniforms {
     private fun helmetNumber(
         snapshot: TeamUniformHistory?,
         alt: Boolean,
-    ): Color = HelmetFields.helmetNumberColor(snapshot, alt)?.let { FieldColors.parseColor(it) } ?: Color.WHITE
+    ): Color = HelmetFields().helmetNumberColor(snapshot, alt)?.let { FieldColors.parseColor(it) } ?: Color.WHITE
 
     private fun facemask(
         snapshot: TeamUniformHistory?,
         alt: Boolean,
-    ): Color = HelmetFields.facemaskColor(snapshot, alt)?.let { FieldColors.parseColor(it) } ?: Color.WHITE
+    ): Color = HelmetFields().facemaskColor(snapshot, alt)?.let { FieldColors.parseColor(it) } ?: Color.WHITE
 
     private fun stripe(
         team: Team,
         snapshot: TeamUniformHistory?,
         alt: Boolean,
     ): Color? {
-        if (!HelmetFields.hasStripe(snapshot, alt)) return null
-        return FieldColors.parseColor(HelmetFields.stripeColor(snapshot, alt) ?: team.secondaryColor)
+        if (!HelmetFields().hasStripe(snapshot, alt)) return null
+        return FieldColors.parseColor(HelmetFields().stripeColor(snapshot, alt) ?: team.secondaryColor)
     }
 
     private fun outerStripe(
@@ -145,7 +139,7 @@ object Uniforms {
         snapshot: TeamUniformHistory?,
         alt: Boolean,
     ): Color? {
-        if (!HelmetFields.hasStripe(snapshot, alt)) return null
-        return FieldColors.parseColor(HelmetFields.secondaryStripeColor(snapshot, alt) ?: team.secondaryColor)
+        if (!HelmetFields().hasStripe(snapshot, alt)) return null
+        return FieldColors.parseColor(HelmetFields().secondaryStripeColor(snapshot, alt) ?: team.secondaryColor)
     }
 }

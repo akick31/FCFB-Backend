@@ -3,11 +3,11 @@ package com.fcfb.arceus.service.fcfb.ranking
 import com.fcfb.arceus.dto.response.RankingResponse
 import com.fcfb.arceus.enums.ranking.PollType
 import com.fcfb.arceus.exception.ranking.InvalidRankingsException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Ranking
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.RankingRepository
-import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.ranking.Ranking
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.ranking.RankingRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import org.springframework.stereotype.Service
 
 @Service

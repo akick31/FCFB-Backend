@@ -1,8 +1,8 @@
 package com.fcfb.arceus.rendering.chart
 
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import org.springframework.stereotype.Component
 import java.awt.BasicStroke
 import java.awt.Color
@@ -42,11 +42,18 @@ class ScoreChartRenderer : ChartRendererBase() {
                 chartWidth
             }
 
-        g.color = Color(40, 40, 40)
+        val plotBackground = Color(40, 40, 40)
+        g.color = plotBackground
         g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
-        val homeColor = parseColor(homeTeam.primaryColor ?: "#FF0000")
-        val awayColor = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        val (homeColor, awayColor) =
+            ChartColor().selectPair(
+                homeTeam.primaryColor?.let { parseColor(it) },
+                homeTeam.secondaryColor?.let { parseColor(it) },
+                awayTeam.primaryColor?.let { parseColor(it) },
+                awayTeam.secondaryColor?.let { parseColor(it) },
+                plotBackground,
+            )
 
         val actualMaxScore =
             maxOf(
@@ -59,7 +66,7 @@ class ScoreChartRenderer : ChartRendererBase() {
 
         drawScoreLines(g, plays, homeColor, awayColor, padding, chartWidth, chartHeight, scaleMax)
 
-        drawScoreAxes(g, padding, chartWidth, chartHeight, scaleMax, homeTeam, awayTeam, plays, game)
+        drawScoreAxes(g, padding, chartWidth, chartHeight, scaleMax, homeTeam, awayTeam, homeColor, awayColor, plays, game)
 
         g.dispose()
         return image
@@ -118,6 +125,8 @@ class ScoreChartRenderer : ChartRendererBase() {
         maxScore: Int,
         homeTeam: Team,
         awayTeam: Team,
+        homeColor: Color,
+        awayColor: Color,
         plays: List<Play>,
         game: Game,
     ) {
@@ -132,13 +141,13 @@ class ScoreChartRenderer : ChartRendererBase() {
         g.font = Font("Arial", Font.BOLD, 15)
 
         val homeLogoSize = 20
-        g.color = parseColor(homeTeam.primaryColor ?: "#FF0000")
+        g.color = homeColor
         g.fillRect(padding + 20, padding + 20, 12, 12)
         g.color = Color.WHITE
         g.drawString(homeTeamAbbr, padding + 40, padding + 32)
         drawTeamLogo(g, homeTeam, padding + 80, padding + 15, homeLogoSize, homeLogoSize)
 
-        g.color = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        g.color = awayColor
         g.fillRect(padding + 20, padding + 45, 12, 12)
         g.color = Color.WHITE
         g.drawString(awayTeamAbbr, padding + 40, padding + 57)

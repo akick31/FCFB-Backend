@@ -1,6 +1,6 @@
 package com.fcfb.arceus.filters
 
-import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.repositories.account.UserRepository
 import com.fcfb.arceus.service.auth.SessionService
 import com.fcfb.arceus.util.EncryptionUtils
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken

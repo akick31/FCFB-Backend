@@ -6,15 +6,6 @@ import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.URL
 
-/**
- * Guards server-side fetches of user-supplied URLs against SSRF: only public http(s) hosts are allowed, so file://,
- * other schemes, loopback/link-local/private/ULA addresses, and cloud-metadata endpoints are rejected, and every
- * redirect hop is re-validated so a public URL cannot bounce to an internal one.
- *
- * Residual: a host is re-resolved by the JVM when the connection opens, so a DNS-rebinding attacker could in theory
- * flip the record between our check and the connect. Fully closing that needs IP pinning, which breaks TLS hostname
- * verification without substantial custom-TLS code; the scheme + address checks above cover the practical vectors.
- */
 object SafeUrl {
     fun isAllowedUrl(url: URL): Boolean {
         val protocol = url.protocol?.lowercase()

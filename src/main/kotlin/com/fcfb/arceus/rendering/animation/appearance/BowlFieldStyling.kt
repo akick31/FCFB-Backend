@@ -3,12 +3,11 @@ package com.fcfb.arceus.rendering.animation.appearance
 import com.fcfb.arceus.enums.animation.EndZoneFill
 import com.fcfb.arceus.enums.animation.LogoSource
 import com.fcfb.arceus.enums.animation.YardNumberSource
-import com.fcfb.arceus.model.BowlField
-import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.animation.EndZoneDecoration
+import com.fcfb.arceus.model.appearance.BowlField
+import com.fcfb.arceus.model.team.Team
 import java.awt.Color
 
-/** Turns a bowl's stored settings into paint decisions. Left settings belong to the home team, right to the away team. */
 class BowlFieldStyling(
     private val field: BowlField,
     private val homeTeam: Team,
@@ -91,7 +90,7 @@ class BowlFieldStyling(
         value: String?,
         team: Team,
     ): Color? =
-        ColorToken.resolve(
+        ColorToken().resolve(
             value,
             FieldColors.parseColor(team.primaryColor),
             FieldColors.parseColor(team.secondaryColor),

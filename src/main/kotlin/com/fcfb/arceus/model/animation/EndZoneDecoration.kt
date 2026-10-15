@@ -1,6 +1,6 @@
 package com.fcfb.arceus.model.animation
 
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.team.Team
 import java.awt.Color
 
 data class EndZoneDecoration(

@@ -1,0 +1,286 @@
+package com.fcfb.arceus.service.fcfb.statistics.season
+
+import com.fcfb.arceus.domain.season.SeasonStructure
+import com.fcfb.arceus.domain.statistics.GameStatsFilters
+import com.fcfb.arceus.domain.statistics.SeasonStatsCalculator
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.model.statistics.PostseasonSeasonStats
+import com.fcfb.arceus.model.statistics.SeasonStats
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
+import com.fcfb.arceus.repositories.statistics.PostseasonSeasonStatsRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
+import com.fcfb.arceus.service.fcfb.conference.TeamSeasonConferenceService
+import com.fcfb.arceus.service.fcfb.statistics.conference.PostseasonConferenceStatsService
+import com.fcfb.arceus.service.specification.PostseasonSeasonStatsSpecificationService
+import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.statistics.StatsAverageCalculator
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Sort
+import org.springframework.stereotype.Service
+
+@Service
+class PostseasonSeasonStatsService(
+    private val postseasonSeasonStatsRepository: PostseasonSeasonStatsRepository,
+    private val gameStatsRepository: GameStatsRepository,
+    private val teamRepository: TeamRepository,
+    private val postseasonConferenceStatsService: PostseasonConferenceStatsService,
+    private val postseasonSeasonStatsSpecificationService: PostseasonSeasonStatsSpecificationService,
+    private val teamSeasonConferenceService: TeamSeasonConferenceService,
+) {
+    private val gameStatsFilters = GameStatsFilters()
+    private val seasonStatsCalculator = SeasonStatsCalculator(StatsAverageCalculator())
+
+    fun getFilteredPostseasonSeasonStats(
+        team: String?,
+        season: Int?,
+        pageable: Pageable,
+    ): Page<PostseasonSeasonStats> {
+        val spec = postseasonSeasonStatsSpecificationService.createSpecification(team, season)
+        val sortOrders = postseasonSeasonStatsSpecificationService.createSort()
+
+        val sortedPageable =
+            if (pageable.isPaged) {
+                PageRequest.of(
+                    pageable.pageNumber,
+                    pageable.pageSize,
+                    Sort.by(sortOrders),
+                )
+            } else {
+                PageRequest.of(0, Integer.MAX_VALUE, Sort.by(sortOrders))
+            }
+
+        return postseasonSeasonStatsRepository.findAll(spec, sortedPageable)
+    }
+
+    private fun filterPostseasonGames(gameStatsList: List<GameStats>): List<GameStats> {
+        return gameStatsList.filter { (it.week ?: 0) >= SeasonStructure.POSTSEASON_START_WEEK }
+    }
+
+    fun generateAllPostseasonSeasonStats() {
+        Logger().info("Starting generation of all postseason season stats")
+
+        val allGameStats = filterPostseasonGames(gameStatsFilters.excludingScrimmages(gameStatsRepository.findAll().toList()))
+        val gameStatsByGameId = allGameStats.groupBy { it.gameId }
+        val gameStatsByTeamSeason = allGameStats.groupBy { "${it.team}_${it.season}" }
+        val teamsByName = teamRepository.findAll().associateBy { it.name }
+
+        val total = gameStatsByTeamSeason.size
+        Logger().info("Generating postseason season stats for $total team-season combinations")
+        gameStatsByTeamSeason.entries.forEachIndexed { index, (combination, teamGameStats) ->
+            val (team, seasonStr) = combination.split("_")
+            val season = seasonStr.toInt()
+            Logger().info("Generating postseason season stats for $team in season $season (${index + 1}/$total)")
+            val conference = teamSeasonConferenceService.getConference(team, season) ?: teamsByName[team]?.conference
+            val seasonStats =
+                seasonStatsCalculator.aggregateGameStatsToSeasonStats(teamGameStats, team, season, gameStatsByGameId, conference)
+            val postseasonStats = seasonStats.toPostseason()
+            postseasonSeasonStatsRepository.findByTeamAndSeasonNumber(team, season)?.let { postseasonStats.id = it.id }
+            postseasonSeasonStatsRepository.save(postseasonStats)
+        }
+
+        val staleSeasonStats =
+            postseasonSeasonStatsRepository.findAll().filterNot { "${it.team}_${it.seasonNumber}" in gameStatsByTeamSeason.keys }
+        if (staleSeasonStats.isNotEmpty()) {
+            postseasonSeasonStatsRepository.deleteAll(staleSeasonStats)
+        }
+
+        Logger().info("Completed generation of all postseason season stats")
+    }
+
+    fun generatePostseasonSeasonStatsForTeam(
+        team: String,
+        seasonNumber: Int,
+    ) {
+        Logger().info("Generating postseason season stats for $team in season $seasonNumber")
+
+        val teamGameStats =
+            filterPostseasonGames(
+                gameStatsFilters.excludingScrimmages(
+                    gameStatsRepository.findAll()
+                        .filter { it.team == team && it.season == seasonNumber },
+                ),
+            )
+
+        if (teamGameStats.isEmpty()) {
+            Logger().warn("No postseason game stats found for $team in season $seasonNumber")
+            postseasonSeasonStatsRepository.deleteByTeamAndSeasonNumber(team, seasonNumber)
+            return
+        }
+
+        val gameIds = teamGameStats.map { it.gameId }.toSet()
+        val gameStatsByGameId =
+            gameStatsRepository.findAll()
+                .filter { it.gameId in gameIds }
+                .groupBy { it.gameId }
+
+        val conference = teamSeasonConferenceService.getConference(team, seasonNumber) ?: teamRepository.findByName(team)?.conference
+
+        val seasonStats =
+            seasonStatsCalculator.aggregateGameStatsToSeasonStats(teamGameStats, team, seasonNumber, gameStatsByGameId, conference)
+        val postseasonStats = seasonStats.toPostseason()
+        postseasonSeasonStatsRepository.findByTeamAndSeasonNumber(team, seasonNumber)?.let { postseasonStats.id = it.id }
+
+        postseasonSeasonStatsRepository.save(postseasonStats)
+        Logger().info("Completed generating postseason season stats for $team in season $seasonNumber")
+    }
+
+    fun updateSeasonStatsForGame(gameStats: GameStats) {
+        val team = gameStats.team ?: return
+        val season = gameStats.season ?: return
+
+        generatePostseasonSeasonStatsForTeam(team, season)
+
+        postseasonConferenceStatsService.updateConferenceStatsForSeasonStats(
+            postseasonSeasonStatsRepository.findByTeamAndSeasonNumber(team, season) ?: return,
+        )
+    }
+}
+
+private fun SeasonStats.toPostseason(): PostseasonSeasonStats {
+    return PostseasonSeasonStats(
+        team = team,
+        seasonNumber = seasonNumber,
+        wins = wins,
+        losses = losses,
+        subdivision = subdivision,
+        conference = conference,
+        offensivePlaybook = offensivePlaybook,
+        defensivePlaybook = defensivePlaybook,
+        passAttempts = passAttempts,
+        passCompletions = passCompletions,
+        passCompletionPercentage = passCompletionPercentage,
+        passYards = passYards,
+        longestPass = longestPass,
+        passTouchdowns = passTouchdowns,
+        passSuccesses = passSuccesses,
+        passSuccessPercentage = passSuccessPercentage,
+        rushAttempts = rushAttempts,
+        rushSuccesses = rushSuccesses,
+        rushSuccessPercentage = rushSuccessPercentage,
+        rushYards = rushYards,
+        longestRun = longestRun,
+        rushTouchdowns = rushTouchdowns,
+        totalYards = totalYards,
+        offensivePlayYards = offensivePlayYards,
+        offensivePlayCount = offensivePlayCount,
+        averageYardsPerPlay = averageYardsPerPlay,
+        firstDowns = firstDowns,
+        sacksAllowed = sacksAllowed,
+        sacksForced = sacksForced,
+        interceptionsLost = interceptionsLost,
+        interceptionsForced = interceptionsForced,
+        fumblesLost = fumblesLost,
+        fumblesForced = fumblesForced,
+        turnoversLost = turnoversLost,
+        turnoversForced = turnoversForced,
+        turnoverDifferential = turnoverDifferential,
+        turnoverTouchdownsLost = turnoverTouchdownsLost,
+        turnoverTouchdownsForced = turnoverTouchdownsForced,
+        pickSixesThrown = pickSixesThrown,
+        pickSixesForced = pickSixesForced,
+        fumbleReturnTdsCommitted = fumbleReturnTdsCommitted,
+        fumbleReturnTdsForced = fumbleReturnTdsForced,
+        fieldGoalMade = fieldGoalMade,
+        fieldGoalAttempts = fieldGoalAttempts,
+        fieldGoalPercentage = fieldGoalPercentage,
+        longestFieldGoal = longestFieldGoal,
+        blockedOpponentFieldGoals = blockedOpponentFieldGoals,
+        fieldGoalTouchdown = fieldGoalTouchdown,
+        puntsAttempted = puntsAttempted,
+        longestPunt = longestPunt,
+        puntYards = puntYards,
+        puntCount = puntCount,
+        averagePuntLength = averagePuntLength,
+        blockedOpponentPunt = blockedOpponentPunt,
+        puntReturnTd = puntReturnTd,
+        puntReturnTdPercentage = puntReturnTdPercentage,
+        numberOfKickoffs = numberOfKickoffs,
+        onsideAttempts = onsideAttempts,
+        onsideSuccess = onsideSuccess,
+        onsideSuccessPercentage = onsideSuccessPercentage,
+        normalKickoffAttempts = normalKickoffAttempts,
+        touchbacks = touchbacks,
+        touchbackPercentage = touchbackPercentage,
+        kickReturnTd = kickReturnTd,
+        kickReturnTdPercentage = kickReturnTdPercentage,
+        numberOfDrives = numberOfDrives,
+        timeOfPossession = timeOfPossession,
+        touchdowns = touchdowns,
+        thirdDownConversionSuccess = thirdDownConversionSuccess,
+        thirdDownConversionAttempts = thirdDownConversionAttempts,
+        thirdDownConversionPercentage = thirdDownConversionPercentage,
+        fourthDownConversionSuccess = fourthDownConversionSuccess,
+        fourthDownConversionAttempts = fourthDownConversionAttempts,
+        fourthDownConversionPercentage = fourthDownConversionPercentage,
+        largestLead = largestLead,
+        largestDeficit = largestDeficit,
+        redZoneAttempts = redZoneAttempts,
+        redZoneSuccesses = redZoneSuccesses,
+        redZoneSuccessPercentage = redZoneSuccessPercentage,
+        redZonePercentage = redZonePercentage,
+        safetiesForced = safetiesForced,
+        safetiesCommitted = safetiesCommitted,
+        averageOffensiveDiff = averageOffensiveDiff,
+        averageDefensiveDiff = averageDefensiveDiff,
+        averageOffensiveSpecialTeamsDiff = averageOffensiveSpecialTeamsDiff,
+        averageDefensiveSpecialTeamsDiff = averageDefensiveSpecialTeamsDiff,
+        averageDiff = averageDiff,
+        averageResponseSpeed = averageResponseSpeed,
+        opponentPassAttempts = opponentPassAttempts,
+        opponentPassCompletions = opponentPassCompletions,
+        opponentPassCompletionPercentage = opponentPassCompletionPercentage,
+        opponentPassYards = opponentPassYards,
+        opponentLongestPass = opponentLongestPass,
+        opponentPassTouchdowns = opponentPassTouchdowns,
+        opponentPassSuccesses = opponentPassSuccesses,
+        opponentPassSuccessPercentage = opponentPassSuccessPercentage,
+        opponentRushAttempts = opponentRushAttempts,
+        opponentRushSuccesses = opponentRushSuccesses,
+        opponentRushSuccessPercentage = opponentRushSuccessPercentage,
+        opponentRushYards = opponentRushYards,
+        opponentLongestRun = opponentLongestRun,
+        opponentRushTouchdowns = opponentRushTouchdowns,
+        opponentTotalYards = opponentTotalYards,
+        opponentOffensivePlayYards = opponentOffensivePlayYards,
+        opponentOffensivePlayCount = opponentOffensivePlayCount,
+        opponentAverageYardsPerPlay = opponentAverageYardsPerPlay,
+        opponentFirstDowns = opponentFirstDowns,
+        opponentFieldGoalMade = opponentFieldGoalMade,
+        opponentFieldGoalAttempts = opponentFieldGoalAttempts,
+        opponentFieldGoalPercentage = opponentFieldGoalPercentage,
+        opponentLongestFieldGoal = opponentLongestFieldGoal,
+        opponentFieldGoalTouchdown = opponentFieldGoalTouchdown,
+        opponentPuntsAttempted = opponentPuntsAttempted,
+        opponentLongestPunt = opponentLongestPunt,
+        opponentPuntYards = opponentPuntYards,
+        opponentPuntCount = opponentPuntCount,
+        opponentAveragePuntLength = opponentAveragePuntLength,
+        opponentPuntReturnTd = opponentPuntReturnTd,
+        opponentPuntReturnTdPercentage = opponentPuntReturnTdPercentage,
+        opponentNumberOfKickoffs = opponentNumberOfKickoffs,
+        opponentOnsideAttempts = opponentOnsideAttempts,
+        opponentOnsideSuccess = opponentOnsideSuccess,
+        opponentOnsideSuccessPercentage = opponentOnsideSuccessPercentage,
+        opponentNormalKickoffAttempts = opponentNormalKickoffAttempts,
+        opponentTouchbacks = opponentTouchbacks,
+        opponentTouchbackPercentage = opponentTouchbackPercentage,
+        opponentKickReturnTd = opponentKickReturnTd,
+        opponentKickReturnTdPercentage = opponentKickReturnTdPercentage,
+        opponentNumberOfDrives = opponentNumberOfDrives,
+        opponentTimeOfPossession = opponentTimeOfPossession,
+        opponentTouchdowns = opponentTouchdowns,
+        opponentThirdDownConversionSuccess = opponentThirdDownConversionSuccess,
+        opponentThirdDownConversionAttempts = opponentThirdDownConversionAttempts,
+        opponentThirdDownConversionPercentage = opponentThirdDownConversionPercentage,
+        opponentFourthDownConversionSuccess = opponentFourthDownConversionSuccess,
+        opponentFourthDownConversionAttempts = opponentFourthDownConversionAttempts,
+        opponentFourthDownConversionPercentage = opponentFourthDownConversionPercentage,
+        opponentRedZoneAttempts = opponentRedZoneAttempts,
+        opponentRedZoneSuccesses = opponentRedZoneSuccesses,
+        opponentRedZoneSuccessPercentage = opponentRedZoneSuccessPercentage,
+        opponentRedZonePercentage = opponentRedZonePercentage,
+        lastModifiedTs = lastModifiedTs,
+    )
+}

@@ -3,17 +3,19 @@ package com.fcfb.arceus.scheduler
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.GameWarning
+import com.fcfb.arceus.enums.notification.NotificationType
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.game.NotificationOutbox
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.game.GameService
-import com.fcfb.arceus.service.fcfb.media.ScorebugService
+import com.fcfb.arceus.service.fcfb.graphics.ScorebugService
 import com.fcfb.arceus.service.fcfb.play.PlayService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import io.mockk.every
@@ -128,5 +130,56 @@ class DelayOfGameMonitorTest {
 
         assertEquals(1, savedGame.captured.numPlays)
         verify(exactly = 0) { playService.defensiveNumberSubmitted(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed delay of game notification is persisted for retry instead of being dropped`() {
+        val game = pregameGame(waitingOn = TeamSide.AWAY, coinTossWinner = null)
+        every { gameService.findExpiredTimers() } returns listOf(game)
+        every { discordService.notifyDelayOfGame(any(), any()) } returns false
+
+        monitor.checkForDelayOfGame()
+
+        verify(exactly = 1) { gameService.markPendingDogNotification(game.gameId, false) }
+    }
+
+    @Test
+    fun `a successful delay of game notification is not persisted for retry`() {
+        val game = pregameGame(waitingOn = TeamSide.AWAY, coinTossWinner = null)
+        every { gameService.findExpiredTimers() } returns listOf(game)
+        every { discordService.notifyDelayOfGame(any(), any()) } returns true
+
+        monitor.checkForDelayOfGame()
+
+        verify(exactly = 0) { gameService.markPendingDogNotification(any(), any()) }
+    }
+
+    @Test
+    fun `pending delay of game notifications are retried and cleared on success`() {
+        val pendingGame = Game().apply { gameId = 42 }
+        val pendingNotification = NotificationOutbox(42, NotificationType.DOG_OUT, "true")
+        every { gameService.findPendingDogNotifications() } returns listOf(pendingNotification)
+        every { gameService.getGameById(42) } returns pendingGame
+        every { gameService.findExpiredTimers() } returns emptyList()
+        every { discordService.notifyDelayOfGame(pendingGame, true) } returns true
+
+        monitor.checkForDelayOfGame()
+
+        verify(exactly = 1) { discordService.notifyDelayOfGame(pendingGame, true) }
+        verify(exactly = 1) { gameService.clearPendingDogNotification(42) }
+    }
+
+    @Test
+    fun `pending delay of game notifications stay pending when the retry also fails`() {
+        val pendingGame = Game().apply { gameId = 43 }
+        val pendingNotification = NotificationOutbox(43, NotificationType.DOG_OUT, "false")
+        every { gameService.findPendingDogNotifications() } returns listOf(pendingNotification)
+        every { gameService.getGameById(43) } returns pendingGame
+        every { gameService.findExpiredTimers() } returns emptyList()
+        every { discordService.notifyDelayOfGame(pendingGame, false) } returns false
+
+        monitor.checkForDelayOfGame()
+
+        verify(exactly = 0) { gameService.clearPendingDogNotification(any()) }
     }
 }

@@ -3,8 +3,8 @@ package com.fcfb.arceus.rendering.scorebug
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.team.Team
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Font
@@ -216,7 +216,7 @@ abstract class ScorebugRendererBase {
                 paintGradient(g, Color.decode(team.primaryColor), yPos, rowHeight)
                 g.fillRect(0, yPos, 246, 75)
             } catch (e: java.io.IOException) {
-                com.fcfb.arceus.util.Logger.error("Error loading logo for ${team.name}: ${e.message}")
+                com.fcfb.arceus.util.Logger().error("Error loading logo for ${team.name}: ${e.message}")
             }
         }
 

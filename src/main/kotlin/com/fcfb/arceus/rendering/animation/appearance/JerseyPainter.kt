@@ -15,7 +15,7 @@ object JerseyPainter {
         shoulderY: Float,
     ) {
         val scale = figure.scale
-        val font = NumberFonts.font(figure.uniform.jerseyNumberFont, NUMBER_SIZE * scale)
+        val font = NumberFonts().font(figure.uniform.jerseyNumberFont, NUMBER_SIZE * scale)
         val number = font.createGlyphVector(g.fontRenderContext, figure.number.toString()).outline
         val bounds = number.bounds2D
         val widthScale = minOf(1.0, 26 * scale / bounds.width)
@@ -41,7 +41,7 @@ object JerseyPainter {
     ) {
         val text = figure.uniform.numberTopText?.takeIf { it.isNotBlank() } ?: return
         val scale = figure.scale
-        val font = NumberFonts.font(figure.uniform.jerseyNumberFont, 4.5f * scale)
+        val font = NumberFonts().font(figure.uniform.jerseyNumberFont, 4.5f * scale)
         val shape = font.createGlyphVector(g.fontRenderContext, text).outline
         val bounds = shape.bounds2D
         val availableWidth = 24f * scale

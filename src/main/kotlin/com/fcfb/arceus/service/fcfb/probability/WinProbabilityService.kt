@@ -1,13 +1,13 @@
 package com.fcfb.arceus.service.fcfb.probability
 
-import com.fcfb.arceus.enums.gameflow.CoinTossChoice
+import com.fcfb.arceus.domain.elo.EloCalculator
+import com.fcfb.arceus.domain.probability.WinProbabilityCalculator
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.PlayRepository
-import com.fcfb.arceus.service.fcfb.elo.EloCalculator
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.util.ml.XGBoostPredictor
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -17,6 +17,8 @@ class WinProbabilityService(
     private val xgboostPredictor: XGBoostPredictor,
     private val playRepository: PlayRepository,
 ) {
+    private val eloCalculator = EloCalculator()
+    private val winProbabilityCalculator = WinProbabilityCalculator(xgboostPredictor)
     private val logger = LoggerFactory.getLogger(WinProbabilityService::class.java)
 
     fun calculateWinProbability(
@@ -27,20 +29,20 @@ class WinProbabilityService(
     ): Double {
         try {
             val scoreDiff = play.homeScore - play.awayScore
-            val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
+            val timeRemaining = winProbabilityCalculator.calculateTimeRemaining(play.quarter, play.clock).toInt()
             val down = play.down
             val yardsToGo = play.yardsToGo
             val ballLocation = 100 - play.ballLocation
 
             val secondsLeftGame = timeRemaining
-            val secondsLeftHalf = calculateSecondsLeftHalf(play.quarter, play.clock)
+            val secondsLeftHalf = winProbabilityCalculator.calculateSecondsLeftInHalf(play.quarter, play.clock)
             val half = if (play.quarter <= 2) 1 else 2
-            val hadFirstPossession = calculateHadFirstPossession(game, play.possession)
+            val hadFirstPossession = winProbabilityCalculator.resolveFirstPossession(game, play.possession)
             val eloDiffTime =
                 if (play.possession == TeamSide.HOME) {
-                    calculateEloDiffTime(homeElo, awayElo, secondsLeftGame)
+                    winProbabilityCalculator.calculateEloDiffTime(homeElo, awayElo, secondsLeftGame)
                 } else {
-                    calculateEloDiffTime(awayElo, homeElo, secondsLeftGame)
+                    winProbabilityCalculator.calculateEloDiffTime(awayElo, homeElo, secondsLeftGame)
                 }
 
             val margin =
@@ -66,7 +68,7 @@ class WinProbabilityService(
             val winProbability =
                 when (play.playCall) {
                     PlayCall.PAT ->
-                        calculatePatWinProbability(
+                        winProbabilityCalculator.calculatePatWinProbability(
                             margin,
                             timeRemaining,
                             secondsLeftHalf,
@@ -75,7 +77,7 @@ class WinProbabilityService(
                             eloDiffTime,
                         )
                     PlayCall.TWO_POINT ->
-                        calculateTwoPointWinProbability(
+                        winProbabilityCalculator.calculateTwoPointWinProbability(
                             margin,
                             timeRemaining,
                             secondsLeftHalf,
@@ -84,7 +86,7 @@ class WinProbabilityService(
                             eloDiffTime,
                         )
                     PlayCall.KICKOFF_NORMAL ->
-                        calculateKickoffWinProbability(
+                        winProbabilityCalculator.calculateKickoffWinProbability(
                             margin,
                             timeRemaining,
                             secondsLeftHalf,
@@ -93,7 +95,7 @@ class WinProbabilityService(
                             eloDiffTime,
                         )
                     PlayCall.KICKOFF_ONSIDE ->
-                        calculateKickoffOnsideWinProbability(
+                        winProbabilityCalculator.calculateKickoffOnsideWinProbability(
                             margin,
                             secondsLeftHalf,
                             half,
@@ -101,7 +103,7 @@ class WinProbabilityService(
                             eloDiffTime,
                         )
                     PlayCall.KICKOFF_SQUIB ->
-                        calculateKickoffSquibWinProbability(
+                        winProbabilityCalculator.calculateKickoffSquibWinProbability(
                             margin,
                             secondsLeftHalf,
                             half,
@@ -142,34 +144,13 @@ class WinProbabilityService(
                 null
             }
 
-        val winProbabilityAdded =
-            if (previousPlay != null) {
-                val currentWinProb = currentWinProbability
-                val previousWinProb = previousPlay.winProbability ?: 0.0
-
-                if (play.possession != previousPlay.possession) {
-                    val previousHomeWinProb =
-                        if (previousPlay.possession == TeamSide.HOME) {
-                            previousWinProb
-                        } else {
-                            1.0 - previousWinProb
-                        }
-
-                    val currentHomeWinProb =
-                        if (play.possession == TeamSide.HOME) {
-                            currentWinProb
-                        } else {
-                            1.0 - currentWinProb
-                        }
-
-                    return currentHomeWinProb - previousHomeWinProb
-                } else {
-                    return currentWinProb - previousWinProb
-                }
-            } else {
-                currentWinProbability - previousWinProbability
-            }
-        return winProbabilityAdded
+        return winProbabilityCalculator.calculateWinProbabilityAdded(
+            currentWinProbability = currentWinProbability,
+            previousWinProbability = previousWinProbability,
+            currentPossession = play.possession,
+            previousPlayWinProbability = previousPlay?.winProbability,
+            previousPlayPossession = previousPlay?.possession,
+        )
     }
 
     fun updateEloRatings(
@@ -178,260 +159,12 @@ class WinProbabilityService(
         awayTeam: Team,
     ) {
         val (newHomeElo, newAwayElo) =
-            EloCalculator.updatedRatings(homeTeam.currentElo, awayTeam.currentElo, game.homeScore > game.awayScore)
+            eloCalculator.updatedRatings(homeTeam.currentElo, awayTeam.currentElo, game.homeScore > game.awayScore)
         logger.info(
             "Game ${game.gameId} ELO: ${game.homeTeam} ${homeTeam.currentElo} -> $newHomeElo, " +
                 "${game.awayTeam} ${awayTeam.currentElo} -> $newAwayElo",
         )
         homeTeam.currentElo = newHomeElo
         awayTeam.currentElo = newAwayElo
-    }
-
-    private fun calculateTimeRemaining(
-        quarter: Int,
-        clock: Int,
-    ): Double {
-        val timeRemaining =
-            when (quarter) {
-                1 -> 1680 - (420 - clock)
-                2 -> 1260 - (420 - clock)
-                3 -> 840 - (420 - clock)
-                4 -> 420 - (420 - clock)
-                else -> 0.0
-            }
-        return maxOf(0.0, timeRemaining.toDouble())
-    }
-
-    private fun calculateSecondsLeftHalf(
-        quarter: Int,
-        clock: Int,
-    ): Int {
-        val secondsLeftHalf =
-            when (quarter) {
-                1 -> 840 - (420 - clock)
-                2 -> 420 - (420 - clock)
-                3 -> 840 - (420 - clock)
-                4 -> 420 - (420 - clock)
-                else -> 0
-            }
-        return maxOf(0, secondsLeftHalf)
-    }
-
-    private fun calculateEloDiffTime(
-        offenseElo: Double,
-        defenseElo: Double,
-        secondsLeftGame: Int,
-    ): Double {
-        return (offenseElo - defenseElo) * Math.exp(-2.0 * (1.0 - (secondsLeftGame.toDouble() / 1680.0)))
-    }
-
-    private fun calculateHadFirstPossession(
-        game: Game,
-        currentPossession: TeamSide,
-    ): Int {
-        val coinTossWinner = game.coinTossWinner
-        val coinTossChoice = game.coinTossChoice
-
-        if (coinTossWinner == null || coinTossChoice == null) {
-            logger.warn("Missing coin toss data for game ${game.gameId}. Using default: HOME had first possession")
-            return if (currentPossession == TeamSide.HOME) 1 else 0
-        }
-
-        val whoHadFirstPossession =
-            when {
-                coinTossWinner == TeamSide.AWAY && coinTossChoice == CoinTossChoice.DEFER -> TeamSide.HOME
-                coinTossWinner == TeamSide.HOME && coinTossChoice == CoinTossChoice.DEFER -> TeamSide.AWAY
-                coinTossWinner == TeamSide.AWAY && coinTossChoice == CoinTossChoice.RECEIVE -> TeamSide.AWAY
-                coinTossWinner == TeamSide.HOME && coinTossChoice == CoinTossChoice.RECEIVE -> TeamSide.HOME
-                else -> {
-                    logger.warn("Unexpected coin toss combination for game ${game.gameId}: winner=$coinTossWinner, choice=$coinTossChoice")
-                    TeamSide.HOME
-                }
-            }
-
-        return if (currentPossession == whoHadFirstPossession) 1 else 0
-    }
-
-    private fun calculatePatWinProbability(
-        margin: Int,
-        timeRemaining: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val probIfSuccess =
-            calculateWinProbabilityForScenario(
-                75,
-                -(margin + 1),
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                hadFirstPossession,
-                -eloDiffTime,
-            )
-        val probIfFail =
-            calculateWinProbabilityForScenario(
-                75,
-                -margin,
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                1 - hadFirstPossession,
-                -eloDiffTime,
-            )
-        val probIfReturn =
-            calculateWinProbabilityForScenario(
-                75,
-                -(margin - 2),
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                1 - hadFirstPossession,
-                -eloDiffTime,
-            )
-
-        return 1.0 - (
-            ((721.0 / 751.0) * probIfSuccess) +
-                ((27.0 / 751.0) * probIfFail) +
-                ((3.0 / 751.0) * probIfReturn)
-        )
-    }
-
-    private fun calculateTwoPointWinProbability(
-        margin: Int,
-        timeRemaining: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val probIfSuccess =
-            calculateWinProbabilityForScenario(
-                75,
-                -(margin + 2),
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                hadFirstPossession,
-                -eloDiffTime,
-            )
-        val probIfFail =
-            calculateWinProbabilityForScenario(
-                75,
-                -margin,
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                1 - hadFirstPossession,
-                -eloDiffTime,
-            )
-        val probIfReturn =
-            calculateWinProbabilityForScenario(
-                75,
-                -(margin - 2),
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                1 - hadFirstPossession,
-                -eloDiffTime,
-            )
-
-        return 1.0 - (
-            ((301.0 / 751.0) * probIfSuccess) +
-                ((447.0 / 751.0) * probIfFail) +
-                ((3.0 / 751.0) * probIfReturn)
-        )
-    }
-
-    private fun calculateKickoffWinProbability(
-        margin: Int,
-        timeRemaining: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        return 1.0 -
-            calculateWinProbabilityForScenario(
-                75, -margin, timeRemaining, secondsLeftHalf,
-                half, 1 - hadFirstPossession, -eloDiffTime,
-            )
-    }
-
-    private fun calculateKickoffSquibWinProbability(
-        margin: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val slg = ((2 - half) * 840) + secondsLeftHalf
-
-        return 1.0 -
-            calculateWinProbabilityForScenario(
-                65, -margin, slg, secondsLeftHalf,
-                half, 1 - hadFirstPossession, -eloDiffTime,
-            )
-    }
-
-    private fun calculateKickoffOnsideWinProbability(
-        margin: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val slg = ((2 - half) * 840) + secondsLeftHalf
-
-        val probIfSuccess =
-            calculateWinProbabilityForScenario(55, margin, slg, secondsLeftHalf, half, hadFirstPossession, eloDiffTime)
-        val probIfFail =
-            1.0 -
-                calculateWinProbabilityForScenario(
-                    45, -margin, slg, secondsLeftHalf,
-                    half, 1 - hadFirstPossession, -eloDiffTime,
-                )
-        val slhr = maxOf(secondsLeftHalf - 10, 0)
-        val slgr = ((2 - half) * 840) + slhr
-        val probIfReturn =
-            1.0 -
-                calculateWinProbabilityForScenario(
-                    75, margin - 6, slgr, slhr,
-                    half, 1 - hadFirstPossession, -eloDiffTime,
-                )
-
-        return (
-            ((140.0 / 751.0) * probIfSuccess) +
-                ((611.0 / 751.0) * probIfFail) +
-                ((1.0 / 751.0) * probIfReturn)
-        )
-    }
-
-    private fun calculateWinProbabilityForScenario(
-        position: Int,
-        margin: Int,
-        secondsLeftGame: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val features =
-            xgboostPredictor.createFeatureArray(
-                down = 1,
-                distance = 10,
-                position = position,
-                margin = margin,
-                secondsLeftGame = secondsLeftGame,
-                secondsLeftHalf = secondsLeftHalf,
-                half = half,
-                hadFirstPossession = hadFirstPossession,
-                eloDiffTime = eloDiffTime,
-            )
-
-        val rawWinProbability = xgboostPredictor.predict(features)
-
-        return rawWinProbability
     }
 }

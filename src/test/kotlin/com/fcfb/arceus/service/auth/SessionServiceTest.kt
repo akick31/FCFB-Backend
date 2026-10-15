@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.auth
 
 import com.fcfb.arceus.enums.user.UserRole
-import com.fcfb.arceus.repositories.SessionRepository
+import com.fcfb.arceus.repositories.account.SessionRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals

@@ -3,11 +3,11 @@ package com.fcfb.arceus.service.fcfb.coach
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.TransactionType
-import com.fcfb.arceus.model.CoachTransactionLog
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.CoachTransactionLogRepository
-import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.model.log.CoachTransactionLog
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.log.CoachTransactionLogRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import com.fcfb.arceus.service.log.UsernameHistoryService
 import io.mockk.every
 import io.mockk.mockk

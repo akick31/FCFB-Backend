@@ -2,8 +2,8 @@ package com.fcfb.arceus.service.fcfb.schedule
 
 import com.fcfb.arceus.dto.response.ScheduleValidationResult
 import com.fcfb.arceus.dto.response.TeamScheduleGap
-import com.fcfb.arceus.repositories.ScheduleRepository
-import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import org.springframework.stereotype.Service
 
 @Service

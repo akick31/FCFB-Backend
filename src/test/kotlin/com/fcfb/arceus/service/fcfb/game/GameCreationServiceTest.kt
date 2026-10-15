@@ -10,11 +10,11 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.exception.discord.UnableToCreateGameThreadException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Season
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.season.Season
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.appearance.TeamUniformService
 import com.fcfb.arceus.service.fcfb.probability.VegasOddsService
@@ -51,12 +51,12 @@ class GameCreationServiceTest {
     private val games =
         GameService(
             gameRepository, playRepository, teamService, discordService, mockk(), gameStatsService,
-            mockk(), mockk(), mockk(), mockk(),
+            mockk(), mockk(), mockk(), mockk(), mockk(), mockk(relaxed = true), mockk(relaxed = true),
         )
     private val creation =
         GameCreationService(
-            games, gameRepository, teamService, discordService, gameStatsService, teamUniformService,
-            seasonService, scheduleService, vegasOddsService, rankingService,
+            games, teamService, discordService, gameStatsService, teamUniformService,
+            seasonService, scheduleService, vegasOddsService, rankingService, mockk(relaxed = true),
         )
     private val startRequest =
         StartRequest(
@@ -165,6 +165,31 @@ class GameCreationServiceTest {
         }
 
     @Test
+    fun `creation falls back to the home team's stadium when no venue is given`() =
+        runBlocking {
+            every { teamService.getTeamByName("Ohio State") } returns
+                team(1, "Ohio State", "coachA", "111", stadium = "Ohio Stadium")
+            coEvery { discordService.createGameThread(any()) } returns listOf("thread", "message")
+
+            val game = creation.startSingleGame(startRequest, null)
+
+            assertEquals("Ohio Stadium", game.venue)
+        }
+
+    @Test
+    fun `creation keeps an explicit neutral site venue over the home team's stadium`() =
+        runBlocking {
+            every { teamService.getTeamByName("Ohio State") } returns
+                team(1, "Ohio State", "coachA", "111", stadium = "Ohio Stadium")
+            coEvery { discordService.createGameThread(any()) } returns listOf("thread", "message")
+            val request = startRequest.copy(neutralSite = true, venue = "Neutral Arena")
+
+            val game = creation.startSingleGame(request, null)
+
+            assertEquals("Neutral Arena", game.venue)
+        }
+
+    @Test
     fun `overtime creation retains scrimmage defaults and shared setup order`() =
         runBlocking {
             coEvery { discordService.createGameThread(any()) } returns listOf("thread", "message")
@@ -227,6 +252,7 @@ class GameCreationServiceTest {
         teamName: String,
         coach: String,
         discordId: String,
+        stadium: String? = null,
     ) = Team().apply {
         id = teamId
         name = teamName
@@ -236,6 +262,7 @@ class GameCreationServiceTest {
         coachDiscordIds = mutableListOf(discordId)
         offensivePlaybook = OffensivePlaybook.AIR_RAID
         defensivePlaybook = DefensivePlaybook.FOUR_THREE
+        this.stadium = stadium
     }
 
     companion object {

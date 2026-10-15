@@ -25,10 +25,10 @@ class FileUploadService(
         return try {
             val logosDir = ensureDirectory(File(ensureDirectory(File(imagesPath)), "postseason-logos"))
             val relativePath = "postseason-logos/${saveFile(file, logosDir)}"
-            Logger.info("Uploaded postseason logo: $relativePath")
+            Logger().info("Uploaded postseason logo: $relativePath")
             ResponseEntity.ok(mapOf("url" to relativePath))
         } catch (e: Exception) {
-            Logger.error("Error uploading postseason logo: ${e.message}", e)
+            Logger().error("Error uploading postseason logo: ${e.message}", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("error" to "Failed to upload file: ${e.message}"))
         }
@@ -48,7 +48,7 @@ class FileUploadService(
     private fun ensureDirectory(dir: File): File {
         if (!dir.exists()) {
             dir.mkdirs()
-            Logger.info("Created directory: ${dir.absolutePath}")
+            Logger().info("Created directory: ${dir.absolutePath}")
         }
         return dir
     }

@@ -1,5 +1,13 @@
 package com.fcfb.arceus.service.fcfb.ranking
 
+import com.fcfb.arceus.domain.ranking.AdjustedPointsAgainstRatingsCalculator
+import com.fcfb.arceus.domain.ranking.AdjustedPointsForRatingsCalculator
+import com.fcfb.arceus.domain.ranking.AdjustedScheduleRatingsCalculator
+import com.fcfb.arceus.domain.ranking.AsrRatingsCalculator
+import com.fcfb.arceus.domain.ranking.ColleyRatingsCalculator
+import com.fcfb.arceus.domain.ranking.CompositeRatingsCalculator
+import com.fcfb.arceus.domain.ranking.PowerRatingsCalculator
+import com.fcfb.arceus.domain.ranking.RankingFormulas
 import com.fcfb.arceus.dto.response.RankingMetricComputeResult
 import com.fcfb.arceus.dto.response.RankingMetricResponse
 import com.fcfb.arceus.dto.response.TeamRankingMetricResponse
@@ -8,19 +16,19 @@ import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.ranking.RankingMetricType
 import com.fcfb.arceus.exception.ranking.InvalidRankingMetricException
 import com.fcfb.arceus.exception.ranking.MetricNotImplementedException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.RankingMetric
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.ranking.RankingMetric
 import com.fcfb.arceus.model.ranking.TeamDiffAccumulator
 import com.fcfb.arceus.model.ranking.TeamDiffAggregate
 import com.fcfb.arceus.model.ranking.TeamSeasonAccumulator
 import com.fcfb.arceus.model.ranking.TeamSeasonAggregate
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.repositories.RankingMetricBatchRepository
-import com.fcfb.arceus.repositories.RankingMetricRepository
-import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.util.LinearAlgebraUtils
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.ranking.RankingMetricBatchRepository
+import com.fcfb.arceus.repositories.ranking.RankingMetricRepository
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
+import com.fcfb.arceus.util.ranking.RatingNormalizer
 import org.springframework.stereotype.Service
 
 @Service
@@ -32,6 +40,18 @@ class RankingMetricService(
     private val teamRepository: TeamRepository,
     private val teamResumeMetricService: TeamResumeMetricService,
 ) {
+    private val rankingFormulas = RankingFormulas()
+    private val ratingNormalizer = RatingNormalizer()
+    private val adjustedScheduleRatingsCalculator = AdjustedScheduleRatingsCalculator()
+    private val powerRatingsCalculator = PowerRatingsCalculator(ratingNormalizer, rankingFormulas)
+    private val colleyRatingsCalculator = ColleyRatingsCalculator()
+    private val asrRatingsCalculator = AsrRatingsCalculator(adjustedScheduleRatingsCalculator, rankingFormulas)
+    private val adjustedPointsForRatingsCalculator =
+        AdjustedPointsForRatingsCalculator(adjustedScheduleRatingsCalculator, rankingFormulas)
+    private val adjustedPointsAgainstRatingsCalculator =
+        AdjustedPointsAgainstRatingsCalculator(adjustedScheduleRatingsCalculator, rankingFormulas)
+    private val compositeRatingsCalculator = CompositeRatingsCalculator(ratingNormalizer)
+
     fun computeMetrics(
         season: Int,
         week: Int,
@@ -55,7 +75,7 @@ class RankingMetricService(
         val diffAggregates = buildDiffAggregates(season, week, teamsByName)
         val equivalentWins =
             aggregates.mapValues { (_, aggregate) ->
-                calculateEquivalentWins(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
+                rankingFormulas.calculateEquivalentWins(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
             }
         simpleTypes.forEach { type ->
             val values = aggregates.mapValues { (_, aggregate) -> calculate(type, aggregate) }
@@ -77,22 +97,22 @@ class RankingMetricService(
             computedTypes.add(type.name)
         }
 
-        val powerRatings = calculatePowerRatings(aggregates, diffAggregates)
+        val powerRatings = powerRatingsCalculator.calculate(aggregates, diffAggregates)
         saveCrossTeamMetric(season, week, RankingMetricType.POWER_RATING, powerRatings, aggregates, computedTypes, rows)
 
-        val colleyRatings = calculateColleyRatings(games, aggregates, teamsByName)
+        val colleyRatings = colleyRatingsCalculator.calculate(games, aggregates, teamsByName)
         saveCrossTeamMetric(season, week, RankingMetricType.COLLEY_MATRIX, colleyRatings, aggregates, computedTypes, rows)
 
-        val asrRatings = calculateAsrRatings(games, aggregates, teamsByName)
+        val asrRatings = asrRatingsCalculator.calculate(games, aggregates, teamsByName)
         saveCrossTeamMetric(season, week, RankingMetricType.ASR, asrRatings, aggregates, computedTypes, rows)
 
-        val compositeRatings = calculateCompositeRatings(colleyRatings, asrRatings, equivalentWins)
+        val compositeRatings = compositeRatingsCalculator.calculate(colleyRatings, asrRatings, equivalentWins)
         saveCrossTeamMetric(season, week, RankingMetricType.COMPOSITE, compositeRatings, aggregates, computedTypes, rows)
 
-        val adjustedPointsForRatings = calculateAdjustedPointsForRatings(games, aggregates, teamsByName)
+        val adjustedPointsForRatings = adjustedPointsForRatingsCalculator.calculate(games, aggregates, teamsByName)
         saveCrossTeamMetric(season, week, RankingMetricType.ADJUSTED_POINTS_FOR, adjustedPointsForRatings, aggregates, computedTypes, rows)
 
-        val adjustedPointsAgainstRatings = calculateAdjustedPointsAgainstRatings(games, aggregates, teamsByName)
+        val adjustedPointsAgainstRatings = adjustedPointsAgainstRatingsCalculator.calculate(games, aggregates, teamsByName)
         saveCrossTeamMetric(
             season,
             week,
@@ -223,229 +243,21 @@ class RankingMetricService(
             else -> throw MetricNotImplementedException(type.name)
         }
 
-    private fun calculatePowerRatings(
-        aggregates: Map<Int, TeamSeasonAggregate>,
-        diffAggregates: Map<Int, TeamDiffAggregate>,
-    ): Map<Int, Double> {
-        val teamIds = aggregates.keys.intersect(diffAggregates.keys)
-        if (teamIds.isEmpty()) return emptyMap()
-
-        val winPct =
-            normalize(
-                teamIds.associateWith { teamId ->
-                    val aggregate = aggregates.getValue(teamId)
-                    if (aggregate.gamesPlayed == 0) 0.0 else aggregate.wins.toDouble() / aggregate.gamesPlayed
-                },
-            )
-        val equivalentWins =
-            normalize(
-                teamIds.associateWith { teamId ->
-                    val aggregate = aggregates.getValue(teamId)
-                    calculateEquivalentWins(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
-                },
-            )
-
-        val offensiveDiff = normalize(teamIds.associateWith { -diffAggregates.getValue(it).averageOffensiveDiff })
-        val defensiveDiff = normalize(teamIds.associateWith { diffAggregates.getValue(it).averageDefensiveDiff })
-        val offensiveSpecialTeamsDiff = normalize(teamIds.associateWith { -diffAggregates.getValue(it).averageOffensiveSpecialTeamsDiff })
-        val defensiveSpecialTeamsDiff = normalize(teamIds.associateWith { diffAggregates.getValue(it).averageDefensiveSpecialTeamsDiff })
-
-        return teamIds.associateWith { teamId ->
-            val base = BASE_EQUIVALENT_WINS_WEIGHT * equivalentWins.getValue(teamId) + BASE_WIN_PCT_WEIGHT * winPct.getValue(teamId)
-            val normalPlayDiff = (offensiveDiff.getValue(teamId) + defensiveDiff.getValue(teamId)) / 2
-            val specialTeamsDiff = (offensiveSpecialTeamsDiff.getValue(teamId) + defensiveSpecialTeamsDiff.getValue(teamId)) / 2
-            val differential = NORMAL_PLAY_DIFF_WEIGHT * normalPlayDiff + SPECIAL_TEAMS_DIFF_WEIGHT * specialTeamsDiff
-            POWER_RATING_BASE_WEIGHT * base + POWER_RATING_DIFFERENTIAL_WEIGHT * differential
-        }
-    }
-
-    private fun calculateColleyRatings(
-        games: List<Game>,
-        aggregates: Map<Int, TeamSeasonAggregate>,
-        teamsByName: Map<String, Team>,
-    ): Map<Int, Double> {
-        val teamIds = aggregates.keys.sorted()
-        val n = teamIds.size
-        if (n == 0) return emptyMap()
-        val indexOfTeamId = teamIds.withIndex().associate { (index, teamId) -> teamId to index }
-
-        val gamesBetween = Array(n) { IntArray(n) }
-        games.forEach { game ->
-            val homeTeamId = teamsByName[game.homeTeam]?.id
-            val awayTeamId = teamsByName[game.awayTeam]?.id
-            val homeIndex = indexOfTeamId[homeTeamId]
-            val awayIndex = indexOfTeamId[awayTeamId]
-            if (homeIndex != null && awayIndex != null) {
-                gamesBetween[homeIndex][awayIndex] += 1
-                gamesBetween[awayIndex][homeIndex] += 1
-            }
-        }
-
-        val matrix =
-            Array(n) { row ->
-                DoubleArray(n) { col ->
-                    if (row == col) {
-                        2.0 + aggregates.getValue(teamIds[row]).gamesPlayed
-                    } else {
-                        -gamesBetween[row][col].toDouble()
-                    }
-                }
-            }
-        val b =
-            DoubleArray(n) { row ->
-                val aggregate = aggregates.getValue(teamIds[row])
-                1.0 + (aggregate.wins - aggregate.losses) / 2.0
-            }
-
-        val ratings = LinearAlgebraUtils.solve(matrix, b)
-        return teamIds.indices.associate { index -> teamIds[index] to ratings[index] }
-    }
-
-    /**
-     * SRS-style rating (r_i - avg(opponent ratings) = perGameValue_i), same family as Sagarin/Massey.
-     * Ridge term on the diagonal keeps the system solvable on a sparse/disconnected early-season schedule.
-     * Shared by ASR (net margin) and the aPPf/aPPa splits (points-for-only / points-against-only).
-     */
-    private fun calculateAdjustedScheduleRatings(
-        games: List<Game>,
-        aggregates: Map<Int, TeamSeasonAggregate>,
-        teamsByName: Map<String, Team>,
-        perGameValue: (TeamSeasonAggregate) -> Double,
-    ): Map<Int, Double> {
-        val teamIds = aggregates.keys.sorted()
-        val n = teamIds.size
-        if (n == 0) return emptyMap()
-        val indexOfTeamId = teamIds.withIndex().associate { (index, teamId) -> teamId to index }
-
-        val gamesBetween = Array(n) { IntArray(n) }
-        games.forEach { game ->
-            val homeIndex = indexOfTeamId[teamsByName[game.homeTeam]?.id]
-            val awayIndex = indexOfTeamId[teamsByName[game.awayTeam]?.id]
-            if (homeIndex != null && awayIndex != null) {
-                gamesBetween[homeIndex][awayIndex] += 1
-                gamesBetween[awayIndex][homeIndex] += 1
-            }
-        }
-
-        val matrix =
-            Array(n) { row ->
-                val gamesPlayed = aggregates.getValue(teamIds[row]).gamesPlayed
-                DoubleArray(n) { col ->
-                    if (row == col) 1.0 + ASR_REGULARIZATION else -(gamesBetween[row][col].toDouble() / gamesPlayed)
-                }
-            }
-        val b = DoubleArray(n) { row -> perGameValue(aggregates.getValue(teamIds[row])) }
-
-        val ratings = LinearAlgebraUtils.solve(matrix, b)
-        return teamIds.indices.associate { index -> teamIds[index] to ratings[index] }
-    }
-
-    private fun calculateAsrRatings(
-        games: List<Game>,
-        aggregates: Map<Int, TeamSeasonAggregate>,
-        teamsByName: Map<String, Team>,
-    ): Map<Int, Double> =
-        calculateAdjustedScheduleRatings(games, aggregates, teamsByName) {
-            calculateCappedMarginOfVictory(it.cappedPointDifferential, it.gamesPlayed)
-        }
-
-    private fun calculateAdjustedPointsForRatings(
-        games: List<Game>,
-        aggregates: Map<Int, TeamSeasonAggregate>,
-        teamsByName: Map<String, Team>,
-    ): Map<Int, Double> =
-        calculateAdjustedScheduleRatings(games, aggregates, teamsByName) {
-            calculateScoringOffense(it.pointsFor, it.gamesPlayed)
-        }
-
-    private fun calculateAdjustedPointsAgainstRatings(
-        games: List<Game>,
-        aggregates: Map<Int, TeamSeasonAggregate>,
-        teamsByName: Map<String, Team>,
-    ): Map<Int, Double> =
-        calculateAdjustedScheduleRatings(games, aggregates, teamsByName) {
-            calculateScoringDefense(it.pointsAgainst, it.gamesPlayed)
-        }
-
-    /**
-     * Blends the three independent signals rather than averaging every metric: averaging them all weights
-     * scoring margin five times over, since equivalent wins, margin of victory, scoring offense, scoring
-     * defense and ASR are all functions of the same points for and points against.
-     */
-    private fun calculateCompositeRatings(
-        colleyRatings: Map<Int, Double>,
-        asrRatings: Map<Int, Double>,
-        equivalentWins: Map<Int, Double>,
-    ): Map<Int, Double> {
-        val teamIds = colleyRatings.keys + asrRatings.keys + equivalentWins.keys
-        if (teamIds.isEmpty()) return emptyMap()
-
-        val normalizedColley = normalize(colleyRatings)
-        val normalizedAsr = normalize(asrRatings)
-        val normalizedEquivalentWins = normalize(equivalentWins)
-
-        return teamIds.associateWith { teamId ->
-            COMPOSITE_COLLEY_WEIGHT * (normalizedColley[teamId] ?: 0.0) +
-                COMPOSITE_ASR_WEIGHT * (normalizedAsr[teamId] ?: 0.0) +
-                COMPOSITE_EQUIVALENT_WINS_WEIGHT * (normalizedEquivalentWins[teamId] ?: 0.0)
-        }
-    }
-
-    private fun normalize(valuesByTeamId: Map<Int, Double>): Map<Int, Double> {
-        if (valuesByTeamId.isEmpty()) return emptyMap()
-        val min = valuesByTeamId.values.min()
-        val max = valuesByTeamId.values.max()
-        if (min == max) return valuesByTeamId.mapValues { 50.0 }
-        return valuesByTeamId.mapValues { (_, value) -> (value - min) / (max - min) * 100 }
-    }
-
     private fun calculate(
         type: RankingMetricType,
         aggregate: TeamSeasonAggregate,
     ): Double =
         when (type) {
             RankingMetricType.EQUIVALENT_WINS ->
-                calculateEquivalentWins(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
+                rankingFormulas.calculateEquivalentWins(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
             RankingMetricType.MARGIN_OF_VICTORY ->
-                calculateMarginOfVictory(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
+                rankingFormulas.calculateMarginOfVictory(aggregate.pointsFor, aggregate.pointsAgainst, aggregate.gamesPlayed)
             RankingMetricType.SCORING_OFFENSE ->
-                calculateScoringOffense(aggregate.pointsFor, aggregate.gamesPlayed)
+                rankingFormulas.calculateScoringOffense(aggregate.pointsFor, aggregate.gamesPlayed)
             RankingMetricType.SCORING_DEFENSE ->
-                calculateScoringDefense(aggregate.pointsAgainst, aggregate.gamesPlayed)
+                rankingFormulas.calculateScoringDefense(aggregate.pointsAgainst, aggregate.gamesPlayed)
             else -> throw MetricNotImplementedException(type.name)
         }
-
-    fun calculateCappedMarginOfVictory(
-        cappedPointDifferential: Int,
-        gamesPlayed: Int,
-    ): Double = if (gamesPlayed == 0) 0.0 else cappedPointDifferential.toDouble() / gamesPlayed
-
-    fun calculateMarginOfVictory(
-        pointsFor: Int,
-        pointsAgainst: Int,
-        gamesPlayed: Int,
-    ): Double = if (gamesPlayed == 0) 0.0 else (pointsFor - pointsAgainst).toDouble() / gamesPlayed
-
-    fun calculateScoringOffense(
-        pointsFor: Int,
-        gamesPlayed: Int,
-    ): Double = if (gamesPlayed == 0) 0.0 else pointsFor.toDouble() / gamesPlayed
-
-    fun calculateScoringDefense(
-        pointsAgainst: Int,
-        gamesPlayed: Int,
-    ): Double = if (gamesPlayed == 0) 0.0 else pointsAgainst.toDouble() / gamesPlayed
-
-    fun calculateEquivalentWins(
-        pointsFor: Int,
-        pointsAgainst: Int,
-        gamesPlayed: Int,
-    ): Double {
-        if (gamesPlayed == 0 || (pointsFor == 0 && pointsAgainst == 0)) return 0.0
-        val pointsForExp = Math.pow(pointsFor.toDouble(), PYTHAGOREAN_EXPONENT)
-        val pointsAgainstExp = Math.pow(pointsAgainst.toDouble(), PYTHAGOREAN_EXPONENT)
-        return gamesPlayed * (pointsForExp / (pointsForExp + pointsAgainstExp))
-    }
 
     fun getMetrics(
         season: Int,
@@ -535,13 +347,6 @@ class RankingMetricService(
         RankingMetricType.fromString(metricType) ?: throw InvalidRankingMetricException("Unknown metric type: $metricType")
 
     companion object {
-        const val PYTHAGOREAN_EXPONENT = 2.37
-        const val BASE_EQUIVALENT_WINS_WEIGHT = 0.65
-        const val BASE_WIN_PCT_WEIGHT = 0.35
-        const val NORMAL_PLAY_DIFF_WEIGHT = 0.95
-        const val SPECIAL_TEAMS_DIFF_WEIGHT = 0.05
-        const val POWER_RATING_BASE_WEIGHT = 0.8
-        const val POWER_RATING_DIFFERENTIAL_WEIGHT = 0.2
         val DIFF_TYPES =
             listOf(
                 RankingMetricType.AVERAGE_OFFENSIVE_DIFF,
@@ -549,10 +354,6 @@ class RankingMetricService(
                 RankingMetricType.AVERAGE_OFFENSIVE_SPECIAL_TEAMS_DIFF,
                 RankingMetricType.AVERAGE_DEFENSIVE_SPECIAL_TEAMS_DIFF,
             )
-        const val ASR_REGULARIZATION = 0.1
         const val MARGIN_CAP = 28
-        const val COMPOSITE_COLLEY_WEIGHT = 0.45
-        const val COMPOSITE_ASR_WEIGHT = 0.40
-        const val COMPOSITE_EQUIVALENT_WINS_WEIGHT = 0.15
     }
 }

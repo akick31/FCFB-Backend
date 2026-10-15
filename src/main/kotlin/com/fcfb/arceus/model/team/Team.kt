@@ -1,0 +1,268 @@
+package com.fcfb.arceus.model.team
+
+import com.fcfb.arceus.enums.team.DefensivePlaybook
+import com.fcfb.arceus.enums.team.OffensivePlaybook
+import com.fcfb.arceus.enums.team.Subdivision
+import com.fcfb.arceus.util.jpa.DefensivePlaybookConverter
+import com.fcfb.arceus.util.jpa.OffensivePlaybookConverter
+import com.fcfb.arceus.util.jpa.SubdivisionConverter
+import org.hibernate.annotations.Type
+import javax.persistence.Basic
+import javax.persistence.Column
+import javax.persistence.Convert
+import javax.persistence.Entity
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType
+import javax.persistence.Id
+import javax.persistence.Table
+
+@Entity
+@Table(name = "team")
+class Team {
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @Column(name = "id")
+    var id: Int = 0
+
+    @Basic
+    @Column(name = "name")
+    var name: String? = null
+
+    @Basic
+    @Column(name = "abbreviation")
+    var abbreviation: String? = null
+
+    @Basic
+    @Column(name = "short_name")
+    var shortName: String? = null
+
+    @Basic
+    @Column(name = "logo")
+    var logo: String? = null
+
+    @Basic
+    @Column(name = "logo_dark")
+    var logoDark: String? = null
+
+    @Basic
+    @Column(name = "secondary_logo")
+    var secondaryLogo: String? = null
+
+    @Basic
+    @Column(name = "scorebug_logo")
+    var scorebugLogo: String? = null
+
+    @Basic
+    @Column(name = "stadium")
+    var stadium: String? = null
+
+    @Type(type = "json")
+    @Column(name = "coach_usernames", columnDefinition = "longtext")
+    var coachUsernames: MutableList<String>? = mutableListOf()
+
+    @Type(type = "json")
+    @Column(name = "coach_names", columnDefinition = "longtext")
+    var coachNames: MutableList<String>? = mutableListOf()
+
+    @Type(type = "json")
+    @Column(name = "coach_discord_tags", columnDefinition = "longtext")
+    var coachDiscordTags: MutableList<String>? = mutableListOf()
+
+    @Type(type = "json")
+    @Column(name = "coach_discord_ids", columnDefinition = "longtext")
+    var coachDiscordIds: MutableList<String>? = mutableListOf()
+
+    @Basic
+    @Column(name = "primary_color")
+    var primaryColor: String? = null
+
+    @Basic
+    @Column(name = "secondary_color")
+    var secondaryColor: String? = null
+
+    @Basic
+    @Column(name = "tertiary_color")
+    var tertiaryColor: String = "#000000"
+
+    @Convert(converter = SubdivisionConverter::class)
+    @Column(name = "subdivision")
+    var subdivision: Subdivision? = null
+
+    @Convert(converter = OffensivePlaybookConverter::class)
+    @Column(name = "offensive_playbook")
+    lateinit var offensivePlaybook: OffensivePlaybook
+
+    @Convert(converter = DefensivePlaybookConverter::class)
+    @Column(name = "defensive_playbook")
+    lateinit var defensivePlaybook: DefensivePlaybook
+
+    @Basic
+    @Column(name = "conference")
+    var conference: String? = null
+
+    @Basic
+    @Column(name = "division")
+    var division: String? = null
+
+    @Basic
+    @Column(name = "current_wins")
+    var currentWins: Int = 0
+
+    @Basic
+    @Column(name = "current_losses")
+    var currentLosses: Int = 0
+
+    @Basic
+    @Column(name = "overall_wins")
+    var overallWins: Int = 0
+
+    @Basic
+    @Column(name = "overall_losses")
+    var overallLosses: Int = 0
+
+    @Basic
+    @Column(name = "current_conference_wins")
+    var currentConferenceWins: Int = 0
+
+    @Basic
+    @Column(name = "current_conference_losses")
+    var currentConferenceLosses: Int = 0
+
+    @Basic
+    @Column(name = "overall_conference_wins")
+    var overallConferenceWins: Int = 0
+
+    @Basic
+    @Column(name = "overall_conference_losses")
+    var overallConferenceLosses: Int = 0
+
+    @Basic
+    @Column(name = "conference_championship_wins")
+    var conferenceChampionshipWins: Int = 0
+
+    @Basic
+    @Column(name = "conference_championship_losses")
+    var conferenceChampionshipLosses: Int = 0
+
+    @Basic
+    @Column(name = "bowl_wins")
+    var bowlWins: Int = 0
+
+    @Basic
+    @Column(name = "bowl_losses")
+    var bowlLosses: Int = 0
+
+    @Basic
+    @Column(name = "playoff_wins")
+    var playoffWins: Int = 0
+
+    @Basic
+    @Column(name = "playoff_losses")
+    var playoffLosses: Int = 0
+
+    @Basic
+    @Column(name = "national_championship_wins")
+    var nationalChampionshipWins: Int = 0
+
+    @Basic
+    @Column(name = "national_championship_losses")
+    var nationalChampionshipLosses: Int = 0
+
+    @Basic
+    @Column(name = "is_taken", columnDefinition = "tinyint(1)")
+    var isTaken: Boolean = false
+
+    @Basic
+    @Column(name = "active", columnDefinition = "tinyint(1)")
+    var active: Boolean = true
+
+    @Basic
+    @Column(name = "current_elo")
+    var currentElo: Double = 1500.0
+
+    @Basic
+    @Column(name = "overall_elo")
+    var overallElo: Double = 1500.0
+
+    constructor(
+        logo: String?,
+        scorebugLogo: String?,
+        coachUsernames: MutableList<String>,
+        coachNames: MutableList<String>,
+        coachDiscordTags: MutableList<String>,
+        coachDiscordIds: MutableList<String>,
+        name: String?,
+        shortName: String?,
+        abbreviation: String?,
+        primaryColor: String?,
+        secondaryColor: String?,
+        subdivision: Subdivision?,
+        offensivePlaybook: OffensivePlaybook,
+        defensivePlaybook: DefensivePlaybook,
+        conference: String?,
+        currentWins: Int,
+        currentLosses: Int,
+        overallWins: Int,
+        overallLosses: Int,
+        currentConferenceWins: Int,
+        currentConferenceLosses: Int,
+        overallConferenceWins: Int,
+        overallConferenceLosses: Int,
+        conferenceChampionshipWins: Int,
+        conferenceChampionshipLosses: Int,
+        bowlWins: Int,
+        bowlLosses: Int,
+        playoffWins: Int,
+        playoffLosses: Int,
+        nationalChampionshipWins: Int,
+        nationalChampionshipLosses: Int,
+        isTaken: Boolean,
+        active: Boolean,
+        currentElo: Double,
+        overallElo: Double,
+        logoDark: String? = null,
+        division: String? = null,
+        stadium: String? = null,
+    ) {
+        this.logo = logo
+        this.logoDark = logoDark
+        this.stadium = stadium
+        this.scorebugLogo = scorebugLogo
+        this.coachUsernames = coachUsernames
+        this.coachNames = coachNames
+        this.coachDiscordTags = coachDiscordTags
+        this.coachDiscordIds = coachDiscordIds
+        this.name = name
+        this.shortName = shortName
+        this.abbreviation = abbreviation
+        this.primaryColor = primaryColor
+        this.secondaryColor = secondaryColor
+        this.subdivision = subdivision
+        this.offensivePlaybook = offensivePlaybook
+        this.defensivePlaybook = defensivePlaybook
+        this.conference = conference
+        this.division = division
+        this.currentWins = currentWins
+        this.currentLosses = currentLosses
+        this.overallWins = overallWins
+        this.overallLosses = overallLosses
+        this.currentConferenceWins = currentConferenceWins
+        this.currentConferenceLosses = currentConferenceLosses
+        this.overallConferenceWins = overallConferenceWins
+        this.overallConferenceLosses = overallConferenceLosses
+        this.conferenceChampionshipWins = conferenceChampionshipWins
+        this.conferenceChampionshipLosses = conferenceChampionshipLosses
+        this.bowlWins = bowlWins
+        this.bowlLosses = bowlLosses
+        this.playoffWins = playoffWins
+        this.playoffLosses = playoffLosses
+        this.nationalChampionshipWins = nationalChampionshipWins
+        this.nationalChampionshipLosses = nationalChampionshipLosses
+        this.isTaken = isTaken
+        this.active = active
+        this.currentElo = currentElo
+        this.overallElo = overallElo
+    }
+
+    constructor()
+}

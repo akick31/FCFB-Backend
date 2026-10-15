@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.fcfb.appearance
 
-import com.fcfb.arceus.model.Venue
-import com.fcfb.arceus.repositories.VenueRepository
+import com.fcfb.arceus.model.appearance.Venue
+import com.fcfb.arceus.repositories.appearance.VenueRepository
 import org.springframework.stereotype.Service
 
 @Service

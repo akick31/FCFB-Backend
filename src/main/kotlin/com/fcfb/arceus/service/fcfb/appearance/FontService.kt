@@ -4,9 +4,9 @@ import com.fcfb.arceus.dto.request.FontUploadRequest
 import com.fcfb.arceus.dto.response.FontOption
 import com.fcfb.arceus.exception.team.InvalidUniformException
 import com.fcfb.arceus.exception.user.UserForbiddenException
-import com.fcfb.arceus.model.CustomFont
+import com.fcfb.arceus.model.appearance.CustomFont
 import com.fcfb.arceus.rendering.animation.assets.FontRegistry
-import com.fcfb.arceus.repositories.CustomFontRepository
+import com.fcfb.arceus.repositories.appearance.CustomFontRepository
 import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.SafeUrl
@@ -30,14 +30,14 @@ class FontService(
     fun loadAll() {
         customFontRepository.findAll().forEach { font ->
             runCatching { registerUrl(font.url, font.name) }
-                .onFailure { Logger.error("Could not load custom font ${font.name}: ${it.message}") }
+                .onFailure { Logger().error("Could not load custom font ${font.name}: ${it.message}") }
         }
     }
 
     fun list(): List<FontOption> = BUILT_IN + customFontRepository.findAll().map { FontOption(it.name, it.label) }.sortedBy { it.label }
 
     fun upload(request: FontUploadRequest): FontOption {
-        val userId = AuthContext.currentUserId() ?: throw UserForbiddenException()
+        val userId = AuthContext().currentUserId() ?: throw UserForbiddenException()
         if (!request.acknowledged) throw InvalidUniformException("You must confirm you have the right to share this font")
         val label = request.label.trim().takeIf { it.isNotBlank() } ?: throw InvalidUniformException("A font name is required")
         if (label.length > MAX_LABEL_LENGTH) throw InvalidUniformException("That font name is too long")
@@ -58,7 +58,7 @@ class FontService(
     }
 
     fun delete(name: String) {
-        if (!AuthContext.isAdminOrCommissioner()) throw UserForbiddenException()
+        if (!AuthContext().isAdminOrCommissioner()) throw UserForbiddenException()
         customFontRepository.deleteById(name)
         FontRegistry.unregister(name)
     }

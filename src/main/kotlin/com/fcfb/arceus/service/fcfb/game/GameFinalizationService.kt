@@ -1,29 +1,30 @@
 package com.fcfb.arceus.service.fcfb.game
 
+import com.fcfb.arceus.domain.season.SeasonStructure
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.exception.game.GameNotFoundException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.game.requireOngoingGames
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.appearance.GameFieldService
 import com.fcfb.arceus.service.fcfb.probability.WinProbabilityService
-import com.fcfb.arceus.service.fcfb.record.RecordService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleService
 import com.fcfb.arceus.service.fcfb.season.SeasonService
 import com.fcfb.arceus.service.fcfb.statistics.CoachStatsService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
-import com.fcfb.arceus.service.fcfb.statistics.PostseasonSeasonStatsService
-import com.fcfb.arceus.service.fcfb.statistics.SeasonStatsService
+import com.fcfb.arceus.service.fcfb.statistics.record.RecordService
+import com.fcfb.arceus.service.fcfb.statistics.season.PostseasonSeasonStatsService
+import com.fcfb.arceus.service.fcfb.statistics.season.SeasonStatsService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.util.Logger
-import com.fcfb.arceus.util.POSTSEASON_START_WEEK
 import org.springframework.stereotype.Service
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.TransactionSynchronization
@@ -51,7 +52,7 @@ class GameFinalizationService(
     private val finalizationTransaction = TransactionTemplate(transactionManager)
 
     fun endAllGames(): List<Game> {
-        val gamesToEnd = getAllOngoingGames()
+        val gamesToEnd = gameRepository.requireOngoingGames()
         val endedGames = mutableListOf<Game>()
         for (game in gamesToEnd) {
             endedGames.add(finalizeGameInTransaction(game) { endGame(game) })
@@ -162,12 +163,12 @@ class GameFinalizationService(
                 seasonStatsService.updateSeasonStatsForGame(awayStats)
             }
 
-            if (game.gameType != GameType.SCRIMMAGE && (game.week ?: 0) >= POSTSEASON_START_WEEK) {
+            if (game.gameType != GameType.SCRIMMAGE && (game.week ?: 0) >= SeasonStructure.POSTSEASON_START_WEEK) {
                 postseasonSeasonStatsService.updateSeasonStatsForGame(homeStats)
                 postseasonSeasonStatsService.updateSeasonStatsForGame(awayStats)
             }
 
-            Logger.info(
+            Logger().info(
                 "Game ended.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Game Type: ${game.gameType}\n" +
@@ -176,7 +177,7 @@ class GameFinalizationService(
             )
             return game
         } catch (e: Exception) {
-            Logger.error(
+            Logger().error(
                 "Error ending game.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Error Message: ${e.message ?: "Unknown error"}",
@@ -248,9 +249,4 @@ class GameFinalizationService(
     private fun getGameByPlatformId(platformId: ULong) =
         gameRepository.getGameByPlatformId(platformId)
             ?: throw GameNotFoundException("Game not found for Platform ID: $platformId")
-
-    private fun getAllOngoingGames() =
-        gameRepository.getAllOngoingGames().ifEmpty {
-            throw GameNotFoundException("No ongoing games found")
-        }
 }

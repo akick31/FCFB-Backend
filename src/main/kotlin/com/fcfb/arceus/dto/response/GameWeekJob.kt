@@ -1,9 +1,10 @@
 package com.fcfb.arceus.dto.response
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fcfb.arceus.util.job.TrackedJob
 
 data class GameWeekJob(
-    @JsonProperty("jobId") val jobId: String,
+    @JsonProperty("jobId") override val jobId: String,
     @JsonProperty("season") val season: Int,
     @JsonProperty("week") val week: Int,
     @JsonProperty("status") var status: GameWeekJobStatus = GameWeekJobStatus.PENDING,
@@ -15,4 +16,4 @@ data class GameWeekJob(
     @JsonProperty("failedGameDetails") val failedGameDetails: MutableList<FailedGameDetail> = mutableListOf(),
     @JsonProperty("startedAt") var startedAt: String? = null,
     @JsonProperty("completedAt") var completedAt: String? = null,
-)
+) : TrackedJob

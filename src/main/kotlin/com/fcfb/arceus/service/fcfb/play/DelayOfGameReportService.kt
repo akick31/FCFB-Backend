@@ -2,7 +2,7 @@ package com.fcfb.arceus.service.fcfb.play
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fcfb.arceus.dto.response.UserDelayOfGameResponse
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.fcfb.account.UserService
 import org.springframework.stereotype.Service
 

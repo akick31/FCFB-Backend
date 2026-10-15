@@ -1,7 +1,7 @@
 package com.fcfb.arceus.rendering.animation.appearance
 
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamUniformHistory
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.animation.assets.LogoLoader
 import java.awt.Color
 import java.awt.image.BufferedImage
@@ -24,7 +24,6 @@ object HelmetColors {
         return home to away
     }
 
-    /** True when the away team's base shell clashes with the home shell and it must switch to its alternate helmet. */
     fun awayUsesAlternate(
         homeTeam: Team,
         awayTeam: Team,
@@ -61,7 +60,6 @@ object HelmetColors {
         return if (total == 0) 0f else similar.toFloat() / total
     }
 
-    /** The team's own alternate shell wins when it is set and actually contrasts; otherwise fall back to the team colors. */
     private fun alternateShell(
         team: Team,
         snapshot: TeamUniformHistory?,
@@ -85,7 +83,6 @@ object HelmetColors {
         return contrastTo(current)
     }
 
-    /** Both team colors clash with the opponent, so neither can separate the sides. Fall back to plain contrast. */
     private fun contrastTo(color: Color): Color {
         val luminance = (color.red * 299 + color.green * 587 + color.blue * 114) / 1000
         return if (luminance > LIGHT_LUMINANCE) Color.BLACK else Color.WHITE

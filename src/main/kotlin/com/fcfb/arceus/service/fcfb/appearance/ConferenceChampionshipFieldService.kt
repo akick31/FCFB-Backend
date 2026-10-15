@@ -2,16 +2,16 @@ package com.fcfb.arceus.service.fcfb.appearance
 
 import com.fcfb.arceus.dto.request.PostseasonFieldRequest
 import com.fcfb.arceus.exception.team.InvalidUniformException
-import com.fcfb.arceus.model.ConferenceChampionshipField
-import com.fcfb.arceus.repositories.ConferenceChampionshipFieldRepository
-import com.fcfb.arceus.repositories.ConferenceRepository
+import com.fcfb.arceus.model.appearance.ConferenceChampionshipField
+import com.fcfb.arceus.repositories.appearance.ConferenceChampionshipFieldRepository
+import com.fcfb.arceus.repositories.conference.ConferenceRepository
 import org.springframework.stereotype.Service
 
 @Service
 class ConferenceChampionshipFieldService(
     private val conferenceChampionshipFieldRepository: ConferenceChampionshipFieldRepository,
     private val conferenceRepository: ConferenceRepository,
-    private val postseasonFieldUpdater: PostseasonFieldUpdater,
+    private val postseasonFieldUpdateService: PostseasonFieldUpdateService,
 ) {
     fun getAll(): List<ConferenceChampionshipField> = conferenceChampionshipFieldRepository.findAll().toList()
 
@@ -22,7 +22,7 @@ class ConferenceChampionshipFieldService(
         conference: String,
         request: PostseasonFieldRequest,
     ): ConferenceChampionshipField =
-        conferenceChampionshipFieldRepository.save(postseasonFieldUpdater.applyTo(getField(conference), request))
+        conferenceChampionshipFieldRepository.save(postseasonFieldUpdateService.applyTo(getField(conference), request))
 
     private fun newField(conference: String): ConferenceChampionshipField {
         val existing =

@@ -2,7 +2,7 @@ package com.fcfb.arceus.model.animation.choreography
 
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
-import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.play.Play
 
 data class PlayContext(
     val play: Play,
@@ -27,10 +27,6 @@ data class PlayContext(
         lateral: Float,
     ) = keepInField(FieldPoint(lineOfScrimmage + forward * depth, lateral))
 
-    /**
-     * Near the goal line a defender's alignment depth would otherwise place them behind the back of the end zone. This
-     * pulls them up so they stand no deeper than [MAX_END_ZONE_DEPTH] yards into the end zone they are defending.
-     */
     fun keepInField(point: FieldPoint): FieldPoint {
         val deepest = defendedGoal + forward * MAX_END_ZONE_DEPTH
         val along = if ((point.along - deepest) * forward > 0f) deepest else point.along

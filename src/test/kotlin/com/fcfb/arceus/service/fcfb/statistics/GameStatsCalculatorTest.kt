@@ -1,14 +1,18 @@
 package com.fcfb.arceus.service.fcfb.statistics
 
+import com.fcfb.arceus.domain.statistics.GameStatsCalculator
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.util.statistics.StatsAverageCalculator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class GameStatsCalculatorTest {
+    private val gameStatsCalculator = GameStatsCalculator(StatsAverageCalculator())
+
     private fun play(
         call: PlayCall,
         result: ActualResult,
@@ -30,7 +34,7 @@ class GameStatsCalculatorTest {
                 play(PlayCall.PUNT, ActualResult.PUNT_RETURN_TOUCHDOWN),
             )
 
-        assertEquals(2, GameStatsCalculator.calculateKickReturnTd(plays))
+        assertEquals(2, gameStatsCalculator.calculateKickReturnTd(plays))
     }
 
     @Test
@@ -41,8 +45,8 @@ class GameStatsCalculatorTest {
                 play(PlayCall.KICKOFF_NORMAL, ActualResult.KICKING_TEAM_TOUCHDOWN, TeamSide.HOME),
             )
 
-        assertEquals(2, GameStatsCalculator.calculateTouchdowns(plays, TeamSide.HOME))
-        assertEquals(0, GameStatsCalculator.calculateTouchdowns(plays, TeamSide.AWAY))
+        assertEquals(2, gameStatsCalculator.calculateTouchdowns(plays, TeamSide.HOME))
+        assertEquals(0, gameStatsCalculator.calculateTouchdowns(plays, TeamSide.AWAY))
     }
 
     @Test
@@ -59,9 +63,9 @@ class GameStatsCalculatorTest {
                 play(PlayCall.PUNT, ActualResult.PUNT).apply { yards = 40 },
             )
 
-        assertEquals(5, GameStatsCalculator.calculateOffensivePlayCount(plays))
-        assertEquals(0, GameStatsCalculator.calculateOffensivePlayYards(plays))
-        assertEquals(0.0, GameStatsCalculator.calculateAverageYardsPerPlay(plays))
+        assertEquals(5, gameStatsCalculator.calculateOffensivePlayCount(plays))
+        assertEquals(0, gameStatsCalculator.calculateOffensivePlayYards(plays))
+        assertEquals(0.0, gameStatsCalculator.calculateAverageYardsPerPlay(plays))
     }
 
     @Test
@@ -75,14 +79,14 @@ class GameStatsCalculatorTest {
                 play(PlayCall.RUN, ActualResult.FIRST_DOWN).apply { yards = 40 },
             )
 
-        assertEquals(100, GameStatsCalculator.calculatePuntYards(plays))
-        assertEquals(2, GameStatsCalculator.calculatePuntCount(plays))
-        assertEquals(50.0, GameStatsCalculator.calculateAveragePuntLength(plays))
+        assertEquals(100, gameStatsCalculator.calculatePuntYards(plays))
+        assertEquals(2, gameStatsCalculator.calculatePuntCount(plays))
+        assertEquals(50.0, gameStatsCalculator.calculateAveragePuntLength(plays))
     }
 
     @Test
     fun `no eligible plays or punts produce finite zero averages`() {
-        assertEquals(0.0, GameStatsCalculator.calculateAverageYardsPerPlay(emptyList()))
-        assertEquals(0.0, GameStatsCalculator.calculateAveragePuntLength(emptyList()))
+        assertEquals(0.0, gameStatsCalculator.calculateAverageYardsPerPlay(emptyList()))
+        assertEquals(0.0, gameStatsCalculator.calculateAveragePuntLength(emptyList()))
     }
 }

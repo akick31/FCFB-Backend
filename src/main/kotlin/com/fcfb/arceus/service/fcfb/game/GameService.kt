@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.game
 
+import com.fcfb.arceus.domain.game.GameConditions
 import com.fcfb.arceus.enums.game.GameCategory
 import com.fcfb.arceus.enums.game.GameFilter
 import com.fcfb.arceus.enums.game.GameMode
@@ -8,6 +9,8 @@ import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.GameWarning
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
+import com.fcfb.arceus.enums.notification.NotificationStatus
+import com.fcfb.arceus.enums.notification.NotificationType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.PlayType
@@ -17,12 +20,17 @@ import com.fcfb.arceus.exception.game.GameNotFoundException
 import com.fcfb.arceus.exception.game.InvalidHalfTimePossessionChangeException
 import com.fcfb.arceus.exception.team.NoCoachDiscordIdsFoundException
 import com.fcfb.arceus.exception.team.TeamNotFoundException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.game.NotificationOutbox
+import com.fcfb.arceus.model.game.PlatformTransport
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.game.NotificationOutboxRepository
+import com.fcfb.arceus.repositories.game.PlatformTransportRepository
+import com.fcfb.arceus.repositories.game.requireOngoingGames
+import com.fcfb.arceus.repositories.play.PlayRepository
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.probability.WinProbabilityService
@@ -31,6 +39,7 @@ import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.service.specification.GameSpecificationService
 import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.game.convertClockToString
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -56,7 +65,12 @@ class GameService(
     private val winProbabilityService: WinProbabilityService,
     private val gameStatsRepository: GameStatsRepository,
     private val gameFinalizationService: GameFinalizationService,
+    private val notificationOutboxRepository: NotificationOutboxRepository,
+    private val gameSplitTableSyncService: GameSplitTableSyncService,
+    private val platformTransportRepository: PlatformTransportRepository,
 ) {
+    private val gameConditions = GameConditions()
+
     fun saveGame(game: Game): Game = gameRepository.save(game)
 
     fun updateGameInformation(
@@ -110,7 +124,7 @@ class GameService(
             val awayElo = awayGameStats?.teamElo ?: awayTeam.currentElo
             winProbabilityService.calculateWinProbability(game, play, homeElo, awayElo)
         } catch (e: Exception) {
-            Logger.error("Error calculating win probability: ${e.message}")
+            Logger().error("Error calculating win probability: ${e.message}")
             play.winProbability = 0.5
             play.winProbabilityAdded = 0.0
         }
@@ -175,7 +189,7 @@ class GameService(
                     }
                 }
             }
-            if (GameRules.isOffensiveTouchdownPlay(gamePlay.actualResult)) {
+            if (gameConditions.isOffensiveTouchdownPlay(gamePlay.actualResult)) {
                 if (gamePlay.possession == TeamSide.HOME) {
                     game.homeScore -= 6
                 } else {
@@ -183,7 +197,7 @@ class GameService(
                 }
                 game.currentPlayType = PlayType.NORMAL
             }
-            if (GameRules.isDefensiveTouchdownPlay(gamePlay.actualResult)) {
+            if (gameConditions.isDefensiveTouchdownPlay(gamePlay.actualResult)) {
                 if (gamePlay.possession == TeamSide.AWAY) {
                     game.homeScore -= 6
                 } else {
@@ -260,7 +274,7 @@ class GameService(
             game.currentPlayId = newCurrentPlay.playId
             game.possession = previousPlay.possession
             game.quarter = previousPlay.quarter
-            game.clock = GameRules.convertClockToString(previousPlay.clock)
+            game.clock = convertClockToString(previousPlay.clock)
             game.ballLocation = previousPlay.ballLocation
             game.down = previousPlay.down
             game.yardsToGo = previousPlay.yardsToGo
@@ -269,7 +283,7 @@ class GameService(
             gameStatsService.generateGameStats(game.gameId)
             saveGame(game)
         } catch (e: Exception) {
-            Logger.error(
+            Logger().error(
                 "Error rolling back play.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Error Message: ${e.message ?: "Unknown error"}",
@@ -303,7 +317,7 @@ class GameService(
             game.gameModeSetAt = LocalDateTime.now()
             saveGame(game)
             discordService.notifyGameModeChange(game)
-            Logger.info(
+            Logger().info(
                 "Game set to ${gameMode.description.lowercase()} mode by ${game.gameModeSetBy}.\n" +
                     "Game ID: ${game.gameId}\n" +
                     "Game Type: ${game.gameType}\n" +
@@ -313,19 +327,19 @@ class GameService(
             )
             return game
         } catch (e: Exception) {
-            Logger.error("Error in ${game.gameId}: ${e.message ?: "Unknown error"}")
+            Logger().error("Error in ${game.gameId}: ${e.message ?: "Unknown error"}")
             throw e
         }
     }
 
     private fun actingUser(): String {
-        val userId = AuthContext.currentUserId() ?: return AuthContext.currentPrincipal()
+        val userId = AuthContext().currentUserId() ?: return AuthContext().currentPrincipal()
         return userService.getUserById(userId).username
     }
 
-    fun chewAllGames(): List<Game> = getAllOngoingGames().map { chewGame(it) }
+    fun chewAllGames(): List<Game> = gameRepository.requireOngoingGames().map { chewGame(it) }
 
-    fun unchewAllGames(): List<Game> = getAllOngoingGames().map { unchewGame(it) }
+    fun unchewAllGames(): List<Game> = gameRepository.requireOngoingGames().map { unchewGame(it) }
 
     fun deleteOngoingGame(channelId: ULong): Boolean {
         val game = getGameByPlatformId(channelId)
@@ -337,7 +351,7 @@ class GameService(
         gameRepository.deleteById(gameId)
         gameStatsService.deleteByGameId(gameId)
         playRepository.deleteAllPlaysByGameId(gameId)
-        Logger.info("Game deleted.\nGame ID: $gameId")
+        Logger().info("Game deleted.\nGame ID: $gameId")
         return true
     }
 
@@ -362,6 +376,7 @@ class GameService(
             }
         game.requestMessageId = requestMessageIdList
         saveGame(game)
+        syncPlatformTransport(game)
         return game
     }
 
@@ -370,7 +385,22 @@ class GameService(
         val timestamp = Timestamp.from(Instant.now()).toString()
         game.lastMessageTimestamp = timestamp
         saveGame(game)
+        syncPlatformTransport(game)
         return game
+    }
+
+    private fun syncPlatformTransport(game: Game) {
+        platformTransportRepository.save(
+            PlatformTransport(
+                gameId = game.gameId,
+                homePlatform = game.homePlatform,
+                homePlatformId = game.homePlatformId,
+                awayPlatform = game.awayPlatform,
+                awayPlatformId = game.awayPlatformId,
+                requestMessageId = game.requestMessageId,
+                lastMessageTimestamp = game.lastMessageTimestamp,
+            ),
+        )
     }
 
     fun resetDelayOfGameTimer(gameId: Int): Game {
@@ -445,6 +475,7 @@ class GameService(
             this.upsetAlertPinged = game.upsetAlertPinged
         }
         saveGame(existingGame)
+        gameSplitTableSyncService.sync(existingGame)
         return existingGame
     }
 
@@ -472,7 +503,7 @@ class GameService(
         game: Game,
         play: Play,
     ) {
-        if (GameRules.isTouchdownPlay(play.actualResult)) {
+        if (gameConditions.isTouchdownPlay(play.actualResult)) {
             game.currentPlayType = PlayType.PAT
         } else if (play.actualResult == ActualResult.SAFETY ||
             (play.playCall == PlayCall.FIELD_GOAL && play.result == Scenario.GOOD) ||
@@ -500,7 +531,7 @@ class GameService(
         waitingOn: TeamSide,
     ) {
         game.gameStatus = GameStatus.IN_PROGRESS
-        game.clock = GameRules.convertClockToString(clock)
+        game.clock = convertClockToString(clock)
         game.possession = possession
         game.quarter = quarter
         game.ballLocation = ballLocation
@@ -520,7 +551,7 @@ class GameService(
         game.gameStatus = GameStatus.HALFTIME
         game.currentPlayType = PlayType.KICKOFF
         game.ballLocation = 35
-        game.clock = GameRules.convertClockToString(clock)
+        game.clock = convertClockToString(clock)
         game.possession = possession
         game.quarter = 3
         game.down = 1
@@ -539,7 +570,7 @@ class GameService(
         waitingOn: TeamSide,
     ) {
         game.gameStatus = GameStatus.IN_PROGRESS
-        game.clock = GameRules.convertClockToString(clock)
+        game.clock = convertClockToString(clock)
         game.possession = possession
         game.quarter = quarter
         game.ballLocation = ballLocation
@@ -565,7 +596,7 @@ class GameService(
         yardsToGo: Int,
         waitingOn: TeamSide,
     ) {
-        game.clock = GameRules.convertClockToString(clock)
+        game.clock = convertClockToString(clock)
         game.possession = possession
         game.quarter = quarter
         game.ballLocation = ballLocation
@@ -602,7 +633,7 @@ class GameService(
         awayScore: Int,
     ) {
         game.clock = "0:00"
-        if (GameRules.isEndOfOvertimeHalf(play)) {
+        if (gameConditions.isEndOfOvertimeHalf(play)) {
             if (game.overtimeHalf == 1) {
                 if (play.actualResult == ActualResult.TOUCHDOWN) {
                     game.possession = possession
@@ -630,7 +661,7 @@ class GameService(
                 }
             } else {
                 if (homeScore != awayScore || game.currentPlayType == PlayType.PAT) {
-                    if (GameRules.isGameMathmaticallyOver(play, homeScore, awayScore)) {
+                    if (gameConditions.isGameMathmaticallyOver(play, homeScore, awayScore)) {
                         game.possession = possession
                         game.waitingOn = waitingOn
                         game.ballLocation = ballLocation
@@ -729,7 +760,7 @@ class GameService(
 
     fun findExpiredTimers() =
         gameRepository.findExpiredTimers().ifEmpty {
-            Logger.debug("No games found with expired timers")
+            Logger().debug("No games found with expired timers")
             emptyList()
         }
 
@@ -746,6 +777,26 @@ class GameService(
         gameRepository.updateGameAsSecondWarning(gameId)
     }
 
+    fun findPendingDogNotifications(): List<NotificationOutbox> =
+        notificationOutboxRepository.findByTypeAndStatus(NotificationType.DOG_OUT, NotificationStatus.PENDING)
+
+    fun markPendingDogNotification(
+        gameId: Int,
+        isDelayOfGameOut: Boolean,
+    ) {
+        val notification =
+            notificationOutboxRepository.findByGameIdAndType(gameId, NotificationType.DOG_OUT)
+                ?: NotificationOutbox(gameId, NotificationType.DOG_OUT, isDelayOfGameOut.toString())
+        notification.payload = isDelayOfGameOut.toString()
+        notification.status = NotificationStatus.PENDING
+        notification.updatedAt = LocalDateTime.now()
+        notificationOutboxRepository.save(notification)
+    }
+
+    fun clearPendingDogNotification(gameId: Int) {
+        notificationOutboxRepository.deleteByGameIdAndType(gameId, NotificationType.DOG_OUT)
+    }
+
     fun markCloseGamePinged(gameId: Int) = gameRepository.markCloseGamePinged(gameId)
 
     fun markUpsetAlertPinged(gameId: Int) = gameRepository.markUpsetAlertPinged(gameId)
@@ -756,11 +807,6 @@ class GameService(
         }
 
     fun getGamesByIds(gameIds: List<Int>): List<Game> = gameRepository.findAllById(gameIds).toList()
-
-    private fun getAllOngoingGames() =
-        gameRepository.getAllOngoingGames().ifEmpty {
-            throw GameNotFoundException("No ongoing games found")
-        }
 
     fun getGamesWithTeams(
         teams: List<Team>,
@@ -839,9 +885,9 @@ class GameService(
     fun getDifference(
         offensiveNumber: Int,
         defensiveNumber: Int,
-    ): Int = GameRules.getDifference(offensiveNumber, defensiveNumber)
+    ): Int = gameConditions.getDifference(offensiveNumber, defensiveNumber)
 
-    fun isTouchdownPlay(actualResult: ActualResult?): Boolean = GameRules.isTouchdownPlay(actualResult)
+    fun isTouchdownPlay(actualResult: ActualResult?): Boolean = gameConditions.isTouchdownPlay(actualResult)
 
     private fun updateClockStopped(
         game: Game,

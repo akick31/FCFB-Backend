@@ -1,10 +1,6 @@
 package com.fcfb.arceus.util
 
-/**
- * Solves the square linear system A*x = b via Gaussian elimination with partial pivoting.
- * Used for the Colley Matrix method, which is defined as x = A^-1 * b.
- */
-object LinearAlgebraUtils {
+class LinearAlgebraUtils {
     fun solve(
         matrix: Array<DoubleArray>,
         vector: DoubleArray,

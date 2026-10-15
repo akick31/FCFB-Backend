@@ -166,6 +166,21 @@ pipeline {
             }
         }
 
+        stage('Backup Database') {
+            steps {
+                sh '''
+                    BACKUP_DIR="$JENKINS_HOME/backups/arceus"
+                    mkdir -p "$BACKUP_DIR"
+                    DB_HOST=$(echo "$DB_URL" | sed -E 's#.*//([^:/]+).*#\1#')
+                    DB_PORT=$(echo "$DB_URL" | sed -E 's#.*:([0-9]+)/.*#\1#')
+                    DB_NAME=$(echo "$DB_URL" | sed -E 's#.*/([^/?]+)(\?.*)?$#\1#')
+                    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                    mysqldump --single-transaction --quick --routines --triggers -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_NAME" | gzip > "$BACKUP_DIR/${IMAGE_NAME}_${TIMESTAMP}.sql.gz"
+                    find "$BACKUP_DIR" -name "${IMAGE_NAME}_*.sql.gz" -mtime +30 -delete
+                '''
+            }
+        }
+
         stage('Start Blue Container') {
             steps {
                 sh "docker rm -f ${CONTAINER_NAME_BLUE} || true"
@@ -174,6 +189,9 @@ pipeline {
                         -p 11413:1313 \\
                         -v /var/images:/app/images \\
                         --env-file ${APP_PROPERTIES} \\
+                        --log-driver=loki \\
+                        --log-opt loki-url="http://localhost:3100/loki/api/v1/push" \\
+                        --log-opt loki-external-labels="job=arceus,env=dev" \\
                         ${IMAGE_NAME}:${DOCKERFILE}
                 """
             }
@@ -224,6 +242,9 @@ pipeline {
                     docker run --network="host" -d --memory=1536m --restart=always --name ${CONTAINER_NAME} \\
                         -v /var/images:/app/images \\
                         --env-file ${APP_PROPERTIES} \\
+                        --log-driver=loki \\
+                        --log-opt loki-url="http://localhost:3100/loki/api/v1/push" \\
+                        --log-opt loki-external-labels="job=arceus,env=dev" \\
                         ${IMAGE_NAME}:${DOCKERFILE}
                 """
             }

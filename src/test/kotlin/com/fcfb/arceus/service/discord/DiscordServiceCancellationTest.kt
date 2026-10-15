@@ -1,6 +1,6 @@
 package com.fcfb.arceus.service.discord
 
-import com.fcfb.arceus.model.Game
+import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.util.ServerUtils
 import io.mockk.every
 import io.mockk.mockk

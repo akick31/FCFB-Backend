@@ -9,10 +9,10 @@ import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.animation.FieldTheme
 import com.fcfb.arceus.model.animation.Uniform
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.animation.appearance.FieldColors
 import com.fcfb.arceus.rendering.animation.appearance.HelmetSprite
 import com.fcfb.arceus.rendering.animation.assets.LogoLoader
@@ -265,7 +265,7 @@ class PlayAnimationPreviewTool {
 
     private fun renderGif(preview: Preview): ByteArray {
         val play = preview.play
-        val startAbs = FieldCoordinateMapper.toAbsoluteFieldPosition(play.ballLocation, play.possession)
+        val startAbs = FieldCoordinateMapper().toAbsoluteFieldPosition(play.ballLocation, play.possession)
         val endAbs =
             when {
                 play.actualResult == ActualResult.SAFETY -> if (play.possession == TeamSide.HOME) -5 else 105
@@ -339,7 +339,7 @@ class PlayAnimationPreviewTool {
                 scorebugLogo = "https://a.espncdn.com/i/teamlogos/ncaa/500/68.png"
             }
         val field =
-            com.fcfb.arceus.model.TeamField().apply {
+            com.fcfb.arceus.model.appearance.TeamField().apply {
                 team = boise.name.orEmpty()
                 turfColor = BOISE_TURF_COLOR
                 endZoneColor = BOISE_END_ZONE_COLOR
@@ -410,7 +410,7 @@ class PlayAnimationPreviewTool {
     /** A goal-post scene with a configured wall, so the wall color and design paths actually run. */
     private fun homeFieldWall(design: String): FieldTheme {
         val field =
-            com.fcfb.arceus.model.TeamField().apply {
+            com.fcfb.arceus.model.appearance.TeamField().apply {
                 team = homeTeam.name.orEmpty()
                 wallColor = homeTeam.primaryColor
                 wallDesign = design
@@ -429,7 +429,7 @@ class PlayAnimationPreviewTool {
 
     private fun homeFieldWithLogos(): FieldTheme {
         val field =
-            com.fcfb.arceus.model.TeamField().apply {
+            com.fcfb.arceus.model.appearance.TeamField().apply {
                 team = homeTeam.name.orEmpty()
                 quarterLogoUrl = homeTeam.scorebugLogo
                 redZoneBorderColor = homeTeam.primaryColor
@@ -466,8 +466,8 @@ class PlayAnimationPreviewTool {
         )
 
     /** Mirrors what `V31` seeds for every team, so previews show a real configuration rather than a null one. */
-    private fun seededTeamField(): com.fcfb.arceus.model.TeamField =
-        com.fcfb.arceus.model.TeamField().apply {
+    private fun seededTeamField(): com.fcfb.arceus.model.appearance.TeamField =
+        com.fcfb.arceus.model.appearance.TeamField().apply {
             team = homeTeam.name.orEmpty()
             endZoneColor = homeTeam.primaryColor
             midfieldLogoUrl = homeTeam.scorebugLogo

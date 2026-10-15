@@ -27,7 +27,7 @@ class FrontendErrorService(
 
         MDC.put("origin", "website")
         try {
-            Logger.error(
+            Logger().error(
                 "Frontend error at ${request.url}: ${request.message}\n${request.stack ?: "no stack trace"}",
             )
         } finally {

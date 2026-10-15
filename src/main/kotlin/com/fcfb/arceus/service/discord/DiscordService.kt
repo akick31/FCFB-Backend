@@ -3,7 +3,7 @@ package com.fcfb.arceus.service.discord
 import com.fcfb.arceus.dto.request.GameFinalizationRollbackRequest
 import com.fcfb.arceus.dto.standard.SignupInfo
 import com.fcfb.arceus.exception.discord.DiscordUserNotFoundException
-import com.fcfb.arceus.model.Game
+import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.ServerUtils
 import dev.kord.common.entity.Snowflake
@@ -44,7 +44,7 @@ class DiscordService(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Logger.error("There was an error starting the game thread for ${game.gameId}: ${e.message}")
+            Logger().error("There was an error starting the game thread for ${game.gameId}: ${e.message}")
             null
         }
     }
@@ -52,13 +52,15 @@ class DiscordService(
     fun notifyDelayOfGame(
         game: Game,
         isDelayofGameOut: Boolean,
-    ) {
+    ): Boolean {
         val discordBotUrl = "$discordBotUrl/delay_of_game?isDelayOfGameOut=$isDelayofGameOut"
         val requestEntity = HttpEntity(game, botRequestHeaders())
-        try {
+        return try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
+            true
         } catch (e: Exception) {
-            Logger.error("There was an error notifying the delay of game for ${game.gameId}: " + e.message)
+            Logger().error("There was an error notifying the delay of game for ${game.gameId}: " + e.message)
+            false
         }
     }
 
@@ -68,7 +70,7 @@ class DiscordService(
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
         } catch (e: Exception) {
-            Logger.error("There was an error announcing the game mode change for ${game.gameId}: " + e.message)
+            Logger().error("There was an error announcing the game mode change for ${game.gameId}: " + e.message)
         }
     }
 
@@ -82,7 +84,7 @@ class DiscordService(
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
             true
         } catch (e: Exception) {
-            Logger.error("There was an error notifying the delay of game  warning for ${game.gameId}: " + e.message)
+            Logger().error("There was an error notifying the delay of game  warning for ${game.gameId}: " + e.message)
             false
         }
     }
@@ -93,7 +95,7 @@ class DiscordService(
         try {
             restTemplate.postForEntity(discordBotUrl, requestEntity, String::class.java)
         } catch (e: Exception) {
-            Logger.error("There was an error notifying the commissioners of a new signup: " + e.message)
+            Logger().error("There was an error notifying the commissioners of a new signup: " + e.message)
         }
     }
 
@@ -106,7 +108,7 @@ class DiscordService(
                 String::class.java,
             )
         } catch (e: Exception) {
-            Logger.error("Unable to report finalization rollback for game ${game.gameId}", e)
+            Logger().error("Unable to report finalization rollback for game ${game.gameId}", e)
         }
     }
 
@@ -129,7 +131,7 @@ class DiscordService(
             }
             throw DiscordUserNotFoundException()
         } catch (e: Exception) {
-            Logger.error("{}", e)
+            Logger().error("{}", e)
             throw DiscordUserNotFoundException()
         }
     }

@@ -21,14 +21,9 @@ object LogoLoader {
 
     private val cache = BoundedCache<String, BufferedImage>(CACHE_SIZE)
 
-    /**
-     * Uploaded logos are stored as paths relative to the images directory, which [URI.toURL] rejects as not absolute.
-     * Set at startup so those resolve against the same directory the upload service writes to.
-     */
     @Volatile
     var imagesPath: String = DEFAULT_IMAGES_PATH
 
-    /** The first of these urls that loads, so a selected-but-unloadable logo (e.g. an SVG) falls back to a known-good one. */
     fun loadFirst(vararg urls: String?): BufferedImage? = urls.firstNotNullOfOrNull { load(it) }
 
     fun load(url: String?): BufferedImage? {
@@ -37,15 +32,14 @@ object LogoLoader {
         return try {
             readBounded(url)?.let { trim(it) }?.also { cache.put(url, it) }
         } catch (e: IOException) {
-            Logger.error("Error loading logo from $url: ${e.message}")
+            Logger().error("Error loading logo from $url: ${e.message}")
             null
         } catch (e: IllegalArgumentException) {
-            Logger.error("Invalid logo url $url: ${e.message}")
+            Logger().error("Invalid logo url $url: ${e.message}")
             null
         }
     }
 
-    /** Reads the image only after confirming its declared dimensions are sane, so a decompression bomb never fully decodes. */
     private fun readBounded(url: String): BufferedImage? {
         val stream = openStream(url) ?: return null
         stream.use { input ->
@@ -71,7 +65,7 @@ object LogoLoader {
         val base = File(imagesPath).canonicalFile
         val file = File(base, url).canonicalFile
         if (file != base && !file.path.startsWith(base.path + File.separator)) {
-            Logger.error("Rejected logo path outside the images directory: $url")
+            Logger().error("Rejected logo path outside the images directory: $url")
             return null
         }
         return if (file.isFile) file.inputStream() else null
@@ -81,7 +75,7 @@ object LogoLoader {
         try {
             SafeUrl.openStream(uri.toString(), CONNECT_TIMEOUT_MS, READ_TIMEOUT_MS)
         } catch (e: Exception) {
-            Logger.error("Rejected or unreachable logo url $uri: ${e.message}")
+            Logger().error("Rejected or unreachable logo url $uri: ${e.message}")
             null
         }
 

@@ -1,9 +1,5 @@
 package com.fcfb.arceus.enums.animation
 
-/**
- * Where a bowl's yard number outline color comes from. [TEAM_PER_SIDE] uses the team defending that half, so at the 50
- * the home team owns the top number and the away team the bottom; [FIXED] paints the whole field one color.
- */
 enum class YardNumberSource {
     TEAM_PER_SIDE,
     FIXED,

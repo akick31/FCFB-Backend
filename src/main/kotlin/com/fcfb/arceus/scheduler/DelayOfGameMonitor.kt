@@ -7,14 +7,14 @@ import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.game.GameFinalizationService
 import com.fcfb.arceus.service.fcfb.game.GameService
-import com.fcfb.arceus.service.fcfb.media.ScorebugService
+import com.fcfb.arceus.service.fcfb.graphics.ScorebugService
 import com.fcfb.arceus.service.fcfb.play.PlayService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import com.fcfb.arceus.util.Logger
@@ -34,15 +34,16 @@ class DelayOfGameMonitor(
 ) {
     @Scheduled(fixedRate = 60000)
     fun checkForDelayOfGame() {
+        retryPendingDogNotifications()
         val warnedGamesFirstInstance = gameService.findGamesToWarnFirstInstance()
         warnedGamesFirstInstance.forEach { game ->
             if (game.gameStatus == GameStatus.FINAL) {
-                Logger.warn("Skipping delay of game warning (instance 1) for game ${game.gameId} because the game has already ended.")
+                Logger().warn("Skipping delay of game warning (instance 1) for game ${game.gameId} because the game has already ended.")
                 return@forEach
             }
             if (discordService.notifyWarning(game, 1)) {
                 gameService.updateGameAsWarned(game.gameId, 1)
-                Logger.info(
+                Logger().info(
                     "Delay of game warning.\n" +
                         "Game ID: ${game.gameId}\n" +
                         "Home Team: ${game.homeTeam}\n" +
@@ -50,18 +51,18 @@ class DelayOfGameMonitor(
                         "Instance: 1\n",
                 )
             } else {
-                Logger.warn("Delay of game warning (instance 1) failed to send for game ${game.gameId}, will retry next cycle.")
+                Logger().warn("Delay of game warning (instance 1) failed to send for game ${game.gameId}, will retry next cycle.")
             }
         }
         val warnedGamesSecondInstance = gameService.findGamesToWarnSecondInstance()
         warnedGamesSecondInstance.forEach { game ->
             if (game.gameStatus == GameStatus.FINAL) {
-                Logger.warn("Skipping delay of game warning (instance 2) for game ${game.gameId} because the game has already ended.")
+                Logger().warn("Skipping delay of game warning (instance 2) for game ${game.gameId} because the game has already ended.")
                 return@forEach
             }
             if (discordService.notifyWarning(game, 2)) {
                 gameService.updateGameAsWarned(game.gameId, 2)
-                Logger.info(
+                Logger().info(
                     "Delay of game warning.\n" +
                         "Game ID: ${game.gameId}\n" +
                         "Home Team: ${game.homeTeam}\n" +
@@ -69,13 +70,13 @@ class DelayOfGameMonitor(
                         "Instance: 2\n",
                 )
             } else {
-                Logger.warn("Delay of game warning (instance 2) failed to send for game ${game.gameId}, will retry next cycle.")
+                Logger().warn("Delay of game warning (instance 2) failed to send for game ${game.gameId}, will retry next cycle.")
             }
         }
         val expiredGames = gameService.findExpiredTimers()
         expiredGames.forEach { game ->
             if (game.gameStatus == GameStatus.FINAL) {
-                Logger.warn("Skipping expired delay of game timer for game ${game.gameId} because the game has already ended.")
+                Logger().warn("Skipping expired delay of game timer for game ${game.gameId} because the game has already ended.")
                 return@forEach
             }
             val updatedGame =
@@ -94,8 +95,25 @@ class DelayOfGameMonitor(
             if (isDelayOfGameOut) {
                 gameStatsService.reconcileForfeitScore(updatedGame, homeStats, awayStats)
             }
-            discordService.notifyDelayOfGame(updatedGame, isDelayOfGameOut)
-            Logger.info("A delay of game for game ${game.gameId} has been processed")
+            if (!discordService.notifyDelayOfGame(updatedGame, isDelayOfGameOut)) {
+                gameService.markPendingDogNotification(updatedGame.gameId, isDelayOfGameOut)
+                Logger().warn("Delay of game notification failed to send for game ${game.gameId}, will retry next cycle.")
+            }
+            Logger().info("A delay of game for game ${game.gameId} has been processed")
+        }
+    }
+
+    private fun retryPendingDogNotifications() {
+        val pendingNotifications = gameService.findPendingDogNotifications()
+        pendingNotifications.forEach { pendingNotification ->
+            val game = gameService.getGameById(pendingNotification.gameId)
+            val isOut = pendingNotification.payload.toBoolean()
+            if (discordService.notifyDelayOfGame(game, isOut)) {
+                gameService.clearPendingDogNotification(game.gameId)
+                Logger().info("Delay of game notification retry succeeded for game ${game.gameId}")
+            } else {
+                Logger().warn("Delay of game notification retry failed for game ${game.gameId}, will retry next cycle.")
+            }
         }
     }
 

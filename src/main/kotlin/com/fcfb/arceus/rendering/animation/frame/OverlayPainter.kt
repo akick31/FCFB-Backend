@@ -4,8 +4,8 @@ import com.fcfb.arceus.enums.animation.OverlayType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import org.springframework.stereotype.Component
 import java.awt.BasicStroke
 import java.awt.Color

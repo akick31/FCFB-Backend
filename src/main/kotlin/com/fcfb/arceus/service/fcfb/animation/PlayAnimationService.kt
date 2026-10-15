@@ -5,8 +5,8 @@ import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.AnimationFitter
 import com.fcfb.arceus.rendering.animation.AnimationPalette
 import com.fcfb.arceus.rendering.animation.PlayAnimationClassifier
@@ -39,14 +39,10 @@ class PlayAnimationService(
     private val overheadPlayFrameRenderer: OverheadPlayFrameRenderer,
     private val fieldGoalAttemptFrameRenderer: FieldGoalAttemptFrameRenderer,
     private val kickSixFrameRenderer: KickSixFrameRenderer,
-    private val fieldThemeResolver: FieldThemeResolver,
+    private val fieldThemeService: FieldThemeService,
     private val teamUniformService: TeamUniformService,
     @Value("\${animations.scrimmage-only:true}") private val scrimmageOnly: Boolean,
 ) {
-    /**
-     * A 404 rather than an error when animations are off for this game: every caller already treats a non-success as
-     * "no animation" and skips it silently, so the play still posts normally.
-     */
     fun getPlayAnimationByPlayId(playId: Int): ResponseEntity<ByteArray> {
         val play = playService.getPlayById(playId)
         val game = gameService.getGameById(play.gameId)
@@ -56,7 +52,7 @@ class PlayAnimationService(
         val homeTeam = teamService.getTeamByName(play.homeTeam)
         val awayTeam = teamService.getTeamByName(play.awayTeam)
 
-        val startAbs = FieldCoordinateMapper.toAbsoluteFieldPosition(play.ballLocation, play.possession)
+        val startAbs = FieldCoordinateMapper().toAbsoluteFieldPosition(play.ballLocation, play.possession)
         val endAbs = resultSpot(play, game, startAbs)
 
         val offensivePlaybook = if (play.possession == TeamSide.HOME) game.homeOffensivePlaybook else game.awayOffensivePlaybook
@@ -72,7 +68,7 @@ class PlayAnimationService(
             }
         val homeUniform = teamUniformService.uniformFor(play.homeTeam, game.season, game.week)
         val awayUniform = teamUniformService.uniformFor(play.awayTeam, game.season, game.week)
-        val theme = fieldThemeResolver.resolve(play, game, homeTeam, awayTeam, homeUniform, awayUniform)
+        val theme = fieldThemeService.resolve(play, game, homeTeam, awayTeam, homeUniform, awayUniform)
         val frames = renderer.renderFrames(play, startAbs, endAbs, theme, offensivePlaybook, defensivePlaybook)
         val overlay = playOutcomeOverlayClassifier.classifyOverlay(play)
         val decoratedFrames = overlayPainter.applyOverlay(frames, overlay, play, homeTeam, awayTeam)
@@ -101,28 +97,17 @@ class PlayAnimationService(
         }
     }
 
-    /**
-     * `Play.ballLocation`/`possession` are set once at play creation and never updated, so they
-     * always hold the play's start, never its result. The result only ever lands on the next
-     * play's own start fields, or on `Game` directly if this is the game's most recent play.
-     */
     private fun resolveEndAbsolutePosition(
         play: Play,
         game: Game,
     ): Int {
         val nextPlay = playService.getPlayImmediatelyAfterOrNull(play.gameId, play.playId)
         if (nextPlay != null) {
-            return FieldCoordinateMapper.toAbsoluteFieldPosition(nextPlay.ballLocation, nextPlay.possession)
+            return FieldCoordinateMapper().toAbsoluteFieldPosition(nextPlay.ballLocation, nextPlay.possession)
         }
-        return FieldCoordinateMapper.toAbsoluteFieldPosition(game.ballLocation, game.possession)
+        return FieldCoordinateMapper().toAbsoluteFieldPosition(game.ballLocation, game.possession)
     }
 
-    /**
-     * By the time this endpoint is called for a scoring play, `Game` has already moved on to the
-     * PAT/kickoff setup, so [resolveEndAbsolutePosition]'s fallback no longer reflects "the ball
-     * reached the end zone." The scoring team isn't always `play.possession` either — a defensive
-     * or return score is scored by the opposite side.
-     */
     private fun scoringTeamOrNull(play: Play): TeamSide? =
         when (play.actualResult) {
             ActualResult.TOUCHDOWN, ActualResult.KICKING_TEAM_TOUCHDOWN, ActualResult.PUNT_TEAM_TOUCHDOWN -> play.possession
@@ -134,11 +119,6 @@ class PlayAnimationService(
 
     private fun endZoneTargetFor(scoringTeam: TeamSide): Int = if (scoringTeam == TeamSide.HOME) 100 + END_ZONE_CENTER else -END_ZONE_CENTER
 
-    /**
-     * A safety is scored by the defense, but the ball ends up in the tackled OFFENSE's own end
-     * zone — the opposite direction from [endZoneTargetFor], which targets the scoring team's
-     * opponent's goal.
-     */
     private fun ownGoalTargetFor(possessor: TeamSide): Int = if (possessor == TeamSide.HOME) -END_ZONE_CENTER else 100 + END_ZONE_CENTER
 
     companion object {

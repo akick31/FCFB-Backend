@@ -102,7 +102,6 @@ object FieldGoalPlayerPainter {
         g.dispose()
     }
 
-    /** Clipped to the shell so the band follows the helmet edge: down the middle head-on, over the crown side-on. */
     private fun drawHelmetStripe(
         g: Graphics2D,
         figure: FieldGoalFigure,

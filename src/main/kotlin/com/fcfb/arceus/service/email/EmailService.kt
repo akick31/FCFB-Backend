@@ -87,9 +87,9 @@ class EmailService(
             helper.setSubject(subject)
             helper.setText(html, true)
             mailSender.send(message)
-            Logger.debug("Email sent to $to")
+            Logger().debug("Email sent to $to")
         } catch (e: Exception) {
-            Logger.error("{}", e)
+            Logger().error("{}", e)
         }
     }
 }

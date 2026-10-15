@@ -1,0 +1,53 @@
+package com.fcfb.arceus.controllers.statistics.league
+
+import com.fcfb.arceus.controllers.ApiConstants
+import com.fcfb.arceus.enums.team.Subdivision
+import com.fcfb.arceus.service.fcfb.statistics.league.LeagueStatsService
+import io.swagger.v3.oas.annotations.Operation
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
+import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+@RequestMapping("${ApiConstants.FULL_PATH}/league-stats")
+@CrossOrigin(origins = ["*"])
+class LeagueStatsController(
+    private val leagueStatsService: LeagueStatsService,
+) {
+    @Operation(summary = "Get league stats")
+    @GetMapping
+    fun getFilteredLeagueStats(
+        @RequestParam(required = false) subdivision: Subdivision?,
+        @RequestParam(required = false) season: Int?,
+        @PageableDefault(size = 20) pageable: Pageable,
+    ) = leagueStatsService.getFilteredLeagueStats(
+        subdivision = subdivision,
+        season = season,
+        pageable = pageable,
+    )
+
+    @Operation(summary = "Generate league stats")
+    @PostMapping("/generate/all")
+    fun generateAllLeagueStats() = leagueStatsService.generateAllLeagueStats()
+
+    @Operation(summary = "Get postseason league stats")
+    @GetMapping("/postseason")
+    fun getFilteredPostseasonLeagueStats(
+        @RequestParam(required = false) subdivision: Subdivision?,
+        @RequestParam(required = false) season: Int?,
+        @PageableDefault(size = 20) pageable: Pageable,
+    ) = leagueStatsService.getFilteredPostseasonLeagueStats(
+        subdivision = subdivision,
+        season = season,
+        pageable = pageable,
+    )
+
+    @Operation(summary = "Generate postseason league stats")
+    @PostMapping("/postseason/generate/all")
+    fun generateAllPostseasonLeagueStats() = leagueStatsService.generateAllPostseasonLeagueStats()
+}

@@ -155,10 +155,6 @@ internal class PassConcept(
             spinning = true,
         )
 
-    /**
-     * A deflected throw: a clean arc from the release to [tipPoint], then a flatter, tumbling
-     * deviation on to [endPoint]. [TIP_AT] is the share of the flight spent before contact.
-     */
     fun tipped(
         tipPoint: FieldPoint,
         endPoint: FieldPoint,

@@ -4,25 +4,25 @@ import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.model.Season
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.PlayRepository
-import com.fcfb.arceus.repositories.ScheduleRepository
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.model.season.Season
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.play.PlayRepository
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.appearance.GameFieldService
 import com.fcfb.arceus.service.fcfb.probability.WinProbabilityService
-import com.fcfb.arceus.service.fcfb.record.RecordService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleService
 import com.fcfb.arceus.service.fcfb.season.SeasonService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
-import com.fcfb.arceus.service.fcfb.statistics.SeasonStatsService
+import com.fcfb.arceus.service.fcfb.statistics.record.RecordService
+import com.fcfb.arceus.service.fcfb.statistics.season.SeasonStatsService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import io.mockk.every
 import io.mockk.mockk
@@ -87,6 +87,9 @@ class GameFinalizationTransactionTest {
             probability,
             mockk(relaxed = true),
             finalization,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
         )
     private val notifications = mutableListOf<Int>()
 

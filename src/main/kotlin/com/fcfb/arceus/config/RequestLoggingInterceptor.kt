@@ -49,7 +49,7 @@ class RequestLoggingInterceptor : HandlerInterceptor {
         val query = request.queryString?.let { "?" + redactQuery(it) } ?: ""
         val endpoint = "${handler.beanType.simpleName}.${handler.method.name}"
 
-        Logger.info(
+        Logger().info(
             "API call: {} {}{} -> {} ({}ms) by user={} role={} endpoint={}",
             request.method,
             request.requestURI,

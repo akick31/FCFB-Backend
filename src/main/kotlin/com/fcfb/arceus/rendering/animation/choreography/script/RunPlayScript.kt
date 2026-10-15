@@ -94,7 +94,11 @@ class RunPlayScript : PlayScript {
         val tackleAt =
             when {
                 offenseScores -> SCORE_AT
-                fumble -> minOf(maxOf(runTime, HANDOFF + carryTime(runGain) * FUMBLE_PURSUIT_TIME), FumbleRecovery.latestFumbleAt(context))
+                fumble ->
+                    minOf(
+                        maxOf(runTime, HANDOFF + carryTime(runGain) * FUMBLE_PURSUIT_TIME),
+                        FumbleRecovery.latestFumbleAt(context),
+                    )
                 else -> runTime
             }
 

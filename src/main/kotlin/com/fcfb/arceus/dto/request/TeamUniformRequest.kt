@@ -1,9 +1,5 @@
 package com.fcfb.arceus.dto.request
 
-/**
- * Editable uniform settings. Primary and secondary colors are deliberately absent: those belong to the team record and
- * are copied into the uniform, so exposing them here would give them two sources of truth.
- */
 data class TeamUniformRequest(
     val tertiaryColor: String? = null,
     val helmetColor: String? = null,

@@ -1,8 +1,8 @@
 package com.fcfb.arceus.rendering.scorebug
 
 import com.fcfb.arceus.enums.game.GameStatus
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Component
 import java.awt.AlphaComposite
@@ -124,7 +124,7 @@ class FoxScorebugRenderer : ScorebugRendererBase(), ScorebugRenderer {
                 val logoY = yPos + (sectionHeight - logoSize) / 2
                 g.drawImage(logoImage, logoX, logoY, logoSize, logoSize, null)
             } catch (e: IOException) {
-                Logger.error("Error loading logo for ${team.name}: ${e.message}")
+                Logger().error("Error loading logo for ${team.name}: ${e.message}")
             }
         }
 

@@ -5,7 +5,6 @@ import com.fcfb.arceus.model.animation.choreography.Track
 import com.fcfb.arceus.rendering.animation.PlayRandom
 import com.fcfb.arceus.rendering.animation.choreography.path
 
-/** The six linemen firing at the kicker together. Gunners are left out: they are jammed at the line, not rushing. */
 internal object PuntRush {
     const val LANES = 6
     const val SNAP_AT = 0.12f

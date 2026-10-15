@@ -11,21 +11,22 @@ import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.BowlField
-import com.fcfb.arceus.model.ConferenceChampionshipField
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.PlayoffField
-import com.fcfb.arceus.model.PostseasonField
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamField
-import com.fcfb.arceus.model.TeamUniformHistory
 import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.appearance.BowlField
+import com.fcfb.arceus.model.appearance.ConferenceChampionshipField
+import com.fcfb.arceus.model.appearance.PlayoffField
+import com.fcfb.arceus.model.appearance.PostseasonField
+import com.fcfb.arceus.model.appearance.TeamField
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.preview.FieldPreviewRenderer
 import com.fcfb.arceus.rendering.preview.UniformPreviewRenderer
 import com.fcfb.arceus.rendering.scorebug.EspnScorebugRenderer
-import com.fcfb.arceus.service.fcfb.animation.FieldThemeResolver
+import com.fcfb.arceus.service.fcfb.animation.FieldThemeService
 import com.fcfb.arceus.service.fcfb.team.TeamService
+import com.fcfb.arceus.util.appearance.AppearanceThumbnailCache
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -40,13 +41,13 @@ class AppearancePreviewService(
     private val teamService: TeamService,
     private val teamAppearanceService: TeamAppearanceService,
     private val espnScorebugRenderer: EspnScorebugRenderer,
-    private val gameRepository: com.fcfb.arceus.repositories.GameRepository,
-    private val fieldThemeResolver: FieldThemeResolver,
+    private val gameRepository: com.fcfb.arceus.repositories.game.GameRepository,
+    private val fieldThemeService: FieldThemeService,
     private val bowlFieldService: BowlFieldService,
     private val playoffFieldService: PlayoffFieldService,
     private val conferenceChampionshipFieldService: ConferenceChampionshipFieldService,
-    private val fieldAppearanceApplier: FieldAppearanceApplier,
-    private val postseasonFieldUpdater: PostseasonFieldUpdater,
+    private val fieldAppearanceService: FieldAppearanceService,
+    private val postseasonFieldUpdateService: PostseasonFieldUpdateService,
     private val thumbnailCache: AppearanceThumbnailCache,
 ) {
     fun preview(request: AppearancePreviewRequest): ResponseEntity<ByteArray> = respond(renderImage(request))
@@ -91,7 +92,6 @@ class AppearancePreviewService(
         }
     }
 
-    /** Draft colors are applied to the detached team instance only, so the preview never persists unsaved edits. */
     private fun applyDraftColors(
         team: Team,
         colors: TeamColorsRequest?,
@@ -102,7 +102,6 @@ class AppearancePreviewService(
         colors.tertiaryColor?.let { team.tertiaryColor = it }
     }
 
-    /** Draft logos applied to the detached team for the Logo tab preview; never persisted. */
     private fun applyDraftLogos(
         team: Team,
         request: AppearancePreviewRequest,
@@ -160,10 +159,9 @@ class AppearancePreviewService(
                 ballLocation = PAT_BALL_LOCATION
                 quarter = 1
             }
-        return fieldThemeResolver.resolve(play, game, homeTeam, awayTeam, uniform, null, teamFieldOverride = field)
+        return fieldThemeService.resolve(play, game, homeTeam, awayTeam, uniform, null, teamFieldOverride = field)
     }
 
-    /** Never persisted: a preview that wrote to the repository would save edits the user has not approved. */
     private fun draftField(
         team: String,
         draft: TeamFieldRequest?,
@@ -172,7 +170,7 @@ class AppearancePreviewService(
         if (draft == null) return stored
         val clone = TeamField().apply { this.team = stored.team }
         stored.copyAppearanceInto(clone)
-        return fieldAppearanceApplier.applyFields(clone, draft)
+        return fieldAppearanceService.applyFields(clone, draft)
     }
 
     private fun draftUniform(
@@ -269,7 +267,7 @@ class AppearancePreviewService(
                     )
                 else -> null
             }
-        val theme = fieldThemeResolver.resolve(play, game, home, away, null, null, bowlOverride, postseasonOverride)
+        val theme = fieldThemeService.resolve(play, game, home, away, null, null, bowlOverride, postseasonOverride)
         return respond(FieldPreviewRenderer.fieldWithWallImage(theme))
     }
 
@@ -291,7 +289,7 @@ class AppearancePreviewService(
         request: PostseasonFieldRequest?,
     ): T {
         stored.copyInto(target)
-        request?.let { postseasonFieldUpdater.applyFields(target, it) }
+        request?.let { postseasonFieldUpdateService.applyFields(target, it) }
         return target
     }
 

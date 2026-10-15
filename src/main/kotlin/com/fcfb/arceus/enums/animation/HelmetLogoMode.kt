@@ -1,6 +1,5 @@
 package com.fcfb.arceus.enums.animation
 
-/** What a helmet carries. [NONE] is render-only: the database expresses it with `has_logo`, not with this value. */
 enum class HelmetLogoMode {
     MAIN,
     UPLOAD,

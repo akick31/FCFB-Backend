@@ -83,7 +83,13 @@ internal object FumbleRecovery {
         val dive = path(fumbleAt to defense[recoverer].at(fumbleAt), recoverAt to recoverySpot - carryOffset(returnDirection))
         val recovererTrack = switchAt(fumbleAt, defense[recoverer], switchAt(recoverAt, dive, carrierOf(returnBall, returnDirection)))
 
-        val defenseDivers = Pursuit.closest(defense.map { it.at(fumbleAt) }, defense.indices - recoverer, fumbleSpot, DEFENDERS_IN_SCRAMBLE)
+        val defenseDivers =
+            Pursuit.closest(
+                defense.map { it.at(fumbleAt) },
+                defense.indices - recoverer,
+                fumbleSpot,
+                DEFENDERS_IN_SCRAMBLE,
+            )
         val returnPace = recoverySpot.distanceTo(returnEnd) / maxOf(returnAt - recoverAt, MIN_RETURN_TIME)
         val escortSpeed = Pursuit.paced(maxOf(Pursuit.LINEBACKER_SPEED, returnPace * ESCORT_PACE))
         val finalDefense =

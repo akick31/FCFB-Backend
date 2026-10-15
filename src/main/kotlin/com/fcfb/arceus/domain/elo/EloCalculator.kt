@@ -1,0 +1,57 @@
+package com.fcfb.arceus.domain.elo
+
+import com.fcfb.arceus.enums.game.GameStatus
+import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.model.elo.EloReplayResult
+import com.fcfb.arceus.model.game.Game
+import kotlin.math.pow
+import kotlin.math.roundToInt
+
+class EloCalculator {
+    private val baseElo = 1500.0
+    private val kFactor = 32.0
+    private val pointsPerHundredElo = 3.0
+    private val homeFieldAdvantage = 2.5
+
+    fun expectedScore(
+        rating: Double,
+        opponentRating: Double,
+    ): Double = 1.0 / (1.0 + 10.0.pow((opponentRating - rating) / 400.0))
+
+    fun updatedRatings(
+        homeElo: Double,
+        awayElo: Double,
+        homeWon: Boolean,
+    ): Pair<Double, Double> {
+        val expectedHome = expectedScore(homeElo, awayElo)
+        val actualHome = if (homeWon) 1.0 else 0.0
+        val delta = kFactor * (actualHome - expectedHome)
+        return (homeElo + delta) to (awayElo - delta)
+    }
+
+    fun homeSpread(
+        homeElo: Double,
+        awayElo: Double,
+    ): Double {
+        val spread = ((homeElo - awayElo) / 100.0) * pointsPerHundredElo + homeFieldAdvantage
+        return -((spread * 2).roundToInt() / 2.0)
+    }
+
+    fun replay(games: List<Game>): EloReplayResult {
+        val ratings = HashMap<String, Double>()
+        val preGameElo = HashMap<Pair<Int, String>, Double>()
+        val chronological = games.sortedWith(compareBy({ it.season ?: 0 }, { it.week ?: 0 }, { it.gameId }))
+        for (game in chronological) {
+            val homeElo = ratings.getOrPut(game.homeTeam) { baseElo }
+            val awayElo = ratings.getOrPut(game.awayTeam) { baseElo }
+            preGameElo[game.gameId to game.homeTeam] = homeElo
+            preGameElo[game.gameId to game.awayTeam] = awayElo
+            if (game.gameStatus == GameStatus.FINAL && game.gameType != GameType.SCRIMMAGE) {
+                val (newHome, newAway) = updatedRatings(homeElo, awayElo, game.homeScore > game.awayScore)
+                ratings[game.homeTeam] = newHome
+                ratings[game.awayTeam] = newAway
+            }
+        }
+        return EloReplayResult(preGameElo, ratings)
+    }
+}

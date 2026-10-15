@@ -6,11 +6,14 @@ import com.fcfb.arceus.enums.gameflow.CoinTossChoice
 import com.fcfb.arceus.enums.gameflow.OvertimeCoinTossChoice
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.exception.game.InvalidCoinTossChoiceException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.repositories.GameRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.game.GameCoinToss
+import com.fcfb.arceus.repositories.game.GameCoinTossRepository
+import com.fcfb.arceus.repositories.game.GameRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
+import io.mockk.slot
 import io.mockk.unmockkConstructor
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
@@ -26,6 +29,7 @@ import java.util.Random
 
 class GameCoinTossServiceTest {
     private val repository = mockk<GameRepository>()
+    private val gameCoinTossRepository = mockk<GameCoinTossRepository>(relaxed = true)
     private val gameService =
         GameService(
             repository,
@@ -38,8 +42,11 @@ class GameCoinTossServiceTest {
             mockk(),
             mockk(),
             mockk(),
+            mockk(),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
         )
-    private val service = GameCoinTossService(gameService)
+    private val service = GameCoinTossService(gameService, gameCoinTossRepository)
     private val game =
         Game().apply {
             gameId = 7
@@ -55,6 +62,7 @@ class GameCoinTossServiceTest {
     fun setUp() {
         every { repository.getGameById(7) } returns game
         every { repository.save(game) } returns game
+        every { gameCoinTossRepository.save(any()) } answers { firstArg() }
         mockkConstructor(Random::class)
         every { anyConstructed<Random>().nextInt(2) } returns 1
     }
@@ -91,6 +99,11 @@ class GameCoinTossServiceTest {
         assertEquals(status, game.gameStatus)
         assertNotEquals("existing timer", game.gameTimer)
         verify(exactly = 1) { repository.save(game) }
+        val captured = slot<GameCoinToss>()
+        verify(exactly = 1) { gameCoinTossRepository.save(capture(captured)) }
+        assertEquals(7, captured.captured.gameId)
+        assertEquals(game.coinTossWinner, captured.captured.coinTossWinner)
+        assertEquals(game.overtimeCoinTossWinner, captured.captured.overtimeCoinTossWinner)
     }
 
     @ParameterizedTest

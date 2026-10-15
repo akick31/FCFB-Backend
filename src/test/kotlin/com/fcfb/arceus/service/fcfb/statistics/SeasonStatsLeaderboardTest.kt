@@ -1,8 +1,9 @@
 package com.fcfb.arceus.service.fcfb.statistics
 
 import com.fcfb.arceus.enums.team.Subdivision
-import com.fcfb.arceus.model.SeasonStats
-import com.fcfb.arceus.repositories.SeasonStatsRepository
+import com.fcfb.arceus.model.statistics.SeasonStats
+import com.fcfb.arceus.repositories.statistics.SeasonStatsRepository
+import com.fcfb.arceus.service.fcfb.statistics.season.SeasonStatsService
 import com.fcfb.arceus.service.specification.SeasonStatsSpecificationService
 import io.mockk.every
 import io.mockk.mockk

@@ -6,8 +6,8 @@ import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.exception.play.ResultNotFoundException
-import com.fcfb.arceus.model.Ranges
-import com.fcfb.arceus.repositories.RangesRepository
+import com.fcfb.arceus.model.play.Ranges
+import com.fcfb.arceus.repositories.play.RangesRepository
 import org.springframework.stereotype.Service
 
 @Service

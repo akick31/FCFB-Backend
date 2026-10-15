@@ -4,9 +4,9 @@ import com.fcfb.arceus.dto.request.ConferenceScheduleRequest
 import com.fcfb.arceus.dto.request.ScheduleEntry
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.ScheduleRepository
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
 import com.fcfb.arceus.service.fcfb.season.SeasonService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.util.Logger
@@ -25,12 +25,6 @@ class ConferenceScheduleGenerationService(
 
     companion object {
         private const val RECENT_OPPONENT_LOOKBACK_SEASONS = 5
-    }
-
-    private fun checkScheduleLock(season: Int) {
-        if (seasonService.isScheduleLocked(season)) {
-            throw IllegalStateException("Schedule for season $season is locked and cannot be modified")
-        }
     }
 
     private fun matchupKey(
@@ -52,16 +46,16 @@ class ConferenceScheduleGenerationService(
         request: ConferenceScheduleRequest,
         conferenceTeams: List<Team>,
     ): List<Schedule> {
-        checkScheduleLock(request.season)
+        seasonService.requireScheduleUnlocked(request.season)
         val teamNames = conferenceTeams.map { it.name ?: "" }.filter { it.isNotEmpty() }
         val numTeams = teamNames.size
         val numGames = minOf(request.numConferenceGames, numTeams - 1)
         val totalWeeks = 12
 
-        Logger.info("Generating conference schedule for ${request.conference}: $numTeams teams, $numGames games per team")
+        Logger().info("Generating conference schedule for ${request.conference}: $numTeams teams, $numGames games per team")
 
         if (numTeams < 2) {
-            Logger.warn("Not enough teams ($numTeams) to generate schedule for ${request.conference}")
+            Logger().warn("Not enough teams ($numTeams) to generate schedule for ${request.conference}")
             return emptyList()
         }
 
@@ -75,11 +69,11 @@ class ConferenceScheduleGenerationService(
                     "Could not assign weeks for ${request.conference} conference schedule. " +
                         "Check for conflicting OOC games or reduce conference game count.",
                 )
-        Logger.info("Assigned ${weekAssignments.size} matchups to weeks for ${request.conference}")
+        Logger().info("Assigned ${weekAssignments.size} matchups to weeks for ${request.conference}")
 
         val entries = buildScheduleEntries(request, teamNames, weekAssignments)
         val result = saveScheduleEntries(entries)
-        Logger.info("Generated ${result.size} conference games for ${request.conference}")
+        Logger().info("Generated ${result.size} conference games for ${request.conference}")
         return result
     }
 
@@ -101,7 +95,7 @@ class ConferenceScheduleGenerationService(
         val teamWeekSchedule = teamNames.associateWith { mutableSetOf<Int>() }.toMutableMap()
         for (team in teamNames) {
             scheduleRepository.getScheduleBySeasonAndTeam(season, team)?.forEach { g ->
-                if (g.week != null) teamWeekSchedule[team]?.add(g.week!!)
+                teamWeekSchedule[team]?.add(g.week)
             }
         }
         return teamWeekSchedule
@@ -117,24 +111,24 @@ class ConferenceScheduleGenerationService(
         if (request.divisions.isNotEmpty()) {
             val matchups =
                 selectMatchupsWithDivisions(conferenceTeams, teamNames, numGames, protectedRivalries, request.conference, request.season)
-            Logger.info("Division-aware selection produced ${matchups.size} matchups for ${request.conference}")
+            Logger().info("Division-aware selection produced ${matchups.size} matchups for ${request.conference}")
             return matchups
         }
         if (teamNames.size % 2 == 0) {
             val matchups = selectMatchupsCircleMethod(teamNames, numGames, protectedRivalries)
-            Logger.info("Circle method selected ${matchups.size} matchups for ${request.conference}")
+            Logger().info("Circle method selected ${matchups.size} matchups for ${request.conference}")
             return matchups
         }
         val feasibleGames = feasibleGreedyGameCount(teamNames.size, numGames)
         if (feasibleGames != numGames) {
-            Logger.warn(
+            Logger().warn(
                 "${request.conference} has an odd number of teams (${teamNames.size}); " +
                     "$numGames games per team is impossible (odd teams * odd games must be even). " +
                     "Using $feasibleGames games per team instead.",
             )
         }
         val matchups = selectMatchupsGreedy(teamNames, feasibleGames, protectedRivalries)
-        Logger.info("Greedy method selected ${matchups.size} matchups for ${request.conference}")
+        Logger().info("Greedy method selected ${matchups.size} matchups for ${request.conference}")
         return matchups
     }
 
@@ -310,7 +304,7 @@ class ConferenceScheduleGenerationService(
             if (allGood || matchups.size >= expectedMatchups) {
                 return matchups
             }
-            Logger.warn("Greedy matchup selection attempt $attempt: ${matchups.size}/$expectedMatchups matchups. Retrying...")
+            Logger().warn("Greedy matchup selection attempt $attempt: ${matchups.size}/$expectedMatchups matchups. Retrying...")
         }
 
         throw IllegalStateException("Could not select valid matchups after 20 attempts")
@@ -432,7 +426,7 @@ class ConferenceScheduleGenerationService(
         for (attempt in 1..20) {
             val matchups = fillByStaleness(candidatePairs, remaining, lastPlayedSeason, currentSeason)
             if (matchups != null) return matchups
-            Logger.warn("Cross-division filler attempt $attempt failed. Retrying...")
+            Logger().warn("Cross-division filler attempt $attempt failed. Retrying...")
         }
 
         throw IllegalStateException(
@@ -532,7 +526,7 @@ class ConferenceScheduleGenerationService(
         for ((roundIdx, round) in rounds.withIndex()) {
             for ((t1, t2) in round) {
                 if (t1 == t2) {
-                    Logger.error("Circle method BUG: self-matchup $t1 vs $t2 in round $roundIdx")
+                    Logger().error("Circle method BUG: self-matchup $t1 vs $t2 in round $roundIdx")
                 }
             }
         }
@@ -608,10 +602,10 @@ class ConferenceScheduleGenerationService(
         }
 
         return if (backtrack()) {
-            Logger.info("Week assignment completed with $backtracks backtracks")
+            Logger().info("Week assignment completed with $backtracks backtracks")
             assignments
         } else {
-            Logger.error("Week assignment failed after $backtracks backtracks")
+            Logger().error("Week assignment failed after $backtracks backtracks")
             null
         }
     }
@@ -623,7 +617,7 @@ class ConferenceScheduleGenerationService(
         val teamSet = teamNames.toSet()
         val prevHomeTeam = homeTeamByMatchup(currentSeason - 1, teamSet).toMutableMap()
         homeTeamByMatchup(currentSeason - 2, teamSet).forEach { (key, home) -> prevHomeTeam.putIfAbsent(key, home) }
-        Logger.info("Found ${prevHomeTeam.size} previous-season home/away records for alternation")
+        Logger().info("Found ${prevHomeTeam.size} previous-season home/away records for alternation")
         return prevHomeTeam
     }
 

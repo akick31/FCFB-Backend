@@ -2,7 +2,7 @@ package com.fcfb.arceus.config
 
 import com.fcfb.arceus.controllers.ApiConstants.FULL_PATH
 import com.fcfb.arceus.filters.JwtAuthenticationFilter
-import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.repositories.account.UserRepository
 import com.fcfb.arceus.service.auth.SessionService
 import com.fcfb.arceus.util.EncryptionUtils
 import org.springframework.beans.factory.annotation.Value
@@ -143,7 +143,6 @@ internal val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/team/fire",
         "$FULL_PATH/team/fire/coach",
         "$FULL_PATH/new_signups/hire",
-        "$FULL_PATH/request_message_log",
         "$FULL_PATH/schedule",
         "$FULL_PATH/schedule/bulk",
         "$FULL_PATH/schedule/generate-conference",

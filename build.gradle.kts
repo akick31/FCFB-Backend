@@ -81,6 +81,7 @@ dependencies {
         exclude(group = "org.mockito")
     }
     testImplementation("com.h2database:h2")
+    testImplementation("com.lemonappdev:konsist:0.18.1")
 }
 
 tasks.withType<KotlinJvmCompile>().configureEach {

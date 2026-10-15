@@ -1,21 +1,23 @@
 package com.fcfb.arceus.service.fcfb.statistics
 
+import com.fcfb.arceus.domain.elo.EloCalculator
+import com.fcfb.arceus.domain.statistics.GameStatsCalculator
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.exception.game.GameNotFoundException
 import com.fcfb.arceus.exception.statistics.GameStatsNotFoundException
 import com.fcfb.arceus.exception.statistics.InvalidGameStatsRequestException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.repositories.PlayRepository
-import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.service.fcfb.elo.EloCalculator
-import com.fcfb.arceus.service.fcfb.elo.EloService
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.play.PlayRepository
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
+import com.fcfb.arceus.service.fcfb.statistics.elo.EloService
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.statistics.StatsAverageCalculator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.ZoneId
@@ -30,6 +32,10 @@ class GameStatsService(
     private val teamRepository: TeamRepository,
     private val eloService: EloService,
 ) {
+    private val eloCalculator = EloCalculator()
+    private val statsAverageCalculator = StatsAverageCalculator()
+    private val gameStatsCalculator = GameStatsCalculator(statsAverageCalculator)
+
     fun createGameStats(game: Game): List<GameStats> {
         val homeTeam =
             teamRepository.getTeamByName(game.homeTeam)
@@ -127,7 +133,7 @@ class GameStatsService(
                 }
 
             for (game in allGames) {
-                Logger.info("Generating game stats for game ${game.gameId}")
+                Logger().info("Generating game stats for game ${game.gameId}")
                 generateGameStats(game.gameId)
             }
         } catch (e: Exception) {
@@ -139,7 +145,7 @@ class GameStatsService(
     fun generateAllGameStats() {
         try {
             val eloRebuild = eloService.rebuild(apply = true)
-            Logger.info(
+            Logger().info(
                 "Rebuilt ELO from scratch: ${eloRebuild.teamsChanged.size} teams, " +
                     "${eloRebuild.gameSpreadsChanged} game spreads, ${eloRebuild.gameStatsRowsChanged} game stats rows updated",
             )
@@ -148,7 +154,7 @@ class GameStatsService(
                     throw GameNotFoundException("Could not find any games")
                 }
 
-            Logger.info("Starting generation of all game stats for ${allGames.size} games")
+            Logger().info("Starting generation of all game stats for ${allGames.size} games")
 
             val teamsByName = teamRepository.findAll().associateBy { it.name }
             val allStats = mutableListOf<GameStats>()
@@ -180,17 +186,17 @@ class GameStatsService(
                 }
 
                 processedGames += gameBatch.size
-                Logger.info(
+                Logger().info(
                     "Computed game stats through game ${gameBatch.last().gameId} " +
                         "($processedGames/${allGames.size} games)",
                 )
             }
 
-            Logger.info("Saving computed game stats for ${allGames.size} games")
+            Logger().info("Saving computed game stats for ${allGames.size} games")
             seedPreGameElo(allGames, allStats)
             gameStatsRepository.deleteByGameIdIn(allGames.map { it.gameId })
             gameStatsRepository.saveAll(allStats)
-            Logger.info("Completed generation of all game stats")
+            Logger().info("Completed generation of all game stats")
         } catch (e: Exception) {
             throw Exception("Could not generate game stats", e)
         }
@@ -200,7 +206,7 @@ class GameStatsService(
         games: List<Game>,
         stats: List<GameStats>,
     ) {
-        val preGameElo = EloCalculator.replay(games).preGameElo
+        val preGameElo = eloCalculator.replay(games).preGameElo
         stats.forEach { row -> row.team?.let { team -> preGameElo[row.gameId to team]?.let { row.teamElo = it } } }
     }
 
@@ -245,11 +251,6 @@ class GameStatsService(
 
     fun saveGameStats(gameStats: GameStats) = gameStatsRepository.save(gameStats)
 
-    /**
-     * A delay-of-game forfeit bumps `game.homeScore`/`awayScore` directly with no backing play,
-     * so it never flows into the per-quarter GameStats breakdown. Call after updateGameStats()
-     * to fold any such gap into `otScore` so quarter totals still sum to the final score.
-     */
     fun reconcileForfeitScore(
         game: Game,
         homeStats: GameStats,
@@ -290,7 +291,7 @@ class GameStatsService(
     ): GameStats {
         gameStatsRepository.getGameStatsByIdAndTeam(game.gameId, team)?.let { return it }
 
-        Logger.warn("Game stats missing for game ${game.gameId} team $team - creating baseline row")
+        Logger().warn("Game stats missing for game ${game.gameId} team $team - creating baseline row")
         val isHome = team == game.homeTeam
         val teamModel =
             teamRepository.getTeamByName(team)
@@ -328,106 +329,106 @@ class GameStatsService(
         val allDefensivePlays = allPlays.filter { play -> play.possession != teamSide }
 
         stats.score = if (teamSide == TeamSide.HOME) game.homeScore else game.awayScore
-        stats.passAttempts = GameStatsCalculator.calculatePassAttempts(allOffensivePlays)
-        stats.passCompletions = GameStatsCalculator.calculatePassCompletions(allOffensivePlays)
-        stats.passCompletionPercentage = GameStatsCalculator.calculatePercentage(stats.passCompletions, stats.passAttempts)
-        stats.passYards = GameStatsCalculator.calculatePassYards(allOffensivePlays)
-        stats.longestPass = GameStatsCalculator.calculateLongestPass(allOffensivePlays)
-        stats.sacksAllowed = GameStatsCalculator.calculateSacksAllowed(allOffensivePlays)
-        stats.sacksForced = GameStatsCalculator.calculateSacksAllowed(allDefensivePlays)
-        stats.rushAttempts = GameStatsCalculator.calculateRushAttempts(allOffensivePlays)
-        stats.rushSuccesses = GameStatsCalculator.calculateRushSuccesses(allOffensivePlays)
-        stats.rushSuccessPercentage = GameStatsCalculator.calculatePercentage(stats.rushSuccesses, stats.rushAttempts)
-        stats.passSuccesses = GameStatsCalculator.calculatePassSuccesses(allOffensivePlays)
-        stats.passSuccessPercentage = GameStatsCalculator.calculatePercentage(stats.passSuccesses, stats.passAttempts)
-        stats.rushYards = GameStatsCalculator.calculateRushYards(allOffensivePlays)
-        stats.longestRun = GameStatsCalculator.calculateLongestRun(allOffensivePlays)
-        stats.totalYards = GameStatsCalculator.calculateTotalYards(stats.passYards, stats.rushYards)
-        stats.interceptionsLost = GameStatsCalculator.calculateInterceptionsLost(allOffensivePlays)
-        stats.interceptionsForced = GameStatsCalculator.calculateInterceptionsLost(allDefensivePlays)
-        stats.fumblesLost = GameStatsCalculator.calculateFumblesLost(allOffensivePlays)
-        stats.fumblesForced = GameStatsCalculator.calculateFumblesLost(allDefensivePlays)
-        stats.turnoversLost = GameStatsCalculator.calculateTurnoversLost(stats.interceptionsLost, stats.fumblesLost)
-        stats.turnoversForced = GameStatsCalculator.calculateTurnoversLost(stats.interceptionsForced, stats.fumblesForced)
-        stats.turnoverTouchdownsLost = GameStatsCalculator.calculateTurnoverTouchdownsLost(allOffensivePlays)
-        stats.turnoverTouchdownsForced = GameStatsCalculator.calculateTurnoverTouchdownsLost(allDefensivePlays)
-        stats.fieldGoalMade = GameStatsCalculator.calculateFieldGoalMade(allOffensivePlays)
-        stats.fieldGoalAttempts = GameStatsCalculator.calculateFieldGoalAttempts(allOffensivePlays)
-        stats.fieldGoalPercentage = GameStatsCalculator.calculatePercentage(stats.fieldGoalMade, stats.fieldGoalAttempts)
-        stats.longestFieldGoal = GameStatsCalculator.calculateLongestFieldGoal(allOffensivePlays)
-        stats.blockedOpponentFieldGoals = GameStatsCalculator.calculateBlockedOpponentFieldGoals(allDefensivePlays)
-        stats.fieldGoalTouchdown = GameStatsCalculator.calculateFieldGoalTouchdown(allOffensivePlays)
-        stats.puntsAttempted = GameStatsCalculator.calculatePuntsAttempted(allOffensivePlays)
-        stats.longestPunt = GameStatsCalculator.calculateLongestPunt(allOffensivePlays)
-        stats.puntYards = GameStatsCalculator.calculatePuntYards(allOffensivePlays)
-        stats.puntCount = GameStatsCalculator.calculatePuntCount(allOffensivePlays)
-        stats.averagePuntLength = StatsAverageCalculator.average(stats.puntYards, stats.puntCount)
-        stats.blockedOpponentPunt = GameStatsCalculator.calculateBlockedOpponentPunt(allOffensivePlays)
-        stats.puntReturnTd = GameStatsCalculator.calculatePuntReturnTd(allOffensivePlays)
+        stats.passAttempts = gameStatsCalculator.calculatePassAttempts(allOffensivePlays)
+        stats.passCompletions = gameStatsCalculator.calculatePassCompletions(allOffensivePlays)
+        stats.passCompletionPercentage = gameStatsCalculator.calculatePercentage(stats.passCompletions, stats.passAttempts)
+        stats.passYards = gameStatsCalculator.calculatePassYards(allOffensivePlays)
+        stats.longestPass = gameStatsCalculator.calculateLongestPass(allOffensivePlays)
+        stats.sacksAllowed = gameStatsCalculator.calculateSacksAllowed(allOffensivePlays)
+        stats.sacksForced = gameStatsCalculator.calculateSacksAllowed(allDefensivePlays)
+        stats.rushAttempts = gameStatsCalculator.calculateRushAttempts(allOffensivePlays)
+        stats.rushSuccesses = gameStatsCalculator.calculateRushSuccesses(allOffensivePlays)
+        stats.rushSuccessPercentage = gameStatsCalculator.calculatePercentage(stats.rushSuccesses, stats.rushAttempts)
+        stats.passSuccesses = gameStatsCalculator.calculatePassSuccesses(allOffensivePlays)
+        stats.passSuccessPercentage = gameStatsCalculator.calculatePercentage(stats.passSuccesses, stats.passAttempts)
+        stats.rushYards = gameStatsCalculator.calculateRushYards(allOffensivePlays)
+        stats.longestRun = gameStatsCalculator.calculateLongestRun(allOffensivePlays)
+        stats.totalYards = gameStatsCalculator.calculateTotalYards(stats.passYards, stats.rushYards)
+        stats.interceptionsLost = gameStatsCalculator.calculateInterceptionsLost(allOffensivePlays)
+        stats.interceptionsForced = gameStatsCalculator.calculateInterceptionsLost(allDefensivePlays)
+        stats.fumblesLost = gameStatsCalculator.calculateFumblesLost(allOffensivePlays)
+        stats.fumblesForced = gameStatsCalculator.calculateFumblesLost(allDefensivePlays)
+        stats.turnoversLost = gameStatsCalculator.calculateTurnoversLost(stats.interceptionsLost, stats.fumblesLost)
+        stats.turnoversForced = gameStatsCalculator.calculateTurnoversLost(stats.interceptionsForced, stats.fumblesForced)
+        stats.turnoverTouchdownsLost = gameStatsCalculator.calculateTurnoverTouchdownsLost(allOffensivePlays)
+        stats.turnoverTouchdownsForced = gameStatsCalculator.calculateTurnoverTouchdownsLost(allDefensivePlays)
+        stats.fieldGoalMade = gameStatsCalculator.calculateFieldGoalMade(allOffensivePlays)
+        stats.fieldGoalAttempts = gameStatsCalculator.calculateFieldGoalAttempts(allOffensivePlays)
+        stats.fieldGoalPercentage = gameStatsCalculator.calculatePercentage(stats.fieldGoalMade, stats.fieldGoalAttempts)
+        stats.longestFieldGoal = gameStatsCalculator.calculateLongestFieldGoal(allOffensivePlays)
+        stats.blockedOpponentFieldGoals = gameStatsCalculator.calculateBlockedOpponentFieldGoals(allDefensivePlays)
+        stats.fieldGoalTouchdown = gameStatsCalculator.calculateFieldGoalTouchdown(allOffensivePlays)
+        stats.puntsAttempted = gameStatsCalculator.calculatePuntsAttempted(allOffensivePlays)
+        stats.longestPunt = gameStatsCalculator.calculateLongestPunt(allOffensivePlays)
+        stats.puntYards = gameStatsCalculator.calculatePuntYards(allOffensivePlays)
+        stats.puntCount = gameStatsCalculator.calculatePuntCount(allOffensivePlays)
+        stats.averagePuntLength = statsAverageCalculator.average(stats.puntYards, stats.puntCount)
+        stats.blockedOpponentPunt = gameStatsCalculator.calculateBlockedOpponentPunt(allOffensivePlays)
+        stats.puntReturnTd = gameStatsCalculator.calculatePuntReturnTd(allOffensivePlays)
         stats.puntReturnTdPercentage =
-            GameStatsCalculator.calculatePercentage(
+            gameStatsCalculator.calculatePercentage(
                 stats.puntReturnTd,
-                GameStatsCalculator.calculatePuntsAttempted(allDefensivePlays),
+                gameStatsCalculator.calculatePuntsAttempted(allDefensivePlays),
             )
-        stats.numberOfKickoffs = GameStatsCalculator.calculateNumberOfKickoffs(allDefensivePlays)
-        stats.onsideAttempts = GameStatsCalculator.calculateOnsideAttempts(allOffensivePlays)
-        stats.onsideSuccess = GameStatsCalculator.calculateOnsideSuccess(allOffensivePlays)
-        stats.onsideSuccessPercentage = GameStatsCalculator.calculatePercentage(stats.onsideSuccess, stats.onsideAttempts)
-        stats.normalKickoffAttempts = GameStatsCalculator.calculateNormalKickoffAttempts(allOffensivePlays)
-        stats.touchbacks = GameStatsCalculator.calculateTouchbacks(allOffensivePlays)
+        stats.numberOfKickoffs = gameStatsCalculator.calculateNumberOfKickoffs(allDefensivePlays)
+        stats.onsideAttempts = gameStatsCalculator.calculateOnsideAttempts(allOffensivePlays)
+        stats.onsideSuccess = gameStatsCalculator.calculateOnsideSuccess(allOffensivePlays)
+        stats.onsideSuccessPercentage = gameStatsCalculator.calculatePercentage(stats.onsideSuccess, stats.onsideAttempts)
+        stats.normalKickoffAttempts = gameStatsCalculator.calculateNormalKickoffAttempts(allOffensivePlays)
+        stats.touchbacks = gameStatsCalculator.calculateTouchbacks(allOffensivePlays)
         stats.touchbackPercentage =
-            GameStatsCalculator.calculatePercentage(
+            gameStatsCalculator.calculatePercentage(
                 stats.touchbacks,
                 stats.normalKickoffAttempts,
             )
-        stats.kickReturnTd = GameStatsCalculator.calculateKickReturnTd(allDefensivePlays)
-        stats.kickReturnTdPercentage = GameStatsCalculator.calculatePercentage(stats.kickReturnTd, stats.numberOfKickoffs)
-        stats.numberOfDrives = GameStatsCalculator.calculateNumberOfDrives(allPlays, teamSide)
-        stats.timeOfPossession = GameStatsCalculator.calculateTimeOfPossession(allOffensivePlays)
-        stats.touchdowns = GameStatsCalculator.calculateTouchdowns(allPlays, teamSide)
-        stats.averageOffensiveDiff = GameStatsCalculator.calculateAverageNormalPlayDiff(allOffensivePlays)
-        stats.averageDefensiveDiff = GameStatsCalculator.calculateAverageNormalPlayDiff(allDefensivePlays)
-        stats.averageOffensiveSpecialTeamsDiff = GameStatsCalculator.calculateAverageSpecialTeamsDiff(allOffensivePlays)
-        stats.averageDefensiveSpecialTeamsDiff = GameStatsCalculator.calculateAverageSpecialTeamsDiff(allDefensivePlays)
-        stats.offensivePlayYards = GameStatsCalculator.calculateOffensivePlayYards(allOffensivePlays)
-        stats.offensivePlayCount = GameStatsCalculator.calculateOffensivePlayCount(allOffensivePlays)
-        stats.averageYardsPerPlay = StatsAverageCalculator.average(stats.offensivePlayYards, stats.offensivePlayCount)
-        stats.firstDowns = GameStatsCalculator.calculateFirstDowns(allOffensivePlays)
-        stats.thirdDownConversionSuccess = GameStatsCalculator.calculateThirdDownConversionSuccess(allOffensivePlays)
-        stats.thirdDownConversionAttempts = GameStatsCalculator.calculateThirdDownConversionAttempts(allOffensivePlays)
+        stats.kickReturnTd = gameStatsCalculator.calculateKickReturnTd(allDefensivePlays)
+        stats.kickReturnTdPercentage = gameStatsCalculator.calculatePercentage(stats.kickReturnTd, stats.numberOfKickoffs)
+        stats.numberOfDrives = gameStatsCalculator.calculateNumberOfDrives(allPlays, teamSide)
+        stats.timeOfPossession = gameStatsCalculator.calculateTimeOfPossession(allOffensivePlays)
+        stats.touchdowns = gameStatsCalculator.calculateTouchdowns(allPlays, teamSide)
+        stats.averageOffensiveDiff = gameStatsCalculator.calculateAverageNormalPlayDiff(allOffensivePlays)
+        stats.averageDefensiveDiff = gameStatsCalculator.calculateAverageNormalPlayDiff(allDefensivePlays)
+        stats.averageOffensiveSpecialTeamsDiff = gameStatsCalculator.calculateAverageSpecialTeamsDiff(allOffensivePlays)
+        stats.averageDefensiveSpecialTeamsDiff = gameStatsCalculator.calculateAverageSpecialTeamsDiff(allDefensivePlays)
+        stats.offensivePlayYards = gameStatsCalculator.calculateOffensivePlayYards(allOffensivePlays)
+        stats.offensivePlayCount = gameStatsCalculator.calculateOffensivePlayCount(allOffensivePlays)
+        stats.averageYardsPerPlay = statsAverageCalculator.average(stats.offensivePlayYards, stats.offensivePlayCount)
+        stats.firstDowns = gameStatsCalculator.calculateFirstDowns(allOffensivePlays)
+        stats.thirdDownConversionSuccess = gameStatsCalculator.calculateThirdDownConversionSuccess(allOffensivePlays)
+        stats.thirdDownConversionAttempts = gameStatsCalculator.calculateThirdDownConversionAttempts(allOffensivePlays)
         stats.thirdDownConversionPercentage =
-            GameStatsCalculator.calculatePercentage(stats.thirdDownConversionSuccess, stats.thirdDownConversionAttempts)
-        stats.fourthDownConversionSuccess = GameStatsCalculator.calculateFourthDownConversionSuccess(allOffensivePlays)
-        stats.fourthDownConversionAttempts = GameStatsCalculator.calculateFourthDownConversionAttempts(allOffensivePlays)
+            gameStatsCalculator.calculatePercentage(stats.thirdDownConversionSuccess, stats.thirdDownConversionAttempts)
+        stats.fourthDownConversionSuccess = gameStatsCalculator.calculateFourthDownConversionSuccess(allOffensivePlays)
+        stats.fourthDownConversionAttempts = gameStatsCalculator.calculateFourthDownConversionAttempts(allOffensivePlays)
         stats.fourthDownConversionPercentage =
-            GameStatsCalculator.calculatePercentage(stats.fourthDownConversionSuccess, stats.fourthDownConversionAttempts)
+            gameStatsCalculator.calculatePercentage(stats.fourthDownConversionSuccess, stats.fourthDownConversionAttempts)
         if (teamSide == TeamSide.HOME) {
-            stats.largestLead = GameStatsCalculator.calculateLargestLeadForHome(allPlays)
-            stats.largestDeficit = GameStatsCalculator.calculateLargestDeficitForHome(allPlays)
+            stats.largestLead = gameStatsCalculator.calculateLargestLeadForHome(allPlays)
+            stats.largestDeficit = gameStatsCalculator.calculateLargestDeficitForHome(allPlays)
         } else {
-            stats.largestLead = GameStatsCalculator.calculateLargestLeadForAway(allPlays)
-            stats.largestDeficit = GameStatsCalculator.calculateLargestDeficitForAway(allPlays)
+            stats.largestLead = gameStatsCalculator.calculateLargestLeadForAway(allPlays)
+            stats.largestDeficit = gameStatsCalculator.calculateLargestDeficitForAway(allPlays)
         }
         val teamSpread = if (teamSide == TeamSide.HOME) game.homeVegasSpread else game.awayVegasSpread
         val teamWon = if (teamSide == TeamSide.HOME) game.homeScore > game.awayScore else game.awayScore > game.homeScore
-        stats.favoredMargin = GameStatsCalculator.calculateFavoredMargin(teamSpread)
-        stats.upsetMargin = GameStatsCalculator.calculateUpsetMargin(teamSpread, teamWon)
-        stats.passTouchdowns = GameStatsCalculator.calculatePassTouchdowns(allOffensivePlays)
-        stats.rushTouchdowns = GameStatsCalculator.calculateRushTouchdowns(allOffensivePlays)
-        stats.redZoneAttempts = GameStatsCalculator.calculateRedZoneAttempts(allPlays, teamSide)
-        stats.redZoneSuccesses = GameStatsCalculator.calculateRedZoneSuccesses(allOffensivePlays)
-        stats.redZoneSuccessPercentage = GameStatsCalculator.calculatePercentage(stats.redZoneSuccesses, stats.redZoneAttempts)
-        stats.redZonePercentage = GameStatsCalculator.calculatePercentage(stats.redZoneAttempts, stats.numberOfDrives)
-        stats.turnoverDifferential = GameStatsCalculator.calculateTurnoverDifferential(stats.turnoversLost, stats.turnoversForced)
-        stats.pickSixesThrown = GameStatsCalculator.calculatePickSixes(allOffensivePlays)
-        stats.pickSixesForced = GameStatsCalculator.calculatePickSixes(allDefensivePlays)
-        stats.fumbleReturnTdsCommitted = GameStatsCalculator.calculateFumbleReturnTds(allOffensivePlays)
-        stats.fumbleReturnTdsForced = GameStatsCalculator.calculateFumbleReturnTds(allDefensivePlays)
-        stats.safetiesCommitted = GameStatsCalculator.calculateSafeties(allOffensivePlays)
-        stats.safetiesForced = GameStatsCalculator.calculateSafeties(allDefensivePlays)
-        stats.averageResponseSpeed = GameStatsCalculator.calculateAverageResponseSpeed(allPlays, teamSide)
+        stats.favoredMargin = gameStatsCalculator.calculateFavoredMargin(teamSpread)
+        stats.upsetMargin = gameStatsCalculator.calculateUpsetMargin(teamSpread, teamWon)
+        stats.passTouchdowns = gameStatsCalculator.calculatePassTouchdowns(allOffensivePlays)
+        stats.rushTouchdowns = gameStatsCalculator.calculateRushTouchdowns(allOffensivePlays)
+        stats.redZoneAttempts = gameStatsCalculator.calculateRedZoneAttempts(allPlays, teamSide)
+        stats.redZoneSuccesses = gameStatsCalculator.calculateRedZoneSuccesses(allOffensivePlays)
+        stats.redZoneSuccessPercentage = gameStatsCalculator.calculatePercentage(stats.redZoneSuccesses, stats.redZoneAttempts)
+        stats.redZonePercentage = gameStatsCalculator.calculatePercentage(stats.redZoneAttempts, stats.numberOfDrives)
+        stats.turnoverDifferential = gameStatsCalculator.calculateTurnoverDifferential(stats.turnoversLost, stats.turnoversForced)
+        stats.pickSixesThrown = gameStatsCalculator.calculatePickSixes(allOffensivePlays)
+        stats.pickSixesForced = gameStatsCalculator.calculatePickSixes(allDefensivePlays)
+        stats.fumbleReturnTdsCommitted = gameStatsCalculator.calculateFumbleReturnTds(allOffensivePlays)
+        stats.fumbleReturnTdsForced = gameStatsCalculator.calculateFumbleReturnTds(allDefensivePlays)
+        stats.safetiesCommitted = gameStatsCalculator.calculateSafeties(allOffensivePlays)
+        stats.safetiesForced = gameStatsCalculator.calculateSafeties(allDefensivePlays)
+        stats.averageResponseSpeed = gameStatsCalculator.calculateAverageResponseSpeed(allPlays, teamSide)
         stats.gameStatus = game.gameStatus
-        stats.averageDiff = GameStatsCalculator.calculateAverageDiff(allPlays)
+        stats.averageDiff = gameStatsCalculator.calculateAverageDiff(allPlays)
         stats.lastModifiedTs =
             ZonedDateTime.now(
                 ZoneId.of("America/New_York"),
@@ -448,19 +449,19 @@ class GameStatsService(
 
         for (play in allPlays) {
             if (play.quarter == 1) {
-                stats.q1Score = GameStatsCalculator.calculateQuarterScore(play, stats.q1Score, teamSide)
+                stats.q1Score = gameStatsCalculator.calculateQuarterScore(play, stats.q1Score, teamSide)
             }
             if (play.quarter == 2) {
-                stats.q2Score = GameStatsCalculator.calculateQuarterScore(play, stats.q2Score, teamSide)
+                stats.q2Score = gameStatsCalculator.calculateQuarterScore(play, stats.q2Score, teamSide)
             }
             if (play.quarter == 3) {
-                stats.q3Score = GameStatsCalculator.calculateQuarterScore(play, stats.q3Score, teamSide)
+                stats.q3Score = gameStatsCalculator.calculateQuarterScore(play, stats.q3Score, teamSide)
             }
             if (play.quarter == 4) {
-                stats.q4Score = GameStatsCalculator.calculateQuarterScore(play, stats.q4Score, teamSide)
+                stats.q4Score = gameStatsCalculator.calculateQuarterScore(play, stats.q4Score, teamSide)
             }
             if (play.quarter >= 5) {
-                stats.otScore = GameStatsCalculator.calculateQuarterScore(play, stats.otScore, teamSide)
+                stats.otScore = gameStatsCalculator.calculateQuarterScore(play, stats.otScore, teamSide)
             }
         }
     }

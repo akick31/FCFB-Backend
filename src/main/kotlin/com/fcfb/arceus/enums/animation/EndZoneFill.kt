@@ -1,6 +1,5 @@
 package com.fcfb.arceus.enums.animation
 
-/** Which team color fills a bowl end zone. The text outline takes the other one, so storing a color would lose that rule. */
 enum class EndZoneFill {
     NONE,
     PRIMARY,

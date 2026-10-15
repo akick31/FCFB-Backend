@@ -11,24 +11,17 @@ import com.fcfb.arceus.enums.system.Platform.DISCORD
 import com.fcfb.arceus.exception.game.GameWeekJobNotFoundException
 import com.fcfb.arceus.exception.game.NoGameFoundException
 import com.fcfb.arceus.exception.season.RankingsNotUploadedException
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.repositories.RankingRepository
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.repositories.ranking.RankingRepository
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleService
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.job.AsyncJobTracker
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeoutOrNull
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import javax.annotation.PreDestroy
 
 @Service
@@ -37,14 +30,9 @@ class StartGameWeekJobService(
     private val scheduleService: ScheduleService,
     private val rankingRepository: RankingRepository,
 ) {
-    private val workerJob = SupervisorJob()
-    private val workerScope = CoroutineScope(Dispatchers.IO + workerJob)
-    private val shutdownSignal = CompletableDeferred<Unit>()
-    private val workerLock = Any()
+    private val jobTracker = AsyncJobTracker<GameWeekJob>("Week-job workers are shutting down")
 
     companion object {
-        private val activeJobs = ConcurrentHashMap<String, GameWeekJob>()
-
         const val DELAY_BETWEEN_GAMES_MS = 3000L
         const val BATCH_SIZE = 25
         const val BATCH_COOLDOWN_MS = 60000L
@@ -63,7 +51,7 @@ class StartGameWeekJobService(
 
         val gamesToStart =
             scheduleService.getGamesToStartBySeasonAndWeek(season, week) ?: run {
-                Logger.error("No games found for season $season week $week")
+                Logger().error("No games found for season $season week $week")
                 throw NoGameFoundException()
             }
 
@@ -77,10 +65,10 @@ class StartGameWeekJobService(
                 startedAt = now,
             )
 
-        Logger.info("=== STARTING GAME WEEK (async) ===")
-        Logger.info("Job ID: $jobId, Season: $season, Week: $week, Games: ${gamesToStart.size}")
+        Logger().info("=== STARTING GAME WEEK (async) ===")
+        Logger().info("Job ID: $jobId, Season: $season, Week: $week, Games: ${gamesToStart.size}")
 
-        launchWorker(job) {
+        jobTracker.launch(job, onCancelled = { completeJob(it) }) {
             processGameWeek(jobId, week, gamesToStart)
         }
 
@@ -97,18 +85,18 @@ class StartGameWeekJobService(
         week: Int,
         gamesToStart: List<Schedule>,
     ) {
-        if (!activeJobs.containsKey(jobId)) return
-        var job = updateJob(jobId) { it.copy(status = GameWeekJobStatus.IN_PROGRESS) }
+        if (!jobTracker.contains(jobId)) return
+        var job = jobTracker.update(jobId) { it.copy(status = GameWeekJobStatus.IN_PROGRESS) }
 
         var batchCount = 0
 
         for ((index, game) in gamesToStart.withIndex()) {
-            if (shutdownSignal.isCompleted) break
+            if (jobTracker.isShuttingDown) break
             val timestamp = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-            updateJob(jobId) { it.copy(currentIndex = index + 1) }
+            jobTracker.update(jobId) { it.copy(currentIndex = index + 1) }
 
             try {
-                Logger.info("[${index + 1}/${gamesToStart.size}] Starting game: ${game.homeTeam} vs ${game.awayTeam}")
+                Logger().info("[${index + 1}/${gamesToStart.size}] Starting game: ${game.homeTeam} vs ${game.awayTeam}")
                 val startedGame =
                     gameCreationService.startNormalGame(
                         StartRequest(
@@ -139,13 +127,13 @@ class StartGameWeekJobService(
                         index = index + 1,
                     )
                 job =
-                    updateJob(jobId) { current ->
+                    jobTracker.update(jobId) { current ->
                         current.copy(
                             startedGames = current.startedGames + 1,
                             logs = (current.logs + startLog).toMutableList(),
                         )
                     }
-                Logger.info(
+                Logger().info(
                     "[${index + 1}/${gamesToStart.size}] Successfully started: " +
                         "${game.homeTeam} vs ${game.awayTeam} (Game ID: ${startedGame.gameId})",
                 )
@@ -177,14 +165,14 @@ class StartGameWeekJobService(
                         error = errorMsg,
                     )
                 job =
-                    updateJob(jobId) { current ->
+                    jobTracker.update(jobId) { current ->
                         current.copy(
                             failedGames = current.failedGames + 1,
                             logs = (current.logs + startLog).toMutableList(),
                             failedGameDetails = (current.failedGameDetails + failedDetail).toMutableList(),
                         )
                     }
-                Logger.error(
+                Logger().error(
                     "[${index + 1}/${gamesToStart.size}] FAILED to start game: " +
                         "${game.homeTeam} vs ${game.awayTeam} — $errorMsg",
                 )
@@ -192,8 +180,8 @@ class StartGameWeekJobService(
 
             if (batchCount >= BATCH_SIZE && index < gamesToStart.size - 1) {
                 val batchNum = (index + 1) / BATCH_SIZE
-                Logger.info("=== Batch $batchNum complete ($BATCH_SIZE games). Cooling down ${BATCH_COOLDOWN_MS / 1000}s ===")
-                Logger.info("Progress: ${job.startedGames}/${job.totalGames} started, ${job.failedGames} failed")
+                Logger().info("=== Batch $batchNum complete ($BATCH_SIZE games). Cooling down ${BATCH_COOLDOWN_MS / 1000}s ===")
+                Logger().info("Progress: ${job.startedGames}/${job.totalGames} started, ${job.failedGames} failed")
                 pauseBetweenGames(BATCH_COOLDOWN_MS)
                 batchCount = 0
             } else if (index < gamesToStart.size - 1) {
@@ -203,43 +191,21 @@ class StartGameWeekJobService(
 
         job = completeJob(jobId)
 
-        Logger.info("=== GAME WEEK START COMPLETE ===")
-        Logger.info("Job: $jobId — Total: ${job.totalGames}, Started: ${job.startedGames}, Failed: ${job.failedGames}")
-    }
-
-    private fun launchWorker(
-        job: GameWeekJob,
-        process: suspend () -> Unit,
-    ) {
-        synchronized(workerLock) {
-            check(!shutdownSignal.isCompleted) { "Week-job workers are shutting down" }
-            activeJobs[job.jobId] = job
-            workerScope.launch {
-                try {
-                    process()
-                } catch (e: CancellationException) {
-                    completeJob(job.jobId)
-                    throw e
-                }
-            }
-        }
+        Logger().info("=== GAME WEEK START COMPLETE ===")
+        Logger().info("Job: $jobId — Total: ${job.totalGames}, Started: ${job.startedGames}, Failed: ${job.failedGames}")
     }
 
     @PreDestroy
     internal fun stopWorkers() {
-        synchronized(workerLock) {
-            shutdownSignal.complete(Unit)
-            workerJob.complete()
-        }
-        runBlocking { workerJob.join() }
+        jobTracker.stop()
     }
 
     private suspend fun pauseBetweenGames(duration: Long) {
-        withTimeoutOrNull(duration) { shutdownSignal.await() }
+        jobTracker.awaitShutdownOrTimeout(duration)
     }
 
     private fun completeJob(jobId: String): GameWeekJob =
-        updateJob(jobId) {
+        jobTracker.update(jobId) {
             it.copy(
                 completedAt = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
                 status =
@@ -251,21 +217,17 @@ class StartGameWeekJobService(
             )
         }
 
-    private fun updateJob(
-        jobId: String,
-        update: (GameWeekJob) -> GameWeekJob,
-    ): GameWeekJob = activeJobs.computeIfPresent(jobId) { _, job -> update(job) }!!
-
     private fun snapshot(job: GameWeekJob): GameWeekJob =
         job.copy(logs = job.logs.toMutableList(), failedGameDetails = job.failedGameDetails.toMutableList())
 
-    fun getGameWeekJobStatus(jobId: String): GameWeekJob = activeJobs[jobId]?.let(::snapshot) ?: throw GameWeekJobNotFoundException(jobId)
+    fun getGameWeekJobStatus(jobId: String): GameWeekJob =
+        jobTracker.get(jobId)?.let(::snapshot) ?: throw GameWeekJobNotFoundException(jobId)
 
-    fun getAllGameWeekJobs(): List<GameWeekJob> = activeJobs.values.map(::snapshot).sortedByDescending { it.startedAt }
+    fun getAllGameWeekJobs(): List<GameWeekJob> = jobTracker.all().map(::snapshot).sortedByDescending { it.startedAt }
 
     fun retryFailedGames(originalJobId: String): GameWeekJobResponse {
         val originalJob =
-            activeJobs[originalJobId]
+            jobTracker.get(originalJobId)
                 ?: throw NoGameFoundException()
 
         val failedDetails = originalJob.failedGameDetails.toList()
@@ -289,10 +251,10 @@ class StartGameWeekJobService(
                 startedAt = now,
             )
 
-        Logger.info("=== RETRYING FAILED GAMES ===")
-        Logger.info("New Job: $newJobId, Original Job: $originalJobId, Retrying: ${failedDetails.size} games")
+        Logger().info("=== RETRYING FAILED GAMES ===")
+        Logger().info("New Job: $newJobId, Original Job: $originalJobId, Retrying: ${failedDetails.size} games")
 
-        launchWorker(newJob) {
+        jobTracker.launch(newJob, onCancelled = { completeJob(it) }) {
             retryFailedGamesProcess(newJobId, originalJob.week, failedDetails)
         }
 
@@ -309,18 +271,18 @@ class StartGameWeekJobService(
         week: Int,
         failedGames: List<FailedGameDetail>,
     ) {
-        if (!activeJobs.containsKey(jobId)) return
-        var job = updateJob(jobId) { it.copy(status = GameWeekJobStatus.IN_PROGRESS) }
+        if (!jobTracker.contains(jobId)) return
+        var job = jobTracker.update(jobId) { it.copy(status = GameWeekJobStatus.IN_PROGRESS) }
 
         var batchCount = 0
 
         for ((index, failed) in failedGames.withIndex()) {
-            if (shutdownSignal.isCompleted) break
+            if (jobTracker.isShuttingDown) break
             val timestamp = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-            updateJob(jobId) { it.copy(currentIndex = index + 1) }
+            jobTracker.update(jobId) { it.copy(currentIndex = index + 1) }
 
             try {
-                Logger.info("[Retry ${index + 1}/${failedGames.size}] Starting game: ${failed.homeTeam} vs ${failed.awayTeam}")
+                Logger().info("[Retry ${index + 1}/${failedGames.size}] Starting game: ${failed.homeTeam} vs ${failed.awayTeam}")
                 val startedGame =
                     gameCreationService.startNormalGame(
                         StartRequest(
@@ -350,13 +312,13 @@ class StartGameWeekJobService(
                         index = index + 1,
                     )
                 job =
-                    updateJob(jobId) { current ->
+                    jobTracker.update(jobId) { current ->
                         current.copy(
                             startedGames = current.startedGames + 1,
                             logs = (current.logs + startLog).toMutableList(),
                         )
                     }
-                Logger.info("[Retry ${index + 1}/${failedGames.size}] Success: ${failed.homeTeam} vs ${failed.awayTeam}")
+                Logger().info("[Retry ${index + 1}/${failedGames.size}] Success: ${failed.homeTeam} vs ${failed.awayTeam}")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -385,18 +347,20 @@ class StartGameWeekJobService(
                         error = errorMsg,
                     )
                 job =
-                    updateJob(jobId) { current ->
+                    jobTracker.update(jobId) { current ->
                         current.copy(
                             failedGames = current.failedGames + 1,
                             logs = (current.logs + startLog).toMutableList(),
                             failedGameDetails = (current.failedGameDetails + failedDetail).toMutableList(),
                         )
                     }
-                Logger.error("[Retry ${index + 1}/${failedGames.size}] FAILED again: ${failed.homeTeam} vs ${failed.awayTeam} — $errorMsg")
+                Logger().error(
+                    "[Retry ${index + 1}/${failedGames.size}] FAILED again: ${failed.homeTeam} vs ${failed.awayTeam} — $errorMsg",
+                )
             }
 
             if (batchCount >= BATCH_SIZE && index < failedGames.size - 1) {
-                Logger.info("=== Retry batch complete. Cooling down ${BATCH_COOLDOWN_MS / 1000}s ===")
+                Logger().info("=== Retry batch complete. Cooling down ${BATCH_COOLDOWN_MS / 1000}s ===")
                 pauseBetweenGames(BATCH_COOLDOWN_MS)
                 batchCount = 0
             } else if (index < failedGames.size - 1) {
@@ -406,7 +370,7 @@ class StartGameWeekJobService(
 
         job = completeJob(jobId)
 
-        Logger.info("=== RETRY COMPLETE ===")
-        Logger.info("Job: $jobId — Retried: ${failedGames.size}, Started: ${job.startedGames}, Still Failed: ${job.failedGames}")
+        Logger().info("=== RETRY COMPLETE ===")
+        Logger().info("Job: $jobId — Retried: ${failedGames.size}, Started: ${job.startedGames}, Still Failed: ${job.failedGames}")
     }
 }

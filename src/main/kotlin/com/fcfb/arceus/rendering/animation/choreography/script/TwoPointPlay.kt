@@ -19,12 +19,6 @@ import com.fcfb.arceus.rendering.animation.choreography.segment
 import com.fcfb.arceus.rendering.animation.choreography.snapBall
 import com.fcfb.arceus.rendering.animation.choreography.switchAt
 
-/**
- * The option, read and statue looks for a two point try. All three are quarterback-handled plays
- * from the same three yard line, distinguished by where the ball goes and when: the option pitches
- * wide late, the read keeps up the middle off a mesh, and the statue fakes a throw before handing
- * behind the quarterback's back.
- */
 internal object TwoPointPlay {
     fun choreograph(
         context: PlayContext,

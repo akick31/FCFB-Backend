@@ -3,10 +3,9 @@ package com.fcfb.arceus.service.fcfb.account
 import com.fcfb.arceus.dto.response.NewSignupDTO
 import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.exception.signup.NewSignupNotFoundException
-import com.fcfb.arceus.model.NewSignup
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.NewSignupRepository
-import com.fcfb.arceus.util.DTOConverter
+import com.fcfb.arceus.model.account.NewSignup
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.repositories.account.NewSignupRepository
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.Logger
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -16,7 +15,7 @@ import java.util.UUID
 
 @Service
 class NewSignupService(
-    private val dtoConverter: DTOConverter,
+    private val newSignupDtoService: NewSignupDtoService,
     private val encryptionUtils: EncryptionUtils,
     private val userService: UserService,
     private val newSignupRepository: NewSignupRepository,
@@ -94,7 +93,7 @@ class NewSignupService(
             )
             return true
         } catch (e: Exception) {
-            Logger.error("Error approving new signup ${newSignup.id}: ${e.message}", e)
+            Logger().error("Error approving new signup ${newSignup.id}: ${e.message}", e)
             return false
         }
     }
@@ -107,7 +106,7 @@ class NewSignupService(
 
     fun getNewSignups(): List<NewSignupDTO> {
         val userData = newSignupRepository.getNewSignups()
-        return userData.map { dtoConverter.convertToNewSignupDTO(it) }
+        return userData.map { newSignupDtoService.convertToNewSignupDTO(it) }
     }
 
     fun saveNewSignup(newSignup: NewSignup) = newSignupRepository.save(newSignup)

@@ -11,13 +11,16 @@ import com.fcfb.arceus.exception.user.DiscordAlreadyLinkedException
 import com.fcfb.arceus.exception.user.UserForbiddenException
 import com.fcfb.arceus.exception.user.UserNotFoundException
 import com.fcfb.arceus.exception.user.UserUnauthorizedException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.model.account.UserCredential
+import com.fcfb.arceus.model.account.UserPreferences
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.repositories.account.UserCredentialRepository
+import com.fcfb.arceus.repositories.account.UserPreferencesRepository
+import com.fcfb.arceus.repositories.account.UserRepository
 import com.fcfb.arceus.service.fcfb.coach.CoachStintService
 import com.fcfb.arceus.service.log.UsernameHistoryService
 import com.fcfb.arceus.util.AuthContext
-import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.EncryptionUtils
 import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -32,11 +35,38 @@ import java.util.UUID
 class UserService(
     private val userRepository: UserRepository,
     private val encryptionUtils: EncryptionUtils,
-    private val dtoConverter: DTOConverter,
+    private val userDtoService: UserDtoService,
     private val passwordEncoder: PasswordEncoder,
     private val usernameHistoryService: UsernameHistoryService,
     private val coachStintService: CoachStintService,
+    private val userCredentialRepository: UserCredentialRepository,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) {
+    private fun syncCredential(user: User) {
+        userCredentialRepository.save(
+            UserCredential(
+                userId = user.id,
+                email = user.email,
+                hashedEmail = user.hashedEmail,
+                password = user.password,
+                salt = user.salt,
+                apiKeyHash = user.apiKeyHash,
+                resetToken = user.resetToken,
+                resetTokenExpiration = user.resetTokenExpiration,
+            ),
+        )
+    }
+
+    private fun syncPreferences(user: User) {
+        userPreferencesRepository.save(
+            UserPreferences(
+                userId = user.id,
+                delayOfGameWarningOptOut = user.delayOfGameWarningOptOut,
+                scoutingReportHiddenColumns = user.scoutingReportHiddenColumns,
+            ),
+        )
+    }
+
     fun updateUserWinsAndLosses(game: Game) {
         val gameType = game.gameType ?: GameType.SCRIMMAGE
         val timestamp = coachStintService.parseGameTimestamp(game.timestamp) ?: return
@@ -55,7 +85,7 @@ class UserService(
             val user = userRepository.getByDiscordId(discordId) ?: continue
             val stints = coachStintService.getStintsForCoach(user.username, user)
             if (!coachStintService.countsForCoach(stints, team, timestamp)) continue
-            updateUserRecord(dtoConverter.convertToUserDTO(user), gameType, isWin)
+            updateUserRecord(userDtoService.convertToUserDTO(user), gameType, isWin)
         }
     }
 
@@ -109,12 +139,12 @@ class UserService(
         updateUser(user)
     }
 
-    fun getUserDTOById(id: Long) = dtoConverter.convertToUserDTO(getUserById(id))
+    fun getUserDTOById(id: Long) = userDtoService.convertToUserDTO(getUserById(id))
 
     fun getUserById(id: Long) = userRepository.getById(id) ?: throw UserNotFoundException("User not found with id $id")
 
     fun getUserDTOByDiscordId(discordId: String) =
-        dtoConverter.convertToUserDTO(
+        userDtoService.convertToUserDTO(
             userRepository.getByDiscordId(discordId)
                 ?: throw UserNotFoundException("User not found with Discord ID $discordId"),
         )
@@ -122,7 +152,7 @@ class UserService(
     fun findUserByDiscordId(discordId: String): User? = userRepository.getByDiscordId(discordId)
 
     fun getUserByTeam(team: String) =
-        dtoConverter.convertToUserDTO(
+        userDtoService.convertToUserDTO(
             userRepository.getByTeam(team)
                 ?: throw UserNotFoundException("User not found with team $team"),
         )
@@ -132,7 +162,7 @@ class UserService(
             userRepository.getUsersByTeam(team).ifEmpty {
                 throw UserNotFoundException("No users found coaching team $team")
             }
-        return users.map { dtoConverter.convertToUserDTO(it) }
+        return users.map { userDtoService.convertToUserDTO(it) }
     }
 
     fun getUserByUsernameOrEmail(usernameOrEmail: String) =
@@ -155,7 +185,7 @@ class UserService(
             userRepository.findAll().filterNotNull().ifEmpty {
                 throw UserNotFoundException("No users found")
             }
-        return userData.map { dtoConverter.convertToUserDTO(it) }
+        return userData.map { userDtoService.convertToUserDTO(it) }
     }
 
     fun getFreeAgents(): List<UserDTO> {
@@ -163,14 +193,14 @@ class UserService(
             userRepository.getFreeAgents().ifEmpty {
                 throw UserNotFoundException("No free agents found")
             }
-        return userData.map { dtoConverter.convertToUserDTO(it) }
+        return userData.map { userDtoService.convertToUserDTO(it) }
     }
 
     fun getUserByCoachName(name: String) =
         userRepository.getByCoachName(name)
             ?: throw UserNotFoundException("User not found with coach name $name")
 
-    fun getUserDTOByName(name: String) = dtoConverter.convertToUserDTO(getUserByCoachName(name))
+    fun getUserDTOByName(name: String) = userDtoService.convertToUserDTO(getUserByCoachName(name))
 
     fun updateUserPassword(
         id: Long,
@@ -185,7 +215,8 @@ class UserService(
         user.resetTokenExpiration = null
 
         userRepository.save(user)
-        return dtoConverter.convertToUserDTO(user)
+        syncCredential(user)
+        return userDtoService.convertToUserDTO(user)
     }
 
     fun changePassword(
@@ -194,7 +225,7 @@ class UserService(
         newPassword: String,
     ): UserDTO {
         requireSelfOrAdmin(id)
-        val isAdminOrCommissioner = AuthContext.isAdminOrCommissioner()
+        val isAdminOrCommissioner = AuthContext().isAdminOrCommissioner()
         val user = getUserById(id)
         if (!isAdminOrCommissioner) {
             if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.password)) {
@@ -217,7 +248,7 @@ class UserService(
             this.username = username
         }
         saveUser(user)
-        return dtoConverter.convertToUserDTO(user)
+        return userDtoService.convertToUserDTO(user)
     }
 
     fun addHistoricalUsername(
@@ -240,7 +271,8 @@ class UserService(
             this.email = email
         }
         saveUser(user)
-        return dtoConverter.convertToUserDTO(user)
+        syncCredential(user)
+        return userDtoService.convertToUserDTO(user)
     }
 
     fun updateScoutingReportHiddenColumns(
@@ -253,16 +285,31 @@ class UserService(
             this.scoutingReportHiddenColumns = hiddenColumns.toMutableList()
         }
         saveUser(user)
-        return dtoConverter.convertToUserDTO(user)
+        syncPreferences(user)
+        return userDtoService.convertToUserDTO(user)
+    }
+
+    fun updateDelayOfGameWarningOptOut(
+        id: Long,
+        optOut: Boolean,
+    ): UserDTO {
+        requireSelfOrAdmin(id)
+        val user = getUserById(id)
+        user.apply {
+            this.delayOfGameWarningOptOut = optOut
+        }
+        saveUser(user)
+        syncPreferences(user)
+        return userDtoService.convertToUserDTO(user)
     }
 
     private fun requireSelfOrAdmin(id: Long) {
-        if (AuthContext.currentUserId() != id && !AuthContext.isAdminOrCommissioner()) {
+        if (AuthContext().currentUserId() != id && !AuthContext().isAdminOrCommissioner()) {
             throw UserForbiddenException()
         }
     }
 
-    private fun requireCurrentUserId(): Long = AuthContext.currentUserId() ?: throw UserForbiddenException()
+    private fun requireCurrentUserId(): Long = AuthContext().currentUserId() ?: throw UserForbiddenException()
 
     fun updateResetToken(email: String): User {
         val user = getUserByEmail(email)
@@ -272,6 +319,7 @@ class UserService(
             this.resetTokenExpiration = LocalDateTime.now().plusHours(1).toString()
         }
         saveUser(user)
+        syncCredential(user)
         return user
     }
 
@@ -294,6 +342,7 @@ class UserService(
         users.forEach {
             it.hashedEmail = encryptionUtils.hash(encryptionUtils.decrypt(it.email))
             userRepository.save(it)
+            syncCredential(it)
         }
     }
 
@@ -311,13 +360,13 @@ class UserService(
         user.discordId = discordId
         user.discordTag = discordTag
         userRepository.save(user)
-        return dtoConverter.convertToUserDTO(user)
+        return userDtoService.convertToUserDTO(user)
     }
 
     fun updateUserAsRequester(request: UpdateUserRequest): UserDTO {
         val user = request.toUserDTO()
         requireSelfOrAdmin(user.id)
-        if (!AuthContext.isAdmin()) {
+        if (!AuthContext().isAdmin()) {
             val commissionerManageableRoles = setOf(UserRole.USER, UserRole.CONFERENCE_COMMISSIONER)
             val existingUser = getUserDTOById(user.id)
             if (existingUser.role !in commissionerManageableRoles || user.role !in commissionerManageableRoles) {
@@ -414,6 +463,7 @@ class UserService(
         val apiKey = "fcfb_pat_" + Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes)
         user.apiKeyHash = encryptionUtils.hash(apiKey)
         userRepository.save(user)
+        syncCredential(user)
         return apiKey
     }
 
@@ -425,6 +475,7 @@ class UserService(
         val user = getUserById(userId)
         user.apiKeyHash = null
         userRepository.save(user)
+        syncCredential(user)
     }
 
     fun revokeApiKeyForCurrentUser() = revokeApiKey(requireCurrentUserId())

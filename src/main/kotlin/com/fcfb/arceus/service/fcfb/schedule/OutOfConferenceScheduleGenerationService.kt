@@ -5,10 +5,10 @@ import com.fcfb.arceus.dto.response.OocGenerationResult
 import com.fcfb.arceus.dto.response.OocUnmatchedSlot
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.team.Subdivision
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.ScheduleRepository
-import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import com.fcfb.arceus.service.fcfb.season.SeasonService
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
@@ -26,7 +26,7 @@ class OutOfConferenceScheduleGenerationService(
     }
 
     fun generateOutOfConferenceSchedule(season: Int): OocGenerationResult {
-        checkScheduleLock(season)
+        seasonService.requireScheduleUnlocked(season)
 
         val teams = loadEligibleTeams()
         val openWeeks = teams.keys.associateWith { (1..TOTAL_WEEKS).toMutableSet() }.toMutableMap()
@@ -41,16 +41,10 @@ class OutOfConferenceScheduleGenerationService(
         }
 
         val saved = if (newEntries.isNotEmpty()) saveScheduleEntries(newEntries) else emptyList()
-        Logger.info(
+        Logger().info(
             "OOC auto-fill for season $season: ${saved.size} games scheduled, ${unmatched.size} slots left unmatched",
         )
         return OocGenerationResult(gamesScheduled = saved.size, unmatchedSlots = unmatched)
-    }
-
-    private fun checkScheduleLock(season: Int) {
-        if (seasonService.isScheduleLocked(season)) {
-            throw IllegalStateException("Schedule for season $season is locked and cannot be modified")
-        }
     }
 
     private fun loadEligibleTeams(): Map<String, Team> =

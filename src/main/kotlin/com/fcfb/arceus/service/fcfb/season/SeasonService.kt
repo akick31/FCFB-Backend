@@ -5,15 +5,15 @@ import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.exception.season.CurrentSeasonNotFoundException
 import com.fcfb.arceus.exception.season.CurrentWeekNotFoundException
 import com.fcfb.arceus.exception.season.SeasonNotReadyException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.model.Season
-import com.fcfb.arceus.repositories.ScheduleRepository
-import com.fcfb.arceus.repositories.SeasonRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.model.season.Season
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
+import com.fcfb.arceus.repositories.season.SeasonRepository
 import com.fcfb.arceus.service.fcfb.account.UserService
+import com.fcfb.arceus.service.fcfb.conference.TeamSeasonConferenceService
 import com.fcfb.arceus.service.fcfb.ranking.RankingMetricService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleValidationService
-import com.fcfb.arceus.service.fcfb.team.TeamSeasonConferenceService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
@@ -161,7 +161,7 @@ class SeasonService(
         try {
             rankingMetricService.computeMetrics(season, week)
         } catch (e: Exception) {
-            Logger.error("Unable to compute ranking metrics for season $season week $week", e)
+            Logger().error("Unable to compute ranking metrics for season $season week $week", e)
         }
     }
 
@@ -194,6 +194,12 @@ class SeasonService(
             seasonRepository.findBySeasonNumber(seasonNumber)
                 ?: return false
         return season.scheduleLocked
+    }
+
+    fun requireScheduleUnlocked(seasonNumber: Int) {
+        if (isScheduleLocked(seasonNumber)) {
+            throw IllegalStateException("Schedule for season $seasonNumber is locked and cannot be modified")
+        }
     }
 
     fun createSeasonForScheduling(seasonNumber: Int): Season {
@@ -241,10 +247,10 @@ class SeasonService(
                         newGame
                     }
                 scheduleRepository.saveAll(newBowlGames)
-                Logger.info("Copied ${newBowlGames.size} bowl games from Season $previousSeason to Season $seasonNumber")
+                Logger().info("Copied ${newBowlGames.size} bowl games from Season $previousSeason to Season $seasonNumber")
             }
         } catch (e: Exception) {
-            Logger.warn("Could not copy bowl games from Season $previousSeason: ${e.message}")
+            Logger().warn("Could not copy bowl games from Season $previousSeason: ${e.message}")
         }
 
         return season

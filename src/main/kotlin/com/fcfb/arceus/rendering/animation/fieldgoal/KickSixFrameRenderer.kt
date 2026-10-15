@@ -2,10 +2,8 @@ package com.fcfb.arceus.rendering.animation.fieldgoal
 
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
-import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.animation.FieldTheme
-import com.fcfb.arceus.rendering.animation.AnimatedGifEncoder
-import com.fcfb.arceus.rendering.animation.AnimationFitter
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.choreography.FieldCamera
 import com.fcfb.arceus.rendering.animation.choreography.script.BlockedKickPlayScript
 import com.fcfb.arceus.rendering.animation.choreography.script.ShortKickReturnScript
@@ -14,12 +12,6 @@ import com.fcfb.arceus.rendering.animation.frame.PlayAnimationFrameRenderer
 import org.springframework.stereotype.Component
 import java.awt.image.BufferedImage
 
-/**
- * A kick six opens in the goal-post scene and finishes overhead. The two scenes render at
- * different heights, and neither [AnimationFitter] nor [AnimatedGifEncoder] resizes — the encoder
- * takes its dimensions from the first frame — so every goal-post frame is cropped to the overhead
- * height before the two halves are concatenated.
- */
 @Component
 class KickSixFrameRenderer(
     private val fieldGoalAttemptFrameRenderer: FieldGoalAttemptFrameRenderer,

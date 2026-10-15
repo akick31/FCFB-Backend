@@ -24,8 +24,8 @@ import com.fcfb.arceus.enums.game.GameSort.MOST_TIME_REMAINING
 import com.fcfb.arceus.enums.game.GameSort.NEWEST
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.repositories.GameRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.repositories.game.GameRepository
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service

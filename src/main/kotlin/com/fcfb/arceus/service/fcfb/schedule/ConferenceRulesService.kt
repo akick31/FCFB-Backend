@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fcfb.arceus.dto.request.ConferenceRulesRequest
 import com.fcfb.arceus.dto.response.ConferenceRulesResponse
 import com.fcfb.arceus.dto.standard.ProtectedRivalry
-import com.fcfb.arceus.model.ConferenceRules
-import com.fcfb.arceus.repositories.ConferenceRulesRepository
-import com.fcfb.arceus.service.fcfb.team.ConferenceService
+import com.fcfb.arceus.model.schedule.ConferenceRules
+import com.fcfb.arceus.repositories.schedule.ConferenceRulesRepository
+import com.fcfb.arceus.service.fcfb.conference.ConferenceService
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 
@@ -38,7 +38,7 @@ class ConferenceRulesService(
             }
 
         conferenceRulesRepository.save(rules)
-        Logger.info(
+        Logger().info(
             "Saved conference rules for $conference: " +
                 "${request.numConferenceGames} games, ${request.protectedRivalries.size} rivalries, ${request.divisions.size} divisions",
         )
@@ -70,7 +70,7 @@ class ConferenceRulesService(
         return try {
             objectMapper.readValue(json, Array<ProtectedRivalry>::class.java).toList()
         } catch (e: Exception) {
-            Logger.error("Error deserializing protected rivalries for $conference: ${e.message}", e)
+            Logger().error("Error deserializing protected rivalries for $conference: ${e.message}", e)
             emptyList()
         }
     }
@@ -83,7 +83,7 @@ class ConferenceRulesService(
         return try {
             objectMapper.readValue(json, Array<String>::class.java).toList()
         } catch (e: Exception) {
-            Logger.error("Error deserializing divisions for $conference: ${e.message}", e)
+            Logger().error("Error deserializing divisions for $conference: ${e.message}", e)
             emptyList()
         }
     }

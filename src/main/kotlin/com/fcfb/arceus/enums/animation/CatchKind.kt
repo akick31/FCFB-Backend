@@ -1,10 +1,5 @@
 package com.fcfb.arceus.enums.animation
 
-/**
- * How much of a completion's gain comes after the catch. [minShare]/[maxShare] are fractions of
- * the play's total gain that the receiver covers on his own, so the same kinds apply to a short
- * curl and a fifty yard strike alike.
- */
 enum class CatchKind(
     val minShare: Float,
     val maxShare: Float,

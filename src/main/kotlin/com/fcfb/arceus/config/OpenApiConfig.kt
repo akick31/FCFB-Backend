@@ -48,6 +48,7 @@ private val docsExcludedPathsByMethod =
                 "$FULL_PATH/user/update/email",
                 "$FULL_PATH/user/update/username",
                 "$FULL_PATH/user/update/password",
+                "$FULL_PATH/user/delay-of-game-warning-opt-out",
             ),
     )
 

@@ -2,11 +2,11 @@ package com.fcfb.arceus.service.fcfb.coach
 
 import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.enums.user.TransactionType
-import com.fcfb.arceus.model.CoachTransactionLog
-import com.fcfb.arceus.model.User
+import com.fcfb.arceus.model.account.User
 import com.fcfb.arceus.model.coach.CoachStint
-import com.fcfb.arceus.repositories.CoachTransactionLogRepository
-import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.model.log.CoachTransactionLog
+import com.fcfb.arceus.repositories.log.CoachTransactionLogRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import com.fcfb.arceus.service.log.UsernameHistoryService
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -43,10 +43,6 @@ class CoachStintService(
         return stints.none { !it.interim && it.team != team && covers(it, timestamp) }
     }
 
-    /**
-     * A HIRED is often logged after the coach's first game, leaving early games just before the stint.
-     * Pull each team's earliest stint back to its earliest actual game so those games are attributed.
-     */
     fun backdateStartsToGames(
         stints: List<CoachStint>,
         earliestGameByTeam: Map<String, LocalDateTime>,
@@ -110,10 +106,6 @@ class CoachStintService(
         return stints
     }
 
-    /**
-     * Closes an open stint at the given date. When no hire is open (a FIRED whose HIRED predates the
-     * transaction log) the tenure is still real, so close it as a permanent stint from the start of time.
-     */
     private fun closeStint(
         team: String,
         opened: Pair<LocalDateTime, Boolean>?,
@@ -125,11 +117,6 @@ class CoachStintService(
             CoachStint(team, LocalDateTime.MIN, firedAt, false)
         }
 
-    /**
-     * A coach's current team can be entirely absent from the transaction log (an original team
-     * assignment that predates the log). With no competing claim on that team's history, treat the
-     * whole tenure as one open permanent stint.
-     */
     private fun appendUnloggedCurrentTeamStint(
         stints: MutableList<CoachStint>,
         currentTeam: String?,

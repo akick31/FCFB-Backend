@@ -1,6 +1,14 @@
 package com.fcfb.arceus.service.fcfb.statistics
 
-import com.fcfb.arceus.service.fcfb.record.RecordService
+import com.fcfb.arceus.service.fcfb.statistics.conference.ConferenceStatsService
+import com.fcfb.arceus.service.fcfb.statistics.conference.PostseasonConferenceStatsService
+import com.fcfb.arceus.service.fcfb.statistics.league.LeagueStatsService
+import com.fcfb.arceus.service.fcfb.statistics.league.PostseasonLeagueStatsService
+import com.fcfb.arceus.service.fcfb.statistics.playbook.PlaybookStatsService
+import com.fcfb.arceus.service.fcfb.statistics.playbook.PostseasonPlaybookStatsService
+import com.fcfb.arceus.service.fcfb.statistics.record.RecordService
+import com.fcfb.arceus.service.fcfb.statistics.season.PostseasonSeasonStatsService
+import com.fcfb.arceus.service.fcfb.statistics.season.SeasonStatsService
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 
@@ -19,7 +27,7 @@ class GenerationService(
     private val coachStatsService: CoachStatsService,
 ) {
     fun generateAll() {
-        Logger.info("Starting full stats and records generation")
+        Logger().info("Starting full stats and records generation")
 
         runStep("game stats") { gameStatsService.generateAllGameStats() }
         runStep("season stats") { seasonStatsService.generateAllSeasonStats() }
@@ -33,19 +41,19 @@ class GenerationService(
         runStep("postseason conference stats") { postseasonConferenceStatsService.generateAllPostseasonConferenceStats() }
         runStep("postseason league stats") { postseasonLeagueStatsService.generateAllPostseasonLeagueStats() }
 
-        Logger.info("Completed full stats and records generation")
+        Logger().info("Completed full stats and records generation")
     }
 
     private fun runStep(
         name: String,
         step: () -> Unit,
     ) {
-        Logger.info("Generation step starting: $name")
+        Logger().info("Generation step starting: $name")
         try {
             step()
         } catch (e: Exception) {
             throw Exception("Full generation failed at step '$name'", e)
         }
-        Logger.info("Generation step completed: $name")
+        Logger().info("Generation step completed: $name")
     }
 }

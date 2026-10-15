@@ -8,17 +8,18 @@ import com.fcfb.arceus.dto.response.TeamColorsResponse
 import com.fcfb.arceus.dto.response.TeamLogosResponse
 import com.fcfb.arceus.exception.team.InvalidUniformException
 import com.fcfb.arceus.exception.user.UserForbiddenException
-import com.fcfb.arceus.model.TeamField
-import com.fcfb.arceus.model.TeamUniformCurrent
+import com.fcfb.arceus.model.appearance.TeamField
+import com.fcfb.arceus.model.appearance.TeamUniformCurrent
 import com.fcfb.arceus.rendering.animation.appearance.ColorSimilarity
 import com.fcfb.arceus.rendering.animation.appearance.FieldColors
 import com.fcfb.arceus.rendering.animation.assets.ConferenceLogoTint
-import com.fcfb.arceus.repositories.ConferenceRepository
-import com.fcfb.arceus.repositories.TeamFieldRepository
-import com.fcfb.arceus.repositories.TeamUniformCurrentRepository
+import com.fcfb.arceus.repositories.appearance.TeamFieldRepository
+import com.fcfb.arceus.repositories.appearance.TeamUniformCurrentRepository
+import com.fcfb.arceus.repositories.conference.ConferenceRepository
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.util.AuthContext
+import com.fcfb.arceus.util.appearance.AppearanceThumbnailCache
 import org.springframework.stereotype.Service
 
 @Service
@@ -27,7 +28,7 @@ class TeamAppearanceService(
     private val teamFieldRepository: TeamFieldRepository,
     private val teamService: TeamService,
     private val userService: UserService,
-    private val fieldAppearanceApplier: FieldAppearanceApplier,
+    private val fieldAppearanceService: FieldAppearanceService,
     private val conferenceRepository: ConferenceRepository,
     private val thumbnailCache: AppearanceThumbnailCache,
 ) {
@@ -45,7 +46,7 @@ class TeamAppearanceService(
         request: TeamColorsRequest,
     ): TeamColorsResponse {
         val found = teamService.getTeamByName(team)
-        if (request.primaryColor != null || request.secondaryColor != null) requireAdmin()
+        if (request.primaryColor != null || request.secondaryColor != null) AuthContext().requireAdminOrCommissioner()
         if (request.tertiaryColor != null) requireCanEdit(team)
         request.primaryColor?.let { found.primaryColor = it }
         request.secondaryColor?.let { found.secondaryColor = it }
@@ -64,7 +65,7 @@ class TeamAppearanceService(
         team: String,
         request: TeamLogosRequest,
     ): TeamLogosResponse {
-        requireAdmin()
+        AuthContext().requireAdminOrCommissioner()
         val found = teamService.getTeamByName(team)
         found.logo = request.logo
         found.logoDark = request.logoDark
@@ -72,11 +73,6 @@ class TeamAppearanceService(
         teamService.saveTeam(found)
         thumbnailCache.evictTeam(team)
         return TeamLogosResponse(found.logo, found.logoDark, found.secondaryLogo)
-    }
-
-    /** Primary and secondary are league identity, not a coach's to change; only admins and commissioners may. */
-    private fun requireAdmin() {
-        if (!AuthContext.isAdminOrCommissioner()) throw UserForbiddenException()
     }
 
     fun updateUniform(
@@ -145,15 +141,11 @@ class TeamAppearanceService(
     ): TeamField {
         requireCanEdit(team)
         val field = getField(team)
-        fieldAppearanceApplier.apply(field, request)
+        fieldAppearanceService.apply(field, request)
         thumbnailCache.evictTeam(team)
         return teamFieldRepository.save(field)
     }
 
-    /**
-     * Two shells that read alike leave the teams indistinguishable once the away side falls back to its alternate,
-     * which is the whole reason the alternate exists.
-     */
     private fun requireDistinctShells(uniform: TeamUniformCurrent) {
         val alternate = uniform.secondaryHelmetColor ?: return
         val primary = uniform.helmetColor ?: return
@@ -162,10 +154,9 @@ class TeamAppearanceService(
         }
     }
 
-    /** Admins and commissioners may edit any team; everyone else only the teams they are currently coaching. */
     private fun requireCanEdit(team: String) {
-        if (AuthContext.isAdminOrCommissioner()) return
-        val userId = AuthContext.currentUserId() ?: throw UserForbiddenException()
+        if (AuthContext().isAdminOrCommissioner()) return
+        val userId = AuthContext().currentUserId() ?: throw UserForbiddenException()
         val user = userService.getUserById(userId)
         val target = teamService.getTeamByName(team)
         val byUsername = target.coachUsernames?.contains(user.username) == true

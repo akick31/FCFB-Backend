@@ -1,14 +1,24 @@
 package com.fcfb.arceus.service.fcfb.statistics
 
+import com.fcfb.arceus.domain.statistics.ConferenceStatsCalculator
+import com.fcfb.arceus.domain.statistics.LeagueStatsCalculator
+import com.fcfb.arceus.domain.statistics.PlaybookStatsCalculator
+import com.fcfb.arceus.domain.statistics.SeasonStatsCalculator
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.model.SeasonStats
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.model.statistics.SeasonStats
+import com.fcfb.arceus.util.statistics.StatsAverageCalculator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class StatsAggregationTest {
+    private val statsAverageCalculator = StatsAverageCalculator()
+    private val seasonStatsCalculator = SeasonStatsCalculator(statsAverageCalculator)
+    private val conferenceStatsCalculator = ConferenceStatsCalculator(statsAverageCalculator)
+    private val leagueStatsCalculator = LeagueStatsCalculator(statsAverageCalculator)
+    private val playbookStatsCalculator = PlaybookStatsCalculator(statsAverageCalculator)
     private val games =
         listOf(
             GameStats(team = "Home", gameId = 1, offensivePlayYards = 60, offensivePlayCount = 10, puntYards = 40, puntCount = 1),
@@ -41,7 +51,7 @@ class StatsAggregationTest {
                 GameStats(team = "Away", gameId = 2, offensivePlayYards = 10, offensivePlayCount = 8),
             )
         val stats =
-            SeasonStatsCalculator.aggregateGameStatsToSeasonStats(
+            seasonStatsCalculator.aggregateGameStatsToSeasonStats(
                 games,
                 "Home",
                 12,
@@ -63,7 +73,7 @@ class StatsAggregationTest {
 
     @Test
     fun `conference averages use summed team totals and counts`() {
-        val stats = ConferenceStatsCalculator.aggregateSeasonStatsToConferenceStats(seasons, Subdivision.FBS, "SEC", 12)
+        val stats = conferenceStatsCalculator.aggregateSeasonStatsToConferenceStats(seasons, Subdivision.FBS, "SEC", 12)
 
         assertEquals(420, stats.offensivePlayYards)
         assertEquals(100, stats.offensivePlayCount)
@@ -79,7 +89,7 @@ class StatsAggregationTest {
 
     @Test
     fun `league averages use summed team totals and counts`() {
-        val stats = LeagueStatsCalculator.aggregateSeasonStatsToLeagueStats(seasons, Subdivision.FBS, 12)
+        val stats = leagueStatsCalculator.aggregateSeasonStatsToLeagueStats(seasons, Subdivision.FBS, 12)
 
         assertEquals(420, stats.offensivePlayYards)
         assertEquals(100, stats.offensivePlayCount)
@@ -89,7 +99,7 @@ class StatsAggregationTest {
     @Test
     fun `playbook averages use summed game totals and counts`() {
         val stats =
-            PlaybookStatsCalculator.aggregateGameStatsToPlaybookStats(
+            playbookStatsCalculator.aggregateGameStatsToPlaybookStats(
                 games,
                 OffensivePlaybook.AIR_RAID,
                 DefensivePlaybook.FOUR_THREE,
@@ -104,7 +114,7 @@ class StatsAggregationTest {
     @Test
     fun `empty playbooks have finite zero averages`() {
         val stats =
-            PlaybookStatsCalculator.aggregateGameStatsToPlaybookStats(
+            playbookStatsCalculator.aggregateGameStatsToPlaybookStats(
                 emptyList(),
                 OffensivePlaybook.AIR_RAID,
                 DefensivePlaybook.FOUR_THREE,

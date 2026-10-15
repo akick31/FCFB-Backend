@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.fcfb.season
 
-import com.fcfb.arceus.model.Offseason
-import com.fcfb.arceus.repositories.OffseasonRepository
+import com.fcfb.arceus.model.season.Offseason
+import com.fcfb.arceus.repositories.season.OffseasonRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

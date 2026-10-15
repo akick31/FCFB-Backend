@@ -7,9 +7,9 @@ import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.animation.AnimatedGifEncoder
 import com.fcfb.arceus.rendering.animation.AnimationFitter
 import com.fcfb.arceus.rendering.animation.AnimationPalette

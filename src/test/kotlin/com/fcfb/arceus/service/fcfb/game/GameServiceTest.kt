@@ -3,31 +3,36 @@ package com.fcfb.arceus.service.fcfb.game
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.enums.system.Platform
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.game.PlatformTransport
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.game.NotificationOutboxRepository
+import com.fcfb.arceus.repositories.game.PlatformTransportRepository
+import com.fcfb.arceus.repositories.play.PlayRepository
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.appearance.GameFieldService
 import com.fcfb.arceus.service.fcfb.probability.WinProbabilityService
-import com.fcfb.arceus.service.fcfb.record.RecordService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleService
 import com.fcfb.arceus.service.fcfb.season.SeasonService
 import com.fcfb.arceus.service.fcfb.statistics.CoachStatsService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
-import com.fcfb.arceus.service.fcfb.statistics.PostseasonSeasonStatsService
-import com.fcfb.arceus.service.fcfb.statistics.SeasonStatsService
+import com.fcfb.arceus.service.fcfb.statistics.record.RecordService
+import com.fcfb.arceus.service.fcfb.statistics.season.PostseasonSeasonStatsService
+import com.fcfb.arceus.service.fcfb.statistics.season.SeasonStatsService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.service.specification.GameSpecificationService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -55,6 +60,9 @@ class GameServiceTest {
     private val winProbabilityService: WinProbabilityService = mockk(relaxed = true)
     private val gameStatsRepository: GameStatsRepository = mockk(relaxed = true)
     private val gameFieldService: GameFieldService = mockk(relaxed = true)
+    private val notificationOutboxRepository: NotificationOutboxRepository = mockk(relaxed = true)
+    private val gameSplitTableSyncService: GameSplitTableSyncService = mockk(relaxed = true)
+    private val platformTransportRepository: PlatformTransportRepository = mockk(relaxed = true)
 
     private lateinit var gameService: GameService
     private lateinit var finalization: GameFinalizationService
@@ -91,6 +99,9 @@ class GameServiceTest {
                 winProbabilityService,
                 gameStatsRepository,
                 finalization,
+                notificationOutboxRepository,
+                gameSplitTableSyncService,
+                platformTransportRepository,
             )
 
         every { teamService.getTeamByName("Ohio State") } returns team(1, "Ohio State", "coachA", "111")
@@ -186,6 +197,43 @@ class GameServiceTest {
         verify(exactly = 1) { winProbabilityService.updateEloRatings(any(), any(), any()) }
         verify(exactly = 1) { scheduleService.markGameAsFinished(any()) }
     }
+
+    @Test
+    fun `updating the request message id syncs platform transport`() {
+        val game = platformGame()
+        every { gameRepository.getGameById(SAVED_GAME_ID) } returns game
+        every { gameRepository.save(any()) } answers { firstArg() }
+        val captured = slot<PlatformTransport>()
+        every { platformTransportRepository.save(capture(captured)) } answers { firstArg() }
+
+        gameService.updateRequestMessageId(SAVED_GAME_ID, "999")
+
+        assertEquals(SAVED_GAME_ID, captured.captured.gameId)
+        assertEquals(listOf("999"), captured.captured.requestMessageId)
+    }
+
+    @Test
+    fun `updating the last message timestamp syncs platform transport`() {
+        val game = platformGame()
+        every { gameRepository.getGameById(SAVED_GAME_ID) } returns game
+        every { gameRepository.save(any()) } answers { firstArg() }
+        val captured = slot<PlatformTransport>()
+        every { platformTransportRepository.save(capture(captured)) } answers { firstArg() }
+
+        gameService.updateLastMessageTimestamp(SAVED_GAME_ID)
+
+        assertEquals(SAVED_GAME_ID, captured.captured.gameId)
+        assertEquals(game.lastMessageTimestamp, captured.captured.lastMessageTimestamp)
+    }
+
+    private fun platformGame() =
+        Game().apply {
+            gameId = SAVED_GAME_ID
+            homePlatform = Platform.DISCORD
+            homePlatformId = "111"
+            awayPlatform = Platform.DISCORD
+            awayPlatformId = "222"
+        }
 
     private fun finishPlay(
         game: Game,

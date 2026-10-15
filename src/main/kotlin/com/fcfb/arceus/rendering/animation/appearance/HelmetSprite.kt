@@ -52,7 +52,7 @@ object HelmetSprite {
         try {
             HelmetSprite::class.java.getResourceAsStream(TEMPLATE)?.use { ImageIO.read(it) }
         } catch (e: IOException) {
-            Logger.error("Could not read the helmet template: ${e.message}")
+            Logger().error("Could not read the helmet template: ${e.message}")
             null
         }
     }
@@ -118,7 +118,7 @@ object HelmetSprite {
         when {
             uniform.helmetLogoMode == HelmetLogoMode.NUMBERS -> drawNumberDecal(g, uniform, centerX, centerY, size)
             uniform.helmetLogoMode.drawsLogo && logo != null ->
-                LogoFit.draw(g, logo, centerX, centerY, (LOGO_FRACTION * size * uniform.logoSize).toInt(), uniform.logoRotation)
+                LogoFit().draw(g, logo, centerX, centerY, (LOGO_FRACTION * size * uniform.logoSize).toInt(), uniform.logoRotation)
         }
         g.dispose()
         return sprite
@@ -264,7 +264,6 @@ object HelmetSprite {
         return p
     }
 
-    /** Perpendicular to the local edge direction, pointing into the shell (chosen by sampling an opaque pixel). */
     private fun inwardNormal(
         sprite: BufferedImage,
         path: List<FloatArray>,
@@ -349,7 +348,7 @@ object HelmetSprite {
         centerY: Int,
         size: Int,
     ) {
-        val font = NumberFonts.font(uniform.helmetNumberFont, (NUMBER_FRACTION * size * uniform.logoSize).coerceAtLeast(6f))
+        val font = NumberFonts().font(uniform.helmetNumberFont, (NUMBER_FRACTION * size * uniform.logoSize).coerceAtLeast(6f))
         val glyphs = font.createGlyphVector(g.fontRenderContext, NUMBER_DECAL)
         tightenTracking(glyphs)
         val bounds = glyphs.visualBounds
@@ -358,7 +357,6 @@ object HelmetSprite {
         g.fill(centered.createTransformedShape(glyphs.outline))
     }
 
-    /** Graduate sets the digits with a lot of air; pulling each glyph toward the first tightens the decal. */
     private fun tightenTracking(glyphs: java.awt.font.GlyphVector) {
         val first = glyphs.getGlyphPosition(0)
         for (i in 1 until glyphs.numGlyphs) {

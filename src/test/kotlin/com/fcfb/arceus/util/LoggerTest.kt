@@ -31,7 +31,7 @@ class LoggerTest {
     @Test
     fun `test debug logging`() {
         val message = "Debug test message"
-        Logger.debug(message)
+        Logger().debug(message)
     }
 
     @Test
@@ -40,13 +40,13 @@ class LoggerTest {
         val arg1 = "value1"
         val arg2 = 42
 
-        Logger.debug(message, arg1, arg2)
+        Logger().debug(message, arg1, arg2)
     }
 
     @Test
     fun `test info logging`() {
         val message = "Info test message"
-        Logger.info(message)
+        Logger().info(message)
     }
 
     @Test
@@ -55,13 +55,13 @@ class LoggerTest {
         val arg1 = "value1"
         val arg2 = 42
 
-        Logger.info(message, arg1, arg2)
+        Logger().info(message, arg1, arg2)
     }
 
     @Test
     fun `test warn logging`() {
         val message = "GameWarning test message"
-        Logger.warn(message)
+        Logger().warn(message)
     }
 
     @Test
@@ -70,13 +70,13 @@ class LoggerTest {
         val arg1 = "value1"
         val arg2 = 42
 
-        Logger.warn(message, arg1, arg2)
+        Logger().warn(message, arg1, arg2)
     }
 
     @Test
     fun `test error logging`() {
         val message = "Error test message"
-        Logger.error(message)
+        Logger().error(message)
     }
 
     @Test
@@ -85,7 +85,7 @@ class LoggerTest {
         val arg1 = "value1"
         val arg2 = 42
 
-        Logger.error(message, arg1, arg2)
+        Logger().error(message, arg1, arg2)
     }
 
     @Test
@@ -94,50 +94,50 @@ class LoggerTest {
         val arg1: String? = null
         val arg2: Int? = null
 
-        Logger.debug(message, arg1, arg2)
-        Logger.info(message, arg1, arg2)
-        Logger.warn(message, arg1, arg2)
-        Logger.error(message, arg1, arg2)
+        Logger().debug(message, arg1, arg2)
+        Logger().info(message, arg1, arg2)
+        Logger().warn(message, arg1, arg2)
+        Logger().error(message, arg1, arg2)
     }
 
     @Test
     fun `test logging with empty string`() {
         val message = ""
 
-        Logger.debug(message)
-        Logger.info(message)
-        Logger.warn(message)
-        Logger.error(message)
+        Logger().debug(message)
+        Logger().info(message)
+        Logger().warn(message)
+        Logger().error(message)
     }
 
     @Test
     fun `test logging with special characters`() {
         val message = "Special chars: !@#$%^&*()_+-=[]{}|;':\",./<>?"
 
-        Logger.debug(message)
-        Logger.info(message)
-        Logger.warn(message)
-        Logger.error(message)
+        Logger().debug(message)
+        Logger().info(message)
+        Logger().warn(message)
+        Logger().error(message)
     }
 
     @Test
     fun `test logging with unicode characters`() {
         val message = "Unicode: 你好世界 🌍 🚀 🎉"
 
-        Logger.debug(message)
-        Logger.info(message)
-        Logger.warn(message)
-        Logger.error(message)
+        Logger().debug(message)
+        Logger().info(message)
+        Logger().warn(message)
+        Logger().error(message)
     }
 
     @Test
     fun `test logging with very long message`() {
         val message = "A".repeat(10000)
 
-        Logger.debug(message)
-        Logger.info(message)
-        Logger.warn(message)
-        Logger.error(message)
+        Logger().debug(message)
+        Logger().info(message)
+        Logger().warn(message)
+        Logger().error(message)
     }
 
     @Test
@@ -145,10 +145,10 @@ class LoggerTest {
         val message = "Multiple args: {}, {}, {}, {}, {}"
         val args = arrayOf("arg1", 42, true, null, 3.14)
 
-        Logger.debug(message, *args)
-        Logger.info(message, *args)
-        Logger.warn(message, *args)
-        Logger.error(message, *args)
+        Logger().debug(message, *args)
+        Logger().info(message, *args)
+        Logger().warn(message, *args)
+        Logger().error(message, *args)
     }
 
     @Test
@@ -158,10 +158,10 @@ class LoggerTest {
         val message = "Complex object: {}"
         val obj = TestObject(123, "test")
 
-        Logger.debug(message, obj)
-        Logger.info(message, obj)
-        Logger.warn(message, obj)
-        Logger.error(message, obj)
+        Logger().debug(message, obj)
+        Logger().info(message, obj)
+        Logger().warn(message, obj)
+        Logger().error(message, obj)
     }
 
     @Test
@@ -169,10 +169,10 @@ class LoggerTest {
         val message = "Exception occurred: {}"
         val exception = RuntimeException("Test exception")
 
-        Logger.debug(message, exception)
-        Logger.info(message, exception)
-        Logger.warn(message, exception)
-        Logger.error(message, exception)
+        Logger().debug(message, exception)
+        Logger().info(message, exception)
+        Logger().warn(message, exception)
+        Logger().error(message, exception)
     }
 
     @Test
@@ -184,10 +184,10 @@ class LoggerTest {
         val booleanArg = true
         val nullArg: String? = null
 
-        Logger.debug(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
-        Logger.info(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
-        Logger.warn(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
-        Logger.error(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
+        Logger().debug(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
+        Logger().info(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
+        Logger().warn(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
+        Logger().error(message, stringArg, intArg, doubleArg, booleanArg, nullArg)
     }
 
     @Test
@@ -197,20 +197,20 @@ class LoggerTest {
         val intArg = 42
         val doubleArg = 3.14
 
-        Logger.debug(message, stringArg, intArg, doubleArg)
-        Logger.info(message, stringArg, intArg, doubleArg)
-        Logger.warn(message, stringArg, intArg, doubleArg)
-        Logger.error(message, stringArg, intArg, doubleArg)
+        Logger().debug(message, stringArg, intArg, doubleArg)
+        Logger().info(message, stringArg, intArg, doubleArg)
+        Logger().warn(message, stringArg, intArg, doubleArg)
+        Logger().error(message, stringArg, intArg, doubleArg)
     }
 
     @Test
     fun `test logging with no arguments`() {
         val message = "Simple message without placeholders"
 
-        Logger.debug(message)
-        Logger.info(message)
-        Logger.warn(message)
-        Logger.error(message)
+        Logger().debug(message)
+        Logger().info(message)
+        Logger().warn(message)
+        Logger().error(message)
     }
 
     @Test
@@ -219,10 +219,10 @@ class LoggerTest {
         val arg1 = "arg1"
         val arg2 = "arg2"
 
-        Logger.debug(message, arg1, arg2)
-        Logger.info(message, arg1, arg2)
-        Logger.warn(message, arg1, arg2)
-        Logger.error(message, arg1, arg2)
+        Logger().debug(message, arg1, arg2)
+        Logger().info(message, arg1, arg2)
+        Logger().warn(message, arg1, arg2)
+        Logger().error(message, arg1, arg2)
     }
 
     @Test
@@ -232,9 +232,9 @@ class LoggerTest {
         val arg2 = "arg2"
         val arg3 = "arg3"
 
-        Logger.debug(message, arg1, arg2, arg3)
-        Logger.info(message, arg1, arg2, arg3)
-        Logger.warn(message, arg1, arg2, arg3)
-        Logger.error(message, arg1, arg2, arg3)
+        Logger().debug(message, arg1, arg2, arg3)
+        Logger().info(message, arg1, arg2, arg3)
+        Logger().warn(message, arg1, arg2, arg3)
+        Logger().error(message, arg1, arg2, arg3)
     }
 }

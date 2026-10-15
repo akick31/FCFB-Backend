@@ -1,7 +1,7 @@
 package com.fcfb.arceus.rendering.animation.appearance
 
-import com.fcfb.arceus.model.BowlField
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.appearance.BowlField
+import com.fcfb.arceus.model.team.Team
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test

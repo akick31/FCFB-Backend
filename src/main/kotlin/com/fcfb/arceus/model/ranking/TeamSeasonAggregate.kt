@@ -1,6 +1,6 @@
 package com.fcfb.arceus.model.ranking
 
-internal data class TeamSeasonAggregate(
+data class TeamSeasonAggregate(
     val teamId: Int,
     val gamesPlayed: Int,
     val wins: Int,

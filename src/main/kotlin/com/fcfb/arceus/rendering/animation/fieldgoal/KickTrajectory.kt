@@ -60,10 +60,6 @@ class KickTrajectory(
         return KickPoint(x, ground - heightYards * pixelsPerYard, ground, startScale + (endScale - startScale) * depth)
     }
 
-    /**
-     * Every kick that clears the posts falls to the ground and bounces; nothing hangs in the net. [driftedX] still
-     * carries the placement, so a doink-in, a left, a right and a straight one each come to rest somewhere different.
-     */
     private fun dropBehindPosts(progress: Float): KickPoint {
         val passing = airborne(1f, PEAK_DEPTH, APEX_YARDS)
         val x = driftedX(passing.x, progress)
@@ -97,10 +93,6 @@ class KickTrajectory(
         return KickPoint(x, ground - hop, ground, endScale)
     }
 
-    /**
-     * A returnable short kick has to reach the returner's hands still in the air — he cannot be
-     * seen fielding it off a bounce. The flight is aimed at his spot and simply stops there.
-     */
     private fun caught(depth: Float): KickPoint {
         val toReturner = (startYards + CATCH_DEPTH_IN_END_ZONE) / (startYards + GoalPostScenePainter.END_ZONE_DEPTH_YARDS)
         val reached = depth * toReturner

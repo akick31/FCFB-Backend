@@ -7,11 +7,12 @@ import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.user.CoachPosition
 import com.fcfb.arceus.enums.user.UserRole
 import com.fcfb.arceus.exception.user.UserForbiddenException
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.UserRepository
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.repositories.account.UserCredentialRepository
+import com.fcfb.arceus.repositories.account.UserPreferencesRepository
+import com.fcfb.arceus.repositories.account.UserRepository
 import com.fcfb.arceus.service.fcfb.coach.CoachStintService
 import com.fcfb.arceus.service.log.UsernameHistoryService
-import com.fcfb.arceus.util.DTOConverter
 import com.fcfb.arceus.util.EncryptionUtils
 import io.mockk.every
 import io.mockk.mockk
@@ -27,10 +28,12 @@ import org.springframework.security.crypto.password.PasswordEncoder
 class UserServiceTest {
     private val userRepository: UserRepository = mockk()
     private val encryptionUtils: EncryptionUtils = mockk()
-    private val dtoConverter: DTOConverter = mockk()
+    private val userDtoService: UserDtoService = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
     private val usernameHistoryService: UsernameHistoryService = mockk()
     private val coachStintService: CoachStintService = mockk()
+    private val userCredentialRepository: UserCredentialRepository = mockk(relaxed = true)
+    private val userPreferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private lateinit var userService: UserService
 
     private val ownerUser =
@@ -38,6 +41,9 @@ class UserServiceTest {
             id = 1L
             username = "owner"
             password = "hashed-password"
+            email = "owner@example.com"
+            hashedEmail = "hashed-owner-email"
+            salt = "salt"
         }
 
     private val ownerUserDTO =
@@ -73,10 +79,22 @@ class UserServiceTest {
 
     @BeforeEach
     fun setup() {
-        userService = UserService(userRepository, encryptionUtils, dtoConverter, passwordEncoder, usernameHistoryService, coachStintService)
+        userService =
+            UserService(
+                userRepository,
+                encryptionUtils,
+                userDtoService,
+                passwordEncoder,
+                usernameHistoryService,
+                coachStintService,
+                userCredentialRepository,
+                userPreferencesRepository,
+            )
         every { userRepository.getById(1L) } returns ownerUser
         every { userRepository.save(any()) } returns ownerUser
-        every { dtoConverter.convertToUserDTO(any()) } returns ownerUserDTO
+        every { userCredentialRepository.save(any()) } answers { firstArg() }
+        every { userPreferencesRepository.save(any()) } answers { firstArg() }
+        every { userDtoService.convertToUserDTO(any()) } returns ownerUserDTO
         every { usernameHistoryService.recordUsernameChange(any(), any()) } returns Unit
     }
 

@@ -1,12 +1,12 @@
 package com.fcfb.arceus.service.fcfb.appearance
 
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamUniformCurrent
-import com.fcfb.arceus.model.TeamUniformHistory
+import com.fcfb.arceus.model.appearance.TeamUniformCurrent
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.animation.appearance.HelmetColors
-import com.fcfb.arceus.repositories.TeamUniformCurrentRepository
-import com.fcfb.arceus.repositories.TeamUniformHistoryRepository
+import com.fcfb.arceus.repositories.appearance.TeamUniformCurrentRepository
+import com.fcfb.arceus.repositories.appearance.TeamUniformHistoryRepository
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import org.springframework.stereotype.Service
 import java.awt.Color
@@ -17,7 +17,6 @@ class TeamUniformService(
     private val teamUniformCurrentRepository: TeamUniformCurrentRepository,
     private val teamService: TeamService,
 ) {
-    /** Captures both teams' uniforms for the week a game is played, so its animations never follow later color changes. */
     fun snapshot(game: Game) {
         val season = game.season ?: return
         val week = game.week ?: return
@@ -42,7 +41,6 @@ class TeamUniformService(
         teamUniformHistoryRepository.save(uniformOf(teamService.getTeamByName(team), season, week))
     }
 
-    /** The helmet color is resolved here rather than at render time because it depends on reading the team's logo. */
     private fun uniformOf(
         team: Team,
         season: Int,

@@ -1,0 +1,214 @@
+package com.fcfb.arceus.service.fcfb.animation
+
+import com.fcfb.arceus.enums.animation.FieldStyle
+import com.fcfb.arceus.enums.animation.LogoSource
+import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.enums.game.PlayoffRound
+import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.appearance.BowlField
+import com.fcfb.arceus.model.appearance.FieldAppearance
+import com.fcfb.arceus.model.appearance.PostseasonField
+import com.fcfb.arceus.model.appearance.TeamField
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.rendering.animation.appearance.FieldColors
+import com.fcfb.arceus.rendering.animation.appearance.HelmetColors
+import com.fcfb.arceus.repositories.appearance.BowlFieldRepository
+import com.fcfb.arceus.repositories.appearance.ConferenceChampionshipFieldRepository
+import com.fcfb.arceus.repositories.appearance.GameFieldRepository
+import com.fcfb.arceus.repositories.appearance.PlayoffFieldRepository
+import com.fcfb.arceus.repositories.appearance.TeamFieldRepository
+import com.fcfb.arceus.repositories.conference.ConferenceRepository
+import com.fcfb.arceus.repositories.game.GameRepository
+import org.springframework.stereotype.Component
+import java.awt.Color
+
+@Component
+class FieldThemeService(
+    private val bowlFieldRepository: BowlFieldRepository,
+    private val conferenceChampionshipFieldRepository: ConferenceChampionshipFieldRepository,
+    private val conferenceRepository: ConferenceRepository,
+    private val playoffFieldRepository: PlayoffFieldRepository,
+    private val gameRepository: GameRepository,
+    private val gameFieldRepository: GameFieldRepository,
+    private val teamFieldRepository: TeamFieldRepository,
+) {
+    fun resolve(
+        play: Play,
+        game: Game,
+        homeTeam: Team,
+        awayTeam: Team,
+        homeUniform: TeamUniformHistory? = null,
+        awayUniform: TeamUniformHistory? = null,
+        bowlFieldOverride: BowlField? = null,
+        postseasonFieldOverride: PostseasonField? = null,
+        teamFieldOverride: TeamField? = null,
+    ): FieldTheme {
+        val style =
+            when (game.gameType) {
+                GameType.PLAYOFFS -> FieldStyle.PLAYOFF
+                GameType.NATIONAL_CHAMPIONSHIP -> FieldStyle.NATIONAL_CHAMPIONSHIP
+                GameType.CONFERENCE_CHAMPIONSHIP -> FieldStyle.CONFERENCE_CHAMPIONSHIP
+                GameType.BOWL -> FieldStyle.BOWL
+                else -> FieldStyle.HOME_FIELD
+            }
+        val homeField: FieldAppearance? =
+            teamFieldOverride ?: if (style == FieldStyle.HOME_FIELD) gameFieldFor(game) ?: fieldFor(homeTeam) else null
+        val bowlField = bowlFieldOverride ?: if (style == FieldStyle.BOWL) bowlFieldFor(game) else null
+        val postseasonField = postseasonFieldOverride ?: postseasonFieldFor(style, game, homeTeam)
+        val centerLogo =
+            when (style) {
+                FieldStyle.HOME_FIELD ->
+                    resolveFieldLogo(homeField?.midfieldLogoSource, homeField?.midfieldLogoUrl, homeTeam)
+                        ?: homeTeam.logo ?: homeTeam.scorebugLogo
+                FieldStyle.CONFERENCE_CHAMPIONSHIP -> postseasonField?.centerLogoUrl ?: conferenceLogo(homeTeam) ?: game.postseasonGameLogo
+                FieldStyle.PLAYOFF, FieldStyle.NATIONAL_CHAMPIONSHIP -> postseasonField?.centerLogoUrl ?: playoffLogo(game)
+                FieldStyle.BOWL -> game.postseasonGameLogo
+            }
+        return FieldTheme(
+            style = style,
+            homeTeam = homeTeam,
+            awayTeam = awayTeam,
+            centerLogoUrl = centerLogo,
+            flipped = drivesRightToLeft(play),
+            turf = fieldTurf(homeField, bowlField, postseasonField),
+            homeConferenceLogoUrl = conferenceLogoFor(style, homeTeam, homeTeam, bowlField),
+            awayConferenceLogoUrl = conferenceLogoFor(style, awayTeam, homeTeam, bowlField),
+            homeUniform = homeUniform,
+            awayUniform = awayUniform,
+            midfieldCaption = midfieldCaption(style, game),
+            midfieldLocation = if (style == FieldStyle.NATIONAL_CHAMPIONSHIP) CHAMPIONSHIP_LOCATION else null,
+            wallCaption = wallCaption(style, game, homeTeam, homeField, bowlField, postseasonField),
+            wallLogoUrl = wallLogo(style, homeField, homeTeam),
+            homeField = homeField,
+            bowlField = bowlField,
+            postseasonField = postseasonField,
+            awayUsesAlternateHelmet = HelmetColors.awayUsesAlternate(homeTeam, awayTeam, homeUniform, awayUniform),
+            homeTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(homeTeam)?.endZoneFont else null,
+            awayTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(awayTeam)?.endZoneFont else null,
+        )
+    }
+
+    private fun conferenceLogoFor(
+        style: FieldStyle,
+        sideTeam: Team,
+        homeTeam: Team,
+        bowlField: BowlField?,
+    ): String? =
+        when (style) {
+            FieldStyle.BOWL -> if (bowlField?.showConferenceLogos == false) null else conferenceLogo(sideTeam)
+            FieldStyle.HOME_FIELD -> conferenceLogo(homeTeam)
+            else -> null
+        }
+
+    private fun postseasonFieldFor(
+        style: FieldStyle,
+        game: Game,
+        homeTeam: Team,
+    ): PostseasonField? =
+        when (style) {
+            FieldStyle.NATIONAL_CHAMPIONSHIP -> playoffFieldRepository.findById(PlayoffRound.NATIONAL_CHAMPIONSHIP.label).orElse(null)
+            FieldStyle.PLAYOFF -> game.postseasonGameName?.let { playoffFieldRepository.findById(it).orElse(null) }
+            FieldStyle.CONFERENCE_CHAMPIONSHIP ->
+                homeTeam.conference?.let {
+                    conferenceChampionshipFieldRepository.findById(
+                        it,
+                    ).orElse(null)
+                }
+            else -> null
+        }
+
+    private fun bowlFieldFor(game: Game): BowlField? = game.postseasonGameName?.let { bowlFieldRepository.findById(it).orElse(null) }
+
+    private fun wallLogo(
+        style: FieldStyle,
+        homeField: FieldAppearance?,
+        homeTeam: Team,
+    ): String? {
+        if (style != FieldStyle.HOME_FIELD) return null
+        return resolveFieldLogo(homeField?.wallLogoSource, homeField?.wallLogoUrl, homeTeam)
+    }
+
+    private fun resolveFieldLogo(
+        source: String?,
+        customUrl: String?,
+        team: Team,
+    ): String? =
+        when (LogoSource.from(source)) {
+            LogoSource.PRIMARY -> team.logo
+            LogoSource.SECONDARY -> team.secondaryLogo
+            LogoSource.CUSTOM -> customUrl
+            LogoSource.NONE -> null
+        }
+
+    private fun fieldFor(team: Team): TeamField? = team.name?.let { teamFieldRepository.findById(it).orElse(null) }
+
+    private fun gameFieldFor(game: Game): FieldAppearance? = game.gameId?.let { gameFieldRepository.findById(it).orElse(null) }
+
+    private fun wallCaption(
+        style: FieldStyle,
+        game: Game,
+        homeTeam: Team,
+        homeField: FieldAppearance?,
+        bowlField: BowlField?,
+        postseasonField: PostseasonField?,
+    ): String? {
+        val postseasonText = postseasonField?.wallText?.trim()?.takeIf { it.isNotBlank() }
+        val named = game.postseasonGameName?.trim()?.takeIf { it.isNotBlank() }
+        return when (style) {
+            FieldStyle.NATIONAL_CHAMPIONSHIP -> postseasonText ?: NATIONAL_CHAMPIONSHIP_CAPTION.joinToString(" ")
+            FieldStyle.PLAYOFF -> postseasonText ?: named?.let { "$CFP_PREFIX $it" }
+            FieldStyle.BOWL -> bowlField?.wallText?.takeIf { it.isNotBlank() } ?: named
+            FieldStyle.CONFERENCE_CHAMPIONSHIP -> postseasonText ?: named ?: conferenceTitle(homeTeam)
+            FieldStyle.HOME_FIELD -> homeField?.wallText?.takeIf { it.isNotBlank() }
+            else -> null
+        }
+    }
+
+    private fun midfieldCaption(
+        style: FieldStyle,
+        game: Game,
+    ): List<String> {
+        val named = game.postseasonGameName?.trim()?.takeIf { it.isNotBlank() }
+        return when (style) {
+            FieldStyle.NATIONAL_CHAMPIONSHIP -> NATIONAL_CHAMPIONSHIP_CAPTION
+            FieldStyle.PLAYOFF -> listOfNotNull(named)
+            else -> emptyList()
+        }
+    }
+
+    private fun fieldTurf(
+        homeField: FieldAppearance?,
+        bowlField: BowlField?,
+        postseasonField: PostseasonField?,
+    ): Color {
+        val configured = homeField?.turfColor ?: bowlField?.turfColor ?: postseasonField?.turfColor
+        return configured?.let { FieldColors.parseColor(it) } ?: FieldColors.TURF_COLOR
+    }
+
+    private fun drivesRightToLeft(play: Play): Boolean = play.quarter > FIRST_HALF_QUARTERS
+
+    private fun playoffLogo(game: Game): String? =
+        gameRepository.getLatestDarkPlayoffLogo() ?: game.postseasonGameLogo ?: gameRepository.getLatestPlayoffLogo()
+
+    private fun conferenceLogo(team: Team): String? {
+        val code = team.conference ?: return null
+        if (code in INDEPENDENT_CONFERENCES) return null
+        return conferenceRepository.findById(code).orElse(null)?.logoUrl
+    }
+
+    private fun conferenceTitle(team: Team): String? = conferenceName(team)?.let { "$it $CONFERENCE_TITLE_SUFFIX" }
+
+    private fun conferenceName(team: Team): String? = team.conference?.let { conferenceRepository.findById(it).orElse(null)?.label }
+
+    companion object {
+        private const val FIRST_HALF_QUARTERS = 2
+        private const val CHAMPIONSHIP_LOCATION = "Seattle"
+        private const val CONFERENCE_TITLE_SUFFIX = "Championship"
+        private const val CFP_PREFIX = "CFP"
+        private val NATIONAL_CHAMPIONSHIP_CAPTION = listOf("National", "Championship")
+        private val INDEPENDENT_CONFERENCES = setOf("FBS_INDEPENDENT", "FCS_INDEPENDENT", "INDEPENDENT")
+    }
+}

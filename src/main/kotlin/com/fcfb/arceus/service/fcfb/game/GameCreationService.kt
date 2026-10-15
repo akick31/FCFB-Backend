@@ -13,8 +13,7 @@ import com.fcfb.arceus.exception.discord.UnableToCreateGameThreadException
 import com.fcfb.arceus.exception.team.NoCoachDiscordIdsFoundException
 import com.fcfb.arceus.exception.team.NoCoachesFoundException
 import com.fcfb.arceus.exception.team.TeamNotFoundException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.repositories.GameRepository
+import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.appearance.TeamUniformService
 import com.fcfb.arceus.service.fcfb.probability.VegasOddsService
@@ -32,7 +31,6 @@ import java.time.LocalDateTime
 @Service
 class GameCreationService(
     private val gameService: GameService,
-    private val gameRepository: GameRepository,
     private val teamService: TeamService,
     private val discordService: DiscordService,
     private val gameStatsService: GameStatsService,
@@ -41,6 +39,7 @@ class GameCreationService(
     private val scheduleService: ScheduleService,
     private val vegasOddsService: VegasOddsService,
     private val rankingService: RankingService,
+    private val gameSplitTableSyncService: GameSplitTableSyncService,
 ) {
     suspend fun startSingleGame(
         startRequest: StartRequest,
@@ -96,7 +95,7 @@ class GameCreationService(
 
             val newGame =
                 withContext(Dispatchers.IO) {
-                    gameRepository.save(
+                    gameService.saveGame(
                         Game(
                             homeTeam = homeTeam,
                             awayTeam = awayTeam,
@@ -160,14 +159,14 @@ class GameCreationService(
                             postseasonGameLogo = startRequest.postseasonGameLogo,
                             postseasonGameName = startRequest.postseasonGameName,
                             neutralSite = startRequest.neutralSite,
-                            venue = startRequest.venue,
+                            venue = startRequest.venue ?: homeTeamData.stadium,
                         ),
                     )
                 }
 
             completeGameCreation(newGame)
 
-            Logger.info(
+            Logger().info(
                 "Game started.\n" +
                     "Game ID: ${newGame.gameId}\n" +
                     "Game Type: ${newGame.gameType}\n" +
@@ -177,7 +176,7 @@ class GameCreationService(
             )
             return newGame
         } catch (e: Exception) {
-            Logger.error(
+            Logger().error(
                 "Error starting game.\n" +
                     "Error Message: ${e.message ?: "Unknown error"}\n" +
                     "Game Type: ${startRequest.gameType}\n" +
@@ -225,7 +224,7 @@ class GameCreationService(
 
             val newGame =
                 withContext(Dispatchers.IO) {
-                    gameRepository.save(
+                    gameService.saveGame(
                         Game(
                             homeTeam = homeTeam,
                             awayTeam = awayTeam,
@@ -290,7 +289,7 @@ class GameCreationService(
 
             completeGameCreation(newGame)
 
-            Logger.info(
+            Logger().info(
                 "Overtime game started.\n" +
                     "Game ID: ${newGame.gameId}\n" +
                     "Game Type: ${newGame.gameType}\n" +
@@ -300,7 +299,7 @@ class GameCreationService(
             )
             return newGame
         } catch (e: Exception) {
-            Logger.error(
+            Logger().error(
                 "Error starting overtime game.\n" +
                     "Error Message: ${e.message ?: "Unknown error"}\n" +
                     "Game Type: ${startRequest.gameType}\n" +
@@ -376,8 +375,9 @@ class GameCreationService(
         game.awayPlatformId = discordData[0]
         game.requestMessageId = listOf(discordData[1])
         withContext(Dispatchers.IO) {
-            gameRepository.save(game)
+            gameService.saveGame(game)
         }
+        gameSplitTableSyncService.sync(game)
         gameStatsService.createGameStats(game)
         teamUniformService.snapshot(game)
     }

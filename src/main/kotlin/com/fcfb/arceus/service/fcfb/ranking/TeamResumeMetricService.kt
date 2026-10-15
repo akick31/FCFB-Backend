@@ -2,14 +2,14 @@ package com.fcfb.arceus.service.fcfb.ranking
 
 import com.fcfb.arceus.dto.response.TeamResumeMetricResponse
 import com.fcfb.arceus.enums.game.GameType
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamResumeMetric
+import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.ranking.TeamResumeAccumulator
+import com.fcfb.arceus.model.ranking.TeamResumeMetric
 import com.fcfb.arceus.model.ranking.TeamSeasonAggregate
-import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.repositories.TeamResumeMetricBatchRepository
-import com.fcfb.arceus.repositories.TeamResumeMetricRepository
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.ranking.TeamResumeMetricBatchRepository
+import com.fcfb.arceus.repositories.ranking.TeamResumeMetricRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import org.springframework.stereotype.Service
 
 @Service
@@ -18,11 +18,6 @@ class TeamResumeMetricService(
     private val teamResumeMetricBatchRepository: TeamResumeMetricBatchRepository,
     private val teamRepository: TeamRepository,
 ) {
-    /**
-     * Opponent-quality buckets (quartile/T25/T50/T100) are evaluated against each opponent's Composite rank
-     * for THIS week, not the week the game was played: avoids the circularity of a team's rank depending on
-     * a game that's also used to classify that same game, and matches how NCAA NET quadrants work.
-     */
     internal fun computeAndPersist(
         season: Int,
         week: Int,

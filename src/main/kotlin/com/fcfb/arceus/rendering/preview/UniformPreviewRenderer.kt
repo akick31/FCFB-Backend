@@ -18,7 +18,7 @@ internal object UniformPreviewRenderer {
         theme: FieldTheme,
         away: Boolean,
     ): BufferedImage {
-        val home = if (away) Uniforms.awayJerseyPreview(theme.homeTeam, theme.homeUniform) else theme.uniforms().first
+        val home = if (away) Uniforms().awayJerseyPreview(theme.homeTeam, theme.homeUniform) else theme.uniforms().first
         val logoUrl = if (away) altDecalUrl(theme) else theme.homeLogoUrl()
         val logo = if (home.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(logoUrl, theme.homeTeam.scorebugLogo) else null
         val helmet = HelmetSprite.render(home, logo, COMBINED_HELMET_SIZE).facingRight
@@ -46,7 +46,7 @@ internal object UniformPreviewRenderer {
         theme: FieldTheme,
         away: Boolean,
     ): BufferedImage {
-        val uniform = if (away) Uniforms.awayJerseyPreview(theme.homeTeam, theme.homeUniform) else theme.uniforms().first
+        val uniform = if (away) Uniforms().awayJerseyPreview(theme.homeTeam, theme.homeUniform) else theme.uniforms().first
         val canvas = BufferedImage(JERSEY_WIDTH, JERSEY_HEIGHT, BufferedImage.TYPE_INT_ARGB)
         val figure =
             FieldGoalFigure(
@@ -69,7 +69,7 @@ internal object UniformPreviewRenderer {
     }
 
     fun secondaryHelmetImage(theme: FieldTheme): BufferedImage {
-        val uniform = Uniforms.secondaryHelmet(theme.homeTeam, theme.homeUniform)
+        val uniform = Uniforms().secondaryHelmet(theme.homeTeam, theme.homeUniform)
         val logo = if (uniform.helmetLogoMode.drawsLogo) LogoLoader.loadFirst(altDecalUrl(theme), theme.homeTeam.scorebugLogo) else null
         return HelmetSprite.render(uniform, logo, HELMET_PREVIEW_SIZE).facingRight
     }
@@ -77,9 +77,9 @@ internal object UniformPreviewRenderer {
     private fun altDecalUrl(theme: FieldTheme): String? {
         val snapshot = theme.homeUniform
         val team = theme.homeTeam
-        val mode = HelmetLogoMode.from(HelmetFields.helmetLogoMode(snapshot, true), HelmetFields.hasLogo(snapshot, true))
-        if (mode == HelmetLogoMode.UPLOAD) return HelmetFields.logoUrl(snapshot, true)
-        return when (LogoSource.from(HelmetFields.helmetLogoSource(snapshot, true))) {
+        val mode = HelmetLogoMode.from(HelmetFields().helmetLogoMode(snapshot, true), HelmetFields().hasLogo(snapshot, true))
+        if (mode == HelmetLogoMode.UPLOAD) return HelmetFields().logoUrl(snapshot, true)
+        return when (LogoSource.from(HelmetFields().helmetLogoSource(snapshot, true))) {
             LogoSource.SECONDARY -> team.secondaryLogo
             else -> team.logo
         }

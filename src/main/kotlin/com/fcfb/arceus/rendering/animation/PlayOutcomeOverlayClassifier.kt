@@ -3,7 +3,7 @@ package com.fcfb.arceus.rendering.animation
 import com.fcfb.arceus.enums.animation.OverlayType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.Scenario
-import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.play.Play
 import org.springframework.stereotype.Component
 
 @Component

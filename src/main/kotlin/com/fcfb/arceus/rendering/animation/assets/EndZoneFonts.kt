@@ -2,11 +2,6 @@ package com.fcfb.arceus.rendering.animation.assets
 
 import java.awt.Font
 
-/**
- * The end zone fonts a team may choose. Logical JVM families (SANS/SERIF/MONOSPACE) always resolve; named faces resolve
- * only if the host has them, otherwise they fall back silently. BLOCK is a bundled TTF registered in [AnimationFonts],
- * so to add a real collegiate face, drop its .ttf in resources, register it there, and add its family name here.
- */
 object EndZoneFonts {
     const val YARD_NUMBER_FAMILY = "Arial"
 

@@ -3,7 +3,7 @@ package com.fcfb.arceus.rendering.animation
 import com.fcfb.arceus.enums.animation.AnimatedPlayType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
-import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.fieldgoal.KickDistance
 import org.springframework.stereotype.Component
 

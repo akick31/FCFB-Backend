@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.specification
 
 import com.fcfb.arceus.enums.team.Subdivision
-import com.fcfb.arceus.model.ConferenceStats
+import com.fcfb.arceus.model.statistics.ConferenceStats
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import javax.persistence.criteria.CriteriaBuilder

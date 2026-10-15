@@ -1,13 +1,13 @@
 package com.fcfb.arceus.service.fcfb.account
 
 import com.fcfb.arceus.enums.user.CoachPosition
-import com.fcfb.arceus.service.fcfb.team.TeamService
+import com.fcfb.arceus.service.fcfb.team.TeamCoachService
 import org.springframework.stereotype.Service
 
 @Service
 class NewSignupManagementService(
     private val newSignupService: NewSignupService,
-    private val teamService: TeamService,
+    private val teamCoachService: TeamCoachService,
 ) {
     fun getNewSignups() = newSignupService.getNewSignups()
 
@@ -18,5 +18,5 @@ class NewSignupManagementService(
         team: String,
         coachPosition: CoachPosition,
         processedBy: String,
-    ) = teamService.hireCoachFromSignup(signupId, team, coachPosition, processedBy)
+    ) = teamCoachService.hireCoachFromSignup(signupId, team, coachPosition, processedBy)
 }

@@ -8,13 +8,13 @@ import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.exception.play.DefensiveNumberNotFound
 import com.fcfb.arceus.exception.play.PlayNotFoundException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.repositories.PlayRepository
-import com.fcfb.arceus.service.fcfb.game.GameRules
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.fcfb.game.GameService
 import com.fcfb.arceus.util.EncryptionUtils
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.game.convertClockToSeconds
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
@@ -25,11 +25,11 @@ class PlayService(
     private val playRepository: PlayRepository,
     private val encryptionUtils: EncryptionUtils,
     private val gameService: GameService,
-    private val normalPlayProcessor: NormalPlayProcessor,
-    private val fieldGoalPlayProcessor: FieldGoalPlayProcessor,
-    private val puntPlayProcessor: PuntPlayProcessor,
-    private val kickoffPlayProcessor: KickoffPlayProcessor,
-    private val pointAfterPlayProcessor: PointAfterPlayProcessor,
+    private val normalPlayProcessorService: NormalPlayProcessorService,
+    private val fieldGoalPlayProcessorService: FieldGoalPlayProcessorService,
+    private val puntPlayProcessorService: PuntPlayProcessorService,
+    private val kickoffPlayProcessorService: KickoffPlayProcessorService,
+    private val pointAfterPlayProcessorService: PointAfterPlayProcessorService,
     private val delayOfGameReportService: DelayOfGameReportService,
 ) {
     fun defensiveNumberSubmitted(
@@ -49,7 +49,7 @@ class PlayService(
                 }
 
             val encryptedDefensiveNumber = encryptionUtils.encrypt(defensiveNumber.toString())
-            val clock = GameRules.convertClockToSeconds(game.clock)
+            val clock = convertClockToSeconds(game.clock)
             val gamePlay: Play =
                 playRepository.save(
                     Play(
@@ -94,7 +94,7 @@ class PlayService(
             gameService.updateWithDefensiveNumberSubmission(game, gamePlay)
             return gamePlay
         } catch (e: Exception) {
-            Logger.error("There was an error submitting the defensive number for game $gameId: " + e.message)
+            Logger().error("There was an error submitting the defensive number for game $gameId: " + e.message)
             throw e
         }
     }
@@ -110,7 +110,7 @@ class PlayService(
                 homeScore = game.homeScore,
                 awayScore = game.awayScore,
                 quarter = game.quarter,
-                clock = GameRules.convertClockToSeconds(game.clock),
+                clock = convertClockToSeconds(game.clock),
                 ballLocation = game.ballLocation,
                 possession = game.possession,
                 down = game.down,
@@ -166,7 +166,7 @@ class PlayService(
             when (playCall) {
                 PlayCall.PASS, PlayCall.RUN, PlayCall.SPIKE, PlayCall.KNEEL ->
                     gamePlay =
-                        normalPlayProcessor.runNormalPlay(
+                        normalPlayProcessorService.runNormalPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -178,7 +178,7 @@ class PlayService(
 
                 PlayCall.PAT, PlayCall.TWO_POINT ->
                     gamePlay =
-                        pointAfterPlayProcessor.runPointAfterPlay(
+                        pointAfterPlayProcessorService.runPointAfterPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -188,7 +188,7 @@ class PlayService(
 
                 PlayCall.KICKOFF_NORMAL, PlayCall.KICKOFF_ONSIDE, PlayCall.KICKOFF_SQUIB ->
                     gamePlay =
-                        kickoffPlayProcessor.runKickoffPlay(
+                        kickoffPlayProcessorService.runKickoffPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -198,7 +198,7 @@ class PlayService(
 
                 PlayCall.FIELD_GOAL ->
                     gamePlay =
-                        fieldGoalPlayProcessor.runFieldGoalPlay(
+                        fieldGoalPlayProcessorService.runFieldGoalPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -210,7 +210,7 @@ class PlayService(
 
                 PlayCall.PUNT ->
                     gamePlay =
-                        puntPlayProcessor.runPuntPlay(
+                        puntPlayProcessorService.runPuntPlay(
                             gamePlay,
                             game,
                             playCall,
@@ -223,7 +223,7 @@ class PlayService(
 
             return gamePlay
         } catch (e: Exception) {
-            Logger.error("There was an error submitting the offensive number for game $gameId: " + e.message)
+            Logger().error("There was an error submitting the offensive number for game $gameId: " + e.message)
             throw e
         }
     }
@@ -241,7 +241,7 @@ class PlayService(
             playRepository.deleteById(gamePlay.playId)
             return previousPlay
         } catch (e: Exception) {
-            Logger.error("There was an error rolling back the play for game $gameId: " + e.message)
+            Logger().error("There was an error rolling back the play for game $gameId: " + e.message)
             throw e
         }
     }

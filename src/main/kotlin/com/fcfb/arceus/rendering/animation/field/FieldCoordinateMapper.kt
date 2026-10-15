@@ -2,7 +2,7 @@ package com.fcfb.arceus.rendering.animation.field
 
 import com.fcfb.arceus.enums.team.TeamSide
 
-object FieldCoordinateMapper {
+class FieldCoordinateMapper {
     fun toAbsoluteFieldPosition(
         ballLocation: Int,
         possession: TeamSide,

@@ -2,12 +2,7 @@ package com.fcfb.arceus.rendering.animation.appearance
 
 import java.awt.Color
 
-/**
- * A per-side field color that is either a literal hex value or a token resolved against the team defending that side:
- * PRIMARY, SECONDARY, and TERTIARY pick that team's color slots; WHITE and BLACK are literal. HOME/AWAY are legacy
- * aliases for the defending team's primary color.
- */
-object ColorToken {
+class ColorToken {
     fun resolve(
         value: String?,
         primary: Color,

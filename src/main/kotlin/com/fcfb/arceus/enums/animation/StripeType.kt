@@ -1,6 +1,5 @@
 package com.fcfb.arceus.enums.animation
 
-/** A helmet's center-stripe layout: one band, or three parallel bands with a distinct inner and outer color. */
 enum class StripeType {
     SINGLE,
     TRIPLE,

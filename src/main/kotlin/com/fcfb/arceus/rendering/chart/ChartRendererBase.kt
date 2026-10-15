@@ -1,7 +1,7 @@
 package com.fcfb.arceus.rendering.chart
 
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.util.Logger
 import java.awt.BasicStroke
 import java.awt.Color
@@ -95,7 +95,7 @@ abstract class ChartRendererBase {
                 g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
                 g.drawImage(logoImage, x, y, width, height, null)
             } catch (e: IOException) {
-                Logger.error("Error loading logo for ${team.name}: ${e.message}")
+                Logger().error("Error loading logo for ${team.name}: ${e.message}")
                 g.font = Font("Arial", Font.BOLD, 16)
                 g.color = parseColor(team.primaryColor ?: "#000000")
                 val abbreviation = team.abbreviation ?: "TEAM"

@@ -4,10 +4,6 @@ import com.fcfb.arceus.util.BoundedCache
 import java.awt.Color
 import java.awt.image.BufferedImage
 
-/**
- * Recolors chosen parts of a conference logo. The user maps specific source colors in the logo to one of their team
- * tokens (PRIMARY/SECONDARY/TERTIARY/WHITE/BLACK); every other color, including whites they did not map, is left alone.
- */
 object ConferenceLogoTint {
     private val cache = BoundedCache<String, BufferedImage>(CACHE_SIZE)
     private const val MATCH_TOLERANCE = 60 * 60 * 3
@@ -30,7 +26,6 @@ object ConferenceLogoTint {
         }
     }
 
-    /** The distinct opaque colors a logo is mostly made of, as hex, so the editor can offer each one for recoloring. */
     fun dominantColors(
         url: String?,
         limit: Int = 8,

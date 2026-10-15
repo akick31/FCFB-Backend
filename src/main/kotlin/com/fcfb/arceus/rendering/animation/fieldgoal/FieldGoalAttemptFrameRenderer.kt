@@ -5,10 +5,10 @@ import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.animation.FieldTheme
 import com.fcfb.arceus.model.animation.GoalPostSceneLayout
 import com.fcfb.arceus.model.animation.KickPoint
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.PlayRandom
 import com.fcfb.arceus.rendering.animation.choreography.segment
 import com.fcfb.arceus.rendering.animation.field.FieldBackgroundPainter

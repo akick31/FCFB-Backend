@@ -1,12 +1,14 @@
 package com.fcfb.arceus.service.fcfb.probability
 
+import com.fcfb.arceus.domain.elo.EloCalculator
 import com.fcfb.arceus.dto.response.GameSpreadResult
 import com.fcfb.arceus.dto.response.UpdateSpreadsResponse
 import com.fcfb.arceus.dto.response.VegasOddsResponse
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.service.fcfb.elo.EloCalculator
+import com.fcfb.arceus.model.game.GameVegasOdds
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.game.GameVegasOddsRepository
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
@@ -17,7 +19,9 @@ class VegasOddsService(
     private val gameRepository: GameRepository,
     private val gameStatsRepository: GameStatsRepository,
     private val teamService: TeamService,
+    private val gameVegasOddsRepository: GameVegasOddsRepository,
 ) {
+    private val eloCalculator = EloCalculator()
     private val logger = LoggerFactory.getLogger(VegasOddsService::class.java)
 
     fun calculateVegasOdds(
@@ -29,7 +33,7 @@ class VegasOddsService(
 
         logger.info("Calculating Vegas odds: ${homeTeam.name} (${homeElo.toInt()}) vs ${awayTeam.name} (${awayElo.toInt()})")
 
-        val homeSpread = EloCalculator.homeSpread(homeElo, awayElo)
+        val homeSpread = eloCalculator.homeSpread(homeElo, awayElo)
         val awaySpread = -homeSpread
 
         return VegasOddsResponse(
@@ -48,7 +52,7 @@ class VegasOddsService(
         homeTeamName: String? = null,
         awayTeamName: String? = null,
     ): VegasOddsResponse {
-        val homeSpread = EloCalculator.homeSpread(homeElo, awayElo)
+        val homeSpread = eloCalculator.homeSpread(homeElo, awayElo)
         val awaySpread = -homeSpread
 
         return VegasOddsResponse(
@@ -149,7 +153,7 @@ class VegasOddsService(
                     continue
                 }
 
-                val spread = EloCalculator.homeSpread(homeStats.teamElo, awayStats.teamElo)
+                val spread = eloCalculator.homeSpread(homeStats.teamElo, awayStats.teamElo)
                 val homeSpread = spread
                 val awaySpread = -spread
 
@@ -157,6 +161,13 @@ class VegasOddsService(
                 game.awayVegasSpread = awaySpread
 
                 gameRepository.save(game)
+                gameVegasOddsRepository.save(
+                    GameVegasOdds(
+                        gameId = game.gameId,
+                        homeVegasSpread = game.homeVegasSpread,
+                        awayVegasSpread = game.awayVegasSpread,
+                    ),
+                )
 
                 updatedGames++
                 results.add(

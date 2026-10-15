@@ -1,7 +1,7 @@
 package com.fcfb.arceus.service.fcfb.schedule
 
-import com.fcfb.arceus.repositories.ScheduleRepository
-import com.fcfb.arceus.repositories.SeasonRepository
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
+import com.fcfb.arceus.repositories.season.SeasonRepository
 import com.fcfb.arceus.service.fcfb.season.OffseasonService
 import org.springframework.stereotype.Service
 

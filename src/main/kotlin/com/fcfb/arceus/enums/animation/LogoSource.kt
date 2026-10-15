@@ -1,6 +1,5 @@
 package com.fcfb.arceus.enums.animation
 
-/** Which logo a render slot uses. [CUSTOM] keeps the slot's own URL; the others point at the team's primary or secondary logo. */
 enum class LogoSource {
     CUSTOM,
     PRIMARY,

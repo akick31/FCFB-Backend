@@ -1,8 +1,8 @@
 package com.fcfb.arceus.service.fcfb.play
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fcfb.arceus.model.User
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.account.User
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.fcfb.account.UserService
 import io.mockk.every
 import io.mockk.mockk

@@ -11,16 +11,16 @@ import com.fcfb.arceus.dto.response.ScheduleValidationResult
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.game.TVChannel
 import com.fcfb.arceus.exception.schedule.ScheduleNotFoundException
-import com.fcfb.arceus.model.Bowl
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.repositories.GameRepository
-import com.fcfb.arceus.repositories.ScheduleRepository
-import com.fcfb.arceus.repositories.TeamRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.model.season.Bowl
+import com.fcfb.arceus.repositories.game.GameRepository
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
 import com.fcfb.arceus.service.fcfb.appearance.VenueService
+import com.fcfb.arceus.service.fcfb.conference.ConferenceService
 import com.fcfb.arceus.service.fcfb.season.BowlService
 import com.fcfb.arceus.service.fcfb.season.SeasonService
-import com.fcfb.arceus.service.fcfb.team.ConferenceService
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 
@@ -41,12 +41,6 @@ open class ScheduleService(
     private val outOfConferenceScheduleGenerationService: OutOfConferenceScheduleGenerationService,
     private val scheduleValidationService: ScheduleValidationService,
 ) {
-    private fun checkScheduleLock(season: Int) {
-        if (seasonService.isScheduleLocked(season)) {
-            throw IllegalStateException("Schedule for season $season is locked and cannot be modified")
-        }
-    }
-
     private fun resolveNeutralSite(entry: ScheduleEntry): Boolean = entry.gameType in NEUTRAL_SITE_GAME_TYPES || entry.neutralSite
 
     private fun saveVenueDefault(entry: ScheduleEntry) {
@@ -152,7 +146,7 @@ open class ScheduleService(
     fun createScheduleEntry(entry: ScheduleEntry): Schedule {
         val isPostseason = entry.gameType in NEUTRAL_SITE_GAME_TYPES
         if (!isPostseason) {
-            checkScheduleLock(entry.season)
+            seasonService.requireScheduleUnlocked(entry.season)
         }
 
         val placeholderTeams = setOf("TBD", "OPEN", "")
@@ -202,13 +196,13 @@ open class ScheduleService(
         schedule.venue = entry.venue
         val saved = scheduleRepository.save(schedule)
         saveVenueDefault(entry)
-        Logger.info("Created schedule entry: ${entry.homeTeam} vs ${entry.awayTeam} (Season ${entry.season}, Week ${entry.week})")
+        Logger().info("Created schedule entry: ${entry.homeTeam} vs ${entry.awayTeam} (Season ${entry.season}, Week ${entry.week})")
         return saved
     }
 
     fun createBulkScheduleEntries(request: BulkScheduleRequest): List<Schedule> {
         val entries = request.entries
-        entries.firstOrNull()?.let { checkScheduleLock(it.season) }
+        entries.firstOrNull()?.let { seasonService.requireScheduleUnlocked(it.season) }
 
         val placeholderTeams = setOf("TBD", "OPEN", "")
 
@@ -217,7 +211,7 @@ open class ScheduleService(
 
         for (entry in entries) {
             if (entry.homeTeam == entry.awayTeam && entry.homeTeam !in placeholderTeams) {
-                Logger.warn("Skipping self-matchup: ${entry.homeTeam} vs ${entry.awayTeam} in S${entry.season} W${entry.week}")
+                Logger().warn("Skipping self-matchup: ${entry.homeTeam} vs ${entry.awayTeam} in S${entry.season} W${entry.week}")
                 continue
             }
 
@@ -226,11 +220,11 @@ open class ScheduleService(
             var conflict = false
 
             if (entry.homeTeam !in placeholderTeams && homeKey in teamWeekPairs) {
-                Logger.warn("Skipping duplicate: ${entry.homeTeam} already scheduled in S${entry.season} W${entry.week}")
+                Logger().warn("Skipping duplicate: ${entry.homeTeam} already scheduled in S${entry.season} W${entry.week}")
                 conflict = true
             }
             if (!conflict && entry.awayTeam !in placeholderTeams && awayKey in teamWeekPairs) {
-                Logger.warn("Skipping duplicate: ${entry.awayTeam} already scheduled in S${entry.season} W${entry.week}")
+                Logger().warn("Skipping duplicate: ${entry.awayTeam} already scheduled in S${entry.season} W${entry.week}")
                 conflict = true
             }
 
@@ -242,7 +236,7 @@ open class ScheduleService(
         }
 
         if (validEntries.size < entries.size) {
-            Logger.warn("Filtered out ${entries.size - validEntries.size} duplicate entries from bulk create")
+            Logger().warn("Filtered out ${entries.size - validEntries.size} duplicate entries from bulk create")
         }
 
         val schedules =
@@ -275,7 +269,7 @@ open class ScheduleService(
             }
         val saved = scheduleRepository.saveAll(schedules).toList()
         validEntries.forEach { saveVenueDefault(it) }
-        Logger.info("Created ${saved.size} schedule entries in bulk for season ${entries.firstOrNull()?.season}")
+        Logger().info("Created ${saved.size} schedule entries in bulk for season ${entries.firstOrNull()?.season}")
         return saved
     }
 
@@ -285,7 +279,7 @@ open class ScheduleService(
     ): Schedule {
         val isPostseason = entry.gameType in NEUTRAL_SITE_GAME_TYPES
         if (!isPostseason) {
-            checkScheduleLock(entry.season)
+            seasonService.requireScheduleUnlocked(entry.season)
         }
         val schedule =
             scheduleRepository.findById(id).orElseThrow {
@@ -317,7 +311,7 @@ open class ScheduleService(
         schedule.venue = entry.venue
         val saved = scheduleRepository.save(schedule)
         saveVenueDefault(entry)
-        Logger.info("Updated schedule entry $id: ${entry.homeTeam} vs ${entry.awayTeam}")
+        Logger().info("Updated schedule entry $id: ${entry.homeTeam} vs ${entry.awayTeam}")
         return saved
     }
 
@@ -326,17 +320,17 @@ open class ScheduleService(
         if (existing != null) {
             val isPostseason = existing.gameType in NEUTRAL_SITE_GAME_TYPES
             if (!isPostseason) {
-                checkScheduleLock(existing.season)
+                seasonService.requireScheduleUnlocked(existing.season)
             }
         }
         scheduleRepository.deleteById(id)
-        Logger.info("Deleted schedule entry $id")
+        Logger().info("Deleted schedule entry $id")
     }
 
     fun deleteScheduleBySeason(season: Int) {
-        checkScheduleLock(season)
+        seasonService.requireScheduleUnlocked(season)
         scheduleRepository.deleteScheduleBySeason(season)
-        Logger.info("Deleted all schedule entries for season $season")
+        Logger().info("Deleted all schedule entries for season $season")
     }
 
     fun moveGame(request: MoveGameRequest): Schedule {
@@ -344,11 +338,11 @@ open class ScheduleService(
             scheduleRepository.findById(request.scheduleId).orElseThrow {
                 ScheduleNotFoundException("Schedule entry not found with id ${request.scheduleId}")
             }
-        checkScheduleLock(schedule.season)
+        seasonService.requireScheduleUnlocked(schedule.season)
         val oldWeek = schedule.week
         schedule.week = request.newWeek
         val saved = scheduleRepository.save(schedule)
-        Logger.info("Moved game ${schedule.homeTeam} vs ${schedule.awayTeam} from week $oldWeek to week ${request.newWeek}")
+        Logger().info("Moved game ${schedule.homeTeam} vs ${schedule.awayTeam} from week $oldWeek to week ${request.newWeek}")
         return saved
     }
 
@@ -410,7 +404,7 @@ open class ScheduleService(
                     try {
                         scheduleRepository.save(entry)
                     } catch (e: Exception) {
-                        Logger.warn("Could not backfill game_id for schedule entry ${entry.id}: ${e.message}")
+                        Logger().warn("Could not backfill game_id for schedule entry ${entry.id}: ${e.message}")
                     }
                 }
             }

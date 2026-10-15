@@ -17,7 +17,6 @@ data class ScrimmageScene(
             ?: offensiveAlignment.quarterback
 
     companion object {
-        /** [alignment] overrides the playbook for plays whose formation is fixed, such as a kneel or a spike. */
         fun from(
             context: PlayContext,
             alignment: OffensiveAlignment? = null,

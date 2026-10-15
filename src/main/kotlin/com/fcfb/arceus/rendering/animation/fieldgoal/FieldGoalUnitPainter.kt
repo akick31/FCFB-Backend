@@ -292,10 +292,6 @@ object FieldGoalUnitPainter {
         }
     }
 
-    /**
-     * After the block the ball is batted to the turf at the block spot and bounces there, decaying to rest as a player
-     * falls on it, rather than being caught or caroming downfield.
-     */
     private fun bounceLoose(
         fraction: Float,
         fromX: Float,

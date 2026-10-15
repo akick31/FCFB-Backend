@@ -1,6 +1,6 @@
 package com.fcfb.arceus.service.specification
 
-import com.fcfb.arceus.model.PostseasonSeasonStats
+import com.fcfb.arceus.model.statistics.PostseasonSeasonStats
 import org.springframework.data.jpa.domain.Specification
 import org.springframework.stereotype.Service
 import javax.persistence.criteria.CriteriaBuilder

@@ -2,7 +2,6 @@ package com.fcfb.arceus.rendering.animation.assets
 
 import java.util.concurrent.ConcurrentHashMap
 
-/** Maps an uploaded font's key to the AWT family name it registered under, so [EndZoneFonts] can resolve custom fonts. */
 object FontRegistry {
     private val families = ConcurrentHashMap<String, String>()
 

@@ -9,9 +9,9 @@ import com.fcfb.arceus.enums.team.Subdivision
 import com.fcfb.arceus.exception.game.GameWeekJobNotFoundException
 import com.fcfb.arceus.exception.game.NoGameFoundException
 import com.fcfb.arceus.exception.season.RankingsNotUploadedException
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.repositories.RankingRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.repositories.ranking.RankingRepository
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleService
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -49,6 +49,12 @@ class StartGameWeekJobServiceTest {
     @AfterEach
     fun stopWorkers() {
         service.stopWorkers()
+    }
+
+    private fun shutdownSignalOf(service: StartGameWeekJobService): CompletableDeferred<*> {
+        val tracker = service.javaClass.getDeclaredField("jobTracker").apply { isAccessible = true }.get(service)
+        return tracker.javaClass.getDeclaredField("shutdownSignal").apply { isAccessible = true }
+            .get(tracker) as CompletableDeferred<*>
     }
 
     private val schedule =
@@ -308,9 +314,7 @@ class StartGameWeekJobServiceTest {
                 }
             val stop = async(Dispatchers.IO) { context.close() }
             try {
-                val signal =
-                    service.javaClass.getDeclaredField("shutdownSignal").apply { isAccessible = true }
-                        .get(service) as CompletableDeferred<*>
+                val signal = shutdownSignalOf(service)
                 withTimeout(5000) { signal.await() }
                 assertFalse(stop.isCompleted)
                 assertFailsWith<IllegalStateException> { service.startWeekAsync(12, 15) }
@@ -364,9 +368,7 @@ class StartGameWeekJobServiceTest {
             try {
                 withTimeout(5000) { entered.await() }
                 val stop = async(Dispatchers.IO) { service.stopWorkers() }
-                val signal =
-                    service.javaClass.getDeclaredField("shutdownSignal").apply { isAccessible = true }
-                        .get(service) as CompletableDeferred<*>
+                val signal = shutdownSignalOf(service)
                 withTimeout(5000) { signal.await() }
                 assertFalse(stop.isCompleted)
                 assertFailsWith<IllegalStateException> { service.retryFailedGames(original.jobId) }

@@ -1,36 +1,31 @@
 package com.fcfb.arceus.service.fcfb.statistics
 
+import com.fcfb.arceus.domain.season.SeasonStructure
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
-import com.fcfb.arceus.model.GameStats
-import com.fcfb.arceus.model.PostseasonConferenceStats
-import com.fcfb.arceus.model.PostseasonLeagueStats
-import com.fcfb.arceus.model.PostseasonPlaybookStats
-import com.fcfb.arceus.model.PostseasonSeasonStats
-import com.fcfb.arceus.model.SeasonStats
-import com.fcfb.arceus.repositories.GameStatsRepository
-import com.fcfb.arceus.repositories.PostseasonConferenceStatsRepository
-import com.fcfb.arceus.repositories.PostseasonLeagueStatsRepository
-import com.fcfb.arceus.repositories.PostseasonPlaybookStatsRepository
-import com.fcfb.arceus.repositories.PostseasonSeasonStatsRepository
-import com.fcfb.arceus.repositories.TeamRepository
-import com.fcfb.arceus.util.POSTSEASON_START_WEEK
+import com.fcfb.arceus.model.statistics.GameStats
+import com.fcfb.arceus.model.statistics.PostseasonConferenceStats
+import com.fcfb.arceus.model.statistics.PostseasonLeagueStats
+import com.fcfb.arceus.model.statistics.PostseasonPlaybookStats
+import com.fcfb.arceus.model.statistics.PostseasonSeasonStats
+import com.fcfb.arceus.repositories.statistics.GameStatsRepository
+import com.fcfb.arceus.repositories.statistics.PostseasonConferenceStatsRepository
+import com.fcfb.arceus.repositories.statistics.PostseasonLeagueStatsRepository
+import com.fcfb.arceus.repositories.statistics.PostseasonPlaybookStatsRepository
+import com.fcfb.arceus.repositories.statistics.PostseasonSeasonStatsRepository
+import com.fcfb.arceus.repositories.team.TeamRepository
+import com.fcfb.arceus.service.fcfb.statistics.conference.PostseasonConferenceStatsService
+import com.fcfb.arceus.service.fcfb.statistics.league.PostseasonLeagueStatsService
+import com.fcfb.arceus.service.fcfb.statistics.playbook.PostseasonPlaybookStatsService
+import com.fcfb.arceus.service.fcfb.statistics.season.PostseasonSeasonStatsService
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
-import io.mockk.unmockkObject
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class PostseasonStatsAggregationTest {
-    @AfterEach
-    fun releaseCalculatorMock() {
-        unmockkObject(SeasonStatsCalculator)
-    }
-
     private val seasons =
         listOf(
             PostseasonSeasonStats(
@@ -53,34 +48,45 @@ class PostseasonStatsAggregationTest {
 
     @Test
     fun `postseason season generation preserves all totals and counts`() {
+        val gameId = 500
+        val homeGame =
+            GameStats(
+                gameId = gameId, team = "Home", season = 12, week = SeasonStructure.POSTSEASON_START_WEEK, gameType = null,
+                offensivePlayYards = 420, offensivePlayCount = 100, puntYards = 220, puntCount = 4,
+            )
+        val awayGame =
+            GameStats(
+                gameId = gameId, team = "Away", season = 12, week = SeasonStructure.POSTSEASON_START_WEEK, gameType = null,
+                offensivePlayYards = -10, offensivePlayCount = 2, puntYards = 40, puntCount = 1,
+            )
         val repository = mockk<PostseasonSeasonStatsRepository>(relaxed = true)
         val gameRepository = mockk<GameStatsRepository>()
         val teamRepository = mockk<TeamRepository>()
-        mockkObject(SeasonStatsCalculator)
-        val saved = slot<PostseasonSeasonStats>()
-        every { gameRepository.findAll() } returns
-            listOf(GameStats(team = "Home", season = 12, week = POSTSEASON_START_WEEK, gameType = null))
+        val savedStats = mutableListOf<PostseasonSeasonStats>()
+        every { gameRepository.findAll() } returns listOf(homeGame, awayGame)
         every { teamRepository.findAll() } returns emptyList()
-        every { SeasonStatsCalculator.aggregateGameStatsToSeasonStats(any(), any(), any(), any(), any()) } returns
-            SeasonStats(
-                team = "Home", seasonNumber = 12, offensivePlayYards = 420, offensivePlayCount = 100,
-                puntYards = 220, puntCount = 4, opponentOffensivePlayYards = -10, opponentOffensivePlayCount = 2,
-                opponentPuntYards = 40, opponentPuntCount = 1,
-            )
-        every { repository.save(capture(saved)) } answers { saved.captured }
+        every { repository.save(any()) } answers { firstArg<PostseasonSeasonStats>().also { savedStats.add(it) } }
         val service =
-            PostseasonSeasonStatsService(repository, gameRepository, teamRepository, mockk(), mockk(), mockk(relaxed = true))
+            PostseasonSeasonStatsService(
+                repository,
+                gameRepository,
+                teamRepository,
+                mockk(),
+                mockk(),
+                mockk(relaxed = true),
+            )
 
         service.generateAllPostseasonSeasonStats()
 
-        assertEquals(420, saved.captured.offensivePlayYards)
-        assertEquals(100, saved.captured.offensivePlayCount)
-        assertEquals(220, saved.captured.puntYards)
-        assertEquals(4, saved.captured.puntCount)
-        assertEquals(-10, saved.captured.opponentOffensivePlayYards)
-        assertEquals(2, saved.captured.opponentOffensivePlayCount)
-        assertEquals(40, saved.captured.opponentPuntYards)
-        assertEquals(1, saved.captured.opponentPuntCount)
+        val homeStats = savedStats.first { it.team == "Home" }
+        assertEquals(420, homeStats.offensivePlayYards)
+        assertEquals(100, homeStats.offensivePlayCount)
+        assertEquals(220, homeStats.puntYards)
+        assertEquals(4, homeStats.puntCount)
+        assertEquals(-10, homeStats.opponentOffensivePlayYards)
+        assertEquals(2, homeStats.opponentOffensivePlayCount)
+        assertEquals(40, homeStats.opponentPuntYards)
+        assertEquals(1, homeStats.opponentPuntCount)
     }
 
     @Test
@@ -88,8 +94,7 @@ class PostseasonStatsAggregationTest {
         val repository = mockk<PostseasonConferenceStatsRepository>(relaxed = true)
         val saved = slot<PostseasonConferenceStats>()
         every { repository.save(capture(saved)) } answers { saved.captured }
-        val service =
-            PostseasonConferenceStatsService(repository, seasonRepository(), mockk())
+        val service = PostseasonConferenceStatsService(repository, seasonRepository(), mockk())
 
         service.generateAllPostseasonConferenceStats()
 
@@ -128,7 +133,7 @@ class PostseasonStatsAggregationTest {
                 GameStats(
                     team = "Home",
                     season = 12,
-                    week = POSTSEASON_START_WEEK,
+                    week = SeasonStructure.POSTSEASON_START_WEEK,
                     offensivePlaybook = OffensivePlaybook.AIR_RAID,
                     defensivePlaybook = DefensivePlaybook.FOUR_THREE,
                     offensivePlayYards = 60,
@@ -137,7 +142,7 @@ class PostseasonStatsAggregationTest {
                 GameStats(
                     team = "Away",
                     season = 12,
-                    week = POSTSEASON_START_WEEK,
+                    week = SeasonStructure.POSTSEASON_START_WEEK,
                     offensivePlaybook = OffensivePlaybook.AIR_RAID,
                     defensivePlaybook = DefensivePlaybook.FOUR_THREE,
                     offensivePlayYards = 360,

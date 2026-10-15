@@ -1,13 +1,8 @@
 package com.fcfb.arceus.rendering.animation.appearance
 
-import com.fcfb.arceus.model.TeamUniformHistory
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
 
-/**
- * Resolves helmet fields for either the primary or the secondary ("alternate") helmet. Any unset
- * secondary value falls back to the matching primary value, so a team that never customizes its
- * alternate still renders the same helmet in a different shell color.
- */
-object HelmetFields {
+class HelmetFields {
     fun facemaskColor(
         snapshot: TeamUniformHistory?,
         alt: Boolean,

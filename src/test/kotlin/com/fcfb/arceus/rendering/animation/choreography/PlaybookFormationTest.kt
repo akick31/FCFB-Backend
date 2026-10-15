@@ -5,10 +5,10 @@ import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.animation.choreography.PlayContext
 import com.fcfb.arceus.model.animation.choreography.ScrimmageScene
 import com.fcfb.arceus.model.animation.choreography.Track
+import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.rendering.animation.choreography.script.CompletedPassScript
 import com.fcfb.arceus.rendering.animation.choreography.script.RunPlayScript
 import org.junit.jupiter.api.Assertions.assertEquals

@@ -3,7 +3,7 @@ package com.fcfb.arceus.service.auth
 import com.fcfb.arceus.dto.response.LoginResponse
 import com.fcfb.arceus.dto.standard.SignupInfo
 import com.fcfb.arceus.exception.user.UserUnauthorizedException
-import com.fcfb.arceus.model.NewSignup
+import com.fcfb.arceus.model.account.NewSignup
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.email.EmailService
 import com.fcfb.arceus.service.fcfb.account.NewSignupService
@@ -37,10 +37,10 @@ class AuthService(
                     signup.teamChoiceThree,
                 )
             discordService.sendRegistrationNotice(signupInfo)
-            Logger.info("User ${signup.username} registered successfully. Verification email sent.")
+            Logger().info("User ${signup.username} registered successfully. Verification email sent.")
             return signup
         } catch (e: Exception) {
-            Logger.error("Error creating new sign up: ", e.message)
+            Logger().error("Error creating new sign up: ", e.message)
             throw e
         }
     }

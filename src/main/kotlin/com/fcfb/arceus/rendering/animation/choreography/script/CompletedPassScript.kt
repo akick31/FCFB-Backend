@@ -156,12 +156,6 @@ class CompletedPassScript : PlayScript {
         return responded.mapIndexed { index, track -> if (index == cover) shadow else track }
     }
 
-    /**
-     * Splits the gain between the throw and the run after it. The share comes from [CatchKind] so
-     * the same play can be caught at the sticks and tackled on the spot, or caught short and run
-     * the rest of the way. A loss is always caught where it ends — a receiver does not run
-     * backwards for yardage.
-     */
     private fun catchDepthFor(
         kind: CatchKind,
         gain: Float,

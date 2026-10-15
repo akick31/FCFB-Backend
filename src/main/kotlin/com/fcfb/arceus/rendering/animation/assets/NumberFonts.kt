@@ -2,7 +2,7 @@ package com.fcfb.arceus.rendering.animation.assets
 
 import java.awt.Font
 
-object NumberFonts {
+class NumberFonts {
     fun font(
         key: String?,
         size: Float,

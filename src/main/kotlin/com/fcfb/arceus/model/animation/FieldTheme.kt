@@ -6,11 +6,11 @@ import com.fcfb.arceus.enums.animation.LogoSource
 import com.fcfb.arceus.enums.animation.YardNumberArrowAlign
 import com.fcfb.arceus.enums.animation.YardNumberSource
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.BowlField
-import com.fcfb.arceus.model.FieldAppearance
-import com.fcfb.arceus.model.PostseasonField
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.model.TeamUniformHistory
+import com.fcfb.arceus.model.appearance.BowlField
+import com.fcfb.arceus.model.appearance.FieldAppearance
+import com.fcfb.arceus.model.appearance.PostseasonField
+import com.fcfb.arceus.model.appearance.TeamUniformHistory
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.animation.appearance.BowlFieldStyling
 import com.fcfb.arceus.rendering.animation.appearance.ColorSimilarity
 import com.fcfb.arceus.rendering.animation.appearance.ColorToken
@@ -102,7 +102,7 @@ data class FieldTheme(
                 ?: bowlField?.midfieldBorderColor
                 ?: postseasonField?.midfieldBorderColor
                 ?: return null
-        return ColorToken.resolve(
+        return ColorToken().resolve(
             value,
             FieldColors.parseColor(homeTeam.primaryColor),
             FieldColors.parseColor(homeTeam.secondaryColor),
@@ -126,7 +126,7 @@ data class FieldTheme(
         side: TeamSide,
     ): Color? {
         val team = teamOf(side)
-        return ColorToken.resolve(
+        return ColorToken().resolve(
             value,
             FieldColors.parseColor(team.primaryColor),
             FieldColors.parseColor(team.secondaryColor),
@@ -148,7 +148,7 @@ data class FieldTheme(
 
     private fun teamOf(side: TeamSide): Team = if (side == TeamSide.HOME) homeTeam else awayTeam
 
-    fun uniforms(): Pair<Uniform, Uniform> = Uniforms.forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
+    fun uniforms(): Pair<Uniform, Uniform> = Uniforms().forMatchup(homeTeam, awayTeam, homeUniform, awayUniform)
 
     fun homeLogoUrl(): String? = helmetDecalUrl(homeUniform, homeTeam, alt = false)
 
@@ -159,9 +159,9 @@ data class FieldTheme(
         team: Team,
         alt: Boolean,
     ): String? {
-        val mode = HelmetLogoMode.from(HelmetFields.helmetLogoMode(uniform, alt), HelmetFields.hasLogo(uniform, alt))
-        if (mode == HelmetLogoMode.UPLOAD) return HelmetFields.logoUrl(uniform, alt)
-        return when (LogoSource.from(HelmetFields.helmetLogoSource(uniform, alt))) {
+        val mode = HelmetLogoMode.from(HelmetFields().helmetLogoMode(uniform, alt), HelmetFields().hasLogo(uniform, alt))
+        if (mode == HelmetLogoMode.UPLOAD) return HelmetFields().logoUrl(uniform, alt)
+        return when (LogoSource.from(HelmetFields().helmetLogoSource(uniform, alt))) {
             LogoSource.SECONDARY -> team.secondaryLogo
             else -> team.logo
         }

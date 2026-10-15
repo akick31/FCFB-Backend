@@ -1,6 +1,5 @@
 package com.fcfb.arceus.dto.request
 
-/** Editable home field settings. A null [fieldNumberOutlineColor] means the yard numbers are drawn without an outline. */
 data class TeamFieldRequest(
     val turfColor: String? = null,
     val endZoneColor: String? = null,

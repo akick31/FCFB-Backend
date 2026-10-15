@@ -1,0 +1,80 @@
+package com.fcfb.arceus.controllers.appearance
+
+import com.fcfb.arceus.controllers.ApiConstants
+import com.fcfb.arceus.dto.request.TeamColorsRequest
+import com.fcfb.arceus.dto.request.TeamFieldRequest
+import com.fcfb.arceus.dto.request.TeamLogosRequest
+import com.fcfb.arceus.dto.request.TeamUniformRequest
+import com.fcfb.arceus.service.fcfb.appearance.TeamAppearanceService
+import io.swagger.v3.oas.annotations.Operation
+import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+
+@CrossOrigin(origins = ["*"])
+@RestController
+@RequestMapping("${ApiConstants.FULL_PATH}/team-appearance")
+class TeamAppearanceController(
+    private val teamAppearanceService: TeamAppearanceService,
+) {
+    @Operation(summary = "Get a team's uniform")
+    @GetMapping("/uniform")
+    fun getUniform(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getUniform(team)
+
+    @Operation(summary = "Update a team's uniform")
+    @PutMapping("/uniform")
+    fun updateUniform(
+        @RequestParam team: String,
+        @RequestBody request: TeamUniformRequest,
+    ) = teamAppearanceService.updateUniform(team, request)
+
+    @Operation(summary = "Get a team's field")
+    @GetMapping("/field")
+    fun getField(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getField(team)
+
+    @Operation(summary = "Update a team's field")
+    @PutMapping("/field")
+    fun updateField(
+        @RequestParam team: String,
+        @RequestBody request: TeamFieldRequest,
+    ) = teamAppearanceService.updateField(team, request)
+
+    @Operation(summary = "Get a team's colors")
+    @GetMapping("/conference-logo-colors")
+    fun getConferenceLogoColors(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getConferenceLogoColors(team)
+
+    @GetMapping("/colors")
+    fun getColors(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getColors(team)
+
+    @Operation(summary = "Update a team's colors")
+    @PutMapping("/colors")
+    fun updateColors(
+        @RequestParam team: String,
+        @RequestBody request: TeamColorsRequest,
+    ) = teamAppearanceService.updateColors(team, request)
+
+    @Operation(summary = "Get a team's logos")
+    @GetMapping("/logos")
+    fun getLogos(
+        @RequestParam team: String,
+    ) = teamAppearanceService.getLogos(team)
+
+    @Operation(summary = "Update a team's logos")
+    @PutMapping("/logos")
+    fun updateLogos(
+        @RequestParam team: String,
+        @RequestBody request: TeamLogosRequest,
+    ) = teamAppearanceService.updateLogos(team, request)
+}

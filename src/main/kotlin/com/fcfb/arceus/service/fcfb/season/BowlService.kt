@@ -1,10 +1,10 @@
 package com.fcfb.arceus.service.fcfb.season
 
 import com.fcfb.arceus.dto.request.ScheduleEntry
-import com.fcfb.arceus.model.Bowl
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.repositories.BowlRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.model.season.Bowl
+import com.fcfb.arceus.repositories.season.BowlRepository
 import org.springframework.stereotype.Service
 
 @Service

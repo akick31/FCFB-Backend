@@ -11,7 +11,7 @@ import java.awt.image.BufferedImage
 class EloChartRenderer : ChartRendererBase() {
     fun render(
         teamEloData: Map<String, Map<Int, Double>>,
-        teamColors: Map<String, String>,
+        teamColors: Map<String, Pair<String?, String?>>,
         season: Int,
     ): BufferedImage {
         val width = 1200
@@ -26,7 +26,8 @@ class EloChartRenderer : ChartRendererBase() {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
 
-        g2d.color = Color.WHITE
+        val background = Color.WHITE
+        g2d.color = background
         g2d.fillRect(0, 0, width, height)
 
         val allWeeks = teamEloData.values.flatMap { it.keys }.distinct().sorted()
@@ -78,12 +79,13 @@ class EloChartRenderer : ChartRendererBase() {
         g2d.stroke = BasicStroke(2f)
         teamEloData.forEach { (teamName, weekElos) ->
             if (weekElos.isNotEmpty()) {
+                val (primaryHex, secondaryHex) = teamColors[teamName] ?: (null to null)
                 val color =
-                    try {
-                        Color.decode(teamColors[teamName] ?: "#000000")
-                    } catch (e: NumberFormatException) {
-                        Color.BLACK
-                    }
+                    ChartColor().select(
+                        primaryHex?.let { parseColor(it) },
+                        secondaryHex?.let { parseColor(it) },
+                        background,
+                    )
                 g2d.color = color
 
                 val sortedWeeks = weekElos.keys.sorted()

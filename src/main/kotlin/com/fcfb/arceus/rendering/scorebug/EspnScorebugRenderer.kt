@@ -1,8 +1,8 @@
 package com.fcfb.arceus.rendering.scorebug
 
 import com.fcfb.arceus.enums.game.GameStatus
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.team.Team
 import org.springframework.stereotype.Component
 import java.awt.AlphaComposite
 import java.awt.BasicStroke

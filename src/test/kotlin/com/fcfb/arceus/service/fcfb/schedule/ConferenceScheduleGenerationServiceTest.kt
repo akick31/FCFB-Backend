@@ -4,14 +4,16 @@ import com.fcfb.arceus.dto.request.ConferenceScheduleRequest
 import com.fcfb.arceus.dto.response.ScheduleGenJobStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.team.Subdivision
-import com.fcfb.arceus.model.Conference
-import com.fcfb.arceus.model.Schedule
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.ConferenceRepository
-import com.fcfb.arceus.repositories.ScheduleRepository
+import com.fcfb.arceus.model.conference.Conference
+import com.fcfb.arceus.model.schedule.Schedule
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.conference.ConferenceRepository
+import com.fcfb.arceus.repositories.schedule.ScheduleRepository
 import com.fcfb.arceus.service.fcfb.season.SeasonService
 import com.fcfb.arceus.service.fcfb.team.TeamService
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyOrder
@@ -66,6 +68,12 @@ class ConferenceScheduleGenerationServiceTest {
 
     private fun storedGames(): List<String> = jdbc.queryForList("SELECT marker FROM schedule ORDER BY home_team", String::class.java)
 
+    private fun shutdownSignalOf(jobService: ConferenceScheduleGenerationJobService): CompletableDeferred<*> {
+        val tracker = jobService.javaClass.getDeclaredField("jobTracker").apply { isAccessible = true }.get(jobService)
+        return tracker.javaClass.getDeclaredField("shutdownSignal").apply { isAccessible = true }
+            .get(tracker) as CompletableDeferred<*>
+    }
+
     private fun persistGenerated(games: List<Schedule>): List<Schedule> {
         games.forEach { jdbc.update("INSERT INTO schedule VALUES (?, ?, ?)", it.homeTeam, it.awayTeam, "generated") }
         return games
@@ -95,7 +103,7 @@ class ConferenceScheduleGenerationServiceTest {
                 }
             }
         every { teamService.getTeamsInConference("TEST") } returns teams
-        every { seasonService.isScheduleLocked(12) } returns false
+        every { seasonService.requireScheduleUnlocked(12) } just Runs
         every { repository.getScheduleBySeason(any()) } returns emptyList()
         every { repository.getScheduleBySeason(12) } returns listOf(currentGame)
         every { repository.getScheduleBySeasonAndTeam(12, any()) } returns emptyList()
@@ -297,9 +305,7 @@ class ConferenceScheduleGenerationServiceTest {
         val captured = jobService.getScheduleGenJobStatus(response.jobId)!!
         val closing = CompletableFuture.runAsync { context.close() }
         try {
-            val shutdown =
-                jobService.javaClass.getDeclaredField("shutdownSignal").apply { isAccessible = true }
-                    .get(jobService) as CompletableDeferred<*>
+            val shutdown = shutdownSignalOf(jobService)
             runBlocking { withTimeout(5000) { shutdown.await() } }
             assertFalse(closing.isDone)
             assertThrows(IllegalStateException::class.java) { jobService.startAllConferenceGenerationAsync(12) }

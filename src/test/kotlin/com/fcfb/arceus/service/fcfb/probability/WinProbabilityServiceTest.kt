@@ -2,10 +2,10 @@ package com.fcfb.arceus.service.fcfb.probability
 
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
-import com.fcfb.arceus.model.Game
-import com.fcfb.arceus.model.Play
-import com.fcfb.arceus.model.Team
-import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.model.game.Game
+import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
+import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.fcfb.play.PlayService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import com.fcfb.arceus.service.fcfb.team.TeamService
