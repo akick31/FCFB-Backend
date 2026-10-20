@@ -218,3 +218,9 @@ class InvalidGameStatsRequestException(message: String) : Exception(message) {
         return "InvalidGameStatsRequestException: ${super.message}"
     }
 }
+
+class RecordGenerationInProgressException : Exception("Record generation is already running; try again once it completes") {
+    override fun toString(): String {
+        return "RecordGenerationInProgressException: ${super.message}"
+    }
+}

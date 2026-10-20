@@ -18,12 +18,14 @@ import com.fcfb.arceus.service.fcfb.record.SeasonRecordService
 import com.fcfb.arceus.service.specification.RecordSpecificationService
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.POSTSEASON_START_WEEK
+import com.fcfb.arceus.util.RecordGenerationInProgressException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Service
 class RecordService(
@@ -38,6 +40,8 @@ class RecordService(
     private val recordStatUtils: RecordStatUtils,
     private val teamRepository: TeamRepository,
 ) {
+    private val generationInProgress = AtomicBoolean(false)
+
     private fun conferenceOf(team: String?): String? =
         try {
             teamRepository.getTeamByName(team)?.conference
@@ -81,24 +85,31 @@ class RecordService(
 
     @Transactional(rollbackFor = [Exception::class])
     fun generateAllRecords() {
-        Logger.info("Starting generation of all records")
+        if (!generationInProgress.compareAndSet(false, true)) {
+            throw RecordGenerationInProgressException()
+        }
+        try {
+            Logger.info("Starting generation of all records")
 
-        recordRepository.deleteAll()
+            recordRepository.deleteAll()
 
-        val completedGameIds = recordStatUtils.getCompletedGameIds()
+            val completedGameIds = recordStatUtils.getCompletedGameIds()
 
-        val availableSeasons = recordStatUtils.getAvailableSeasons()
-        val availableSeasonsSet = availableSeasons.toSet()
+            val availableSeasons = recordStatUtils.getAvailableSeasons()
+            val availableSeasonsSet = availableSeasons.toSet()
 
-        val allGameStats = gameStatsRepository.findAll().toList()
-        val gamesById = gameRepository.findAll().associateBy { it.gameId }
-        val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
-        val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
+            val allGameStats = gameStatsRepository.findAll().toList()
+            val gamesById = gameRepository.findAll().associateBy { it.gameId }
+            val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
+            val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
 
-        generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.ALL)
-        generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.ALL)
+            generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.ALL)
+            generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.ALL)
 
-        logRecordCountBreakdown("Completed generation of all records", RecordScope.ALL)
+            logRecordCountBreakdown("Completed generation of all records", RecordScope.ALL)
+        } finally {
+            generationInProgress.set(false)
+        }
     }
 
     private fun generateGeneralRecords(
@@ -223,20 +234,27 @@ class RecordService(
 
     @Transactional(rollbackFor = [Exception::class])
     fun generateTeamAndConferenceRecords() {
-        Logger.info("Starting generation of team and conference records")
-        recordRepository.deleteByRecordScopeIn(RecordScope.TEAM_AND_CONFERENCE.toList())
-        val completedGameIds = recordStatUtils.getCompletedGameIds()
-        val availableSeasons = recordStatUtils.getAvailableSeasons()
-        val availableSeasonsSet = availableSeasons.toSet()
-        val allGameStats = gameStatsRepository.findAll().toList()
-        val gamesById = gameRepository.findAll().associateBy { it.gameId }
-        val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
-        val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
+        if (!generationInProgress.compareAndSet(false, true)) {
+            throw RecordGenerationInProgressException()
+        }
+        try {
+            Logger.info("Starting generation of team and conference records")
+            recordRepository.deleteByRecordScopeIn(RecordScope.TEAM_AND_CONFERENCE.toList())
+            val completedGameIds = recordStatUtils.getCompletedGameIds()
+            val availableSeasons = recordStatUtils.getAvailableSeasons()
+            val availableSeasonsSet = availableSeasons.toSet()
+            val allGameStats = gameStatsRepository.findAll().toList()
+            val gamesById = gameRepository.findAll().associateBy { it.gameId }
+            val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
+            val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
 
-        generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.TEAM_AND_CONFERENCE)
-        generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.TEAM_AND_CONFERENCE)
+            generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.TEAM_AND_CONFERENCE)
+            generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.TEAM_AND_CONFERENCE)
 
-        logRecordCountBreakdown("Completed generation of team and conference records", RecordScope.TEAM_AND_CONFERENCE)
+            logRecordCountBreakdown("Completed generation of team and conference records", RecordScope.TEAM_AND_CONFERENCE)
+        } finally {
+            generationInProgress.set(false)
+        }
     }
 
     /** Records are all-time bests, so candidates must be compared across all of history in one pass, not once per season. */
