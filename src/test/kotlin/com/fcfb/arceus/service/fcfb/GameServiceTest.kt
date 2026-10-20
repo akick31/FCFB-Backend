@@ -2,12 +2,16 @@ package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.dto.request.StartRequest
 import com.fcfb.arceus.dto.response.VegasOddsResponse
+import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.system.Platform
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.Subdivision
+import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
+import com.fcfb.arceus.model.GameStats
+import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
@@ -134,6 +138,46 @@ class GameServiceTest {
         assertEquals("123456789", game.awayPlatformId)
         assertEquals(listOf("987654321"), game.requestMessageId)
         verify(exactly = 0) { gameRepository.deleteById(any()) }
+    }
+
+    @Test
+    fun `a game that reaches FINAL through live play still credits team wins and losses`() {
+        every { gameStatsRepository.getGameStatsByIdAndTeam(any(), any()) } returns GameStats()
+        every { playRepository.getPreviousPlay(any()) } returns null
+
+        val game =
+            Game().apply {
+                gameId = SAVED_GAME_ID
+                homeTeam = "Ohio State"
+                awayTeam = "Michigan"
+                gameType = GameType.OUT_OF_CONFERENCE
+                gameStatus = GameStatus.IN_PROGRESS
+                homeCoachDiscordIds = listOf()
+                awayCoachDiscordIds = listOf()
+            }
+        val play =
+            Play().apply {
+                homeTeam = "Ohio State"
+                awayTeam = "Michigan"
+            }
+
+        gameService.updateGameInformation(
+            game = game,
+            play = play,
+            homeScore = 24,
+            awayScore = 17,
+            possession = TeamSide.HOME,
+            quarter = 0,
+            clock = 0,
+            ballLocation = 0,
+            down = 1,
+            yardsToGo = 10,
+            homeTimeoutCalled = false,
+            awayTimeoutCalled = false,
+            timeoutUsed = false,
+        )
+
+        verify(exactly = 1) { teamService.updateTeamWinsAndLosses(game) }
     }
 
     private fun team(

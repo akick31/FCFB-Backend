@@ -399,6 +399,7 @@ class GameService(
         awayTimeoutCalled: Boolean,
         timeoutUsed: Boolean,
     ): Game {
+        val wasAlreadyFinal = game.gameStatus == GameStatus.FINAL
         val waitingOn = updateWaitingOn(possession)
         updateClockStopped(game, play, clock)
         updateTimeouts(game, homeTimeoutCalled, awayTimeoutCalled, timeoutUsed)
@@ -449,7 +450,7 @@ class GameService(
         gameRepository.save(game)
 
         if (game.gameStatus == GameStatus.FINAL) {
-            endGame(game)
+            endGame(game, wasAlreadyFinal)
         }
 
         return game
@@ -930,9 +931,11 @@ class GameService(
         return endGame(game)
     }
 
-    private fun endGame(game: Game): Game {
+    private fun endGame(
+        game: Game,
+        wasAlreadyFinal: Boolean = game.gameStatus == GameStatus.FINAL,
+    ): Game {
         try {
-            val wasAlreadyFinal = game.gameStatus == GameStatus.FINAL
             game.gameStatus = GameStatus.FINAL
             appendEndOfGamePlay(game)
             if (game.gameType != GameType.SCRIMMAGE && !wasAlreadyFinal) {

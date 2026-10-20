@@ -51,3 +51,6 @@ build/
 
 ### Claude Code ###
 .claude/
+.agents/
+/AGENTS.md
+/CLAUDE.md
