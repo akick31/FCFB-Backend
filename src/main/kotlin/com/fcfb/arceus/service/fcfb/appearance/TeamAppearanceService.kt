@@ -119,6 +119,7 @@ class TeamAppearanceService(
         uniform.awayPantsColor = request.awayPantsColor
         uniform.numberTopText = request.numberTopText
         uniform.awayNumberTopText = request.awayNumberTopText
+        uniform.bumperColor = request.bumperColor
         request.logoSize?.let { uniform.logoSize = it }
         request.logoX?.let { uniform.logoX = it }
         request.logoY?.let { uniform.logoY = it }

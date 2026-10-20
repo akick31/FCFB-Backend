@@ -26,6 +26,7 @@ class Uniforms {
                 helmetNumberFont = homeSnapshot?.helmetNumberFont,
                 jerseyNumberFont = homeSnapshot?.jerseyNumberFont,
                 numberTopText = homeSnapshot?.numberTopText,
+                bumperColor = bumperColor(homeSnapshot),
             ).withHelmet(homeTeam, homeSnapshot, alt = false)
         val away =
             Uniform(
@@ -37,6 +38,7 @@ class Uniforms {
                 helmetNumberFont = awaySnapshot?.helmetNumberFont,
                 jerseyNumberFont = awaySnapshot?.jerseyNumberFont,
                 numberTopText = awaySnapshot?.awayNumberTopText ?: awaySnapshot?.numberTopText,
+                bumperColor = bumperColor(awaySnapshot),
             ).withHelmet(awayTeam, awaySnapshot, alt = awayAlt)
         return home to away
     }
@@ -51,6 +53,7 @@ class Uniforms {
             numberOutline = awayNumberOutline(snapshot),
             pants = awayPants(team, snapshot),
             numberTopText = snapshot?.awayNumberTopText ?: snapshot?.numberTopText,
+            bumperColor = bumperColor(snapshot),
         )
 
     fun secondaryHelmet(
@@ -67,6 +70,7 @@ class Uniforms {
             helmetNumberFont = snapshot?.helmetNumberFont,
             jerseyNumberFont = snapshot?.jerseyNumberFont,
             numberTopText = snapshot?.numberTopText,
+            bumperColor = bumperColor(snapshot),
         ).withHelmet(team, snapshot, alt = true)
     }
 
@@ -102,6 +106,9 @@ class Uniforms {
         team: Team,
         snapshot: TeamUniformHistory?,
     ): Color = FieldColors.parseColor(snapshot?.awayPantsColor ?: snapshot?.pantsColor ?: team.primaryColor)
+
+    private fun bumperColor(snapshot: TeamUniformHistory?): Color =
+        snapshot?.bumperColor?.let { FieldColors.parseColor(it) } ?: Uniform.DEFAULT_BUMPER_COLOR
 
     private fun awayNumber(
         team: Team,

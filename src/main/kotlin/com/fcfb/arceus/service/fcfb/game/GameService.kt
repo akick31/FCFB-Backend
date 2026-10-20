@@ -404,6 +404,7 @@ class GameService(
     }
 
     fun resetDelayOfGameTimer(gameId: Int): Game {
+        AuthContext().requireAdminOrCommissioner()
         val game = getGameById(gameId)
         game.gameTimer = calculateDelayOfGameTimer()
         game.gameWarning = GameWarning.NONE

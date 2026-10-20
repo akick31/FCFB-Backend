@@ -13,6 +13,7 @@ import com.fcfb.arceus.repositories.statistics.CoachSeasonStatsRepository
 import com.fcfb.arceus.repositories.statistics.GameStatsRepository
 import com.fcfb.arceus.repositories.team.TeamRepository
 import com.fcfb.arceus.service.fcfb.coach.CoachStintService
+import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.statistics.StatsAverageCalculator
 import org.springframework.stereotype.Service
@@ -35,6 +36,7 @@ class CoachStatsService(
     }
 
     fun regenerateForCoach(coach: String) {
+        AuthContext().requireAdminOrCommissioner()
         val user = userRepository.findByUsername(coach) ?: return
         regenerateForCoach(user)
     }
@@ -57,6 +59,7 @@ class CoachStatsService(
     }
 
     fun generateAllCoachSeasonStats() {
+        AuthContext().requireAdminOrCommissioner()
         Logger().info("Starting generation of all coach season stats")
         val users = userRepository.findAll().filterNotNull()
         users.forEachIndexed { index, user ->

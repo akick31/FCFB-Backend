@@ -17,5 +17,6 @@ data class EndZoneDecoration(
     val wallText: String? = null,
     val wallColor: String? = null,
     val wallLogoUrl: String? = null,
+    val wallLogoBlank: Boolean = false,
     val wallTextOutlineColor: String? = null,
 )

@@ -1,0 +1,7 @@
+ALTER TABLE team_field
+    ADD COLUMN stadium_backdrop VARCHAR(16) DEFAULT NULL,
+    ADD COLUMN stadium_size DOUBLE NOT NULL DEFAULT 1.0;
+
+ALTER TABLE game_field
+    ADD COLUMN stadium_backdrop VARCHAR(16) DEFAULT NULL,
+    ADD COLUMN stadium_size DOUBLE NOT NULL DEFAULT 1.0;

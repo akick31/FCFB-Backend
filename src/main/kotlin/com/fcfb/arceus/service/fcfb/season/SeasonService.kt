@@ -15,6 +15,7 @@ import com.fcfb.arceus.service.fcfb.conference.TeamSeasonConferenceService
 import com.fcfb.arceus.service.fcfb.ranking.RankingMetricService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleValidationService
 import com.fcfb.arceus.service.fcfb.team.TeamService
+import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.Logger
 import org.springframework.stereotype.Service
 import java.time.ZoneId
@@ -91,6 +92,7 @@ class SeasonService(
     }
 
     fun endSeasonManually(): Season {
+        AuthContext().requireAdminOrCommissioner()
         val season = getCurrentSeason()
         if (!hasFinishedNationalChampionship(season.seasonNumber)) {
             throw SeasonNotReadyException(
@@ -110,6 +112,7 @@ class SeasonService(
             .any { it.gameType == GameType.NATIONAL_CHAMPIONSHIP && it.finished == true }
 
     fun setCurrentSeason(seasonNumber: Int): Season {
+        AuthContext().requireAdminOrCommissioner()
         val target =
             seasonRepository.findBySeasonNumber(seasonNumber)
                 ?: throw CurrentSeasonNotFoundException()
@@ -128,6 +131,7 @@ class SeasonService(
         seasonNumber: Int,
         week: Int,
     ): Season {
+        AuthContext().requireAdminOrCommissioner()
         val season =
             seasonRepository.findBySeasonNumber(seasonNumber)
                 ?: throw CurrentSeasonNotFoundException()

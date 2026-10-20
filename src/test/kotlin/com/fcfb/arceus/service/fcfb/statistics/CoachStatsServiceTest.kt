@@ -19,10 +19,14 @@ import com.fcfb.arceus.service.log.UsernameHistoryService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.context.SecurityContextHolder
 
 class CoachStatsServiceTest {
     private val gameStatsRepository: GameStatsRepository = mockk()
@@ -67,7 +71,12 @@ class CoachStatsServiceTest {
         every { coachSeasonStatsRepository.findByUserIdAndTeamAndSeasonNumber(any(), any(), any()) } returns null
         every { coachSeasonStatsRepository.save(any()) } answers { firstArg() }
         every { coachSeasonStatsRepository.deleteAll(any<List<CoachSeasonStats>>()) } returns Unit
+        SecurityContextHolder.getContext().authentication =
+            UsernamePasswordAuthenticationToken("admin", null, listOf(SimpleGrantedAuthority("ROLE_ADMIN")))
     }
+
+    @AfterEach
+    fun clearAuthentication() = SecurityContextHolder.clearContext()
 
     @Test
     fun `regenerateForCoach persists a stint logged under a since-renamed username via discord id`() {

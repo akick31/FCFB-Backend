@@ -40,7 +40,6 @@ object FieldGoalPlayerPainter {
     private const val BUMPER_Y = -0.42f
     private const val BUMPER_WIDTH = 0.15f
     private const val BUMPER_HEIGHT = 0.06f
-    private val BUMPER_COLOR = java.awt.Color(0xDD, 0xDD, 0xDD)
     private const val EYE_Y = -0.14f
     private const val EYE_X = 0.30f
     private const val EYE_SIZE = 0.16f
@@ -239,10 +238,10 @@ object FieldGoalPlayerPainter {
                 height * 0.6f,
                 height * 0.6f,
             )
-        g.color = BUMPER_COLOR
+        g.color = figure.uniform.bumperColor
         g.fill(pad)
         g.color = GoalPostScenePainter.DEFENDER_COLOR
-        g.stroke = BasicStroke(maxOf(1f, OUTLINE_WIDTH * figure.scale))
+        g.stroke = BasicStroke(maxOf(0.5f, height * 0.3f))
         g.draw(pad)
     }
 

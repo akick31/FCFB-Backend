@@ -6,6 +6,7 @@ import com.fcfb.arceus.repositories.account.UserRepository
 import com.fcfb.arceus.service.auth.SessionService
 import com.fcfb.arceus.util.EncryptionUtils
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -19,6 +20,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.filter.ShallowEtagHeaderFilter
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
@@ -266,5 +268,12 @@ open class MvcConfig(
 
     override fun extendMessageConverters(converters: MutableList<HttpMessageConverter<*>>) {
         converters.removeIf { it is KotlinSerializationJsonHttpMessageConverter }
+    }
+
+    @Bean
+    open fun shallowEtagHeaderFilter(): FilterRegistrationBean<ShallowEtagHeaderFilter> {
+        val registration = FilterRegistrationBean(ShallowEtagHeaderFilter())
+        registration.addUrlPatterns("$FULL_PATH/*")
+        return registration
     }
 }

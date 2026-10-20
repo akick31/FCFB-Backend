@@ -55,6 +55,12 @@ class UserController(
         @RequestParam name: String,
     ) = userService.getUserDTOByName(name)
 
+    @Operation(summary = "Get user by username or coach name, whichever matches")
+    @GetMapping("/username-or-coach-name")
+    fun getUserDTOByUsernameOrCoachName(
+        @RequestParam name: String,
+    ) = userService.getUserDTOByUsernameOrCoachName(name)
+
     @Operation(summary = "Update email address")
     @PutMapping("/update/email")
     fun updateUserEmail(

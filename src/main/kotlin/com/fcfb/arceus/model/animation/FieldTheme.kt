@@ -3,6 +3,7 @@ package com.fcfb.arceus.model.animation
 import com.fcfb.arceus.enums.animation.FieldStyle
 import com.fcfb.arceus.enums.animation.HelmetLogoMode
 import com.fcfb.arceus.enums.animation.LogoSource
+import com.fcfb.arceus.enums.animation.StadiumBackdrop
 import com.fcfb.arceus.enums.animation.YardNumberArrowAlign
 import com.fcfb.arceus.enums.animation.YardNumberSource
 import com.fcfb.arceus.enums.team.TeamSide
@@ -245,6 +246,7 @@ data class FieldTheme(
             wallText = wallTextFor(side),
             wallColor = wallColorFor(side),
             wallLogoUrl = wallLogoResolvedFor(side),
+            wallLogoBlank = wallLogoSourceFor(side)?.uppercase() == "BLANK",
             wallTextOutlineColor = wallTextOutlineColorFor(side),
         )
     }
@@ -331,6 +333,28 @@ data class FieldTheme(
 
     fun wallTextOutlineScale(): Float =
         (homeField?.wallTextOutlineWidth ?: bowlField?.wallTextOutlineWidth ?: postseasonField?.wallTextOutlineWidth ?: 1.0).toFloat()
+
+    fun stadiumBackdrop(side: TeamSide): StadiumBackdrop {
+        if (style != FieldStyle.HOME_FIELD) return StadiumBackdrop.CROWD
+        val stored = if (side == leftSide()) homeField?.stadiumBackdrop else homeField?.rightStadiumBackdrop ?: homeField?.stadiumBackdrop
+        return StadiumBackdrop.from(stored)
+    }
+
+    fun stadiumSize(side: TeamSide): Float {
+        if (style != FieldStyle.HOME_FIELD) return 1f
+        val stored = if (side == leftSide()) homeField?.stadiumSize else homeField?.rightStadiumSize ?: homeField?.stadiumSize
+        return (stored ?: 1.0).toFloat()
+    }
+
+    fun jumbotronEnabled(side: TeamSide): Boolean {
+        if (style != FieldStyle.HOME_FIELD) return false
+        return if (side == leftSide()) homeField?.jumbotronEnabled ?: false else homeField?.rightJumbotronEnabled ?: false
+    }
+
+    fun jumbotronPylonMount(side: TeamSide): Boolean {
+        if (style != FieldStyle.HOME_FIELD) return false
+        return if (side == leftSide()) homeField?.jumbotronPylonMount ?: false else homeField?.rightJumbotronPylonMount ?: false
+    }
 
     private fun homeFieldEndZoneFill(): Color? = homeField?.endZoneColor?.let { FieldColors.parseColor(it) }
 

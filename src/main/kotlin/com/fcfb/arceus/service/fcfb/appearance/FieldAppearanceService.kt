@@ -67,6 +67,14 @@ class FieldAppearanceService {
         request.yardNumberOutlineWidth?.let { field.yardNumberOutlineWidth = it }
         request.endZoneOutlineWidth?.let { field.endZoneOutlineWidth = it }
         request.wallTextOutlineWidth?.let { field.wallTextOutlineWidth = it }
+        request.stadiumBackdrop?.let { field.stadiumBackdrop = it }
+        request.stadiumSize?.let { field.stadiumSize = it }
+        field.rightStadiumBackdrop = request.rightStadiumBackdrop
+        field.rightStadiumSize = request.rightStadiumSize
+        request.jumbotronEnabled?.let { field.jumbotronEnabled = it }
+        request.rightJumbotronEnabled?.let { field.rightJumbotronEnabled = it }
+        request.jumbotronPylonMount?.let { field.jumbotronPylonMount = it }
+        request.rightJumbotronPylonMount?.let { field.rightJumbotronPylonMount = it }
         field.conferenceLogoColorMap =
             request.conferenceLogoColorMap?.also {
                 if (it.length > MAX_COLOR_MAP_LENGTH) throw InvalidUniformException("The conference logo color map is too large")

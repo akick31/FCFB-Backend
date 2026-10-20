@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb.season
 
 import com.fcfb.arceus.model.season.Offseason
 import com.fcfb.arceus.repositories.season.OffseasonRepository
+import com.fcfb.arceus.util.AuthContext
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -23,9 +24,13 @@ class OffseasonService(
         offseasonRepository.save(currentOffseason)
     }
 
-    fun startOffseasonNow(): Offseason = offseasonRepository.save(Offseason(startDate = nowFormatted(), endDate = null))
+    fun startOffseasonNow(): Offseason {
+        AuthContext().requireAdminOrCommissioner()
+        return offseasonRepository.save(Offseason(startDate = nowFormatted(), endDate = null))
+    }
 
     fun endOffseasonNow(): Offseason? {
+        AuthContext().requireAdminOrCommissioner()
         val currentOffseason = offseasonRepository.getCurrentOffseason() ?: return null
         currentOffseason.endDate = nowFormatted()
         return offseasonRepository.save(currentOffseason)

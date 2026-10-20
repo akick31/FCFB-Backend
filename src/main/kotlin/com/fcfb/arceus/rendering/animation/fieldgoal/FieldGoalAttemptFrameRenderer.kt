@@ -6,6 +6,7 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.animation.GameSituation
 import com.fcfb.arceus.model.animation.GoalPostSceneLayout
 import com.fcfb.arceus.model.animation.KickPoint
 import com.fcfb.arceus.model.play.Play
@@ -44,7 +45,8 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
     ): List<BufferedImage> {
         val layout = GoalPostScenePainter.layoutFor(play)
         val kickingHome = play.possession == TeamSide.HOME
-        val targetEndZone = theme.endZoneOf(if (kickingHome) TeamSide.AWAY else TeamSide.HOME)
+        val targetSide = if (kickingHome) TeamSide.AWAY else TeamSide.HOME
+        val targetEndZone = theme.endZoneOf(targetSide)
         val (homeUniform, awayUniform) = theme.uniforms()
         val (kicking, rushing) = if (kickingHome) homeUniform to awayUniform else awayUniform to homeUniform
 
@@ -59,13 +61,32 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
                 else -> kickTrajectory(play, layout)
             }
         val deepReturner = KickDistance.fallsShort(play)
+        val situation =
+            GameSituation(
+                homeTeamName = theme.homeTeam.name.orEmpty(),
+                awayTeamName = theme.awayTeam.name.orEmpty(),
+                homeScore = play.homeScore,
+                awayScore = play.awayScore,
+                quarter = play.quarter,
+                clockSeconds = play.clock,
+                down = play.down,
+                yardsToGo = play.yardsToGo,
+            )
 
         val timeline = animationTimeline(endsAt = endsAt)
         val doinked = trajectory?.outcome == KickOutcome.DOINK || trajectory?.outcome == KickOutcome.DOINK_IN
         val contactFrameIndex = if (doinked) timeline.indexOfFirst { flight(it) >= trajectory!!.arrival } else -1
 
         return timeline.mapIndexed { index, t ->
-            val scene = GoalPostScenePainter.paint(theme, targetEndZone, layout, midfieldTopOnLeft = kickingHome != theme.flipped)
+            val scene =
+                GoalPostScenePainter.paint(
+                    theme,
+                    targetEndZone,
+                    layout,
+                    midfieldTopOnLeft = kickingHome != theme.flipped,
+                    side = targetSide,
+                    situation = situation,
+                )
             FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked, rusherIndex, nearMiss, deepReturner)
             if (trajectory != null && t >= FieldGoalUnitPainter.KICK_AT) {
                 drawKick(scene, trajectory.at(flight(t)), flight(t))

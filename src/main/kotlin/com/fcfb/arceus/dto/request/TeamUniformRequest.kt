@@ -43,4 +43,5 @@ data class TeamUniformRequest(
     val logoRotation: Double? = null,
     val numberTopText: String? = null,
     val awayNumberTopText: String? = null,
+    val bumperColor: String? = null,
 )

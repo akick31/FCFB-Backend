@@ -82,6 +82,7 @@ class TeamUniformService(
             jerseyNumberFont = current?.jerseyNumberFont,
             numberTopText = current?.numberTopText,
             awayNumberTopText = current?.awayNumberTopText,
+            bumperColor = current?.bumperColor,
         ).apply {
             altFacemaskColor = current?.altFacemaskColor
             altHelmetNumberColor = current?.altHelmetNumberColor

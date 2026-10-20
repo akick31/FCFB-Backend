@@ -41,8 +41,15 @@ class RecordService(
             null
         }
 
-    private fun buildTeamConferenceMap(teams: Collection<String?>): Map<String, String?> =
-        teams.filterNotNull().distinct().associateWith { conferenceOf(it) }
+    private fun buildTeamConferenceMap(teams: Collection<String?>): Map<String, String?> {
+        val wanted = teams.filterNotNull().distinct()
+        if (wanted.isEmpty()) {
+            return emptyMap()
+        }
+        val conferenceByName =
+            teamRepository.findAll().mapNotNull { team -> team.name?.let { it to team.conference } }.toMap()
+        return wanted.associateWith { conferenceByName[it] }
+    }
 
     private fun recordTypesFor(
         stat: Stats,

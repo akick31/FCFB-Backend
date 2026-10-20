@@ -18,10 +18,12 @@ import com.fcfb.arceus.service.fcfb.graphics.ScorebugService
 import com.fcfb.arceus.service.fcfb.play.PlayService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import com.fcfb.arceus.util.Logger
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 @Service
+@ConditionalOnProperty(name = ["delay-of-game-monitor.enabled"], havingValue = "true", matchIfMissing = true)
 class DelayOfGameMonitor(
     private val gameService: GameService,
     private val gameFinalizationService: GameFinalizationService,

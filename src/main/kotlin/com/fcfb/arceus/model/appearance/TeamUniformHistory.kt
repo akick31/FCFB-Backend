@@ -165,6 +165,10 @@ class TeamUniformHistory {
     var awayNumberTopText: String? = null
 
     @Basic
+    @Column(name = "bumper_color")
+    var bumperColor: String? = null
+
+    @Basic
     @Column(name = "logo_url")
     var logoUrl: String? = null
 
@@ -239,6 +243,7 @@ class TeamUniformHistory {
         awayPantsColor: String? = null,
         numberTopText: String? = null,
         awayNumberTopText: String? = null,
+        bumperColor: String? = null,
     ) {
         this.team = team
         this.seasonNumber = seasonNumber
@@ -273,6 +278,7 @@ class TeamUniformHistory {
         this.awayPantsColor = awayPantsColor
         this.numberTopText = numberTopText
         this.awayNumberTopText = awayNumberTopText
+        this.bumperColor = bumperColor
     }
 
     constructor()

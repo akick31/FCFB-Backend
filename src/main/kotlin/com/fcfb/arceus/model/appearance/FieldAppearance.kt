@@ -186,6 +186,38 @@ abstract class FieldAppearance {
     @Column(name = "wall_text_outline_width")
     var wallTextOutlineWidth: Double = 1.0
 
+    @Basic
+    @Column(name = "stadium_backdrop")
+    var stadiumBackdrop: String? = null
+
+    @Basic
+    @Column(name = "stadium_size")
+    var stadiumSize: Double = 1.0
+
+    @Basic
+    @Column(name = "right_stadium_backdrop")
+    var rightStadiumBackdrop: String? = null
+
+    @Basic
+    @Column(name = "right_stadium_size")
+    var rightStadiumSize: Double? = null
+
+    @Basic
+    @Column(name = "jumbotron_enabled")
+    var jumbotronEnabled: Boolean = false
+
+    @Basic
+    @Column(name = "right_jumbotron_enabled")
+    var rightJumbotronEnabled: Boolean = false
+
+    @Basic
+    @Column(name = "jumbotron_pylon_mount")
+    var jumbotronPylonMount: Boolean = false
+
+    @Basic
+    @Column(name = "right_jumbotron_pylon_mount")
+    var rightJumbotronPylonMount: Boolean = false
+
     fun copyAppearanceInto(target: FieldAppearance) {
         target.turfColor = turfColor
         target.endZoneColor = endZoneColor
@@ -232,6 +264,14 @@ abstract class FieldAppearance {
         target.yardNumberOutlineWidth = yardNumberOutlineWidth
         target.endZoneOutlineWidth = endZoneOutlineWidth
         target.wallTextOutlineWidth = wallTextOutlineWidth
+        target.stadiumBackdrop = stadiumBackdrop
+        target.stadiumSize = stadiumSize
+        target.rightStadiumBackdrop = rightStadiumBackdrop
+        target.rightStadiumSize = rightStadiumSize
+        target.jumbotronEnabled = jumbotronEnabled
+        target.rightJumbotronEnabled = rightJumbotronEnabled
+        target.jumbotronPylonMount = jumbotronPylonMount
+        target.rightJumbotronPylonMount = rightJumbotronPylonMount
     }
 
     companion object {

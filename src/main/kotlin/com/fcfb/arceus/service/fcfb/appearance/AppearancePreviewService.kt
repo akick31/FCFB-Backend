@@ -88,6 +88,8 @@ class AppearancePreviewService(
             AWAY_UNIFORM_VIEW -> UniformPreviewRenderer.uniformImage(theme, away = true)
             JERSEY_VIEW -> UniformPreviewRenderer.jerseyImage(theme, away = false)
             AWAY_JERSEY_VIEW -> UniformPreviewRenderer.jerseyImage(theme, away = true)
+            LEFT_WALL_VIEW -> FieldPreviewRenderer.wallImage(theme, theme.leftSide())
+            RIGHT_WALL_VIEW -> FieldPreviewRenderer.wallImage(theme, theme.rightSide())
             else -> FieldPreviewRenderer.fieldWithWallImage(theme)
         }
     }
@@ -214,6 +216,7 @@ class AppearancePreviewService(
             awayPantsColor = draft?.awayPantsColor ?: stored.awayPantsColor
             numberTopText = if (draft != null) draft.numberTopText else stored.numberTopText
             awayNumberTopText = if (draft != null) draft.awayNumberTopText else stored.awayNumberTopText
+            bumperColor = if (draft != null) draft.bumperColor else stored.bumperColor
             logoUrl = draft?.logoUrl ?: stored.logoUrl
             hasLogo = draft?.hasLogo ?: stored.hasLogo
             hasStripe = draft?.hasStripe ?: stored.hasStripe
@@ -312,6 +315,8 @@ class AppearancePreviewService(
         private const val AWAY_UNIFORM_VIEW = "AWAY_UNIFORM"
         private const val JERSEY_VIEW = "JERSEY"
         private const val AWAY_JERSEY_VIEW = "AWAY_JERSEY"
+        private const val LEFT_WALL_VIEW = "LEFT_WALL"
+        private const val RIGHT_WALL_VIEW = "RIGHT_WALL"
         private const val SCOREBUG_VIEW = "SCOREBUG"
         private const val SAMPLE_HOME_SCORE = 21
         private const val SAMPLE_AWAY_SCORE = 17

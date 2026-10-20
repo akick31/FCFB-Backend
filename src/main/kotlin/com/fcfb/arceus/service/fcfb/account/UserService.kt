@@ -202,6 +202,13 @@ class UserService(
 
     fun getUserDTOByName(name: String) = userDtoService.convertToUserDTO(getUserByCoachName(name))
 
+    fun getUserDTOByUsernameOrCoachName(name: String): UserDTO {
+        val user =
+            userRepository.getByUsername(name) ?: userRepository.getByCoachName(name)
+                ?: throw UserNotFoundException("User not found with username or coach name $name")
+        return userDtoService.convertToUserDTO(user)
+    }
+
     fun updateUserPassword(
         id: Long,
         newPassword: String,

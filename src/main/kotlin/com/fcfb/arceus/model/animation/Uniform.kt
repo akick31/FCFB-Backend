@@ -23,4 +23,9 @@ data class Uniform(
     val logoY: Float = 0f,
     val logoRotation: Float = 0f,
     val numberTopText: String? = null,
-)
+    val bumperColor: Color = DEFAULT_BUMPER_COLOR,
+) {
+    companion object {
+        val DEFAULT_BUMPER_COLOR: Color = Color(0xDD, 0xDD, 0xDD)
+    }
+}

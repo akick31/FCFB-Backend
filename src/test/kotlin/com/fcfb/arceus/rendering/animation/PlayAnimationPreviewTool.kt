@@ -10,6 +10,7 @@ import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.animation.GameSituation
 import com.fcfb.arceus.model.animation.Uniform
 import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.model.team.Team
@@ -100,7 +101,14 @@ class PlayAnimationPreviewTool {
         listOf("REPEATING_LOGOS", "TEXT_WITH_LOGOS", "TEXT_ONLY", "BLANK").forEach { design ->
             val scene = homeFieldWall(design)
             javax.imageio.ImageIO.write(
-                GoalPostScenePainter.paint(scene, scene.endZoneOf(TeamSide.AWAY), wallLayout, midfieldTopOnLeft = false),
+                GoalPostScenePainter.paint(
+                    scene,
+                    scene.endZoneOf(TeamSide.AWAY),
+                    wallLayout,
+                    midfieldTopOnLeft = false,
+                    side = TeamSide.AWAY,
+                    situation = GameSituation.sample(scene.homeTeam.name.orEmpty(), scene.awayTeam.name.orEmpty()),
+                ),
                 "png",
                 File(outputDir, "wall-${design.lowercase()}.png"),
             )
