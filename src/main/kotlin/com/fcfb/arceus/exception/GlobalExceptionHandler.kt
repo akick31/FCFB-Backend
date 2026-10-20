@@ -20,6 +20,7 @@ import com.fcfb.arceus.exception.signup.InvalidNewSignupException
 import com.fcfb.arceus.exception.signup.NewSignupNotFoundException
 import com.fcfb.arceus.exception.statistics.GameStatsNotFoundException
 import com.fcfb.arceus.exception.statistics.InvalidGameStatsRequestException
+import com.fcfb.arceus.exception.statistics.RecordGenerationInProgressException
 import com.fcfb.arceus.exception.team.InvalidUniformException
 import com.fcfb.arceus.exception.team.NoCoachDiscordIdsFoundException
 import com.fcfb.arceus.exception.team.NoCoachesFoundException
@@ -81,6 +82,7 @@ class GlobalExceptionHandler {
         TooManyCoachesException::class,
         DiscordAlreadyLinkedException::class,
         SeasonNotReadyException::class,
+        RecordGenerationInProgressException::class,
     )
     fun handleConflict(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.CONFLICT, e)
 
