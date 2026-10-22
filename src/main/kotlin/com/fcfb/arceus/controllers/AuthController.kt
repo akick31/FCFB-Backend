@@ -34,6 +34,12 @@ class AuthController(
         @RequestBody request: LoginRequest,
     ): ResponseEntity<Any> = ResponseEntity.ok(authService.login(request.usernameOrEmail, request.password))
 
+    @Operation(summary = "Refresh the caller's session token")
+    @PostMapping("/refresh")
+    fun refreshSession(
+        @RequestHeader("Authorization") authHeader: String,
+    ): ResponseEntity<Any> = ResponseEntity.ok(authService.refreshSession(authHeader))
+
     @Operation(summary = "Log out user")
     @PostMapping("/logout")
     fun logout(

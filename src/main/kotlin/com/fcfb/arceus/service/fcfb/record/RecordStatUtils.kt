@@ -65,6 +65,8 @@ class RecordStatUtils(
             Stats.TIME_OF_POSSESSION,
             Stats.TOTAL_YARDS,
             Stats.AVERAGE_YARDS_PER_PLAY,
+            Stats.AVERAGE_PASS_YARDS_PER_ATTEMPT,
+            Stats.AVERAGE_RUSH_YARDS_PER_ATTEMPT,
             Stats.FIRST_DOWNS,
             Stats.PASS_ATTEMPTS,
             Stats.PASS_COMPLETIONS,
@@ -112,6 +114,21 @@ class RecordStatUtils(
             Stats.LARGEST_UPSET,
         )
 
+    private val perAttemptRatios =
+        mapOf(
+            Stats.AVERAGE_PASS_YARDS_PER_ATTEMPT to (Stats.PASS_YARDS to Stats.PASS_ATTEMPTS),
+            Stats.AVERAGE_RUSH_YARDS_PER_ATTEMPT to (Stats.RUSH_YARDS to Stats.RUSH_ATTEMPTS),
+        )
+
+    private fun perAttemptValue(
+        statName: Stats,
+        gameStats: GameStats,
+    ): Double {
+        val (yards, attempts) = perAttemptRatios.getValue(statName)
+        val attemptCount = getStatValue(attempts, gameStats)
+        return if (attemptCount > 0) getStatValue(yards, gameStats) / attemptCount else 0.0
+    }
+
     fun getStatValue(
         statName: Stats,
         gameStats: GameStats,
@@ -138,6 +155,8 @@ class RecordStatUtils(
 
                 Stats.TOTAL_YARDS -> "totalYards"
                 Stats.AVERAGE_YARDS_PER_PLAY -> "averageYardsPerPlay"
+                Stats.AVERAGE_PASS_YARDS_PER_ATTEMPT, Stats.AVERAGE_RUSH_YARDS_PER_ATTEMPT ->
+                    return perAttemptValue(statName, gameStats)
                 Stats.FIRST_DOWNS -> "firstDowns"
 
                 Stats.SACKS_ALLOWED -> "sacksAllowed"
@@ -294,6 +313,10 @@ class RecordStatUtils(
         gameStatsList: List<GameStats>,
     ): Double {
         if (gameStatsList.isEmpty()) return 0.0
+        perAttemptRatios[statName]?.let { (yards, attempts) ->
+            val attemptCount = gameStatsList.sumOf { getStatValue(attempts, it) }
+            return if (attemptCount > 0) gameStatsList.sumOf { getStatValue(yards, it) } / attemptCount else 0.0
+        }
         rateComponents[statName]?.let { (numerator, denominator) ->
             val total = gameStatsList.sumOf { getStatValue(numerator, it) }
             val attempts = gameStatsList.sumOf { getStatValue(denominator, it) }

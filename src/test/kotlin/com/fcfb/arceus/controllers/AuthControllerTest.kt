@@ -354,4 +354,67 @@ class AuthControllerTest {
 
         assertEquals(ResponseEntity.badRequest().body("Invalid or expired token"), result)
     }
+
+    @Test
+    fun `refreshing a live session issues a new token for the same user`() {
+        val currentToken = "current-token"
+        val newToken = "new-token"
+        val user =
+            User(
+                username = "username",
+                coachName = "Coach X",
+                discordTag = "User#1234",
+                discordId = "123456",
+                email = "user@example.com",
+                hashedEmail = "hashedEmail",
+                password = "encodedPassword",
+                position = CoachPosition.HEAD_COACH,
+                role = UserRole.USER,
+                salt = "somesalt",
+                team = "FakeU",
+                delayOfGameInstances = 0,
+                wins = 0,
+                losses = 0,
+                winPercentage = 0.0,
+                conferenceWins = 0,
+                conferenceLosses = 0,
+                conferenceChampionshipWins = 0,
+                conferenceChampionshipLosses = 0,
+                bowlWins = 0,
+                bowlLosses = 0,
+                playoffWins = 0,
+                playoffLosses = 0,
+                nationalChampionshipWins = 0,
+                nationalChampionshipLosses = 0,
+                offensivePlaybook = OffensivePlaybook.AIR_RAID,
+                defensivePlaybook = DefensivePlaybook.FOUR_THREE,
+                averageResponseTime = 0.0,
+                delayOfGameWarningOptOut = false,
+                resetToken = null,
+                resetTokenExpiration = null,
+            ).apply { id = 1L }
+
+        every { sessionService.validateToken(currentToken) } returns true
+        every { sessionService.isSessionBlacklisted(currentToken) } returns false
+        every { sessionService.extractUserIdFromToken(currentToken) } returns 1L
+        every { userService.getUserById(1L) } returns user
+        every { sessionService.generateToken(1L, UserRole.USER) } returns newToken
+
+        val result = authService.refreshSession("Bearer $currentToken")
+
+        assertEquals(newToken, result.token)
+        assertEquals(1L, result.userId)
+        assertEquals(UserRole.USER, result.role)
+        verify(exactly = 0) { sessionService.blacklistUserSession(any()) }
+    }
+
+    @Test
+    fun `refreshing an expired or blacklisted session is rejected`() {
+        every { sessionService.validateToken("expired") } returns false
+        every { sessionService.validateToken("revoked") } returns true
+        every { sessionService.isSessionBlacklisted("revoked") } returns true
+
+        assertThrows<UserUnauthorizedException> { authService.refreshSession("Bearer expired") }
+        assertThrows<UserUnauthorizedException> { authService.refreshSession("Bearer revoked") }
+    }
 }

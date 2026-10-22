@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb
 
+import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.records.RecordScope
 import com.fcfb.arceus.enums.records.RecordType
 import com.fcfb.arceus.enums.records.Stats
@@ -9,10 +10,12 @@ import com.fcfb.arceus.model.Record
 import com.fcfb.arceus.repositories.GameRepository
 import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.RecordRepository
+import com.fcfb.arceus.repositories.SeasonRepository
 import com.fcfb.arceus.repositories.TeamRepository
 import com.fcfb.arceus.service.fcfb.record.AgainstRecordService
 import com.fcfb.arceus.service.fcfb.record.GameRecordService
 import com.fcfb.arceus.service.fcfb.record.GeneralRecordService
+import com.fcfb.arceus.service.fcfb.record.RecordQualifier
 import com.fcfb.arceus.service.fcfb.record.RecordStatUtils
 import com.fcfb.arceus.service.fcfb.record.SeasonRecordService
 import com.fcfb.arceus.service.specification.RecordSpecificationService
@@ -38,7 +41,9 @@ class RecordService(
     private val generalRecordService: GeneralRecordService,
     private val againstRecordService: AgainstRecordService,
     private val recordStatUtils: RecordStatUtils,
+    private val recordQualifier: RecordQualifier,
     private val teamRepository: TeamRepository,
+    private val seasonRepository: SeasonRepository,
 ) {
     private val generationInProgress = AtomicBoolean(false)
 
@@ -53,6 +58,18 @@ class RecordService(
     private fun buildTeamConferenceMap(teams: Collection<String?>): Map<String, String?> =
         teams.filterNotNull().distinct().associateWith { conferenceOf(it) }
 
+    private fun unfinishedSeason(): Int? = seasonRepository.getCurrentSeason()?.seasonNumber
+
+    /** Scrimmages and the handful of pre-launch seasons in the database are not real league play and cannot hold records. */
+    private fun recordEligibleStats(
+        allGameStats: List<GameStats>,
+        gamesById: Map<Int, Game>,
+    ): List<GameStats> =
+        allGameStats.filter { stats ->
+            (stats.season ?: 0) >= RecordStatUtils.EARLIEST_VALID_SEASON &&
+                gamesById[stats.gameId]?.gameType != GameType.SCRIMMAGE
+        }
+
     private fun recordTypesFor(
         stat: Stats,
         highest: RecordType,
@@ -62,7 +79,7 @@ class RecordService(
             recordStatUtils.lowestOnlyStats.contains(stat) -> listOf(lowest)
             recordStatUtils.dualRecordStats.contains(stat) -> listOf(highest, lowest)
             else -> listOf(highest)
-        }
+        }.filter { recordQualifier.allowsRecordType(stat, it) }
 
     fun getFilteredRecords(
         season: Int?,
@@ -95,16 +112,13 @@ class RecordService(
 
             val completedGameIds = recordStatUtils.getCompletedGameIds()
 
-            val availableSeasons = recordStatUtils.getAvailableSeasons()
-            val availableSeasonsSet = availableSeasons.toSet()
-
-            val allGameStats = gameStatsRepository.findAll().toList()
             val gamesById = gameRepository.findAll().associateBy { it.gameId }
-            val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
-            val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
+            val eligibleGameStats = recordEligibleStats(gameStatsRepository.findAll().toList(), gamesById)
+            val teamConference = buildTeamConferenceMap(eligibleGameStats.map { it.team })
+            val generalGameStats = eligibleGameStats.filter { it.gameId in completedGameIds }
 
             generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.ALL)
-            generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.ALL)
+            generateHistoryWideRecords(eligibleGameStats, completedGameIds, teamConference, gamesById, RecordScope.ALL)
 
             logRecordCountBreakdown("Completed generation of all records", RecordScope.ALL)
         } finally {
@@ -139,6 +153,10 @@ class RecordService(
     }
 
     fun checkAndUpdateRecordsForGame(game: Game) {
+        if (game.gameType == GameType.SCRIMMAGE || (game.season ?: 0) < RecordStatUtils.EARLIEST_VALID_SEASON) {
+            Logger.info("Game ${game.gameId} is not eligible for records - skipping record checks")
+            return
+        }
         val isComplete = recordStatUtils.isCompleteGame(game)
         if (!isComplete) {
             Logger.info(
@@ -157,14 +175,25 @@ class RecordService(
         val homeSeasonGames = seasonRecordService.getCurrentSeasonStatsForTeam(game.homeTeam, currentSeason)
         val awaySeasonGames = seasonRecordService.getCurrentSeasonStatsForTeam(game.awayTeam, currentSeason)
 
-        runRecordChecks(game, gameStatsList, homeSeasonGames, awaySeasonGames, isComplete, RecordScope.LEAGUE, null)
+        val seasonComplete = currentSeason != unfinishedSeason()
+
+        runRecordChecks(game, gameStatsList, homeSeasonGames, awaySeasonGames, isComplete, RecordScope.LEAGUE, null, seasonComplete)
 
         listOf(homeStats to game.homeTeam, awayStats to game.awayTeam).forEach { (teamGameStats, teamName) ->
             val teamStatsList = listOfNotNull(teamGameStats)
             val teamSeasonGames = if (teamName == game.homeTeam) homeSeasonGames else awaySeasonGames
-            runRecordChecks(game, teamStatsList, teamSeasonGames, emptyList(), isComplete, RecordScope.TEAM, teamName)
+            runRecordChecks(game, teamStatsList, teamSeasonGames, emptyList(), isComplete, RecordScope.TEAM, teamName, seasonComplete)
             conferenceOf(teamName)?.let { conference ->
-                runRecordChecks(game, teamStatsList, teamSeasonGames, emptyList(), isComplete, RecordScope.CONFERENCE, conference)
+                runRecordChecks(
+                    game,
+                    teamStatsList,
+                    teamSeasonGames,
+                    emptyList(),
+                    isComplete,
+                    RecordScope.CONFERENCE,
+                    conference,
+                    seasonComplete,
+                )
             }
         }
 
@@ -179,6 +208,7 @@ class RecordService(
                 isComplete,
                 RecordScope.LEAGUE,
                 null,
+                seasonComplete,
                 gameRecordType = RecordType.SINGLE_POSTSEASON_GAME,
                 gameRecordTypeLowest = RecordType.SINGLE_POSTSEASON_GAME_LOWEST,
                 seasonRecordType = RecordType.SINGLE_POSTSEASON,
@@ -198,6 +228,7 @@ class RecordService(
         isComplete: Boolean,
         recordScope: RecordScope,
         scopeValue: String?,
+        seasonComplete: Boolean,
         gameRecordType: RecordType = RecordType.SINGLE_GAME,
         gameRecordTypeLowest: RecordType = RecordType.SINGLE_GAME_LOWEST,
         seasonRecordType: RecordType = RecordType.SINGLE_SEASON,
@@ -226,7 +257,79 @@ class RecordService(
                 }
 
                 recordTypesFor(stat, seasonRecordType, seasonRecordTypeLowest).forEach { type ->
-                    seasonRecordService.checkAndUpdateSeasonRecord(stat, homeSeasonGames, awaySeasonGames, type, recordScope, scopeValue)
+                    seasonRecordService.checkAndUpdateSeasonRecord(
+                        stat,
+                        homeSeasonGames,
+                        awaySeasonGames,
+                        type,
+                        recordScope,
+                        scopeValue,
+                        seasonComplete,
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Rate records are held back while a season is live, so a finished season's candidates have to be offered
+     * to the board once, when the season closes.
+     */
+    @Transactional(rollbackFor = [Exception::class])
+    fun generateFinishedSeasonRateRecords(seasonNumber: Int) {
+        Logger.info("Generating rate records for completed season $seasonNumber")
+
+        val gamesById = gameRepository.findAll().associateBy { it.gameId }
+        val seasonGameStats =
+            recordEligibleStats(gameStatsRepository.findAll().toList(), gamesById)
+                .filter { it.season == seasonNumber }
+        val regularSeasonGameStats = seasonGameStats.filter { (it.week ?: 0) < POSTSEASON_START_WEEK }
+        val postseasonGameStats = seasonGameStats.filter { (it.week ?: 0) >= POSTSEASON_START_WEEK }
+
+        val rateStats =
+            Stats.values().filter {
+                recordQualifier.isVolumeSensitive(it) &&
+                    !recordStatUtils.againstBaseStat.containsKey(it) &&
+                    !recordStatUtils.generalRecordStats.contains(it)
+            }
+
+        rateStats.forEach { stat ->
+            offerFinishedSeason(stat, regularSeasonGameStats, RecordType.SINGLE_SEASON, RecordType.SINGLE_SEASON_LOWEST, true)
+            offerFinishedSeason(
+                stat,
+                postseasonGameStats,
+                RecordType.SINGLE_POSTSEASON,
+                RecordType.SINGLE_POSTSEASON_LOWEST,
+                false,
+            )
+        }
+
+        Logger.info("Completed generating rate records for season $seasonNumber")
+    }
+
+    private fun offerFinishedSeason(
+        stat: Stats,
+        gameStats: List<GameStats>,
+        recordType: RecordType,
+        recordTypeLowest: RecordType,
+        includeTeamAndConference: Boolean,
+    ) {
+        gameStats.groupBy { it.team }.forEach { (team, games) ->
+            if (team == null) return@forEach
+            recordTypesFor(stat, recordType, recordTypeLowest).forEach { type ->
+                seasonRecordService.checkAndUpdateSeasonRecord(stat, games, emptyList(), type, RecordScope.LEAGUE, null, true)
+                if (!includeTeamAndConference) return@forEach
+                seasonRecordService.checkAndUpdateSeasonRecord(stat, games, emptyList(), type, RecordScope.TEAM, team, true)
+                conferenceOf(team)?.let { conference ->
+                    seasonRecordService.checkAndUpdateSeasonRecord(
+                        stat,
+                        games,
+                        emptyList(),
+                        type,
+                        RecordScope.CONFERENCE,
+                        conference,
+                        true,
+                    )
                 }
             }
         }
@@ -241,15 +344,19 @@ class RecordService(
             Logger.info("Starting generation of team and conference records")
             recordRepository.deleteByRecordScopeIn(RecordScope.TEAM_AND_CONFERENCE.toList())
             val completedGameIds = recordStatUtils.getCompletedGameIds()
-            val availableSeasons = recordStatUtils.getAvailableSeasons()
-            val availableSeasonsSet = availableSeasons.toSet()
-            val allGameStats = gameStatsRepository.findAll().toList()
             val gamesById = gameRepository.findAll().associateBy { it.gameId }
-            val teamConference = buildTeamConferenceMap(allGameStats.map { it.team })
-            val generalGameStats = allGameStats.filter { it.season in availableSeasonsSet && it.gameId in completedGameIds }
+            val eligibleGameStats = recordEligibleStats(gameStatsRepository.findAll().toList(), gamesById)
+            val teamConference = buildTeamConferenceMap(eligibleGameStats.map { it.team })
+            val generalGameStats = eligibleGameStats.filter { it.gameId in completedGameIds }
 
             generateGeneralRecords(generalGameStats, gamesById, teamConference, RecordScope.TEAM_AND_CONFERENCE)
-            generateHistoryWideRecords(allGameStats, completedGameIds, teamConference, gamesById, RecordScope.TEAM_AND_CONFERENCE)
+            generateHistoryWideRecords(
+                eligibleGameStats,
+                completedGameIds,
+                teamConference,
+                gamesById,
+                RecordScope.TEAM_AND_CONFERENCE,
+            )
 
             logRecordCountBreakdown("Completed generation of team and conference records", RecordScope.TEAM_AND_CONFERENCE)
         } finally {
@@ -265,6 +372,7 @@ class RecordService(
         gamesById: Map<Int, Game>,
         scopes: Set<RecordScope>,
     ) {
+        val unfinishedSeason = unfinishedSeason()
         val completeGameStats = allGameStats.filter { it.gameId in completedGameIds }
         val regularSeasonGameStats = allGameStats.filter { (it.week ?: 0) < POSTSEASON_START_WEEK }
         val postseasonGameStats = allGameStats.filter { (it.week ?: 0) >= POSTSEASON_START_WEEK }
@@ -315,11 +423,18 @@ class RecordService(
             }
 
             recordTypesFor(stat, RecordType.SINGLE_SEASON, RecordType.SINGLE_SEASON_LOWEST).forEach { type ->
-                seasonRecordService.generateSeasonRecord(stat, regularSeasonGameStats, type, teamConference, scopes)
+                seasonRecordService.generateSeasonRecord(stat, regularSeasonGameStats, type, teamConference, scopes, unfinishedSeason)
             }
             if (generatePostseason) {
                 recordTypesFor(stat, RecordType.SINGLE_POSTSEASON, RecordType.SINGLE_POSTSEASON_LOWEST).forEach { type ->
-                    seasonRecordService.generateSeasonRecord(stat, postseasonGameStats, type, teamConference, postseasonScopes)
+                    seasonRecordService.generateSeasonRecord(
+                        stat,
+                        postseasonGameStats,
+                        type,
+                        teamConference,
+                        postseasonScopes,
+                        unfinishedSeason,
+                    )
                 }
             }
         }
@@ -333,6 +448,7 @@ class RecordService(
             completePostseasonGameStats,
             teamConference,
             scopes,
+            unfinishedSeason,
         )
         Logger.info("Completed generating defense (against) records")
     }
