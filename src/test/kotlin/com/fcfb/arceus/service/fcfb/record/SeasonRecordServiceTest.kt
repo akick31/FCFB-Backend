@@ -27,7 +27,14 @@ class SeasonRecordServiceTest {
 
     @BeforeEach
     fun setup() {
-        seasonRecordService = SeasonRecordService(recordRepository, gameStatsRepository, recordStatUtils, userRepository)
+        seasonRecordService =
+            SeasonRecordService(
+                recordRepository,
+                gameStatsRepository,
+                recordStatUtils,
+                RecordQualifier(recordStatUtils),
+                userRepository,
+            )
         every { recordStatUtils.calculateSeasonValue(any(), any()) } returns 100.0
     }
 

@@ -27,6 +27,7 @@ class SeasonService(
     private val teamSeasonConferenceService: TeamSeasonConferenceService,
     private val scheduleValidationService: ScheduleValidationService,
     private val rankingMetricService: RankingMetricService,
+    private val recordService: RecordService,
 ) {
     fun startSeason(): Season {
         val pendingSeason =
@@ -83,6 +84,7 @@ class SeasonService(
         season.endDate = nowFormatted
 
         seasonRepository.save(season)
+        generateFinishedSeasonRateRecordsSafely(season.seasonNumber)
         offseasonService.startOffseason(nowFormatted)
     }
 
@@ -97,6 +99,7 @@ class SeasonService(
         val now = ZonedDateTime.now(ZoneId.of("America/New_York")).format(DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss"))
         season.endDate = now
         seasonRepository.save(season)
+        generateFinishedSeasonRateRecordsSafely(season.seasonNumber)
         offseasonService.startOffseason(now)
         return season
     }
@@ -148,6 +151,14 @@ class SeasonService(
         season.currentWeek = season.currentWeek.plus(1)
         seasonRepository.save(season)
         computeRankingMetricsSafely(season.seasonNumber, previousWeek)
+    }
+
+    private fun generateFinishedSeasonRateRecordsSafely(season: Int) {
+        try {
+            recordService.generateFinishedSeasonRateRecords(season)
+        } catch (e: Exception) {
+            Logger.error("Unable to generate rate records for completed season $season", e)
+        }
     }
 
     private fun computeRankingMetricsSafely(

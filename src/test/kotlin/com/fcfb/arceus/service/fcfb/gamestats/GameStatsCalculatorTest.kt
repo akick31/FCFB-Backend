@@ -85,4 +85,106 @@ class GameStatsCalculatorTest {
         assertEquals(0.0, GameStatsCalculator.calculateAverageYardsPerPlay(emptyList()))
         assertEquals(0.0, GameStatsCalculator.calculateAveragePuntLength(emptyList()))
     }
+
+    private fun redZonePlay(
+        id: Int,
+        call: PlayCall,
+        result: ActualResult,
+        location: Int,
+        possession: TeamSide = TeamSide.HOME,
+    ) = play(call, result, possession).apply {
+        playId = id
+        ballLocation = location
+    }
+
+    @Test
+    fun `a drive that starts inside the red zone counts as a trip, not just a score`() {
+        val plays =
+            listOf(
+                redZonePlay(1, PlayCall.RUN, ActualResult.GAIN, 85),
+                redZonePlay(2, PlayCall.RUN, ActualResult.TOUCHDOWN, 92),
+                redZonePlay(3, PlayCall.PAT, ActualResult.GOOD, 97),
+            )
+
+        val trips = GameStatsCalculator.calculateRedZoneTrips(plays, TeamSide.HOME)
+
+        assertEquals(1, trips.attempts)
+        assertEquals(1, trips.successes)
+    }
+
+    @Test
+    fun `a touchdown from outside the red zone is neither a trip nor a score`() {
+        val plays =
+            listOf(
+                redZonePlay(1, PlayCall.RUN, ActualResult.GAIN, 30),
+                redZonePlay(2, PlayCall.PASS, ActualResult.TOUCHDOWN, 45),
+            )
+
+        val trips = GameStatsCalculator.calculateRedZoneTrips(plays, TeamSide.HOME)
+
+        assertEquals(0, trips.attempts)
+        assertEquals(0, trips.successes)
+    }
+
+    @Test
+    fun `successes never exceed attempts across several short field drives`() {
+        val plays =
+            listOf(
+                redZonePlay(1, PlayCall.RUN, ActualResult.TOUCHDOWN, 88),
+                redZonePlay(2, PlayCall.PAT, ActualResult.GOOD, 97),
+                redZonePlay(3, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, 35),
+                redZonePlay(4, PlayCall.RUN, ActualResult.GAIN, 20, TeamSide.AWAY),
+                redZonePlay(5, PlayCall.PASS, ActualResult.TOUCHDOWN, 83),
+                redZonePlay(6, PlayCall.PAT, ActualResult.GOOD, 97),
+            )
+
+        val trips = GameStatsCalculator.calculateRedZoneTrips(plays, TeamSide.HOME)
+
+        assertEquals(2, trips.attempts)
+        assertEquals(2, trips.successes)
+    }
+
+    @Test
+    fun `a trip that ends without a touchdown counts an attempt and no success`() {
+        val plays =
+            listOf(
+                redZonePlay(1, PlayCall.RUN, ActualResult.GAIN, 55),
+                redZonePlay(2, PlayCall.PASS, ActualResult.FIRST_DOWN, 82),
+                redZonePlay(3, PlayCall.RUN, ActualResult.NO_GAIN, 88),
+                redZonePlay(4, PlayCall.FIELD_GOAL, ActualResult.GOOD, 88),
+            )
+
+        val trips = GameStatsCalculator.calculateRedZoneTrips(plays, TeamSide.HOME)
+
+        assertEquals(1, trips.attempts)
+        assertEquals(0, trips.successes)
+    }
+
+    @Test
+    fun `reaching the red zone twice on one drive still counts one trip`() {
+        val plays =
+            listOf(
+                redZonePlay(1, PlayCall.PASS, ActualResult.FIRST_DOWN, 81),
+                redZonePlay(2, PlayCall.RUN, ActualResult.LOSS, 85),
+                redZonePlay(3, PlayCall.PASS, ActualResult.TOUCHDOWN, 90),
+            )
+
+        val trips = GameStatsCalculator.calculateRedZoneTrips(plays, TeamSide.HOME)
+
+        assertEquals(1, trips.attempts)
+        assertEquals(1, trips.successes)
+    }
+
+    @Test
+    fun `punt return touchdowns and blocked punts belong to the receiving team`() {
+        val ourPunt = play(PlayCall.PUNT, ActualResult.PUNT_RETURN_TOUCHDOWN, TeamSide.HOME)
+        val theirPunt = play(PlayCall.PUNT, ActualResult.PUNT_RETURN_TOUCHDOWN, TeamSide.AWAY)
+        val ourBlockedPunt = play(PlayCall.PUNT, ActualResult.BLOCKED, TeamSide.HOME)
+        val theirBlockedPunt = play(PlayCall.PUNT, ActualResult.BLOCKED, TeamSide.AWAY)
+        val plays = listOf(ourPunt, theirPunt, ourBlockedPunt, theirBlockedPunt)
+        val awayPlays = plays.filter { it.possession == TeamSide.AWAY }
+
+        assertEquals(1, GameStatsCalculator.calculatePuntReturnTd(awayPlays))
+        assertEquals(1, GameStatsCalculator.calculateBlockedOpponentPunt(awayPlays))
+    }
 }
