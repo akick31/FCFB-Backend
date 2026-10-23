@@ -75,6 +75,30 @@ class FieldAppearanceService {
         request.rightJumbotronEnabled?.let { field.rightJumbotronEnabled = it }
         request.jumbotronPylonMount?.let { field.jumbotronPylonMount = it }
         request.rightJumbotronPylonMount?.let { field.rightJumbotronPylonMount = it }
+        request.jumbotronSize?.let { field.jumbotronSize = it }
+        request.rightJumbotronSize?.let { field.rightJumbotronSize = it }
+        request.wallEnabled?.let { field.wallEnabled = it }
+        request.rightWallEnabled?.let { field.rightWallEnabled = it }
+        request.jumbotronElevation?.let { field.jumbotronElevation = it }
+        request.rightJumbotronElevation?.let { field.rightJumbotronElevation = it }
+        request.skylineBackdrop?.let { field.skylineBackdrop = it }
+        field.rightSkylineBackdrop = request.rightSkylineBackdrop
+        request.jumbotronShape?.let { field.jumbotronShape = it }
+        field.rightJumbotronShape = request.rightJumbotronShape
+        request.jumbotronPylonsOutside?.let { field.jumbotronPylonsOutside = it }
+        request.rightJumbotronPylonsOutside?.let { field.rightJumbotronPylonsOutside = it }
+        request.jumbotronOverBuilding?.let { field.jumbotronOverBuilding = it }
+        request.rightJumbotronOverBuilding?.let { field.rightJumbotronOverBuilding = it }
+        request.scoreboardLogo?.let { field.scoreboardLogo = it }
+        field.rightScoreboardLogo = request.rightScoreboardLogo
+        request.jumbotronWidth?.let { field.jumbotronWidth = it }
+        request.rightJumbotronWidth?.let { field.rightJumbotronWidth = it }
+        request.jumbotronPylonStyle?.let { field.jumbotronPylonStyle = it }
+        field.rightJumbotronPylonStyle = request.rightJumbotronPylonStyle
+        request.backdropStyle?.let { field.backdropStyle = it }
+        field.rightBackdropStyle = request.rightBackdropStyle
+        request.jumbotronStyle?.let { field.jumbotronStyle = it }
+        field.rightJumbotronStyle = request.rightJumbotronStyle
         field.conferenceLogoColorMap =
             request.conferenceLogoColorMap?.also {
                 if (it.length > MAX_COLOR_MAP_LENGTH) throw InvalidUniformException("The conference logo color map is too large")

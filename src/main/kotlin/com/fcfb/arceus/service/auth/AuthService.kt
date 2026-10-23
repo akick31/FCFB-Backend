@@ -63,6 +63,20 @@ class AuthService(
         return LoginResponse(token, user.id, user.role)
     }
 
+    /**
+     * Issues a fresh token for a caller who still holds a valid one, so an active session slides forward
+     * instead of ending on the hour. The old token keeps working until its own expiry; blacklisting it here
+     * would fail requests already in flight with it.
+     */
+    fun refreshSession(authHeader: String): LoginResponse {
+        val token = authHeader.removePrefix("Bearer ").trim()
+        if (!sessionService.validateToken(token) || sessionService.isSessionBlacklisted(token)) {
+            throw UserUnauthorizedException()
+        }
+        val user = userService.getUserById(sessionService.extractUserIdFromToken(token))
+        return LoginResponse(sessionService.generateToken(user.id, user.role), user.id, user.role)
+    }
+
     fun logout(authHeader: String): String {
         sessionService.blacklistUserSession(authHeader.removePrefix("Bearer ").trim())
         return "User logged out successfully"

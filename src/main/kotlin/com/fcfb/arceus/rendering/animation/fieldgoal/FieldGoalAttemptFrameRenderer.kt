@@ -58,20 +58,12 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
             when {
                 blocked -> null
                 caught -> KickTrajectory(layout, KickOutcome.CAUGHT, 0f)
-                else -> kickTrajectory(play, layout)
+                else -> kickTrajectory(play, layout, GoalPostScenePainter.backstopFor(theme, targetSide, layout))
             }
         val deepReturner = KickDistance.fallsShort(play)
         val situation =
-            GameSituation(
-                homeTeamName = theme.homeTeam.name.orEmpty(),
-                awayTeamName = theme.awayTeam.name.orEmpty(),
-                homeScore = play.homeScore,
-                awayScore = play.awayScore,
-                quarter = play.quarter,
-                clockSeconds = play.clock,
-                down = play.down,
-                yardsToGo = play.yardsToGo,
-            )
+            theme.scoreboard
+                ?: GameSituation.sample(GameSituation.scoreboardName(theme.homeTeam), GameSituation.scoreboardName(theme.awayTeam))
 
         val timeline = animationTimeline(endsAt = endsAt)
         val doinked = trajectory?.outcome == KickOutcome.DOINK || trajectory?.outcome == KickOutcome.DOINK_IN
@@ -86,6 +78,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
                     midfieldTopOnLeft = kickingHome != theme.flipped,
                     side = targetSide,
                     situation = situation,
+                    time = t,
                 )
             FieldGoalUnitPainter.paint(scene, layout, t, kicking, rushing, blockSide, blocked, rusherIndex, nearMiss, deepReturner)
             if (trajectory != null && t >= FieldGoalUnitPainter.KICK_AT) {
@@ -106,15 +99,16 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
     private fun kickTrajectory(
         play: Play,
         layout: GoalPostSceneLayout,
+        backstop: KickBackstop,
     ): KickTrajectory {
         val random = Random(play.playId.toLong())
         val side = if (random.nextBoolean()) 1f else -1f
         val kickYards = layout.lineOfScrimmageYards + GoalPostScenePainter.HOLD_DEPTH_YARDS + GoalPostScenePainter.END_ZONE_DEPTH_YARDS
         return when {
             play.actualResult == ActualResult.GOOD && random.nextFloat() < DOINK_IN_CHANCE ->
-                KickTrajectory(layout, KickOutcome.DOINK_IN, side)
+                KickTrajectory(layout, KickOutcome.DOINK_IN, side, backstop)
             play.actualResult == ActualResult.GOOD ->
-                KickTrajectory(layout, KickOutcome.GOOD, (random.nextFloat() * 2f - 1f) * MAX_MAKE_FRACTION)
+                KickTrajectory(layout, KickOutcome.GOOD, (random.nextFloat() * 2f - 1f) * MAX_MAKE_FRACTION, backstop)
             kickYards >= SHORT_KICK_YARDS ->
                 KickTrajectory(layout, KickOutcome.SHORT, side * random.nextFloat() * MAX_SHORT_FRACTION)
             random.nextFloat() < DOINK_CHANCE -> KickTrajectory(layout, KickOutcome.DOINK, side)
@@ -123,6 +117,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
                     layout,
                     KickOutcome.WIDE,
                     side * (MIN_WIDE_FRACTION + random.nextFloat() * (MAX_WIDE_FRACTION - MIN_WIDE_FRACTION)),
+                    backstop,
                 )
         }
     }
@@ -132,6 +127,7 @@ class FieldGoalAttemptFrameRenderer : PlayAnimationFrameRenderer {
         point: KickPoint,
         flight: Float,
     ) {
+        if (!point.visible) return
         point.shadowY?.let { shadowY ->
             val g = scene.createGraphics()
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)

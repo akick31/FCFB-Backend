@@ -3,6 +3,7 @@ package com.fcfb.arceus.service.fcfb.statistics.record
 import com.fcfb.arceus.exception.statistics.RecordGenerationInProgressException
 import com.fcfb.arceus.repositories.game.GameRepository
 import com.fcfb.arceus.repositories.record.RecordRepository
+import com.fcfb.arceus.repositories.season.SeasonRepository
 import com.fcfb.arceus.repositories.statistics.GameStatsRepository
 import com.fcfb.arceus.repositories.team.TeamRepository
 import com.fcfb.arceus.service.specification.RecordSpecificationService
@@ -24,7 +25,9 @@ class RecordServiceTest {
     private val generalRecordService: GeneralRecordService = mockk()
     private val againstRecordService: AgainstRecordService = mockk()
     private val recordStatValueService: RecordStatValueService = mockk()
+    private val recordQualificationService: RecordQualificationService = mockk()
     private val teamRepository: TeamRepository = mockk()
+    private val seasonRepository: SeasonRepository = mockk()
     private lateinit var recordService: RecordService
 
     @BeforeEach
@@ -40,7 +43,9 @@ class RecordServiceTest {
                 generalRecordService,
                 againstRecordService,
                 recordStatValueService,
+                recordQualificationService,
                 teamRepository,
+                seasonRepository,
             )
     }
 

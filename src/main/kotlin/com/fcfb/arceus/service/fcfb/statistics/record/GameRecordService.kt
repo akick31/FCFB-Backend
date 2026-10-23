@@ -16,6 +16,7 @@ class GameRecordService(
     private val recordRepository: RecordRepository,
     private val gameRepository: GameRepository,
     private val recordStatValueService: RecordStatValueService,
+    private val recordQualificationService: RecordQualificationService,
 ) {
     fun generateGameRecord(
         statName: Stats,
@@ -49,11 +50,12 @@ class GameRecordService(
         gamesById: Map<Int, Game>,
     ) {
         val isLowest = recordType.isLowest
+        val candidates = gameStatsList.filter { recordQualificationService.qualifiesForGameRecord(statName, it) }
         val bestGameStats =
             if (isLowest) {
-                gameStatsList.minByOrNull { recordStatValueService.getStatValue(statName, it) }
+                candidates.minByOrNull { recordStatValueService.getStatValue(statName, it) }
             } else {
-                gameStatsList.maxByOrNull { recordStatValueService.getStatValue(statName, it) }
+                candidates.maxByOrNull { recordStatValueService.getStatValue(statName, it) }
             } ?: return
 
         val statValue = recordStatValueService.getStatValue(statName, bestGameStats)
@@ -89,6 +91,7 @@ class GameRecordService(
         val currentRecord = recordRepository.findScopedRecords(statName, recordType, recordScope, scopeValue).firstOrNull()
 
         for (gameStats in gameStatsList) {
+            if (!recordQualificationService.qualifiesForGameRecord(statName, gameStats)) continue
             val currentValue = recordStatValueService.getStatValue(statName, gameStats)
             val recordValue = currentRecord?.recordValue ?: if (recordType.isLowest) Double.MAX_VALUE else 0.0
 

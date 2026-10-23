@@ -363,8 +363,8 @@ class GameStatsService(
         stats.puntYards = gameStatsCalculator.calculatePuntYards(allOffensivePlays)
         stats.puntCount = gameStatsCalculator.calculatePuntCount(allOffensivePlays)
         stats.averagePuntLength = statsAverageCalculator.average(stats.puntYards, stats.puntCount)
-        stats.blockedOpponentPunt = gameStatsCalculator.calculateBlockedOpponentPunt(allOffensivePlays)
-        stats.puntReturnTd = gameStatsCalculator.calculatePuntReturnTd(allOffensivePlays)
+        stats.blockedOpponentPunt = gameStatsCalculator.calculateBlockedOpponentPunt(allDefensivePlays)
+        stats.puntReturnTd = gameStatsCalculator.calculatePuntReturnTd(allDefensivePlays)
         stats.puntReturnTdPercentage =
             gameStatsCalculator.calculatePercentage(
                 stats.puntReturnTd,
@@ -415,8 +415,9 @@ class GameStatsService(
         stats.upsetMargin = gameStatsCalculator.calculateUpsetMargin(teamSpread, teamWon)
         stats.passTouchdowns = gameStatsCalculator.calculatePassTouchdowns(allOffensivePlays)
         stats.rushTouchdowns = gameStatsCalculator.calculateRushTouchdowns(allOffensivePlays)
-        stats.redZoneAttempts = gameStatsCalculator.calculateRedZoneAttempts(allPlays, teamSide)
-        stats.redZoneSuccesses = gameStatsCalculator.calculateRedZoneSuccesses(allOffensivePlays)
+        val redZoneTrips = gameStatsCalculator.calculateRedZoneTrips(allPlays, teamSide)
+        stats.redZoneAttempts = redZoneTrips.attempts
+        stats.redZoneSuccesses = redZoneTrips.successes
         stats.redZoneSuccessPercentage = gameStatsCalculator.calculatePercentage(stats.redZoneSuccesses, stats.redZoneAttempts)
         stats.redZonePercentage = gameStatsCalculator.calculatePercentage(stats.redZoneAttempts, stats.numberOfDrives)
         stats.turnoverDifferential = gameStatsCalculator.calculateTurnoverDifferential(stats.turnoversLost, stats.turnoversForced)

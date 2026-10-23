@@ -272,6 +272,11 @@ class PlayService(
         playId: Int,
     ) = playRepository.getPlayImmediatelyAfter(gameId, playId)
 
+    fun getPlayImmediatelyBeforeOrNull(
+        gameId: Int,
+        playId: Int,
+    ) = playRepository.getPlayImmediatelyBefore(gameId, playId)
+
     fun getAllPlaysByGameId(gameId: Int) =
         playRepository.getAllPlaysByGameId(gameId).ifEmpty {
             throw PlayNotFoundException("No plays found for game $gameId")

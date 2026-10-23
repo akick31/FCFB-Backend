@@ -5,8 +5,10 @@ import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.model.animation.GameSituation
 import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.play.Play
+import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.rendering.animation.AnimationFitter
 import com.fcfb.arceus.rendering.animation.AnimationPalette
 import com.fcfb.arceus.rendering.animation.PlayAnimationClassifier
@@ -68,7 +70,10 @@ class PlayAnimationService(
             }
         val homeUniform = teamUniformService.uniformFor(play.homeTeam, game.season, game.week)
         val awayUniform = teamUniformService.uniformFor(play.awayTeam, game.season, game.week)
-        val theme = fieldThemeService.resolve(play, game, homeTeam, awayTeam, homeUniform, awayUniform)
+        val theme =
+            fieldThemeService
+                .resolve(play, game, homeTeam, awayTeam, homeUniform, awayUniform)
+                .copy(scoreboard = scoreboardBeforeSnap(play, homeTeam, awayTeam))
         val frames = renderer.renderFrames(play, startAbs, endAbs, theme, offensivePlaybook, defensivePlaybook)
         val overlay = playOutcomeOverlayClassifier.classifyOverlay(play)
         val decoratedFrames = overlayPainter.applyOverlay(frames, overlay, play, homeTeam, awayTeam)
@@ -82,6 +87,18 @@ class PlayAnimationService(
             }
         return ResponseEntity(gifBytes, headers, HttpStatus.OK)
     }
+
+    private fun scoreboardBeforeSnap(
+        play: Play,
+        homeTeam: Team,
+        awayTeam: Team,
+    ): GameSituation =
+        GameSituation.beforeSnap(
+            play,
+            playService.getPlayImmediatelyBeforeOrNull(play.gameId, play.playId),
+            GameSituation.scoreboardName(homeTeam),
+            GameSituation.scoreboardName(awayTeam),
+        )
 
     private fun resultSpot(
         play: Play,

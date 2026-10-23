@@ -66,7 +66,30 @@ class AnimatedGifEncoder {
         val g = indexed.createGraphics()
         g.drawImage(source, 0, 0, null)
         g.dispose()
+        snapExactPaletteColors(source, indexed, colorModel)
         return indexed
+    }
+
+    /** Java2D dithers every pixel into an indexed image, which speckles flat fills whose colour is already in the palette. */
+    private fun snapExactPaletteColors(
+        source: BufferedImage,
+        indexed: BufferedImage,
+        colorModel: IndexColorModel,
+    ) {
+        val indexByRgb = HashMap<Int, Int>(colorModel.mapSize * 2)
+        for (index in colorModel.mapSize - 1 downTo 0) indexByRgb[colorModel.getRGB(index) and RGB_MASK] = index
+        val raster = indexed.raster
+        val row = IntArray(source.width)
+        for (y in 0 until source.height) {
+            source.getRGB(0, y, source.width, 1, row, 0, source.width)
+            for (x in row.indices) {
+                indexByRgb[row[x] and RGB_MASK]?.let { raster.setSample(x, y, 0, it) }
+            }
+        }
+    }
+
+    private companion object {
+        const val RGB_MASK = 0xFFFFFF
     }
 
     private fun configureFrameDelay(

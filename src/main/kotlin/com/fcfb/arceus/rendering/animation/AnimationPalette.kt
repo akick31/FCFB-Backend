@@ -1,10 +1,13 @@
 package com.fcfb.arceus.rendering.animation
 
+import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.animation.FieldTheme
 import com.fcfb.arceus.rendering.animation.appearance.FieldColors
 import com.fcfb.arceus.rendering.animation.assets.LogoLoader
 import com.fcfb.arceus.rendering.animation.assets.LogoPalette
 import com.fcfb.arceus.rendering.animation.fieldgoal.GoalPostScenePainter
+import com.fcfb.arceus.rendering.animation.fieldgoal.backdrop.GrassPainter
+import com.fcfb.arceus.rendering.animation.fieldgoal.backdrop.StadiumBackdropPainter
 import java.awt.Color
 
 object AnimationPalette {
@@ -26,17 +29,19 @@ object AnimationPalette {
                 GoalPostScenePainter.NET_COLOR,
                 GoalPostScenePainter.DEFAULT_WALL_COLOR,
                 GoalPostScenePainter.SILVER_WALL_COLOR,
-            ) + GoalPostScenePainter.FAN_COLORS + GoalPostScenePainter.STAND_SHADES
+            )
         val teams = listOf(theme.homeTeam, theme.awayTeam)
         val teamColors =
             teams.flatMap {
                 listOf(FieldColors.parseColor(it.primaryColor), FieldColors.parseColor(it.secondaryColor))
             }
         val logoColors =
-            (teams.map { it.scorebugLogo } + theme.centerLogoUrl)
+            (teams.map { it.scorebugLogo } + theme.centerLogoUrl + TeamSide.entries.map { theme.scoreboardLogoUrl(it) })
                 .distinct()
                 .mapNotNull { LogoLoader.load(it) }
                 .flatMap { LogoPalette.dominantColors(it, COLORS_PER_LOGO) }
-        return (fixed + teamColors + logoColors).distinct().take(MAX_GIF_COLORS)
+        return (fixed + teamColors + StadiumBackdropPainter.paletteFor(theme) + GrassPainter.PALETTE + logoColors).distinct().take(
+            MAX_GIF_COLORS,
+        )
     }
 }

@@ -1,0 +1,11 @@
+ALTER TABLE team_field
+    ADD COLUMN wall_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN right_wall_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN jumbotron_size DOUBLE NOT NULL DEFAULT 1.0,
+    ADD COLUMN right_jumbotron_size DOUBLE NOT NULL DEFAULT 1.0;
+
+ALTER TABLE game_field
+    ADD COLUMN wall_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN right_wall_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN jumbotron_size DOUBLE NOT NULL DEFAULT 1.0,
+    ADD COLUMN right_jumbotron_size DOUBLE NOT NULL DEFAULT 1.0;

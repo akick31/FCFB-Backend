@@ -55,6 +55,23 @@ class AnimatedGifEncoderTest {
         }
     }
 
+    @Test
+    fun `a fill whose colour is in the palette encodes without dither from its neighbours`() {
+        val greens = listOf(Color(46, 92, 44), Color(58, 108, 50), Color(38, 80, 38), Color(70, 120, 56))
+        val fill = greens[1]
+        val image = BufferedImage(FRAME_EDGE, FRAME_EDGE, BufferedImage.TYPE_INT_RGB)
+        image.createGraphics().apply {
+            color = fill
+            fillRect(0, 0, FRAME_EDGE, FRAME_EDGE)
+            dispose()
+        }
+
+        val decoded = ImageIO.read(ByteArrayInputStream(encoder.encode(listOf(image), greens)))
+
+        val colours = (0 until FRAME_EDGE).flatMap { x -> (0 until FRAME_EDGE).map { y -> decoded.getRGB(x, y) } }.toSet()
+        assertEquals(setOf(fill.rgb), colours)
+    }
+
     @ParameterizedTest
     @ValueSource(strings = ["output", "prepare", "frame", "end"])
     fun `encoding failure closes the stream disposes the writer and propagates the failure`(stage: String) {
@@ -100,4 +117,8 @@ class AnimatedGifEncoderTest {
                 }
             }
         }
+
+    private companion object {
+        const val FRAME_EDGE = 16
+    }
 }

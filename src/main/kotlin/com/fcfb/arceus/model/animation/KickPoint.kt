@@ -5,4 +5,5 @@ data class KickPoint(
     val y: Float,
     val shadowY: Float?,
     val scale: Float,
+    val visible: Boolean = true,
 )

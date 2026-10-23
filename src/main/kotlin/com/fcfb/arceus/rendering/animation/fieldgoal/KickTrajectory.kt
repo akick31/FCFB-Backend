@@ -14,6 +14,7 @@ class KickTrajectory(
     private val layout: GoalPostSceneLayout,
     val outcome: KickOutcome,
     lateralFraction: Float,
+    private val backstop: KickBackstop = KickBackstop.Net,
 ) {
     val targetX: Float = GoalPostScenePainter.CENTER_X + lateralFraction * (layout.rightUprightX - GoalPostScenePainter.CENTER_X)
     private val start = FieldGoalUnitPainter.holdSpot(layout)
@@ -31,7 +32,11 @@ class KickTrajectory(
         val settle = maxOf(SETTLED, arrival + MIN_SETTLE_TIME)
         return when (outcome) {
             KickOutcome.GOOD, KickOutcome.WIDE, KickOutcome.DOINK_IN ->
-                if (flight < arrival) airborne(depth, PEAK_DEPTH, APEX_YARDS) else dropBehindPosts(segment(flight, arrival, settle))
+                when {
+                    flight < arrival -> airborne(depth, PEAK_DEPTH, APEX_YARDS)
+                    backstop == KickBackstop.Net -> dropBehindPosts(segment(flight, arrival, settle))
+                    else -> carryBeyond(segment(flight, arrival, settle))
+                }
             KickOutcome.DOINK ->
                 if (flight < arrival) airborne(depth, PEAK_DEPTH, APEX_YARDS) else deflection(segment(flight, arrival, settle))
             KickOutcome.SHORT ->
@@ -68,6 +73,47 @@ class KickTrajectory(
         val restY = layout.groundY(-GoalPostScenePainter.END_ZONE_DEPTH_YARDS * BEHIND_POSTS_LANDING_DEPTH)
         val hop = abs(sin(settle * DROP_BOUNCES * PI)).toFloat() * DROP_HOP * layout.scale * (1f - settle).pow(2)
         return KickPoint(x, passing.y + (restY - passing.y) * fall * fall - hop, restY, endScale * BEHIND_POSTS_SCALE)
+    }
+
+    private fun carryBeyond(progress: Float): KickPoint {
+        val passing = airborne(1f, PEAK_DEPTH, APEX_YARDS)
+        val x = driftedX(passing.x, progress)
+        val fall = (progress / CARRY_FALL).coerceAtMost(1f)
+        val shrink = endScale * (1f - CARRY_SHRINK * fall)
+        return when (backstop) {
+            is KickBackstop.Wall -> {
+                val belowWall = backstop.topY + CARRY_BELOW_WALL * layout.scale
+                val y = passing.y + (belowWall - passing.y) * fall * fall
+                KickPoint(x, y, null, shrink, visible = y < backstop.topY)
+            }
+            is KickBackstop.Grass -> {
+                val glide = (progress / GLIDE).coerceAtMost(1f)
+                val y = passing.y + (backstop.landingY - passing.y) * glide.pow(GLIDE_CURVE)
+                val scale = endScale * (1f - (CARRY_SHRINK + FAR_SHRINK * backstop.distance) * glide)
+                KickPoint(x, y, backstop.landingY.toFloat(), scale)
+            }
+            is KickBackstop.Facade -> reboundOffFacade(passing, x, progress, backstop.landingY)
+            KickBackstop.Net -> dropBehindPosts(progress)
+        }
+    }
+
+    private fun reboundOffFacade(
+        passing: KickPoint,
+        driftX: Float,
+        progress: Float,
+        landingY: Int,
+    ): KickPoint {
+        val contactScale = endScale * (1f - FACADE_SHRINK)
+        if (progress < FACADE_TRAVEL) {
+            val travel = progress / FACADE_TRAVEL
+            return KickPoint(driftX, passing.y - FACADE_RISE * layout.scale * travel, null, endScale + (contactScale - endScale) * travel)
+        }
+        val drop = segment(progress, FACADE_TRAVEL, 1f)
+        val fall = (drop / DROP_FALL).coerceAtMost(1f)
+        val settle = segment(drop, DROP_FALL, 1f)
+        val hop = abs(sin(settle * DROP_BOUNCES * PI)).toFloat() * DROP_HOP * layout.scale * (1f - settle).pow(2)
+        val contactY = passing.y - FACADE_RISE * layout.scale
+        return KickPoint(driftX, contactY + (landingY - contactY) * fall * fall - hop, landingY.toFloat(), contactScale)
     }
 
     private fun driftedX(
@@ -136,6 +182,15 @@ class KickTrajectory(
         private const val DROP_FALL = 0.45f
         private const val DROP_BOUNCES = 2.0
         private const val DROP_HOP = 10f
+        private const val CARRY_FALL = 0.5f
+        private const val CARRY_SHRINK = 0.3f
+        private const val FAR_SHRINK = 0.3f
+        private const val GLIDE = 0.7f
+        private const val GLIDE_CURVE = 1.6f
+        private const val FACADE_TRAVEL = 0.22f
+        private const val FACADE_SHRINK = 0.25f
+        private const val FACADE_RISE = 6f
+        private const val CARRY_BELOW_WALL = 30f
         private const val DEFLECT_DISTANCE = 160f
         private const val DEFLECT_FALL = 0.3f
         private const val DEFLECT_LANDING_DEPTH = 0.4f

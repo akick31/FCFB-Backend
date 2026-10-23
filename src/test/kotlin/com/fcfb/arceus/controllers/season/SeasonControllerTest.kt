@@ -12,6 +12,7 @@ import com.fcfb.arceus.service.fcfb.ranking.RankingMetricService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleValidationService
 import com.fcfb.arceus.service.fcfb.season.OffseasonService
 import com.fcfb.arceus.service.fcfb.season.SeasonService
+import com.fcfb.arceus.service.fcfb.statistics.record.RecordService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import io.mockk.every
 import io.mockk.mockk
@@ -39,6 +40,7 @@ class SeasonControllerTest {
     private val teamSeasonConferenceService: TeamSeasonConferenceService = mockk()
     private val scheduleValidationService: ScheduleValidationService = mockk()
     private val rankingMetricService: RankingMetricService = mockk()
+    private val recordService: RecordService = mockk()
     private lateinit var seasonService: SeasonService
     private lateinit var seasonController: SeasonController
 
@@ -54,6 +56,7 @@ class SeasonControllerTest {
                 teamSeasonConferenceService,
                 scheduleValidationService,
                 rankingMetricService,
+                recordService,
             )
         seasonController = SeasonController(seasonService)
         mockMvc =

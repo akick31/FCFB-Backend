@@ -19,6 +19,7 @@ class SeasonRecordService(
     private val recordRepository: RecordRepository,
     private val gameStatsRepository: GameStatsRepository,
     private val recordStatValueService: RecordStatValueService,
+    private val recordQualificationService: RecordQualificationService,
     private val userRepository: UserRepository,
 ) {
     fun generateSeasonRecord(
@@ -27,11 +28,16 @@ class SeasonRecordService(
         recordType: RecordType,
         teamConference: Map<String, String?> = emptyMap(),
         scopes: Set<RecordScope> = RecordScope.ALL,
+        unfinishedSeason: Int? = null,
     ) {
         val teamSeasons =
             gameStatsList
                 .filter { it.team != null }
                 .groupBy { (it.team!!) to (it.season ?: 0) }
+                .filter {
+                        (key, games) ->
+                    recordQualificationService.qualifiesForSeasonRecord(statName, games, key.second != unfinishedSeason)
+                }
                 .map { (key, games) ->
                     TeamSeason(key.first, key.second, recordStatValueService.calculateSeasonValue(statName, games))
                 }
@@ -93,18 +99,12 @@ class SeasonRecordService(
     fun getCurrentSeasonStatsForTeam(
         team: String,
         season: Int,
-    ): List<GameStats> {
-        return gameStatsRepository.findAll()
-            .filter { it.team == team && it.season == season }
-    }
+    ): List<GameStats> = gameStatsRepository.getRecordEligibleStatsForTeamSeason(team, season, 0)
 
     fun getCurrentPostseasonStatsForTeam(
         team: String,
         season: Int,
-    ): List<GameStats> {
-        return gameStatsRepository.findAll()
-            .filter { it.team == team && it.season == season && (it.week ?: 0) >= SeasonStructure.POSTSEASON_START_WEEK }
-    }
+    ): List<GameStats> = gameStatsRepository.getRecordEligibleStatsForTeamSeason(team, season, SeasonStructure.POSTSEASON_START_WEEK)
 
     fun checkAndUpdateSeasonRecord(
         statName: Stats,
@@ -113,12 +113,14 @@ class SeasonRecordService(
         recordType: RecordType,
         recordScope: RecordScope = RecordScope.LEAGUE,
         scopeValue: String? = null,
+        seasonComplete: Boolean = false,
     ) {
         val currentRecord = recordRepository.findScopedRecords(statName, recordType, recordScope, scopeValue).firstOrNull()
 
         val candidates =
             listOf(homeSeasonGames, awaySeasonGames).mapNotNull { games ->
                 val first = games.firstOrNull() ?: return@mapNotNull null
+                if (!recordQualificationService.qualifiesForSeasonRecord(statName, games, seasonComplete)) return@mapNotNull null
                 SeasonCandidate(first.team!!, first.season!!, recordStatValueService.calculateSeasonValue(statName, games), games)
             }
 

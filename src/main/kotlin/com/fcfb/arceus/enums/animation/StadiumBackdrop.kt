@@ -9,6 +9,7 @@ enum class StadiumBackdrop {
     LAKE,
     MOUNTAINS,
     HILL,
+    FACILITY,
     NONE,
     ;
 

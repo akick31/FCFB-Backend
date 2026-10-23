@@ -35,7 +35,7 @@ internal object FieldPreviewRenderer {
                     possession = TeamSide.HOME
                 },
             )
-        val situation = GameSituation.sample(theme.homeTeam.name.orEmpty(), theme.awayTeam.name.orEmpty())
+        val situation = GameSituation.sample(GameSituation.scoreboardName(theme.homeTeam), GameSituation.scoreboardName(theme.awayTeam))
         return GoalPostScenePainter.paint(
             theme,
             theme.endZoneOf(side),

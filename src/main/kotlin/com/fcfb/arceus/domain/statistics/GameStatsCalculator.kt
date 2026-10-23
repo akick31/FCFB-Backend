@@ -10,6 +10,10 @@ import com.fcfb.arceus.util.statistics.StatsAverageCalculator
 class GameStatsCalculator(
     private val statsAverageCalculator: StatsAverageCalculator,
 ) {
+    companion object {
+        private const val RED_ZONE_BALL_LOCATION = 80
+    }
+
     fun calculatePassAttempts(allPlays: List<Play>): Int {
         return allPlays.count { play ->
             when {
@@ -499,52 +503,63 @@ class GameStatsCalculator(
         }
     }
 
-    fun calculateRedZoneAttempts(
+    /**
+     * Trips and scores have to come out of the same drive walk: counting attempts per drive while counting
+     * touchdowns per play lets a short field score without ever recording a trip, which drove success
+     * percentages above 100%.
+     */
+    fun calculateRedZoneTrips(
         allPlays: List<Play>,
         teamSide: TeamSide,
-    ): Int {
-        var redZoneAttempts = 0
-        var isDriveInProgress = false
-        var visitedRedZoneOnDrive = false
+    ): RedZoneTrips {
+        var attempts = 0
+        var successes = 0
+        var driveInProgress = false
+        var visitedRedZone = false
+        var scoredOnDrive = false
 
         allPlays.sortedBy { it.playId }.forEach { play ->
-            when {
-                (
-                    play.playCall == PlayCall.KICKOFF_NORMAL ||
-                        play.playCall == PlayCall.KICKOFF_ONSIDE ||
-                        play.playCall == PlayCall.KICKOFF_SQUIB
-                ) && play.possession == teamSide -> {
-                    isDriveInProgress = false
-                }
+            val isKickoff =
+                play.playCall == PlayCall.KICKOFF_NORMAL ||
+                    play.playCall == PlayCall.KICKOFF_ONSIDE ||
+                    play.playCall == PlayCall.KICKOFF_SQUIB
 
-                play.possession == teamSide && !isDriveInProgress -> {
-                    isDriveInProgress = true
-                    visitedRedZoneOnDrive = false
-                }
+            if (isKickoff || play.possession != teamSide) {
+                driveInProgress = false
+                visitedRedZone = false
+                scoredOnDrive = false
+                return@forEach
+            }
 
-                play.possession != teamSide ||
-                    play.actualResult == ActualResult.TURNOVER ||
-                    play.actualResult == ActualResult.TURNOVER_TOUCHDOWN -> {
-                    isDriveInProgress = false
-                }
+            if (play.playCall == PlayCall.PAT) return@forEach
 
-                play.ballLocation >= 80 &&
-                    !visitedRedZoneOnDrive &&
-                    isDriveInProgress &&
-                    play.playCall != PlayCall.PAT -> {
-                    redZoneAttempts++
-                    visitedRedZoneOnDrive = true
-                }
+            if (!driveInProgress) {
+                driveInProgress = true
+                visitedRedZone = false
+                scoredOnDrive = false
+            }
+
+            if (play.ballLocation >= RED_ZONE_BALL_LOCATION && !visitedRedZone) {
+                visitedRedZone = true
+                attempts++
+            }
+
+            if (visitedRedZone && !scoredOnDrive && play.actualResult == ActualResult.TOUCHDOWN) {
+                scoredOnDrive = true
+                successes++
+            }
+
+            if (play.actualResult == ActualResult.TOUCHDOWN ||
+                play.actualResult == ActualResult.TURNOVER ||
+                play.actualResult == ActualResult.TURNOVER_TOUCHDOWN
+            ) {
+                driveInProgress = false
+                visitedRedZone = false
+                scoredOnDrive = false
             }
         }
-        return redZoneAttempts
-    }
 
-    fun calculateRedZoneSuccesses(allPlays: List<Play>): Int {
-        return allPlays.count { play ->
-            play.ballLocation >= 80 &&
-                play.actualResult == ActualResult.TOUCHDOWN
-        }
+        return RedZoneTrips(attempts, successes)
     }
 
     fun calculateFavoredMargin(teamSpread: Double?): Double? = teamSpread?.let { -it }

@@ -67,4 +67,20 @@ interface GameStatsRepository : CrudRepository<GameStats, Int> {
         season: Int,
         week: Int,
     ): List<GameStats>
+
+    @Query(
+        value =
+            "SELECT gs.* FROM game_stats gs " +
+                "JOIN game g ON gs.game_id = g.game_id " +
+                "WHERE gs.team = :team " +
+                "AND gs.season = :season " +
+                "AND gs.week >= :minWeek " +
+                "AND g.game_type != 'SCRIMMAGE'",
+        nativeQuery = true,
+    )
+    fun getRecordEligibleStatsForTeamSeason(
+        team: String,
+        season: Int,
+        minWeek: Int,
+    ): List<GameStats>
 }
