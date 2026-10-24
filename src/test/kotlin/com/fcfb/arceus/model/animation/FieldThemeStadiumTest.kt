@@ -8,6 +8,7 @@ import com.fcfb.arceus.enums.animation.ScoreboardStyle
 import com.fcfb.arceus.enums.animation.StadiumBackdrop
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.appearance.BowlField
+import com.fcfb.arceus.model.appearance.StadiumDesign
 import com.fcfb.arceus.model.appearance.TeamField
 import com.fcfb.arceus.model.team.Team
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -20,20 +21,21 @@ import java.awt.Color
 class FieldThemeStadiumTest {
     private fun theme(
         style: FieldStyle = FieldStyle.HOME_FIELD,
-        configure: TeamField.() -> Unit,
+        configure: StadiumDesign.() -> Unit,
     ) = FieldTheme(
         style = style,
         homeTeam = Team().apply { name = "Wyoming" },
         awayTeam = Team().apply { name = "Boise State" },
         centerLogoUrl = null,
-        homeField = TeamField().apply(configure),
+        homeField = TeamField(),
+        stadium = StadiumDesign().apply(configure),
     )
 
     @Test
     fun `the crowd always keeps its wall and other backdrops drop it unless asked`() {
         val crowd = theme { stadiumBackdrop = "CROWD" }
         val forest = theme { stadiumBackdrop = "FOREST" }
-        val forestWithWall = theme { stadiumBackdrop = "FOREST" }.also { it.homeField!!.wallEnabled = true }
+        val forestWithWall = theme { stadiumBackdrop = "FOREST" }.also { it.stadium!!.wallEnabled = true }
 
         assertTrue(crowd.wallShown(crowd.leftSide()))
         assertFalse(forest.wallShown(forest.leftSide()))
@@ -53,8 +55,10 @@ class FieldThemeStadiumTest {
     }
 
     @Test
-    fun `postseason fields keep the wall`() {
-        val bowl = theme(FieldStyle.BOWL) { stadiumBackdrop = "FOREST" }
+    fun `postseason fields with no stadium keep the crowd and its wall`() {
+        val bowl = theme(FieldStyle.BOWL) { stadiumBackdrop = "FOREST" }.copy(stadium = null)
+
+        assertEquals(StadiumBackdrop.CROWD, bowl.stadiumBackdrop(bowl.leftSide()))
 
         assertTrue(bowl.wallShown(bowl.leftSide()))
     }
@@ -203,7 +207,7 @@ class FieldThemeStadiumTest {
 
     @Test
     fun `facility buildings never show the wall`() {
-        val facility = theme { stadiumBackdrop = "FACILITY" }.also { it.homeField!!.wallEnabled = true }
+        val facility = theme { stadiumBackdrop = "FACILITY" }.also { it.stadium!!.wallEnabled = true }
 
         assertFalse(facility.wallShown(facility.leftSide()))
     }
@@ -284,9 +288,9 @@ class FieldThemeStadiumTest {
     }
 
     @Test
-    fun `a bowl played in a team's stadium uses that stadium and titles the board with the bowl`() {
+    fun `a bowl played at a venue uses that venue's stadium and titles the board with the bowl`() {
         val venue =
-            TeamField().apply {
+            StadiumDesign().apply {
                 stadiumBackdrop = "MOUNTAINS"
                 jumbotronEnabled = true
             }
@@ -298,9 +302,9 @@ class FieldThemeStadiumTest {
                 awayTeam = Team().apply { name = "Boise State" },
                 centerLogoUrl = null,
                 bowlField = bowl,
-                stadiumField = venue,
+                stadium = venue,
             )
-        val neutral = atVenue.copy(stadiumField = null)
+        val neutral = atVenue.copy(stadium = null)
 
         assertEquals(StadiumBackdrop.MOUNTAINS, atVenue.stadiumBackdrop(atVenue.leftSide()))
         assertTrue(atVenue.jumbotronEnabled(atVenue.leftSide()))

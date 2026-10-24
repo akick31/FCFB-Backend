@@ -6,6 +6,7 @@ import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.appearance.StadiumDesign
 import com.fcfb.arceus.model.appearance.TeamField
 import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.model.team.Team
@@ -27,13 +28,14 @@ class KickBackstopTest {
 
     private fun theme(
         style: FieldStyle = FieldStyle.HOME_FIELD,
-        configure: TeamField.() -> Unit,
+        configure: StadiumDesign.() -> Unit,
     ) = FieldTheme(
         style = style,
         homeTeam = Team().apply { name = "Wyoming" },
         awayTeam = Team().apply { name = "Boise State" },
         centerLogoUrl = null,
-        homeField = TeamField().apply(configure),
+        homeField = TeamField(),
+        stadium = StadiumDesign().apply(configure),
     )
 
     @Test
@@ -57,10 +59,12 @@ class KickBackstopTest {
     }
 
     @Test
-    fun `postseason fields keep the net`() {
-        val bowl = theme(FieldStyle.BOWL) { stadiumBackdrop = "FOREST" }
+    fun `postseason fields with no stadium keep the net while one at a venue follows that venue`() {
+        val atVenue = theme(FieldStyle.BOWL) { stadiumBackdrop = "FOREST" }
+        val noStadium = atVenue.copy(stadium = null)
 
-        assertEquals(KickBackstop.Net, GoalPostScenePainter.backstopFor(bowl, bowl.leftSide(), layout))
+        assertEquals(KickBackstop.Net, GoalPostScenePainter.backstopFor(noStadium, noStadium.leftSide(), layout))
+        assertTrue(GoalPostScenePainter.backstopFor(atVenue, atVenue.leftSide(), layout) is KickBackstop.Grass)
     }
 
     @Test

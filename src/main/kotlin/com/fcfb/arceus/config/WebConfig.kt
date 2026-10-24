@@ -105,6 +105,7 @@ internal val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/team",
         "$FULL_PATH/upload/postseason-logo",
         "$FULL_PATH/user/hash_emails",
+        "$FULL_PATH/stadium",
     )
 
 internal val ADMIN_ONLY_PUT_PATHS =
@@ -119,6 +120,9 @@ internal val ADMIN_ONLY_PUT_PATHS =
         "$FULL_PATH/conference/active",
         "$FULL_PATH/game-field",
         "$FULL_PATH/team-appearance/logos",
+        "$FULL_PATH/stadium/active",
+        "$FULL_PATH/stadium/game",
+        "$FULL_PATH/stadium/event",
     )
 
 internal val ADMIN_ONLY_DELETE_PATHS =

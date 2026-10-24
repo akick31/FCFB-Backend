@@ -48,10 +48,10 @@ class JerseyAppearanceTest {
             currentRepository,
             mockk(),
             teamService,
-            mockk(),
             FieldAppearanceService(),
             mockk(),
             cache,
+            mockk(relaxed = true),
         )
 
     init {

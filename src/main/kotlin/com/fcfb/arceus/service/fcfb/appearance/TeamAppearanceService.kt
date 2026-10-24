@@ -7,7 +7,6 @@ import com.fcfb.arceus.dto.request.TeamUniformRequest
 import com.fcfb.arceus.dto.response.TeamColorsResponse
 import com.fcfb.arceus.dto.response.TeamLogosResponse
 import com.fcfb.arceus.exception.team.InvalidUniformException
-import com.fcfb.arceus.exception.user.UserForbiddenException
 import com.fcfb.arceus.model.appearance.TeamField
 import com.fcfb.arceus.model.appearance.TeamUniformCurrent
 import com.fcfb.arceus.rendering.animation.appearance.ColorSimilarity
@@ -16,7 +15,6 @@ import com.fcfb.arceus.rendering.animation.assets.ConferenceLogoTint
 import com.fcfb.arceus.repositories.appearance.TeamFieldRepository
 import com.fcfb.arceus.repositories.appearance.TeamUniformCurrentRepository
 import com.fcfb.arceus.repositories.conference.ConferenceRepository
-import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.team.TeamService
 import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.appearance.AppearanceThumbnailCache
@@ -27,10 +25,10 @@ class TeamAppearanceService(
     private val teamUniformCurrentRepository: TeamUniformCurrentRepository,
     private val teamFieldRepository: TeamFieldRepository,
     private val teamService: TeamService,
-    private val userService: UserService,
     private val fieldAppearanceService: FieldAppearanceService,
     private val conferenceRepository: ConferenceRepository,
     private val thumbnailCache: AppearanceThumbnailCache,
+    private val teamEditPermissionService: TeamEditPermissionService,
 ) {
     fun getUniform(team: String): TeamUniformCurrent = teamUniformCurrentRepository.findById(team).orElseGet { newUniform(team) }
 
@@ -155,15 +153,7 @@ class TeamAppearanceService(
         }
     }
 
-    private fun requireCanEdit(team: String) {
-        if (AuthContext().isAdminOrCommissioner()) return
-        val userId = AuthContext().currentUserId() ?: throw UserForbiddenException()
-        val user = userService.getUserById(userId)
-        val target = teamService.getTeamByName(team)
-        val byUsername = target.coachUsernames?.contains(user.username) == true
-        val byDiscordId = user.discordId?.let { target.coachDiscordIds?.contains(it) } == true
-        if (!byUsername && !byDiscordId) throw UserForbiddenException()
-    }
+    private fun requireCanEdit(team: String) = teamEditPermissionService.requireCanEdit(team)
 
     private fun newUniform(team: String): TeamUniformCurrent {
         val existing = teamService.getTeamByName(team)

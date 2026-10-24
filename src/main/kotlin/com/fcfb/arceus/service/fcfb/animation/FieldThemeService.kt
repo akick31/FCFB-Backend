@@ -7,7 +7,9 @@ import com.fcfb.arceus.enums.game.PlayoffRound
 import com.fcfb.arceus.model.animation.FieldTheme
 import com.fcfb.arceus.model.appearance.BowlField
 import com.fcfb.arceus.model.appearance.FieldAppearance
+import com.fcfb.arceus.model.appearance.PlayoffField
 import com.fcfb.arceus.model.appearance.PostseasonField
+import com.fcfb.arceus.model.appearance.StadiumDesign
 import com.fcfb.arceus.model.appearance.TeamField
 import com.fcfb.arceus.model.appearance.TeamUniformHistory
 import com.fcfb.arceus.model.game.Game
@@ -20,6 +22,7 @@ import com.fcfb.arceus.repositories.appearance.ConferenceChampionshipFieldReposi
 import com.fcfb.arceus.repositories.appearance.GameFieldRepository
 import com.fcfb.arceus.repositories.appearance.PlayoffFieldRepository
 import com.fcfb.arceus.repositories.appearance.TeamFieldRepository
+import com.fcfb.arceus.repositories.appearance.VenueRepository
 import com.fcfb.arceus.repositories.conference.ConferenceRepository
 import com.fcfb.arceus.repositories.game.GameRepository
 import org.springframework.stereotype.Component
@@ -34,6 +37,7 @@ class FieldThemeService(
     private val gameRepository: GameRepository,
     private val gameFieldRepository: GameFieldRepository,
     private val teamFieldRepository: TeamFieldRepository,
+    private val venueRepository: VenueRepository,
 ) {
     fun resolve(
         play: Play,
@@ -45,6 +49,7 @@ class FieldThemeService(
         bowlFieldOverride: BowlField? = null,
         postseasonFieldOverride: PostseasonField? = null,
         teamFieldOverride: TeamField? = null,
+        stadiumOverride: StadiumDesign? = null,
     ): FieldTheme {
         val style =
             when (game.gameType) {
@@ -86,7 +91,7 @@ class FieldThemeService(
             bowlField = bowlField,
             postseasonField = postseasonField,
             awayUsesAlternateHelmet = HelmetColors.awayUsesAlternate(homeTeam, awayTeam, homeUniform, awayUniform),
-            stadiumField = bowlField?.stadiumTeam?.let { teamFieldRepository.findById(it).orElse(null) },
+            stadium = stadiumOverride ?: stadiumFor(style, game, homeTeam, bowlField, postseasonField),
             homeTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(homeTeam)?.endZoneFont else null,
             awayTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(awayTeam)?.endZoneFont else null,
         )
@@ -120,6 +125,31 @@ class FieldThemeService(
                 }
             else -> null
         }
+
+    private fun stadiumFor(
+        style: FieldStyle,
+        game: Game,
+        homeTeam: Team,
+        bowlField: BowlField?,
+        postseasonField: PostseasonField?,
+    ): StadiumDesign? {
+        val eventVenue =
+            when (style) {
+                FieldStyle.BOWL -> bowlField?.venue
+                FieldStyle.CONFERENCE_CHAMPIONSHIP ->
+                    homeTeam.conference?.let {
+                        conferenceRepository.findById(
+                            it,
+                        ).orElse(null)?.championshipVenue
+                    }
+                FieldStyle.PLAYOFF, FieldStyle.NATIONAL_CHAMPIONSHIP -> (postseasonField as? PlayoffField)?.venue
+                FieldStyle.HOME_FIELD -> homeTeam.stadium
+            }
+        return designOf(game.venue) ?: designOf(eventVenue)
+    }
+
+    private fun designOf(name: String?): StadiumDesign? =
+        name?.trim()?.takeIf { it.isNotBlank() }?.let { venueRepository.findById(it).orElse(null)?.design }
 
     private fun bowlFieldFor(game: Game): BowlField? = game.postseasonGameName?.let { bowlFieldRepository.findById(it).orElse(null) }
 

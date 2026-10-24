@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional
 
 @Repository
 interface ScheduleRepository : CrudRepository<Schedule, Int> {
+    fun findByGameId(gameId: Int): Schedule?
+
     @Query(value = "SELECT * FROM schedule WHERE season = ? AND week = ? AND started = false", nativeQuery = true)
     fun getGamesToStartBySeasonAndWeek(
         season: Int,

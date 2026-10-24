@@ -3,7 +3,9 @@ package com.fcfb.arceus.controllers.appearance
 import com.fcfb.arceus.controllers.ApiConstants
 import com.fcfb.arceus.dto.request.AppearancePreviewRequest
 import com.fcfb.arceus.dto.request.PostseasonPreviewRequest
+import com.fcfb.arceus.dto.request.StadiumPreviewRequest
 import com.fcfb.arceus.service.fcfb.appearance.AppearancePreviewService
+import com.fcfb.arceus.service.fcfb.appearance.StadiumPreviewService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("${ApiConstants.FULL_PATH}/appearance-preview")
 class AppearancePreviewController(
     private val appearancePreviewService: AppearancePreviewService,
+    private val stadiumPreviewService: StadiumPreviewService,
 ) {
     @Operation(summary = "Render a draft uniform or field without saving it")
     @PostMapping("")
@@ -37,4 +40,10 @@ class AppearancePreviewController(
     fun previewPostseason(
         @RequestBody request: PostseasonPreviewRequest,
     ) = appearancePreviewService.previewPostseason(request)
+
+    @Operation(summary = "Render a draft stadium on a close and a long kick at both ends")
+    @PostMapping("/stadium")
+    fun previewStadium(
+        @RequestBody request: StadiumPreviewRequest,
+    ) = stadiumPreviewService.preview(request)
 }

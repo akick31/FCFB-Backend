@@ -2,6 +2,7 @@ package com.fcfb.arceus.model.appearance
 
 import javax.persistence.Basic
 import javax.persistence.Column
+import javax.persistence.Embedded
 import javax.persistence.Entity
 import javax.persistence.Id
 import javax.persistence.Table
@@ -24,6 +25,13 @@ class Venue {
     @Basic
     @Column(name = "capacity")
     var capacity: Int? = null
+
+    @Basic
+    @Column(name = "active")
+    var active: Boolean = true
+
+    @Embedded
+    var design: StadiumDesign = StadiumDesign()
 
     constructor(
         name: String,

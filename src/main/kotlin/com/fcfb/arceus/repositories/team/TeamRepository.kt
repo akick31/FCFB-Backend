@@ -76,6 +76,8 @@ interface TeamRepository : CrudRepository<Team, Int> {
 
     fun findByName(name: String): Team?
 
+    fun findAllByStadium(stadium: String): List<Team>
+
     fun findByAbbreviation(abbreviation: String): Team?
 
     fun findByShortName(shortName: String): Team?
