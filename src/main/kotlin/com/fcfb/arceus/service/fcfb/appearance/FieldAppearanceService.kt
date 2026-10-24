@@ -87,6 +87,12 @@ class FieldAppearanceService {
         field.rightJumbotronShape = request.rightJumbotronShape
         request.jumbotronPylonsOutside?.let { field.jumbotronPylonsOutside = it }
         request.rightJumbotronPylonsOutside?.let { field.rightJumbotronPylonsOutside = it }
+        request.jumbotronColor?.let { field.jumbotronColor = it }
+        field.rightJumbotronColor = request.rightJumbotronColor
+        request.topperColor?.let { field.topperColor = it }
+        field.rightTopperColor = request.rightTopperColor
+        request.facilityFullWidth?.let { field.facilityFullWidth = it }
+        request.rightFacilityFullWidth?.let { field.rightFacilityFullWidth = it }
         request.jumbotronOverBuilding?.let { field.jumbotronOverBuilding = it }
         request.rightJumbotronOverBuilding?.let { field.rightJumbotronOverBuilding = it }
         request.scoreboardLogo?.let { field.scoreboardLogo = it }

@@ -17,16 +17,16 @@ object StoneTowerFacility : FacilityStyle {
     private const val LANCET_WIDTH = 12
     private const val WING_LANCET_BOTTOM = 26
     private const val WING_LANCET_TOP = 76
-    private const val TOWER_LANCET_BOTTOM = 100
-    private const val TOWER_LANCET_TOP = 156
-    private const val TOWER_LANCET_X = 30
     private const val PARAPET = 8
     private const val MERLON = 10
     private const val MERLON_PITCH = 20
-    private const val TURRET = 14
-    private const val TURRET_RISE = 26
     private const val DOOR_WIDTH = 30
     private const val DOOR_HEIGHT = 52
+    private const val TOWER_LANCET_BOTTOM = 100
+    private const val TOWER_LANCET_TOP = 156
+    private const val TOWER_LANCET_X = 38
+    private const val TURRET = 16
+    private const val TURRET_RISE = 26
 
     override val palette: List<Color> = Masonry.PALETTE
     override val fillsView: Boolean = false
@@ -35,6 +35,7 @@ object StoneTowerFacility : FacilityStyle {
         g: Graphics2D,
         area: BackdropArea,
         footY: Int,
+        fullWidth: Boolean,
     ) {
         val frame = FacilityFrame(area, footY)
         paintWings(g, frame)

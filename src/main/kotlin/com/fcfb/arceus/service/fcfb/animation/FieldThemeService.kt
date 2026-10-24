@@ -86,6 +86,7 @@ class FieldThemeService(
             bowlField = bowlField,
             postseasonField = postseasonField,
             awayUsesAlternateHelmet = HelmetColors.awayUsesAlternate(homeTeam, awayTeam, homeUniform, awayUniform),
+            stadiumField = bowlField?.stadiumTeam?.let { teamFieldRepository.findById(it).orElse(null) },
             homeTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(homeTeam)?.endZoneFont else null,
             awayTeamEndZoneFont = if (style != FieldStyle.HOME_FIELD) fieldFor(awayTeam)?.endZoneFont else null,
         )

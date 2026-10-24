@@ -153,6 +153,10 @@ class BowlField {
     @Column(name = "goal_post_style")
     var goalPostStyle: String = TeamField.DEFAULT_GOAL_POST_STYLE
 
+    @Basic
+    @Column(name = "stadium_team")
+    var stadiumTeam: String? = null
+
     fun copyInto(target: BowlField) {
         target.turfColor = turfColor
         target.endZoneFill = endZoneFill
@@ -189,6 +193,7 @@ class BowlField {
         target.wallTextFont = wallTextFont
         target.goalPostColor = goalPostColor
         target.goalPostStyle = goalPostStyle
+        target.stadiumTeam = stadiumTeam
     }
 
     companion object {

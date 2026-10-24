@@ -50,7 +50,10 @@ data class FieldTheme(
     val homeTeamEndZoneFont: String? = null,
     val awayTeamEndZoneFont: String? = null,
     val scoreboard: GameSituation? = null,
+    val stadiumField: FieldAppearance? = null,
 ) {
+    private val venue: FieldAppearance? get() = if (style == FieldStyle.HOME_FIELD) homeField else stadiumField
+
     private val bowlStyling: BowlFieldStyling? by lazy { bowlField?.let { BowlFieldStyling(it, homeTeam, awayTeam, turf) } }
 
     val hasCustomField: Boolean get() = homeField != null || bowlField != null || postseasonField != null
@@ -340,91 +343,112 @@ data class FieldTheme(
         (homeField?.wallTextOutlineWidth ?: bowlField?.wallTextOutlineWidth ?: postseasonField?.wallTextOutlineWidth ?: 1.0).toFloat()
 
     fun stadiumBackdrop(side: TeamSide): StadiumBackdrop {
-        if (style != FieldStyle.HOME_FIELD) return StadiumBackdrop.CROWD
-        val stored = if (side == leftSide()) homeField?.stadiumBackdrop else homeField?.rightStadiumBackdrop ?: homeField?.stadiumBackdrop
+        if (venue == null) return StadiumBackdrop.CROWD
+        val stored = if (side == leftSide()) venue?.stadiumBackdrop else venue?.rightStadiumBackdrop ?: venue?.stadiumBackdrop
         return StadiumBackdrop.from(stored)
     }
 
     fun stadiumSize(side: TeamSide): Float {
-        if (style != FieldStyle.HOME_FIELD) return 1f
-        val stored = if (side == leftSide()) homeField?.stadiumSize else homeField?.rightStadiumSize ?: homeField?.stadiumSize
+        if (venue == null) return 1f
+        val stored = if (side == leftSide()) venue?.stadiumSize else venue?.rightStadiumSize ?: venue?.stadiumSize
         return (stored ?: 1.0).toFloat()
     }
 
     fun jumbotronEnabled(side: TeamSide): Boolean {
-        if (style != FieldStyle.HOME_FIELD) return false
+        if (venue == null) return false
         if (stadiumBackdrop(side) == StadiumBackdrop.CROWD && stadiumSize(side) >= 1f) return false
-        return if (side == leftSide()) homeField?.jumbotronEnabled ?: false else homeField?.rightJumbotronEnabled ?: false
+        return if (side == leftSide()) venue?.jumbotronEnabled ?: false else venue?.rightJumbotronEnabled ?: false
     }
 
     fun backdropVariant(side: TeamSide): BackdropVariant? {
-        val rightMatchesLeft = homeField?.rightStadiumBackdrop == null
-        val stored = if (side == leftSide() || rightMatchesLeft) homeField?.backdropStyle else homeField?.rightBackdropStyle
+        val rightMatchesLeft = venue?.rightStadiumBackdrop == null
+        val stored = if (side == leftSide() || rightMatchesLeft) venue?.backdropStyle else venue?.rightBackdropStyle
         return BackdropVariant.resolve(stadiumBackdrop(side), stored)
     }
 
     fun scoreboardStyle(side: TeamSide): ScoreboardStyle {
-        val stored = if (side == leftSide()) homeField?.jumbotronStyle else homeField?.rightJumbotronStyle ?: homeField?.jumbotronStyle
+        val stored = if (side == leftSide()) venue?.jumbotronStyle else venue?.rightJumbotronStyle ?: venue?.jumbotronStyle
         return ScoreboardStyle.from(stored)
     }
 
     fun jumbotronElevation(side: TeamSide): Float {
-        val stored = if (side == leftSide()) homeField?.jumbotronElevation else homeField?.rightJumbotronElevation
+        val stored = if (side == leftSide()) venue?.jumbotronElevation else venue?.rightJumbotronElevation
         return (stored ?: 0.0).toFloat().coerceIn(0f, 1f)
     }
 
     fun pylonStyle(side: TeamSide): PylonStyle {
-        val left = homeField?.jumbotronPylonStyle
-        val stored = if (side == leftSide()) left else homeField?.rightJumbotronPylonStyle ?: left
+        val left = venue?.jumbotronPylonStyle
+        val stored = if (side == leftSide()) left else venue?.rightJumbotronPylonStyle ?: left
         return PylonStyle.from(stored)
     }
 
     fun skyline(side: TeamSide): Skyline? {
-        if (style != FieldStyle.HOME_FIELD) return null
-        val left = homeField?.skylineBackdrop
-        return Skyline.from(if (side == leftSide()) left else homeField?.rightSkylineBackdrop ?: left)
+        if (venue == null) return null
+        val left = venue?.skylineBackdrop
+        return Skyline.from(if (side == leftSide()) left else venue?.rightSkylineBackdrop ?: left)
     }
 
     fun scoreboardShape(side: TeamSide): ScoreboardShape {
-        val stored = if (side == leftSide()) homeField?.jumbotronShape else homeField?.rightJumbotronShape ?: homeField?.jumbotronShape
+        val stored = if (side == leftSide()) venue?.jumbotronShape else venue?.rightJumbotronShape ?: venue?.jumbotronShape
         return ScoreboardShape.from(stored)
     }
 
     fun pylonsOutside(side: TeamSide): Boolean =
-        if (side == leftSide()) homeField?.jumbotronPylonsOutside ?: false else homeField?.rightJumbotronPylonsOutside ?: false
+        if (side == leftSide()) venue?.jumbotronPylonsOutside ?: false else venue?.rightJumbotronPylonsOutside ?: false
 
     fun jumbotronOverBuilding(side: TeamSide): Boolean =
-        if (side == leftSide()) homeField?.jumbotronOverBuilding ?: false else homeField?.rightJumbotronOverBuilding ?: false
+        !facilityFullWidth(side) &&
+            if (side == leftSide()) venue?.jumbotronOverBuilding ?: false else venue?.rightJumbotronOverBuilding ?: false
+
+    fun facilityFullWidth(side: TeamSide): Boolean {
+        if (backdropVariant(side)?.lowBuilding != true) return false
+        return if (side == leftSide()) venue?.facilityFullWidth ?: false else venue?.rightFacilityFullWidth ?: false
+    }
+
+    fun jumbotronColor(side: TeamSide): Color? {
+        val left = venue?.jumbotronColor
+        return parsed((if (side == leftSide()) left else venue?.rightJumbotronColor ?: left)?.takeIf { it.isNotBlank() })
+    }
+
+    fun topperColor(side: TeamSide): Color? {
+        val left = venue?.topperColor
+        return parsed((if (side == leftSide()) left else venue?.rightTopperColor ?: left)?.takeIf { it.isNotBlank() })
+    }
 
     fun scoreboardLogoUrl(side: TeamSide): String? {
-        if (style != FieldStyle.HOME_FIELD || scoreboardShape(side) !in TOPPER_SHAPES) return null
-        val left = homeField?.scoreboardLogo
-        return when ((if (side == leftSide()) left else homeField?.rightScoreboardLogo ?: left)?.uppercase()) {
-            "PRIMARY" -> homeTeam.logo
-            "SECONDARY" -> homeTeam.secondaryLogo
+        if (venue == null || scoreboardShape(side) !in TOPPER_SHAPES) return null
+        val left = venue?.scoreboardLogo
+        return when ((if (side == leftSide()) left else venue?.rightScoreboardLogo ?: left)?.uppercase()) {
+            "PRIMARY" -> if (style == FieldStyle.HOME_FIELD) homeTeam.logo else centerLogoUrl
+            "SECONDARY" -> if (style == FieldStyle.HOME_FIELD) homeTeam.secondaryLogo else centerLogoUrl
             else -> null
         }?.takeIf { it.isNotBlank() }
     }
 
+    fun scoreboardTitle(): String {
+        val bowlName = bowlField?.bowl?.takeIf { style == FieldStyle.BOWL }
+        return (bowlName ?: homeTeam.name.orEmpty()).uppercase()
+    }
+
     fun jumbotronWidth(side: TeamSide): Float {
-        val stored = if (side == leftSide()) homeField?.jumbotronWidth else homeField?.rightJumbotronWidth
+        val stored = if (side == leftSide()) venue?.jumbotronWidth else venue?.rightJumbotronWidth
         return (stored ?: 1.0).toFloat().coerceIn(1f, MAX_JUMBOTRON_WIDTH)
     }
 
     fun jumbotronSize(side: TeamSide): Float {
-        val stored = if (side == leftSide()) homeField?.jumbotronSize else homeField?.rightJumbotronSize
+        val stored = if (side == leftSide()) venue?.jumbotronSize else venue?.rightJumbotronSize
         return (stored ?: 1.0).toFloat().coerceIn(MIN_JUMBOTRON_SIZE, MAX_JUMBOTRON_SIZE)
     }
 
     fun wallShown(side: TeamSide): Boolean {
-        if (style != FieldStyle.HOME_FIELD || stadiumBackdrop(side) == StadiumBackdrop.CROWD) return true
+        if (venue == null || stadiumBackdrop(side) == StadiumBackdrop.CROWD) return true
         if (stadiumBackdrop(side) == StadiumBackdrop.FACILITY) return false
-        return if (side == leftSide()) homeField?.wallEnabled ?: false else homeField?.rightWallEnabled ?: false
+        return if (side == leftSide()) venue?.wallEnabled ?: false else venue?.rightWallEnabled ?: false
     }
 
     fun jumbotronPylonMount(side: TeamSide): Boolean {
-        if (style != FieldStyle.HOME_FIELD) return false
-        return if (side == leftSide()) homeField?.jumbotronPylonMount ?: false else homeField?.rightJumbotronPylonMount ?: false
+        if (venue == null) return false
+        return if (side == leftSide()) venue?.jumbotronPylonMount ?: false else venue?.rightJumbotronPylonMount ?: false
     }
 
     private fun homeFieldEndZoneFill(): Color? = homeField?.endZoneColor?.let { FieldColors.parseColor(it) }

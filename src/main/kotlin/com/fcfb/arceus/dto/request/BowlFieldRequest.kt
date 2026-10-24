@@ -36,4 +36,5 @@ data class BowlFieldRequest(
     val wallTextFont: String? = null,
     val goalPostColor: String? = null,
     val goalPostStyle: String? = null,
+    val stadiumTeam: String? = null,
 )

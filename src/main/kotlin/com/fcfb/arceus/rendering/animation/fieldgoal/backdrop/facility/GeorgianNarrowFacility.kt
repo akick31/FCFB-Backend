@@ -7,7 +7,6 @@ import java.awt.Graphics2D
 import java.awt.Polygon
 
 object GeorgianNarrowFacility : FacilityStyle {
-    private const val HALF_WIDTH = 270
     private const val HEIGHT = 150
     private const val BASE = 12
     private const val CORNICE = 8
@@ -17,33 +16,44 @@ object GeorgianNarrowFacility : FacilityStyle {
     private const val WINDOW_WIDTH = 13
     private const val WINDOW_HEIGHT = 30
     private val UPPER_FLOORS = listOf(62, 106)
-    private val WINDOW_COLUMNS = listOf(30, 110, 170, 230)
+    private const val PAVILION_WINDOW = 30
+    private const val FIRST_WINDOW = 110
+    private const val WINDOW_PITCH = 60
+    private const val GROUND_WINDOW = 170
+    private const val GROUND_WINDOW_PITCH = 120
+    private const val EDGE_MARGIN = 30
     private const val DOOR_HALF = 15
     private const val DOOR_HEIGHT = 44
     private const val BOARD_SPAN = 1030
 
-    private val brick = Color(156, 58, 42)
-    private val brickShadow = Color(128, 46, 34)
-    private val trim = Color(240, 236, 226)
-    private val trimShadow = Color(204, 198, 186)
+    private val brick = GeorgianColors.brick
+    private val brickShadow = GeorgianColors.brickShadow
+    private val trim = GeorgianColors.trim
+    private val trimShadow = GeorgianColors.trimShadow
 
-    override val palette: List<Color> = listOf(brick, brickShadow, trim, trimShadow) + Masonry.PALETTE
+    override val palette: List<Color> = GeorgianColors.PALETTE + Masonry.PALETTE
     override val fillsView: Boolean = false
 
     override fun paint(
         g: Graphics2D,
         area: BackdropArea,
         footY: Int,
+        fullWidth: Boolean,
     ) {
         val frame = FacilityFrame(area, footY)
-        val left = frame.x(-HALF_WIDTH)
-        val right = frame.x(HALF_WIDTH)
+        if (fullWidth) {
+            GeorgianWings.paint(g, frame)
+            return
+        }
+        val halfWidth = LowBuildingLayout.CENTER_HALF
+        val left = frame.x(-halfWidth)
+        val right = frame.x(halfWidth)
         val top = frame.y(HEIGHT)
         Masonry.band(g, brick, left, right, top, frame.footY - top)
         Masonry.band(g, brickShadow, frame.x(-PAVILION_HALF) - frame.length(PROJECTION), frame.x(-PAVILION_HALF), top, frame.footY - top)
         Masonry.band(g, brickShadow, frame.x(PAVILION_HALF), frame.x(PAVILION_HALF) + frame.length(PROJECTION), top, frame.footY - top)
         Masonry.band(g, trimShadow, left, right, frame.y(BASE), frame.length(BASE))
-        paintWindows(g, frame)
+        paintWindows(g, frame, halfWidth)
         paintDoor(g, frame)
         Masonry.band(g, trim, left - frame.length(CORNICE), right + frame.length(CORNICE), top, frame.length(CORNICE))
         paintPediment(g, frame, top)
@@ -60,21 +70,16 @@ object GeorgianNarrowFacility : FacilityStyle {
     private fun paintWindows(
         g: Graphics2D,
         frame: FacilityFrame,
+        halfWidth: Int,
     ) {
+        val columns =
+            listOf(PAVILION_WINDOW, -PAVILION_WINDOW) + LowBuildingLayout.repeating(FIRST_WINDOW, WINDOW_PITCH, halfWidth, EDGE_MARGIN)
         UPPER_FLOORS.forEach { floor ->
-            WINDOW_COLUMNS.forEach { column ->
-                listOf(column, -column).forEach { center ->
-                    Masonry.window(
-                        g,
-                        frame.x(center),
-                        frame.y(floor + WINDOW_HEIGHT),
-                        frame.length(WINDOW_WIDTH),
-                        frame.length(WINDOW_HEIGHT),
-                    )
-                }
+            columns.forEach { center ->
+                Masonry.window(g, frame.x(center), frame.y(floor + WINDOW_HEIGHT), frame.length(WINDOW_WIDTH), frame.length(WINDOW_HEIGHT))
             }
         }
-        listOf(170, -170).forEach { center ->
+        LowBuildingLayout.repeating(GROUND_WINDOW, GROUND_WINDOW_PITCH, halfWidth, EDGE_MARGIN).forEach { center ->
             Masonry.window(g, frame.x(center), frame.y(BASE + 8 + WINDOW_HEIGHT), frame.length(WINDOW_WIDTH), frame.length(WINDOW_HEIGHT))
         }
     }

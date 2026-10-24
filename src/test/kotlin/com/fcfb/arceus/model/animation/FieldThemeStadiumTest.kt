@@ -7,6 +7,7 @@ import com.fcfb.arceus.enums.animation.ScoreboardShape
 import com.fcfb.arceus.enums.animation.ScoreboardStyle
 import com.fcfb.arceus.enums.animation.StadiumBackdrop
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.model.appearance.BowlField
 import com.fcfb.arceus.model.appearance.TeamField
 import com.fcfb.arceus.model.team.Team
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.awt.Color
 
 class FieldThemeStadiumTest {
     private fun theme(
@@ -245,5 +247,65 @@ class FieldThemeStadiumTest {
         assertNull(Skyline.from("CROWD"))
         assertNull(Skyline.from("FACILITY_BRICK"))
         assertNull(Skyline.from("HILL"))
+    }
+
+    @Test
+    fun `board and topper colors fall back to the left side and ignore blanks`() {
+        val field =
+            theme {
+                jumbotronColor = "#492f24"
+                topperColor = "#ffc425"
+                rightTopperColor = ""
+            }
+
+        assertEquals(Color(0x49, 0x2f, 0x24), field.jumbotronColor(field.rightSide()))
+        assertNull(field.topperColor(field.rightSide()))
+    }
+
+    @Test
+    fun `a full-width low building cancels the board over it but a tower ignores the setting`() {
+        val low =
+            theme {
+                stadiumBackdrop = "FACILITY"
+                backdropStyle = "FACILITY_NARROW_GEORGIAN"
+                jumbotronOverBuilding = true
+                facilityFullWidth = true
+            }
+        val tower =
+            theme {
+                stadiumBackdrop = "FACILITY"
+                backdropStyle = "FACILITY_TOWER"
+                jumbotronOverBuilding = true
+                facilityFullWidth = true
+            }
+
+        assertFalse(low.jumbotronOverBuilding(low.leftSide()))
+        assertTrue(tower.jumbotronOverBuilding(tower.leftSide()))
+    }
+
+    @Test
+    fun `a bowl played in a team's stadium uses that stadium and titles the board with the bowl`() {
+        val venue =
+            TeamField().apply {
+                stadiumBackdrop = "MOUNTAINS"
+                jumbotronEnabled = true
+            }
+        val bowl = BowlField().apply { bowl = "New Mexico Bowl" }
+        val atVenue =
+            FieldTheme(
+                style = FieldStyle.BOWL,
+                homeTeam = Team().apply { name = "Wyoming" },
+                awayTeam = Team().apply { name = "Boise State" },
+                centerLogoUrl = null,
+                bowlField = bowl,
+                stadiumField = venue,
+            )
+        val neutral = atVenue.copy(stadiumField = null)
+
+        assertEquals(StadiumBackdrop.MOUNTAINS, atVenue.stadiumBackdrop(atVenue.leftSide()))
+        assertTrue(atVenue.jumbotronEnabled(atVenue.leftSide()))
+        assertEquals("NEW MEXICO BOWL", atVenue.scoreboardTitle())
+        assertEquals(StadiumBackdrop.CROWD, neutral.stadiumBackdrop(neutral.leftSide()))
+        assertFalse(neutral.jumbotronEnabled(neutral.leftSide()))
     }
 }

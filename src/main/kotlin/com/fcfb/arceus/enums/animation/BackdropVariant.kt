@@ -2,6 +2,7 @@ package com.fcfb.arceus.enums.animation
 
 enum class BackdropVariant(
     val backdrop: StadiumBackdrop,
+    val lowBuilding: Boolean = false,
 ) {
     BUILDING_CITY(StadiumBackdrop.BUILDING),
     BUILDING_TOWN(StadiumBackdrop.BUILDING),
@@ -33,9 +34,9 @@ enum class BackdropVariant(
     FACILITY_TOWER(StadiumBackdrop.FACILITY),
     FACILITY_TOWER_STONE(StadiumBackdrop.FACILITY),
     FACILITY_TOWER_MODERN(StadiumBackdrop.FACILITY),
-    FACILITY_NARROW_GEORGIAN(StadiumBackdrop.FACILITY),
-    FACILITY_NARROW_MODERN(StadiumBackdrop.FACILITY),
-    FACILITY_NARROW_COLLEGIATE(StadiumBackdrop.FACILITY),
+    FACILITY_NARROW_GEORGIAN(StadiumBackdrop.FACILITY, lowBuilding = true),
+    FACILITY_NARROW_MODERN(StadiumBackdrop.FACILITY, lowBuilding = true),
+    FACILITY_NARROW_COLLEGIATE(StadiumBackdrop.FACILITY, lowBuilding = true),
     ;
 
     companion object {

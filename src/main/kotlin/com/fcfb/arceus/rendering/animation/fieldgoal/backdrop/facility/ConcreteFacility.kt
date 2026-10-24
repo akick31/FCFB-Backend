@@ -30,6 +30,7 @@ object ConcreteFacility : FacilityStyle {
         g: Graphics2D,
         area: BackdropArea,
         footY: Int,
+        fullWidth: Boolean,
     ) {
         val frame = FacilityFrame(area, area.groundY)
         Masonry.band(g, concrete, 0, area.width, area.topY, area.groundY - area.topY)

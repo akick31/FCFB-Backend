@@ -267,6 +267,30 @@ abstract class FieldAppearance {
     var rightJumbotronPylonsOutside: Boolean = false
 
     @Basic
+    @Column(name = "jumbotron_color")
+    var jumbotronColor: String? = null
+
+    @Basic
+    @Column(name = "right_jumbotron_color")
+    var rightJumbotronColor: String? = null
+
+    @Basic
+    @Column(name = "topper_color")
+    var topperColor: String? = null
+
+    @Basic
+    @Column(name = "right_topper_color")
+    var rightTopperColor: String? = null
+
+    @Basic
+    @Column(name = "facility_full_width")
+    var facilityFullWidth: Boolean = false
+
+    @Basic
+    @Column(name = "right_facility_full_width")
+    var rightFacilityFullWidth: Boolean = false
+
+    @Basic
     @Column(name = "jumbotron_over_building")
     var jumbotronOverBuilding: Boolean = false
 
@@ -380,6 +404,12 @@ abstract class FieldAppearance {
         target.rightJumbotronShape = rightJumbotronShape
         target.jumbotronPylonsOutside = jumbotronPylonsOutside
         target.rightJumbotronPylonsOutside = rightJumbotronPylonsOutside
+        target.jumbotronColor = jumbotronColor
+        target.rightJumbotronColor = rightJumbotronColor
+        target.topperColor = topperColor
+        target.rightTopperColor = rightTopperColor
+        target.facilityFullWidth = facilityFullWidth
+        target.rightFacilityFullWidth = rightFacilityFullWidth
         target.jumbotronOverBuilding = jumbotronOverBuilding
         target.rightJumbotronOverBuilding = rightJumbotronOverBuilding
         target.scoreboardLogo = scoreboardLogo

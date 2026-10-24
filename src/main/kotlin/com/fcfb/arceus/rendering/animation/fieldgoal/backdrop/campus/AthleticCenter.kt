@@ -10,9 +10,8 @@ object AthleticCenter : LandmarkBuilding {
     private val glassReflection = Color(150, 182, 200)
     private val mullion = Color(64, 84, 100)
     private val canopy = Color(240, 240, 236)
-    private val fin = Color(84, 88, 96)
 
-    override val palette: List<Color> = listOf(limestone, limestoneShadow, glass, glassReflection, mullion, canopy, fin)
+    override val palette: List<Color> = listOf(limestone, limestoneShadow, glass, glassReflection, mullion, canopy)
 
     override fun paint(
         g: Graphics2D,
@@ -50,22 +49,5 @@ object AthleticCenter : LandmarkBuilding {
         val canopyHeight = (unit * 0.035f).toInt().coerceAtLeast(2)
         g.color = canopy
         g.fillRect(left - width / 40, top - canopyHeight, width + width / 20, canopyHeight)
-        val towerWidth = (unit * 0.22f).toInt()
-        val towerHeight = (unit * 0.78f).toInt()
-        val towerLeft = left + width - width / 8 - towerWidth
-        g.color = limestone
-        g.fillRect(towerLeft, groundY - towerHeight, towerWidth, towerHeight)
-        g.color = fin
-        val finWidth = (towerWidth / 10).coerceAtLeast(1)
-        repeat(4) { index ->
-            g.fillRect(
-                towerLeft + towerWidth * (index + 1) / 5,
-                groundY - towerHeight + (unit * 0.04f).toInt(),
-                finWidth,
-                towerHeight * 2 / 3,
-            )
-        }
-        g.color = canopy
-        g.fillRect(towerLeft - 2, groundY - towerHeight - canopyHeight, towerWidth + 4, canopyHeight)
     }
 }

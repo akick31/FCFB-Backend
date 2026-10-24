@@ -3,6 +3,7 @@ package com.fcfb.arceus.rendering.animation.fieldgoal.backdrop.scoreboard
 import com.fcfb.arceus.enums.animation.ScoreboardShape
 import com.fcfb.arceus.rendering.animation.assets.LogoFit
 import java.awt.BasicStroke
+import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.Polygon
 import java.awt.Rectangle
@@ -23,6 +24,15 @@ object ScoreboardHousing {
     private const val TITLE_WIDTH_SHARE = 0.8f
     private const val LOGO_SHARE = 0.8f
     private const val ARCH_TITLE_NARROWING = 0.75f
+    private const val CASING_SHARE = 0.05f
+    private const val LUMA_RED = 0.299f
+    private const val LUMA_GREEN = 0.587f
+    private const val LUMA_BLUE = 0.114f
+    private const val LIGHT_FILL = 150f
+    private val LIGHT_TEXT = Color(245, 245, 240)
+    private val DARK_TEXT = Color(20, 20, 22)
+
+    val PALETTE: List<Color> = listOf(LIGHT_TEXT, DARK_TEXT)
 
     fun topperHeight(
         shape: ScoreboardShape,
@@ -61,6 +71,7 @@ object ScoreboardHousing {
         design: ScoreboardDesign,
         title: String,
         logo: BufferedImage?,
+        fill: Color?,
     ) {
         val height = topperHeight(shape, board)
         if (height <= 0) return
@@ -84,7 +95,7 @@ object ScoreboardHousing {
                 }
                 else -> return
             }
-        g.color = design.face
+        g.color = fill ?: design.face
         g.fill(topper)
         paintTrim(g, topper, board, design)
         if (logo != null) {
@@ -93,8 +104,26 @@ object ScoreboardHousing {
             LogoFit().draw(g, logo, board.centerX.toInt(), centerY, logoBox)
             return
         }
-        paintTitle(g, shape, board, topper.bounds, height, design, title)
+        paintTitle(g, shape, board, topper.bounds, height, fill?.let { contrastingText(it) } ?: design.text, title)
     }
+
+    fun withCasing(board: Rectangle): Rectangle {
+        val pad = (board.height * CASING_SHARE).toInt().coerceAtLeast(2)
+        return Rectangle(board.x - pad, board.y - pad, board.width + pad * 2, board.height + pad * 2)
+    }
+
+    fun paintCasing(
+        g: Graphics2D,
+        shape: ScoreboardShape,
+        casing: Rectangle,
+        color: Color,
+    ) {
+        g.color = color
+        g.fill(outlineOf(shape, casing) ?: casing)
+    }
+
+    private fun contrastingText(fill: Color): Color =
+        if (fill.red * LUMA_RED + fill.green * LUMA_GREEN + fill.blue * LUMA_BLUE > LIGHT_FILL) DARK_TEXT else LIGHT_TEXT
 
     private fun paintTitle(
         g: Graphics2D,
@@ -102,7 +131,7 @@ object ScoreboardHousing {
         board: Rectangle,
         bounds: Rectangle,
         height: Int,
-        design: ScoreboardDesign,
+        textColor: Color,
         title: String,
     ) {
         val titleHeight = (height * TITLE_HEIGHT_SHARE).toInt()
@@ -110,7 +139,7 @@ object ScoreboardHousing {
             if (shape == ScoreboardShape.ARCHED) board.y - titleHeight - height / 8 else board.y - height + (height - titleHeight) / 2
         val archNarrowing = if (shape == ScoreboardShape.ARCHED) ARCH_TITLE_NARROWING else 1f
         val font = ScoreboardText.sharedFont(g, listOf(title to (bounds.width * TITLE_WIDTH_SHARE * archNarrowing).toInt()), titleHeight)
-        ScoreboardText.paintLabel(g, title, board.centerX.toInt(), titleTop, titleHeight, design.text, font)
+        ScoreboardText.paintLabel(g, title, board.centerX.toInt(), titleTop, titleHeight, textColor, font)
     }
 
     fun paintTrim(

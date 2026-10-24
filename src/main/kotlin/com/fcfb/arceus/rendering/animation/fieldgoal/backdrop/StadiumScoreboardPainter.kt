@@ -21,7 +21,7 @@ object StadiumScoreboardPainter {
     private const val NET_CLEARANCE = 4
     private const val MAX_WIDTH_SHARE = 0.98f
 
-    fun paletteOf(style: ScoreboardStyle): List<Color> = designOf(style).palette + PylonPainter.PALETTE
+    fun paletteOf(style: ScoreboardStyle): List<Color> = designOf(style).palette + PylonPainter.PALETTE + ScoreboardHousing.PALETTE
 
     fun boardBounds(
         area: BackdropArea,
@@ -53,7 +53,9 @@ object StadiumScoreboardPainter {
         val design = designOf(settings.style)
         val shape = settings.shape
         val layout = ScoreboardLayout.of(bounds, centerHalfWidth(area), area.uprightClearHalfWidth)
-        ScoreboardHousing.paintTopper(g, shape, bounds, design, settings.title, settings.logo)
+        val casing = settings.casing?.let { ScoreboardHousing.withCasing(bounds) }
+        ScoreboardHousing.paintTopper(g, shape, casing ?: bounds, design, settings.title, settings.logo, settings.topperColor)
+        casing?.let { ScoreboardHousing.paintCasing(g, shape, it, settings.casing) }
         val outline = ScoreboardHousing.outlineOf(shape, bounds)
         val previousClip = g.clip
         outline?.let { g.clip(it) }

@@ -23,7 +23,8 @@ object FacilityBackdrop {
         area: BackdropArea,
         variant: BackdropVariant?,
         footY: Int,
-    ) = styleOf(variant).paint(g, area, footY)
+        fullWidth: Boolean,
+    ) = styleOf(variant).paint(g, area, footY, fullWidth)
 
     fun boardOver(
         area: BackdropArea,

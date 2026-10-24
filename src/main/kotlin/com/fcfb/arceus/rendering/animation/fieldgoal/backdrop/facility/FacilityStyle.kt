@@ -13,6 +13,7 @@ interface FacilityStyle {
         g: Graphics2D,
         area: BackdropArea,
         footY: Int,
+        fullWidth: Boolean,
     )
 
     fun boardOver(

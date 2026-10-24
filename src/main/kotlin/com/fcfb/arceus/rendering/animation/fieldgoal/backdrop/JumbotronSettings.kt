@@ -3,6 +3,7 @@ package com.fcfb.arceus.rendering.animation.fieldgoal.backdrop
 import com.fcfb.arceus.enums.animation.PylonStyle
 import com.fcfb.arceus.enums.animation.ScoreboardShape
 import com.fcfb.arceus.enums.animation.ScoreboardStyle
+import java.awt.Color
 import java.awt.image.BufferedImage
 
 data class JumbotronSettings(
@@ -16,4 +17,6 @@ data class JumbotronSettings(
     val shape: ScoreboardShape,
     val title: String,
     val logo: BufferedImage?,
+    val casing: Color?,
+    val topperColor: Color?,
 )

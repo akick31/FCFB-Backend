@@ -74,6 +74,7 @@ class BowlFieldService(
         field.wallText = request.wallText
         field.wallTextOutlineColor = request.wallTextOutlineColor
         field.wallTextFont = request.wallTextFont
+        field.stadiumTeam = request.stadiumTeam?.takeIf { it.isNotBlank() }
     }
 
     @Transactional

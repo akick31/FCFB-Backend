@@ -46,7 +46,13 @@ object StadiumBackdropPainter {
     ) {
         val backdrop = theme.stadiumBackdrop(side)
         if (!area.behindWall && backdrop != StadiumBackdrop.HILL && !hasFacade(theme, side)) PerimeterFencePainter.paint(g, area)
-        if (hasForegroundBuilding(theme, side)) FacilityBackdrop.paint(g, area, theme.backdropVariant(side), FacilityGround.footY(area))
+        if (hasForegroundBuilding(
+                theme,
+                side,
+            )
+        ) {
+            FacilityBackdrop.paint(g, area, theme.backdropVariant(side), FacilityGround.footY(area), fullWidth = false)
+        }
     }
 
     fun hasFacade(
@@ -112,7 +118,7 @@ object StadiumBackdropPainter {
             StadiumBackdrop.LAKE -> LakeBackdrop.paint(g, scenery, variant)
             StadiumBackdrop.MOUNTAINS -> MountainBackdrop.paint(g, scenery, variant)
             StadiumBackdrop.HILL -> HillBackdrop.paint(g, scenery)
-            StadiumBackdrop.FACILITY -> FacilityBackdrop.paint(g, scenery, variant, scenery.groundY)
+            StadiumBackdrop.FACILITY -> FacilityBackdrop.paint(g, scenery, variant, scenery.groundY, theme.facilityFullWidth(side))
             StadiumBackdrop.NONE -> OpenSkyBackdrop.paint(g, scenery)
         }
     }
@@ -145,8 +151,14 @@ object StadiumBackdropPainter {
                 paletteOf(theme.stadiumBackdrop(side), theme.backdropVariant(side)) +
                     PerimeterFencePainter.PALETTE +
                     skylinePalette(theme, side) +
-                    if (hasScoreboard(theme, side)) StadiumScoreboardPainter.paletteOf(theme.scoreboardStyle(side)) else emptyList()
+                    if (hasScoreboard(theme, side)) scoreboardPalette(theme, side) else emptyList()
             }.distinct()
+
+    private fun scoreboardPalette(
+        theme: FieldTheme,
+        side: TeamSide,
+    ): List<Color> =
+        StadiumScoreboardPainter.paletteOf(theme.scoreboardStyle(side)) + listOfNotNull(theme.jumbotronColor(side), theme.topperColor(side))
 
     private fun skylinePalette(
         theme: FieldTheme,
@@ -223,8 +235,10 @@ object StadiumBackdropPainter {
         pylonStyle = theme.pylonStyle(side),
         pylonsOutside = theme.pylonsOutside(side),
         shape = theme.scoreboardShape(side),
-        title = theme.homeTeam.name.orEmpty().uppercase(),
+        title = theme.scoreboardTitle(),
         logo = LogoLoader.load(theme.scoreboardLogoUrl(side)),
+        casing = theme.jumbotronColor(side),
+        topperColor = theme.topperColor(side),
     )
 
     private fun paintBuildings(

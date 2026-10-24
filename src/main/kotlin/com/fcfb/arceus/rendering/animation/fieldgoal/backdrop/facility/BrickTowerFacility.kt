@@ -17,28 +17,28 @@ object BrickTowerFacility : FacilityStyle {
     private const val DENTIL_PITCH = 7
     private const val QUOIN = 8
     private const val QUOIN_COURSE = 10
-    private val ARCADE = listOf(125, 200)
+    private val ARCADE = listOf(145, 215)
     private const val ARCADE_WIDTH = 18
     private const val ARCADE_BOTTOM = 14
     private const val ARCADE_TOP = 40
-    private val UPPER_PAIRS = listOf(115, 200)
+    private val UPPER_PAIRS = listOf(140, 212)
     private const val PAIR_GAP = 11
     private const val UPPER_BOTTOM = 56
     private const val UPPER_TOP = 80
     private const val WINDOW_WIDTH = 10
-    private const val TOWER_WINDOW_X = 22
+    private const val ENTRY_WIDTH = 34
+    private const val ENTRY_HEIGHT = 46
+    private const val TOWER_WINDOW_X = 28
     private const val TOWER_WINDOW_BOTTOM = 98
     private const val TOWER_WINDOW_TOP = 124
     private const val CLOCK_Y = 44
-    private const val CLOCK = 18
+    private const val CLOCK = 20
     private const val BELFRY_BOTTOM = 154
     private const val BELFRY_TOP = 172
-    private val BELFRY = listOf(-44, 0, 44)
+    private val BELFRY = listOf(-56, 0, 56)
     private const val ROOF_RISE = 32
     private const val ROOF_OVERHANG = 8
     private const val FLAGPOLE = 22
-    private const val ENTRY_WIDTH = 34
-    private const val ENTRY_HEIGHT = 46
 
     override val palette: List<Color> = Masonry.PALETTE
     override val fillsView: Boolean = false
@@ -47,6 +47,7 @@ object BrickTowerFacility : FacilityStyle {
         g: Graphics2D,
         area: BackdropArea,
         footY: Int,
+        fullWidth: Boolean,
     ) {
         val frame = FacilityFrame(area, footY)
         paintWings(g, frame)
@@ -133,6 +134,26 @@ object BrickTowerFacility : FacilityStyle {
         paintRoof(g, frame)
     }
 
+    private fun paintRoof(
+        g: Graphics2D,
+        frame: FacilityFrame,
+    ) {
+        val eave = frame.y(TOWER_HEIGHT)
+        val peak = frame.y(TOWER_HEIGHT + ROOF_RISE)
+        g.color = Masonry.roof
+        g.fillPolygon(
+            intArrayOf(
+                frame.x(-TOWER_HALF - ROOF_OVERHANG),
+                frame.x(-TOWER_HALF / 3),
+                frame.x(TOWER_HALF / 3),
+                frame.x(TOWER_HALF + ROOF_OVERHANG),
+            ),
+            intArrayOf(eave, peak, peak, eave),
+            4,
+        )
+        Masonry.band(g, Masonry.glass, frame.x(0), frame.x(0) + 1, frame.y(TOWER_HEIGHT + ROOF_RISE + FLAGPOLE), frame.length(FLAGPOLE))
+    }
+
     private fun paintQuoins(
         g: Graphics2D,
         frame: FacilityFrame,
@@ -170,25 +191,5 @@ object BrickTowerFacility : FacilityStyle {
             Masonry.band(g, Masonry.stone, frame.x(x), frame.x(x + DENTIL), frame.y(height - CORNICE), frame.length(DENTIL))
             x += DENTIL_PITCH
         }
-    }
-
-    private fun paintRoof(
-        g: Graphics2D,
-        frame: FacilityFrame,
-    ) {
-        val eave = frame.y(TOWER_HEIGHT)
-        val peak = frame.y(TOWER_HEIGHT + ROOF_RISE)
-        g.color = Masonry.roof
-        g.fillPolygon(
-            intArrayOf(
-                frame.x(-TOWER_HALF - ROOF_OVERHANG),
-                frame.x(-TOWER_HALF / 3),
-                frame.x(TOWER_HALF / 3),
-                frame.x(TOWER_HALF + ROOF_OVERHANG),
-            ),
-            intArrayOf(eave, peak, peak, eave),
-            4,
-        )
-        Masonry.band(g, Masonry.glass, frame.x(0), frame.x(0) + 1, frame.y(TOWER_HEIGHT + ROOF_RISE + FLAGPOLE), frame.length(FLAGPOLE))
     }
 }

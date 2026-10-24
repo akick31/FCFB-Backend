@@ -6,7 +6,6 @@ import java.awt.Color
 import java.awt.Graphics2D
 
 object ModernNarrowFacility : FacilityStyle {
-    private const val HALF_WIDTH = 270
     private const val HEIGHT = 140
     private const val LOBBY = 34
     private const val COLUMN_PITCH = 60
@@ -17,21 +16,27 @@ object ModernNarrowFacility : FacilityStyle {
     private const val OVERHANG = 22
     private const val BOARD_SPAN = 1030
 
-    private val panel = Color(226, 226, 222)
-    private val panelShadow = Color(190, 192, 190)
-    private val lobby = Color(30, 34, 40)
+    private val panel = ModernColors.panel
+    private val panelShadow = ModernColors.panelShadow
+    private val lobby = ModernColors.lobby
 
-    override val palette: List<Color> = listOf(panel, panelShadow, lobby) + Masonry.PALETTE
+    override val palette: List<Color> = ModernColors.PALETTE + Masonry.PALETTE
     override val fillsView: Boolean = false
 
     override fun paint(
         g: Graphics2D,
         area: BackdropArea,
         footY: Int,
+        fullWidth: Boolean,
     ) {
         val frame = FacilityFrame(area, footY)
-        val left = frame.x(-HALF_WIDTH)
-        val right = frame.x(HALF_WIDTH)
+        if (fullWidth) {
+            ModernWings.paint(g, frame)
+            return
+        }
+        val halfWidth = LowBuildingLayout.CENTER_HALF
+        val left = frame.x(-halfWidth)
+        val right = frame.x(halfWidth)
         val top = frame.y(HEIGHT)
         Masonry.band(g, panel, left, right, top, frame.footY - top)
         BANDS.forEach { (bottom, bandTop) ->
@@ -45,12 +50,12 @@ object ModernNarrowFacility : FacilityStyle {
             )
         }
         Masonry.band(g, panelShadow, right - frame.length(4), right, top, frame.footY - top)
-        paintLobby(g, frame, left, right)
+        paintLobby(g, frame, halfWidth)
         Masonry.band(
             g,
             lobby,
-            frame.x(-HALF_WIDTH - OVERHANG),
-            frame.x(HALF_WIDTH + OVERHANG),
+            frame.x(-halfWidth - OVERHANG),
+            frame.x(halfWidth + OVERHANG),
             top - frame.length(CANOPY),
             frame.length(CANOPY),
         )
@@ -67,17 +72,12 @@ object ModernNarrowFacility : FacilityStyle {
     private fun paintLobby(
         g: Graphics2D,
         frame: FacilityFrame,
-        left: Int,
-        right: Int,
+        halfWidth: Int,
     ) {
         val top = frame.y(LOBBY)
-        Masonry.band(g, lobby, left, right, top, frame.footY - top)
-        var offset = COLUMN_PITCH / 2
-        while (offset < HALF_WIDTH) {
-            listOf(offset, -offset).forEach { center ->
-                Masonry.band(g, panel, frame.x(center - COLUMN_HALF), frame.x(center + COLUMN_HALF), top, frame.footY - top)
-            }
-            offset += COLUMN_PITCH
+        Masonry.band(g, lobby, frame.x(-halfWidth), frame.x(halfWidth), top, frame.footY - top)
+        LowBuildingLayout.repeating(COLUMN_PITCH / 2, COLUMN_PITCH, halfWidth, 0).forEach { center ->
+            Masonry.band(g, panel, frame.x(center - COLUMN_HALF), frame.x(center + COLUMN_HALF), top, frame.footY - top)
         }
     }
 }
