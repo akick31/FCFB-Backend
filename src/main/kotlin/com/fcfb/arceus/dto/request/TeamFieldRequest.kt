@@ -2,6 +2,8 @@ package com.fcfb.arceus.dto.request
 
 data class TeamFieldRequest(
     val turfColor: String? = null,
+    val surface: String? = null,
+    val mowingPattern: String? = null,
     val endZoneColor: String? = null,
     val endZoneTextColor: String? = null,
     val endZoneOutlineColor: String? = null,

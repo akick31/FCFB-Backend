@@ -1,6 +1,8 @@
 package com.fcfb.arceus.service
 
+import com.fcfb.arceus.enums.system.LogoKind
 import com.fcfb.arceus.util.Logger
+import com.fcfb.arceus.util.hostedImagesUrl
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -14,27 +16,31 @@ import java.util.UUID
 @Service
 class FileUploadService(
     @Value("\${images.path:./images}") private val imagesPath: String,
+    @Value("\${domain.url}") private val domainUrl: String,
 ) {
     companion object {
         private const val MAX_LOGO_SIZE_BYTES = 5 * 1024 * 1024
     }
 
-    fun uploadPostseasonLogo(file: MultipartFile): ResponseEntity<Map<String, String>> {
-        validatePostseasonLogo(file)?.let { return it }
+    fun uploadLogo(
+        file: MultipartFile,
+        kind: LogoKind,
+    ): ResponseEntity<Map<String, String>> {
+        validateLogo(file)?.let { return it }
 
         return try {
-            val logosDir = ensureDirectory(File(ensureDirectory(File(imagesPath)), "postseason-logos"))
-            val relativePath = "postseason-logos/${saveFile(file, logosDir)}"
-            Logger().info("Uploaded postseason logo: $relativePath")
-            ResponseEntity.ok(mapOf("url" to relativePath))
+            val logosDir = ensureDirectory(File(ensureDirectory(File(imagesPath)), kind.folder))
+            val relativePath = "${kind.folder}/${saveFile(file, logosDir)}"
+            Logger().info("Uploaded ${kind.name.lowercase()} logo: $relativePath")
+            ResponseEntity.ok(mapOf("url" to hostedImagesUrl(domainUrl) + relativePath))
         } catch (e: Exception) {
-            Logger().error("Error uploading postseason logo: ${e.message}", e)
+            Logger().error("Error uploading ${kind.name.lowercase()} logo: ${e.message}", e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("error" to "Failed to upload file: ${e.message}"))
         }
     }
 
-    private fun validatePostseasonLogo(file: MultipartFile): ResponseEntity<Map<String, String>>? {
+    private fun validateLogo(file: MultipartFile): ResponseEntity<Map<String, String>>? {
         val contentType = file.contentType
         if (contentType == null || !contentType.startsWith("image/")) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("error" to "File must be an image"))

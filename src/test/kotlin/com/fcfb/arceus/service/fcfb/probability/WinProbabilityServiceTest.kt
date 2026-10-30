@@ -1,11 +1,10 @@
 package com.fcfb.arceus.service.fcfb.probability
 
-import com.fcfb.arceus.enums.play.PlayCall
+import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.model.team.Team
-import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.fcfb.play.PlayService
 import com.fcfb.arceus.service.fcfb.statistics.GameStatsService
 import com.fcfb.arceus.service.fcfb.team.TeamService
@@ -17,90 +16,102 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 
 class WinProbabilityServiceTest {
     private val xgboostPredictor = mockk<XGBoostPredictor>(relaxed = true)
-    private val playRepository = mockk<PlayRepository>(relaxed = true)
     private val gameStatsService = mockk<GameStatsService>(relaxed = true)
-    private val winProbabilityService = WinProbabilityService(xgboostPredictor, playRepository)
+    private val winProbabilityService = WinProbabilityService(xgboostPredictor)
 
-    @ParameterizedTest
-    @CsvSource(
-        "HOME, HOME, 0.6, 0.7, 0.1",
-        "AWAY, AWAY, 0.3, 0.4, 0.1",
-        "HOME, AWAY, 0.6, 0.3, 0.1",
-        "AWAY, HOME, 0.3, 0.6, -0.1",
-    )
-    fun `win probability added uses the new prediction`(
-        previousPossession: TeamSide,
-        possession: TeamSide,
-        previousProbability: Double,
-        prediction: Double,
-        expectedAdded: Double,
-    ) {
-        val game =
-            Game().apply {
-                gameId = 1
-                winProbability = previousProbability
-            }
-        val previousPlay =
-            Play().apply {
-                playNumber = 1
-                this.possession = previousPossession
-                winProbability = previousProbability
-            }
-        val play =
-            Play().apply {
-                playNumber = 2
-                this.possession = possession
-                playCall = PlayCall.RUN
-                winProbability = previousProbability
-            }
-        every { playRepository.getAllPlaysByGameId(1) } returns listOf(previousPlay, play)
-        every { xgboostPredictor.predict(any()) } returns prediction
+    private fun gameAfterPlay(possessionAfter: TeamSide) =
+        Game().apply {
+            gameId = 1
+            homeTeam = "Home"
+            awayTeam = "Away"
+            possession = possessionAfter
+            quarter = 2
+            clock = "5:00"
+            ballLocation = 25
+            homeScore = 7
+            awayScore = 3
+        }
 
-        val probability = winProbabilityService.calculateWinProbability(game, play, 1500.0, 1500.0)
+    @Test
+    fun `a play stores the win chance after it for its offense and what it added`() {
+        val game = gameAfterPlay(TeamSide.AWAY)
+        val play = Play().apply { possession = TeamSide.HOME }
+        every { xgboostPredictor.predict(any()) } returns 0.7
 
-        assertEquals(prediction, probability, 0.000001)
-        assertEquals(prediction, play.winProbability)
-        assertEquals(expectedAdded, play.winProbabilityAdded!!, 0.000001)
+        winProbabilityService.recordPlayResult(game, play, 0.6, 1500.0, 1500.0)
+
+        assertEquals(0.3, play.winProbability!!, 0.000001)
+        assertEquals(-0.3, play.winProbabilityAdded!!, 0.000001)
+        assertEquals(0.7, game.winProbability!!, 0.000001)
     }
 
     @Test
-    fun `first play retains the game probability baseline`() {
-        val game =
-            Game().apply {
-                gameId = 1
-                winProbability = 0.5
-            }
-        val play =
-            Play().apply {
-                playNumber = 1
-                playCall = PlayCall.RUN
-                winProbability = 0.5
-            }
-        every { playRepository.getAllPlaysByGameId(1) } returns listOf(play)
-        every { xgboostPredictor.predict(any()) } returns 0.7
+    fun `a kickoff that leaves the game unchanged adds nothing`() {
+        val game = gameAfterPlay(TeamSide.HOME)
+        val play = Play().apply { possession = TeamSide.AWAY }
+        every { xgboostPredictor.predict(any()) } returns 0.003
 
-        winProbabilityService.calculateWinProbability(game, play, 1500.0, 1500.0)
+        winProbabilityService.recordPlayResult(game, play, 0.003, 1500.0, 1500.0)
 
-        assertEquals(0.7, play.winProbability)
+        assertEquals(0.997, play.winProbability!!, 0.000001)
+        assertEquals(0.0, play.winProbabilityAdded!!, 0.000001)
+    }
+
+    @Test
+    fun `the final play settles the game`() {
+        val game = gameAfterPlay(TeamSide.HOME).apply { gameStatus = GameStatus.FINAL }
+        val play = Play().apply { possession = TeamSide.HOME }
+
+        winProbabilityService.recordPlayResult(game, play, 0.8, 1500.0, 1500.0)
+
+        assertEquals(1.0, play.winProbability)
         assertEquals(0.2, play.winProbabilityAdded!!, 0.000001)
     }
 
     @Test
-    fun `prediction failure retains the existing fallback`() {
-        val game = Game().apply { gameId = 1 }
-        val play = Play().apply { playCall = PlayCall.RUN }
+    fun `prediction failure falls back to an even game`() {
+        val game = gameAfterPlay(TeamSide.HOME)
+        val play = Play().apply { possession = TeamSide.HOME }
         every { xgboostPredictor.predict(any()) } throws RuntimeException("Model error")
 
-        val probability = winProbabilityService.calculateWinProbability(game, play, 1500.0, 1500.0)
+        winProbabilityService.recordPlayResult(game, play, 0.5, 1500.0, 1500.0)
 
-        assertEquals(0.5, probability)
         assertEquals(0.5, play.winProbability)
-        assertEquals(0.0, play.winProbabilityAdded)
+        assertEquals(0.0, play.winProbabilityAdded!!, 0.000001)
+    }
+
+    @Test
+    fun `rebuild scores each play from the next snap with its own score and settles a final game`() {
+        val game = gameAfterPlay(TeamSide.AWAY).apply { gameStatus = GameStatus.FINAL }
+        val first =
+            Play().apply {
+                playNumber = 1
+                possession = TeamSide.HOME
+                playFinished = true
+                homeScore = 7
+            }
+        val last =
+            Play().apply {
+                playNumber = 2
+                possession = TeamSide.AWAY
+                playFinished = true
+                homeScore = 7
+                awayScore = 3
+            }
+        val plays = mockk<PlayService>(relaxed = true)
+        every { gameStatsService.getGameStatsById(1) } returns emptyList()
+        every { xgboostPredictor.predict(any()) } returnsMany listOf(0.5, 0.4)
+
+        WinProbabilityOrchestrationService(winProbabilityService, mockk(), plays, mockk(), gameStatsService)
+            .calculateWinProbabilitiesForSingleGame(1, game, listOf(last, first), Team(), Team())
+
+        assertEquals(0.6, first.winProbability!!, 0.000001)
+        assertEquals(0.1, first.winProbabilityAdded!!, 0.000001)
+        assertEquals(0.0, last.winProbability!!, 0.000001)
+        assertEquals(-0.4, last.winProbabilityAdded!!, 0.000001)
     }
 
     @Test
@@ -129,7 +140,11 @@ class WinProbabilityServiceTest {
                 homeTeam = "Home"
                 awayTeam = "Away"
             }
-        val play = Play().apply { playNumber = 1 }
+        val play =
+            Play().apply {
+                playNumber = 1
+                playFinished = true
+            }
         val plays = mockk<PlayService>()
         val teams = mockk<TeamService>()
         every { plays.getAllPlaysByGameId(1) } throws IllegalStateException("Plays unavailable")

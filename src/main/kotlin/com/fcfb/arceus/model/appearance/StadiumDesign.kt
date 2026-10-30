@@ -1,5 +1,6 @@
 package com.fcfb.arceus.model.appearance
 
+import com.fcfb.arceus.util.copyProperties
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Embeddable
@@ -158,44 +159,13 @@ class StadiumDesign {
     @Column(name = "right_jumbotron_style")
     var rightJumbotronStyle: String? = null
 
-    fun copyInto(target: StadiumDesign) {
-        target.stadiumBackdrop = stadiumBackdrop
-        target.stadiumSize = stadiumSize
-        target.rightStadiumBackdrop = rightStadiumBackdrop
-        target.rightStadiumSize = rightStadiumSize
-        target.jumbotronEnabled = jumbotronEnabled
-        target.rightJumbotronEnabled = rightJumbotronEnabled
-        target.jumbotronPylonMount = jumbotronPylonMount
-        target.rightJumbotronPylonMount = rightJumbotronPylonMount
-        target.jumbotronSize = jumbotronSize
-        target.rightJumbotronSize = rightJumbotronSize
-        target.wallEnabled = wallEnabled
-        target.rightWallEnabled = rightWallEnabled
-        target.jumbotronElevation = jumbotronElevation
-        target.rightJumbotronElevation = rightJumbotronElevation
-        target.skylineBackdrop = skylineBackdrop
-        target.rightSkylineBackdrop = rightSkylineBackdrop
-        target.jumbotronShape = jumbotronShape
-        target.rightJumbotronShape = rightJumbotronShape
-        target.jumbotronPylonsOutside = jumbotronPylonsOutside
-        target.rightJumbotronPylonsOutside = rightJumbotronPylonsOutside
-        target.jumbotronColor = jumbotronColor
-        target.rightJumbotronColor = rightJumbotronColor
-        target.topperColor = topperColor
-        target.rightTopperColor = rightTopperColor
-        target.facilityFullWidth = facilityFullWidth
-        target.rightFacilityFullWidth = rightFacilityFullWidth
-        target.jumbotronOverBuilding = jumbotronOverBuilding
-        target.rightJumbotronOverBuilding = rightJumbotronOverBuilding
-        target.scoreboardLogo = scoreboardLogo
-        target.rightScoreboardLogo = rightScoreboardLogo
-        target.jumbotronWidth = jumbotronWidth
-        target.rightJumbotronWidth = rightJumbotronWidth
-        target.jumbotronPylonStyle = jumbotronPylonStyle
-        target.rightJumbotronPylonStyle = rightJumbotronPylonStyle
-        target.backdropStyle = backdropStyle
-        target.rightBackdropStyle = rightBackdropStyle
-        target.jumbotronStyle = jumbotronStyle
-        target.rightJumbotronStyle = rightJumbotronStyle
+    @Basic
+    @Column(name = "dome_style")
+    var domeStyle: String? = null
+
+    fun copyInto(target: StadiumDesign) = StadiumDesign::class.copyProperties(this, target)
+
+    companion object {
+        const val MATCH_LEFT = "MATCH_LEFT"
     }
 }

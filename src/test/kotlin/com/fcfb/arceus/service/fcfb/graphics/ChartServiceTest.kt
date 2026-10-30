@@ -52,7 +52,7 @@ class ChartServiceTest {
     private val probabilityService =
         spyk(
             WinProbabilityOrchestrationService(
-                WinProbabilityService(predictor, playRepository),
+                WinProbabilityService(predictor),
                 gameService,
                 mockk(),
                 teamService,

@@ -21,6 +21,7 @@ object CrowdBackdrop {
     private const val HOME_SECONDARY_SHARE = 2
     private const val HOME_VISITOR_SHARE = 1
     private const val TIER_CONTRAST_MIDPOINT = 128
+    private const val UPPER_DECK_EMPTIES_SHARE = 0.8
 
     val STAND_COLOR_DARK: Color = Color(60, 60, 65)
     val FAN_COLORS: List<Color> =
@@ -34,23 +35,39 @@ object CrowdBackdrop {
         side: TeamSide,
     ) {
         val crowd = crowdColors(theme, side)
-        val random = Random(SEED)
+        val random = Random(SEED + theme.gameId)
+        val tiers = tierCount(area)
         val fanSize = (FAN_DOT_SIZE * area.scale).toInt().coerceAtLeast(MIN_FAN_SIZE)
         val fanSpacing = (FAN_COL_SPACING * area.scale).toInt().coerceAtLeast(MIN_FAN_SPACING)
         val tierHeight = tierHeight(area)
-        repeat(tierCount(area)) { tier ->
+        repeat(tiers) { tier ->
             val tierTopY = area.groundY - (tier + 1) * tierHeight
             val tierShade = STAND_SHADES[STAND_SHADES.lastIndex - tier % STAND_SHADES.size]
             g.color = tierShade
             g.fillRect(0, tierTopY, area.width, tierHeight)
             val fanY = tierTopY + tierHeight / 2 - fanSize / 2
+            val keep = keepShare(theme.crowdFill, tier, tiers)
             var x = fanSpacing / 2 + (tier % 2) * fanSpacing / 2
             while (x < area.width) {
-                g.color = againstTier(crowd[random.nextInt(crowd.size)], tierShade)
-                g.fillOval(x, fanY, fanSize, fanSize)
+                val fan = againstTier(crowd[random.nextInt(crowd.size)], tierShade)
+                if (keep >= 1.0 || random.nextDouble() < keep) {
+                    g.color = fan
+                    g.fillOval(x, fanY, fanSize, fanSize)
+                }
                 x += fanSpacing
             }
         }
+    }
+
+    fun keepShare(
+        fill: Double,
+        tier: Int,
+        tiers: Int,
+    ): Double {
+        if (fill >= 1.0 || tiers <= 1) return fill.coerceAtMost(1.0)
+        val spread = minOf(fill, 1.0 - fill) * UPPER_DECK_EMPTIES_SHARE
+        val height = tier.toDouble() / (tiers - 1)
+        return (fill + spread - 2 * spread * height).coerceIn(0.0, 1.0)
     }
 
     fun standsTopY(area: BackdropArea): Int = area.groundY - tierCount(area) * tierHeight(area)

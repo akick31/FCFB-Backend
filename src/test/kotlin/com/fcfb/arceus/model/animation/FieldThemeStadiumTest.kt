@@ -91,7 +91,11 @@ class FieldThemeStadiumTest {
     @Test
     fun `jumbotron size is kept within the supported range`() {
         val tooBig = theme { jumbotronSize = 5.0 }
-        val tooSmall = theme { rightJumbotronSize = 0.1 }
+        val tooSmall =
+            theme {
+                rightStadiumBackdrop = "CROWD"
+                rightJumbotronSize = 0.1
+            }
 
         assertEquals(1.4f, tooBig.jumbotronSize(tooBig.leftSide()))
         assertEquals(0.7f, tooSmall.jumbotronSize(tooSmall.rightSide()))
@@ -117,11 +121,12 @@ class FieldThemeStadiumTest {
     }
 
     @Test
-    fun `the right end zone uses the left style until it picks its own backdrop`() {
+    fun `a right end set to match left uses the left style instead of its own`() {
         val matching =
             theme {
                 stadiumBackdrop = "MOUNTAINS"
                 backdropStyle = "MOUNTAINS_DESERT"
+                rightStadiumBackdrop = StadiumDesign.MATCH_LEFT
                 rightBackdropStyle = "MOUNTAINS_SMOKY"
             }
         val ownBackdrop =
@@ -142,6 +147,7 @@ class FieldThemeStadiumTest {
         val both =
             theme {
                 jumbotronStyle = "VINTAGE"
+                rightStadiumBackdrop = "CROWD"
                 rightJumbotronStyle = "SEGMENT"
             }
 
@@ -153,7 +159,11 @@ class FieldThemeStadiumTest {
     @Test
     fun `jumbotron height is kept between ground level and the top setting`() {
         val raised = theme { jumbotronElevation = 3.0 }
-        val sunk = theme { rightJumbotronElevation = -1.0 }
+        val sunk =
+            theme {
+                rightStadiumBackdrop = "CROWD"
+                rightJumbotronElevation = -1.0
+            }
 
         assertEquals(1f, raised.jumbotronElevation(raised.leftSide()))
         assertEquals(0f, sunk.jumbotronElevation(sunk.rightSide()))
@@ -162,7 +172,11 @@ class FieldThemeStadiumTest {
     @Test
     fun `scoreboard width stays between its natural width and double`() {
         val tooWide = theme { jumbotronWidth = 9.0 }
-        val tooNarrow = theme { rightJumbotronWidth = 0.4 }
+        val tooNarrow =
+            theme {
+                rightStadiumBackdrop = "CROWD"
+                rightJumbotronWidth = 0.4
+            }
 
         assertEquals(2f, tooWide.jumbotronWidth(tooWide.leftSide()))
         assertEquals(1f, tooNarrow.jumbotronWidth(tooNarrow.rightSide()))
@@ -178,6 +192,7 @@ class FieldThemeStadiumTest {
         val split =
             theme {
                 jumbotronShape = "ARCHED"
+                rightStadiumBackdrop = "CROWD"
                 rightJumbotronShape = "ROUNDED"
                 scoreboardLogo = "SECONDARY"
                 rightScoreboardLogo = "NONE"
@@ -214,7 +229,11 @@ class FieldThemeStadiumTest {
 
     @Test
     fun `outside posts are set per side and default to under the board`() {
-        val field = theme { rightJumbotronPylonsOutside = true }
+        val field =
+            theme {
+                rightStadiumBackdrop = "CROWD"
+                rightJumbotronPylonsOutside = true
+            }
 
         assertFalse(field.pylonsOutside(field.leftSide()))
         assertTrue(field.pylonsOutside(field.rightSide()))
@@ -237,6 +256,7 @@ class FieldThemeStadiumTest {
         val field =
             theme {
                 skylineBackdrop = "MOUNTAINS_DESERT"
+                rightStadiumBackdrop = "CROWD"
                 rightSkylineBackdrop = "NONE"
             }
         val matching = theme { skylineBackdrop = "FOREST" }
@@ -259,6 +279,7 @@ class FieldThemeStadiumTest {
             theme {
                 jumbotronColor = "#492f24"
                 topperColor = "#ffc425"
+                rightStadiumBackdrop = "CROWD"
                 rightTopperColor = ""
             }
 
@@ -311,5 +332,46 @@ class FieldThemeStadiumTest {
         assertEquals("NEW MEXICO BOWL", atVenue.scoreboardTitle())
         assertEquals(StadiumBackdrop.CROWD, neutral.stadiumBackdrop(neutral.leftSide()))
         assertFalse(neutral.jumbotronEnabled(neutral.leftSide()))
+    }
+
+    @Test
+    fun `a right end set to match left mirrors every left setting`() {
+        val field =
+            theme {
+                stadiumBackdrop = "CROWD"
+                stadiumSize = 0.6
+                rightStadiumBackdrop = StadiumDesign.MATCH_LEFT
+                jumbotronEnabled = true
+                jumbotronElevation = 0.5
+                jumbotronWidth = 1.5
+                jumbotronPylonsOutside = true
+                rightJumbotronEnabled = false
+                rightJumbotronElevation = 0.0
+                rightJumbotronWidth = 1.0
+                rightJumbotronPylonsOutside = false
+            }
+        val right = field.rightSide()
+
+        assertEquals(0.6f, field.stadiumSize(right))
+        assertTrue(field.jumbotronEnabled(right))
+        assertEquals(0.5f, field.jumbotronElevation(right))
+        assertEquals(1.5f, field.jumbotronWidth(right))
+        assertTrue(field.pylonsOutside(right))
+    }
+
+    @Test
+    fun `an unset right end is a full crowd even when the left end has scenery`() {
+        val field =
+            theme {
+                stadiumBackdrop = "MOUNTAINS"
+                stadiumSize = 0.5
+                backdropStyle = "MOUNTAINS_DESERT"
+            }
+        val right = field.rightSide()
+
+        assertEquals(StadiumBackdrop.CROWD, field.stadiumBackdrop(right))
+        assertEquals(1f, field.stadiumSize(right))
+        assertTrue(field.wallShown(right))
+        assertEquals(StadiumBackdrop.MOUNTAINS, field.stadiumBackdrop(field.leftSide()))
     }
 }

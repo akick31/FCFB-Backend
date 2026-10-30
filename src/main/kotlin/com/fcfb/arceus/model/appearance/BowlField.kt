@@ -1,5 +1,6 @@
 package com.fcfb.arceus.model.appearance
 
+import com.fcfb.arceus.util.copyProperties
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -157,44 +158,7 @@ class BowlField {
     @Column(name = "venue")
     var venue: String? = null
 
-    fun copyInto(target: BowlField) {
-        target.turfColor = turfColor
-        target.endZoneFill = endZoneFill
-        target.endZoneFont = endZoneFont
-        target.leftEndZoneLogoUrl = leftEndZoneLogoUrl
-        target.rightEndZoneLogoUrl = rightEndZoneLogoUrl
-        target.leftEndZoneText = leftEndZoneText
-        target.rightEndZoneText = rightEndZoneText
-        target.leftEndZoneLogoSource = leftEndZoneLogoSource
-        target.rightEndZoneLogoSource = rightEndZoneLogoSource
-        target.leftEndZoneFont = leftEndZoneFont
-        target.rightEndZoneFont = rightEndZoneFont
-        target.rightWallDesign = rightWallDesign
-        target.rightWallText = rightWallText
-        target.yardNumberFont = yardNumberFont
-        target.yardNumberArrowAlign = yardNumberArrowAlign
-        target.yardNumberOutlineWidth = yardNumberOutlineWidth
-        target.endZoneOutlineWidth = endZoneOutlineWidth
-        target.wallTextOutlineWidth = wallTextOutlineWidth
-        target.conferenceLogoSize = conferenceLogoSize
-        target.showConferenceLogos = showConferenceLogos
-        target.yardNumberSource = yardNumberSource
-        target.yardNumberTeamSlot = yardNumberTeamSlot
-        target.yardNumberOutlineColor = yardNumberOutlineColor
-        target.leftOobLineColor = leftOobLineColor
-        target.rightOobLineColor = rightOobLineColor
-        target.redZoneEnabled = redZoneEnabled
-        target.redZoneBorderColor = redZoneBorderColor
-        target.midfieldBorderColor = midfieldBorderColor
-        target.wallColor = wallColor
-        target.wallDesign = wallDesign
-        target.wallText = wallText
-        target.wallTextOutlineColor = wallTextOutlineColor
-        target.wallTextFont = wallTextFont
-        target.goalPostColor = goalPostColor
-        target.goalPostStyle = goalPostStyle
-        target.venue = venue
-    }
+    fun copyInto(target: BowlField) = BowlField::class.copyProperties(this, target, except = setOf("bowl"))
 
     companion object {
         const val DEFAULT_END_ZONE_FILL = "PRIMARY"

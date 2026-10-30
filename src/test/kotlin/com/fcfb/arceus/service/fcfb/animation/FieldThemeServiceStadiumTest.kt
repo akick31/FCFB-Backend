@@ -3,7 +3,9 @@ package com.fcfb.arceus.service.fcfb.animation
 import com.fcfb.arceus.enums.animation.StadiumBackdrop
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.model.animation.FieldSources
 import com.fcfb.arceus.model.appearance.BowlField
+import com.fcfb.arceus.model.appearance.StadiumDesign
 import com.fcfb.arceus.model.appearance.Venue
 import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.play.Play
@@ -15,6 +17,7 @@ import com.fcfb.arceus.repositories.appearance.PlayoffFieldRepository
 import com.fcfb.arceus.repositories.appearance.TeamFieldRepository
 import com.fcfb.arceus.repositories.appearance.VenueRepository
 import com.fcfb.arceus.repositories.conference.ConferenceRepository
+import com.fcfb.arceus.service.fcfb.appearance.GameLookService
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -29,16 +32,15 @@ class FieldThemeServiceStadiumTest {
     private val playoffFieldRepository = mockk<PlayoffFieldRepository>()
     private val gameFieldRepository = mockk<GameFieldRepository>()
     private val teamFieldRepository = mockk<TeamFieldRepository>()
+    private val gameLookService = mockk<GameLookService>()
     private val service =
         FieldThemeService(
-            bowlFieldRepository,
-            ccgFieldRepository,
             conferenceRepository,
-            playoffFieldRepository,
             mockk(relaxed = true),
             gameFieldRepository,
             teamFieldRepository,
-            venueRepository,
+            FieldSourceService(bowlFieldRepository, ccgFieldRepository, conferenceRepository, playoffFieldRepository, venueRepository),
+            gameLookService,
         )
     private val home =
         Team().apply {
@@ -66,6 +68,18 @@ class FieldThemeServiceStadiumTest {
         every { playoffFieldRepository.findById(any()) } returns Optional.empty()
         every { gameFieldRepository.findById(any()) } returns Optional.empty()
         every { teamFieldRepository.findById(any()) } returns Optional.empty()
+        every { gameLookService.sourcesFor(any()) } returns null
+    }
+
+    @Test
+    fun `a finished game keeps the stadium it was played in after the stadium is redesigned`() {
+        val playedIn = StadiumDesign().apply { stadiumBackdrop = "LAKE" }
+        val finished = game(GameType.OUT_OF_CONFERENCE, venue = null)
+        every { gameLookService.sourcesFor(finished) } returns FieldSources(null, null, playedIn)
+
+        val replay = service.resolve(play, finished, home, away)
+
+        assertEquals(StadiumBackdrop.LAKE, replay.stadiumBackdrop(replay.leftSide()))
     }
 
     @Test

@@ -24,6 +24,9 @@ object LogoLoader {
     @Volatile
     var imagesPath: String = DEFAULT_IMAGES_PATH
 
+    @Volatile
+    var hostedImagesUrl: String? = null
+
     fun loadFirst(vararg urls: String?): BufferedImage? = urls.firstNotNullOfOrNull { load(it) }
 
     fun load(url: String?): BufferedImage? {
@@ -60,12 +63,17 @@ object LogoLoader {
     }
 
     private fun openStream(url: String): InputStream? {
+        val hostedPrefix = hostedImagesUrl?.takeIf { url.startsWith(it) }
+        if (hostedPrefix != null) return openLocal(url.removePrefix(hostedPrefix))
         val uri = URI(url)
-        if (uri.isAbsolute) return openRemote(uri)
+        return if (uri.isAbsolute) openRemote(uri) else openLocal(url)
+    }
+
+    private fun openLocal(path: String): InputStream? {
         val base = File(imagesPath).canonicalFile
-        val file = File(base, url).canonicalFile
+        val file = File(base, path).canonicalFile
         if (file != base && !file.path.startsWith(base.path + File.separator)) {
-            Logger().error("Rejected logo path outside the images directory: $url")
+            Logger().error("Rejected logo path outside the images directory: $path")
             return null
         }
         return if (file.isFile) file.inputStream() else null

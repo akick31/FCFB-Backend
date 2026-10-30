@@ -22,14 +22,16 @@ class RankingService(
         pollType: String,
     ): List<RankingResponse> {
         val parsedPollType = parsePollType(pollType)
-        return rankingRepository.findBySeasonWeekAndPollType(season, week, parsedPollType.name).map { ranking ->
+        val rankings = rankingRepository.findBySeasonWeekAndPollType(season, week, parsedPollType.name)
+        val teamNames = teamRepository.findAllById(rankings.map { it.teamId }.distinct()).associate { it.id to it.name }
+        return rankings.map { ranking ->
             RankingResponse(
                 season = ranking.season,
                 week = ranking.week,
                 pollType = parsedPollType.name,
                 rank = ranking.rank,
                 teamId = ranking.teamId,
-                teamName = teamRepository.findById(ranking.teamId).orElse(null)?.name,
+                teamName = teamNames[ranking.teamId],
                 wins = ranking.wins,
                 losses = ranking.losses,
             )

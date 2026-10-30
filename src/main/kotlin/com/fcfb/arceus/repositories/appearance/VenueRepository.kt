@@ -8,9 +8,18 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface VenueRepository : CrudRepository<Venue, String> {
+    fun findByVenueId(venueId: Long): Venue?
+
     fun findAllByOrderByNameAsc(): List<Venue>
 
     fun findAllByActiveTrueOrderByNameAsc(): List<Venue>
+
+    @Modifying
+    @Query(value = "UPDATE stadium_change_log SET venue = ?2 WHERE venue = ?1", nativeQuery = true)
+    fun renameChangeLogVenues(
+        oldName: String,
+        newName: String,
+    )
 
     @Modifying
     @Query(value = "UPDATE venue SET name = ?2 WHERE name = ?1", nativeQuery = true)
@@ -57,13 +66,6 @@ interface VenueRepository : CrudRepository<Venue, String> {
     @Modifying
     @Query(value = "UPDATE bowl SET last_venue = ?2 WHERE last_venue = ?1", nativeQuery = true)
     fun renameBowlLastVenues(
-        oldName: String,
-        newName: String,
-    )
-
-    @Modifying
-    @Query(value = "UPDATE bowl_venue SET venue = ?2 WHERE venue = ?1", nativeQuery = true)
-    fun renameBowlVenues(
         oldName: String,
         newName: String,
     )

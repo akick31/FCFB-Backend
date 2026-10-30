@@ -1,15 +1,18 @@
 package com.fcfb.arceus.rendering.animation.fieldgoal.backdrop
 
 import com.fcfb.arceus.enums.animation.BackdropVariant
+import com.fcfb.arceus.enums.animation.DomeStyle
 import com.fcfb.arceus.enums.animation.StadiumBackdrop
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.animation.FieldTheme
 import com.fcfb.arceus.model.animation.GameSituation
+import com.fcfb.arceus.model.animation.Skyline
 import com.fcfb.arceus.rendering.animation.appearance.FieldColors
 import com.fcfb.arceus.rendering.animation.assets.LogoLoader
 import com.fcfb.arceus.rendering.animation.fieldgoal.backdrop.facility.FacilityGround
 import java.awt.Color
 import java.awt.Graphics2D
+import java.awt.Rectangle
 
 object StadiumBackdropPainter {
     private const val CROWD_POST_HEIGHT = 18
@@ -21,6 +24,7 @@ object StadiumBackdropPainter {
     private const val FIELD_YARDS = 250f
     private const val LAKE_YARDS = 600f
     private const val MOUNTAIN_YARDS = 3000f
+    private const val WINDOW_VIEW_SHARE = 1.3f
 
     fun paintScenery(
         g: Graphics2D,
@@ -28,14 +32,56 @@ object StadiumBackdropPainter {
         theme: FieldTheme,
         side: TeamSide,
     ) {
+        if (theme.domeStyle != DomeStyle.NONE) return paintDomedScenery(g, area, theme, side)
         val backdrop = theme.stadiumBackdrop(side)
         val variant = theme.backdropVariant(side)
         val skyline = theme.skyline(side)
         if (skyline != null && skylineAllowed(theme, side)) {
-            val skylineArea = area.copy(topY = 0, behindWall = true)
+            val skylineArea = area.copy(topY = area.frameTopY, behindWall = true)
             paintBackdrop(g, sceneryArea(skylineArea, skyline.backdrop), skyline.backdrop, skyline.variant, theme, side)
         }
         if (!hasForegroundBuilding(theme, side)) paintBackdrop(g, sceneryArea(area, backdrop), backdrop, variant, theme, side)
+    }
+
+    private fun paintDomedScenery(
+        g: Graphics2D,
+        area: BackdropArea,
+        theme: FieldTheme,
+        side: TeamSide,
+    ) {
+        val dome = theme.domeStyle
+        val backdrop = theme.stadiumBackdrop(side)
+        val springY = if (backdrop == StadiumBackdrop.CROWD) area.topY else area.groundY
+        if (dome == DomeStyle.WINDOWED) paintThroughWindows(g, area, theme, side, springY)
+        DomePainter.paint(g, area, dome, springY)
+        if (backdrop in INDOOR_BACKDROPS && !hasForegroundBuilding(theme, side)) {
+            paintBackdrop(g, area, backdrop, theme.backdropVariant(side), theme, side)
+        }
+    }
+
+    private fun paintThroughWindows(
+        g: Graphics2D,
+        area: BackdropArea,
+        theme: FieldTheme,
+        side: TeamSide,
+        springY: Int,
+    ) {
+        val backdrop = theme.stadiumBackdrop(side)
+        val outdoor =
+            theme.skyline(side)
+                ?: Skyline(backdrop, theme.backdropVariant(side)).takeIf { backdrop !in INDOOR_BACKDROPS }
+                ?: return
+        val window = DomePainter.windows(area, springY).firstOrNull() ?: return
+        val sill = window.y + window.height
+        val viewHeight = (window.height * WINDOW_VIEW_SHARE).toInt()
+        val distant =
+            area.copy(
+                groundY = sill,
+                topY = sill - viewHeight,
+                scale = area.scale * viewHeight / (BackdropArea.CLOSE_ROOM * area.scale),
+                behindWall = true,
+            )
+        paintBackdrop(g, distant, outdoor.backdrop, outdoor.variant, theme, side)
     }
 
     fun paintForeground(
@@ -45,7 +91,8 @@ object StadiumBackdropPainter {
         side: TeamSide,
     ) {
         val backdrop = theme.stadiumBackdrop(side)
-        if (!area.behindWall && backdrop != StadiumBackdrop.HILL && !hasFacade(theme, side)) PerimeterFencePainter.paint(g, area)
+        val fenced = !area.behindWall && backdrop != StadiumBackdrop.HILL && !hasFacade(theme, side) && theme.domeStyle == DomeStyle.NONE
+        if (fenced) PerimeterFencePainter.paint(g, area)
         if (hasForegroundBuilding(
                 theme,
                 side,
@@ -72,6 +119,15 @@ object StadiumBackdropPainter {
         }
 
     fun skylineAllowed(
+        theme: FieldTheme,
+        side: TeamSide,
+    ): Boolean =
+        when {
+            theme.domeStyle != DomeStyle.NONE -> theme.domeStyle == DomeStyle.WINDOWED
+            else -> openAirSkylineAllowed(theme, side)
+        }
+
+    private fun openAirSkylineAllowed(
         theme: FieldTheme,
         side: TeamSide,
     ): Boolean =
@@ -145,11 +201,23 @@ object StadiumBackdropPainter {
         }
     }
 
+    fun scoreboardBounds(
+        area: BackdropArea,
+        theme: FieldTheme,
+        side: TeamSide,
+    ): Rectangle? {
+        if (!hasScoreboard(theme, side)) return null
+        val settings = jumbotronSettings(theme, side)
+        val mount = mountFor(sceneryArea(area, theme.stadiumBackdrop(side)), theme, side, settings.pylonMount)
+        return JumbotronPainter.outline(area, mount, settings)
+    }
+
     fun paletteFor(theme: FieldTheme): List<Color> =
         TeamSide.values()
             .flatMap { side ->
                 paletteOf(theme.stadiumBackdrop(side), theme.backdropVariant(side)) +
                     PerimeterFencePainter.PALETTE +
+                    DomePainter.paletteOf(theme.domeStyle) +
                     skylinePalette(theme, side) +
                     if (hasScoreboard(theme, side)) scoreboardPalette(theme, side) else emptyList()
             }.distinct()
@@ -185,6 +253,8 @@ object StadiumBackdropPainter {
     ): Boolean = theme.jumbotronEnabled(side) || theme.stadiumBackdrop(side) in BUILT_IN_SCOREBOARD
 
     private val BUILT_IN_SCOREBOARD = setOf(StadiumBackdrop.HILL)
+
+    private val INDOOR_BACKDROPS = setOf(StadiumBackdrop.CROWD, StadiumBackdrop.FACILITY, StadiumBackdrop.HILL)
 
     private fun mountFor(
         area: BackdropArea,

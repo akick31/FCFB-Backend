@@ -1,8 +1,11 @@
 package com.fcfb.arceus.service.fcfb.appearance
 
 import com.fcfb.arceus.dto.request.StadiumPreviewRequest
+import com.fcfb.arceus.enums.animation.PostseasonCategory
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.model.animation.FieldTheme
+import com.fcfb.arceus.model.appearance.StadiumDesign
 import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.play.Play
 import com.fcfb.arceus.model.team.Team
@@ -22,8 +25,29 @@ class StadiumPreviewService(
     private val stadiumService: StadiumService,
     private val teamService: TeamService,
     private val fieldThemeService: FieldThemeService,
+    private val postseasonSampleGameService: PostseasonSampleGameService,
 ) {
     fun preview(request: StadiumPreviewRequest): ResponseEntity<ByteArray> {
+        val design = stadiumService.draftDesign(request.venue, request.design)
+        val theme =
+            request.category?.let { category -> request.key?.let { eventTheme(category, it, design) } }
+                ?: teamTheme(request, design)
+        val bytes =
+            ByteArrayOutputStream().also {
+                ImageIO.write(
+                    StadiumPreviewRenderer.render(theme.copy(crowdFill = request.crowdFill ?: 1.0), request.view),
+                    "png",
+                    it,
+                )
+            }.toByteArray()
+        val headers = HttpHeaders().apply { contentType = MediaType.IMAGE_PNG }
+        return ResponseEntity(bytes, headers, HttpStatus.OK)
+    }
+
+    private fun teamTheme(
+        request: StadiumPreviewRequest,
+        design: StadiumDesign,
+    ): FieldTheme {
         val home = teamFor(request.team, request.venue) ?: placeholder(PLACEHOLDER_HOME, PLACEHOLDER_HOME_COLORS)
         val away = request.opponent?.let { teamService.getTeamByName(it) } ?: placeholder(PLACEHOLDER_AWAY, PLACEHOLDER_AWAY_COLORS)
         val game =
@@ -32,24 +56,34 @@ class StadiumPreviewService(
                 awayTeam = away.name.orEmpty()
                 gameType = GameType.OUT_OF_CONFERENCE
             }
-        val play =
-            Play().apply {
-                possession = TeamSide.HOME
-                quarter = 1
-            }
-        val design = stadiumService.draftDesign(request.venue, request.design)
-        val theme = fieldThemeService.resolve(play, game, home, away, stadiumOverride = design)
-        val bytes =
-            ByteArrayOutputStream().also {
-                ImageIO.write(
-                    StadiumPreviewRenderer.closeAndLongBothEnds(theme),
-                    "png",
-                    it,
-                )
-            }.toByteArray()
-        val headers = HttpHeaders().apply { contentType = MediaType.IMAGE_PNG }
-        return ResponseEntity(bytes, headers, HttpStatus.OK)
+        return fieldThemeService.resolve(firstQuarterPlay(), game, home, away, stadiumOverride = design)
     }
+
+    private fun eventTheme(
+        category: PostseasonCategory,
+        key: String,
+        design: StadiumDesign,
+    ): FieldTheme {
+        val lastGame = postseasonSampleGameService.lastGame(category, key)
+        val home = lastGame?.let { teamService.getTeamByName(it.homeTeam) } ?: placeholder(PLACEHOLDER_HOME, PLACEHOLDER_HOME_COLORS)
+        val away = lastGame?.let { teamService.getTeamByName(it.awayTeam) } ?: placeholder(PLACEHOLDER_AWAY, PLACEHOLDER_AWAY_COLORS)
+        val game = lastGame ?: postseasonSampleGameService.stagedGame(category, key, home.name.orEmpty(), away.name.orEmpty())
+        return fieldThemeService.resolve(
+            firstQuarterPlay(),
+            game,
+            home,
+            away,
+            bowlFieldOverride = postseasonSampleGameService.bowlField(category, key),
+            postseasonFieldOverride = postseasonSampleGameService.postseasonField(category, key),
+            stadiumOverride = design,
+        )
+    }
+
+    private fun firstQuarterPlay(): Play =
+        Play().apply {
+            possession = TeamSide.HOME
+            quarter = 1
+        }
 
     private fun teamFor(
         team: String?,

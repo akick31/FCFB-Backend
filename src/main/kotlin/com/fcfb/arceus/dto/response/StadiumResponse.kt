@@ -3,9 +3,11 @@ package com.fcfb.arceus.dto.response
 import com.fcfb.arceus.model.appearance.StadiumDesign
 
 data class StadiumResponse(
+    val id: Long?,
     val name: String,
     val city: String?,
     val state: String?,
+    val country: String,
     val capacity: Int?,
     val active: Boolean,
     val design: StadiumDesign,

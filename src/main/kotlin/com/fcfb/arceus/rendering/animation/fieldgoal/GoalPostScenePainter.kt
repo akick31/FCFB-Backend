@@ -18,6 +18,7 @@ import com.fcfb.arceus.rendering.animation.assets.EndZoneFonts
 import com.fcfb.arceus.rendering.animation.assets.LogoFit
 import com.fcfb.arceus.rendering.animation.assets.LogoLoader
 import com.fcfb.arceus.rendering.animation.assets.LogoPalette
+import com.fcfb.arceus.rendering.animation.field.MowingPainter
 import com.fcfb.arceus.rendering.animation.fieldgoal.backdrop.BackdropArea
 import com.fcfb.arceus.rendering.animation.fieldgoal.backdrop.GrassPainter
 import com.fcfb.arceus.rendering.animation.fieldgoal.backdrop.StadiumBackdropPainter
@@ -25,6 +26,7 @@ import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
+import java.awt.Rectangle
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
 import java.awt.geom.Line2D
@@ -62,18 +64,21 @@ object GoalPostScenePainter {
             if (play.playCall == PlayCall.PAT) PAT_LINE_OF_SCRIMMAGE_YARDS else (100 - play.ballLocation).toFloat().coerceAtLeast(1f)
         val visibleYards = lineOfScrimmageYards + HOLD_DEPTH_YARDS + CAMERA_DEPTH_YARDS
         val fieldGap = (FIELD_GAP_BASE + visibleYards * FIELD_GAP_PER_YARD).coerceAtMost(MAX_FIELD_GAP)
-        val endZoneBottomY = (SCENE_HEIGHT - fieldGap).toInt()
+        val untiltedBottomY = (SCENE_HEIGHT - fieldGap).toInt()
         val pixelsPerYard = fieldGap / visibleYards
-        val endZoneTopY = (endZoneBottomY - END_ZONE_DEPTH_YARDS * pixelsPerYard * END_ZONE_FORESHORTENING).toInt()
-        val roomForUprights = (endZoneTopY - SAFE_TOP_MARGIN).toFloat() / (REFERENCE_END_ZONE_TOP_Y - REFERENCE_UPRIGHT_TOP_Y)
+        val endZoneDepth = (END_ZONE_DEPTH_YARDS * pixelsPerYard * END_ZONE_FORESHORTENING).toInt()
+        val untiltedTopY = untiltedBottomY - endZoneDepth
+        val roomForUprights = (untiltedTopY - SAFE_TOP_MARGIN).toFloat() / (REFERENCE_END_ZONE_TOP_Y - REFERENCE_UPRIGHT_TOP_Y)
         val scale = minOf(pixelsPerYard / FULL_SCALE_PIXELS_PER_YARD, roomForUprights).coerceIn(MIN_KICK_SCALE, 1f)
+        val tilt = backdropTilt(untiltedTopY, scale)
+        val endZoneTopY = untiltedTopY + tilt
         val halfGap = (REFERENCE_HALF_GAP * scale).toInt()
 
         fun mapY(referenceY: Int) = endZoneTopY - ((REFERENCE_END_ZONE_TOP_Y - referenceY) * scale).toInt()
 
         return GoalPostSceneLayout(
             scale = scale,
-            endZoneBottomY = endZoneBottomY,
+            endZoneBottomY = untiltedBottomY + tilt,
             endZoneTopY = endZoneTopY,
             crossbarY = mapY(REFERENCE_CROSSBAR_Y),
             uprightTopY = mapY(REFERENCE_UPRIGHT_TOP_Y),
@@ -83,6 +88,14 @@ object GoalPostScenePainter {
             lineOfScrimmageYards = lineOfScrimmageYards,
             visibleYards = visibleYards,
         )
+    }
+
+    private fun backdropTilt(
+        endZoneTopY: Int,
+        scale: Float,
+    ): Int {
+        val wallTopY = endZoneTopY - ((REFERENCE_END_ZONE_TOP_Y - REFERENCE_WALL_TOP_Y) * scale).toInt()
+        return maxOf(0, (BackdropArea.CLOSE_ROOM * scale).toInt() - wallTopY)
     }
 
     private const val POST_STROKE_WIDTH = 12f
@@ -155,6 +168,66 @@ object GoalPostScenePainter {
     val DEFAULT_WALL_COLOR: Color = Color.BLACK
     val SILVER_WALL_COLOR: Color = Color(176, 179, 184)
 
+    fun scoreboardBounds(
+        theme: FieldTheme,
+        layout: GoalPostSceneLayout,
+        side: TeamSide,
+        situation: GameSituation,
+    ): Rectangle? = StadiumBackdropPainter.scoreboardBounds(backdropAreaFor(theme, layout, side, situation, 0f), theme, side)
+
+    fun paintScoreboardAlone(
+        theme: FieldTheme,
+        layout: GoalPostSceneLayout,
+        side: TeamSide,
+        situation: GameSituation,
+        padding: Float,
+    ): BufferedImage? {
+        val area = backdropAreaFor(theme, layout, side, situation, 0f)
+        val bounds = StadiumBackdropPainter.scoreboardBounds(area, theme, side) ?: return null
+        val padX = (bounds.width * padding).toInt()
+        val padY = (bounds.height * padding).toInt()
+        val image = BufferedImage(bounds.width + padX * 2, bounds.height + padY * 2, BufferedImage.TYPE_INT_RGB)
+        val g = image.createGraphics()
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+        g.color = SKY_COLOR
+        g.fillRect(0, 0, image.width, image.height)
+        g.translate(padX - bounds.x, padY - bounds.y)
+        StadiumBackdropPainter.paintJumbotron(g, area, theme, side, situation)
+        g.dispose()
+        return image
+    }
+
+    private fun backdropAreaFor(
+        theme: FieldTheme,
+        layout: GoalPostSceneLayout,
+        side: TeamSide,
+        situation: GameSituation,
+        time: Float,
+    ): BackdropArea {
+        val wallTopY = layout.mapY(REFERENCE_WALL_TOP_Y)
+        val showWall = theme.wallShown(side)
+        val groundY =
+            when {
+                showWall -> wallTopY
+                theme.stadiumBackdrop(side) == StadiumBackdrop.HILL -> layout.endZoneTopY
+                else -> grassTopY(layout)
+            }
+        return BackdropArea(
+            width = SCENE_WIDTH,
+            groundY = groundY,
+            topY = backdropTopY(groundY, theme.stadiumSize(side), layout.scale),
+            scale = layout.scale,
+            netHalfWidth = CENTER_X - layout.leftUprightX + NET_SIDE_MARGIN,
+            uprightClearHalfWidth = CENTER_X - layout.leftUprightX - (POST_STROKE_WIDTH * layout.scale / 2).toInt(),
+            playSeed = situation.hashCode().toLong(),
+            frontY = layout.endZoneTopY,
+            behindWall = showWall,
+            time = time,
+            postTopY = layout.uprightTopY,
+        )
+    }
+
     fun paint(
         theme: FieldTheme,
         endZone: EndZoneDecoration,
@@ -174,26 +247,8 @@ object GoalPostScenePainter {
         g.fillRect(0, 0, SCENE_WIDTH, SCENE_HEIGHT)
         val wallTopY = layout.mapY(REFERENCE_WALL_TOP_Y)
         val showWall = theme.wallShown(side)
-        val groundY =
-            when {
-                showWall -> wallTopY
-                theme.stadiumBackdrop(side) == StadiumBackdrop.HILL -> layout.endZoneTopY
-                else -> grassTopY(layout)
-            }
-        val backdropArea =
-            BackdropArea(
-                width = SCENE_WIDTH,
-                groundY = groundY,
-                topY = backdropTopY(groundY, theme.stadiumSize(side)),
-                scale = layout.scale,
-                netHalfWidth = CENTER_X - layout.leftUprightX + NET_SIDE_MARGIN,
-                uprightClearHalfWidth = CENTER_X - layout.leftUprightX - (POST_STROKE_WIDTH * layout.scale / 2).toInt(),
-                playSeed = situation.hashCode().toLong(),
-                frontY = layout.endZoneTopY,
-                behindWall = showWall,
-                time = time,
-                postTopY = layout.uprightTopY,
-            )
+        val backdropArea = backdropAreaFor(theme, layout, side, situation, time)
+        val groundY = backdropArea.groundY
         StadiumBackdropPainter.paintScenery(g, backdropArea, theme, side)
         if (!showWall) GrassPainter.paint(g, backdropArea.copy(groundY = layout.endZoneTopY), groundY)
         StadiumBackdropPainter.paintForeground(g, backdropArea, theme, side)
@@ -264,9 +319,13 @@ object GoalPostScenePainter {
     }
 
     private fun backdropTopY(
-        wallTopY: Int,
+        groundY: Int,
         sizeFraction: Float,
-    ): Int = (wallTopY * (1f - sizeFraction.coerceIn(0f, 1f))).toInt()
+        scale: Float,
+    ): Int {
+        val top = groundY - (BackdropArea.CLOSE_ROOM * scale * sizeFraction.coerceIn(0f, 1f)).toInt()
+        return if (sizeFraction >= 1f) minOf(top, 0) else top
+    }
 
     private fun drawWallLogos(
         g: Graphics2D,
@@ -574,6 +633,14 @@ object GoalPostScenePainter {
         g.drawLine(0, layout.endZoneTopY, SCENE_WIDTH, layout.endZoneTopY)
     }
 
+    private fun mowingEdges(layout: GoalPostSceneLayout): List<Int> =
+        listOf(layout.endZoneBottomY) +
+            generateSequence(5) { it + 5 }
+                .takeWhile { it < layout.visibleYards }
+                .map { layout.yardY(it.toFloat()).toInt() }
+                .toList() +
+            SCENE_HEIGHT
+
     private fun drawFieldGap(
         g: Graphics2D,
         theme: FieldTheme,
@@ -582,6 +649,7 @@ object GoalPostScenePainter {
     ) {
         g.color = theme.turf
         g.fillRect(0, layout.endZoneBottomY, SCENE_WIDTH, SCENE_HEIGHT - layout.endZoneBottomY)
+        MowingPainter.paintRows(g, theme, SCENE_WIDTH, mowingEdges(layout))
 
         g.color = FieldColors.LINE_COLOR
         g.stroke = BasicStroke(3f)

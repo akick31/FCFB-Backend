@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.game
 
 import com.fcfb.arceus.domain.game.GameConditions
+import com.fcfb.arceus.domain.probability.WinProbabilityState
 import com.fcfb.arceus.enums.game.GameCategory
 import com.fcfb.arceus.enums.game.GameFilter
 import com.fcfb.arceus.enums.game.GameMode
@@ -73,6 +74,23 @@ class GameService(
 
     fun saveGame(game: Game): Game = gameRepository.save(game)
 
+    private fun recordWinProbability(
+        game: Game,
+        play: Play,
+        previousHomeWinProbability: Double,
+    ) {
+        try {
+            val gameStats = gameStatsRepository.findByGameId(game.gameId)
+            val homeElo = gameStats.find { it.team == game.homeTeam }?.teamElo ?: teamService.getTeamByName(game.homeTeam).currentElo
+            val awayElo = gameStats.find { it.team == game.awayTeam }?.teamElo ?: teamService.getTeamByName(game.awayTeam).currentElo
+            winProbabilityService.recordPlayResult(game, play, previousHomeWinProbability, homeElo, awayElo)
+        } catch (e: Exception) {
+            Logger().error("Error calculating win probability: ${e.message}")
+            winProbabilityService.applyToPlay(play, previousHomeWinProbability, previousHomeWinProbability)
+            game.winProbability = WinProbabilityState.sidePerspective(previousHomeWinProbability, game.possession)
+        }
+    }
+
     fun updateGameInformation(
         game: Game,
         play: Play,
@@ -89,6 +107,7 @@ class GameService(
         timeoutUsed: Boolean,
     ): Game {
         val wasAlreadyFinal = game.gameStatus == GameStatus.FINAL
+        val previousHomeWinProbability = WinProbabilityState.sidePerspective(game.winProbability ?: 0.5, game.possession)
         val waitingOn = updateWaitingOn(possession)
         updateClockStopped(game, play, clock)
         updateTimeouts(game, homeTimeoutCalled, awayTimeoutCalled, timeoutUsed)
@@ -112,26 +131,9 @@ class GameService(
             updateNormalPlayValues(game, clock, possession, quarter, ballLocation, down, yardsToGo, waitingOn)
         }
 
-        try {
-            val homeTeam = teamService.getTeamByName(game.homeTeam)
-            val awayTeam = teamService.getTeamByName(game.awayTeam)
-
-            val gameStats = gameStatsRepository.findByGameId(game.gameId)
-            val homeGameStats = gameStats.find { it.team == game.homeTeam }
-            val awayGameStats = gameStats.find { it.team == game.awayTeam }
-
-            val homeElo = homeGameStats?.teamElo ?: homeTeam.currentElo
-            val awayElo = awayGameStats?.teamElo ?: awayTeam.currentElo
-            winProbabilityService.calculateWinProbability(game, play, homeElo, awayElo)
-        } catch (e: Exception) {
-            Logger().error("Error calculating win probability: ${e.message}")
-            play.winProbability = 0.5
-            play.winProbabilityAdded = 0.0
-        }
-
         game.homeScore = homeScore
         game.awayScore = awayScore
-        game.winProbability = play.winProbability
+        recordWinProbability(game, play, previousHomeWinProbability)
         game.numPlays = play.playNumber
         game.gameTimer = calculateDelayOfGameTimer()
         game.gameWarning = GameWarning.NONE

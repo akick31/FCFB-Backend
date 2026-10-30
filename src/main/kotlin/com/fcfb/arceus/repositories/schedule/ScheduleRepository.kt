@@ -10,6 +10,14 @@ import org.springframework.transaction.annotation.Transactional
 
 @Repository
 interface ScheduleRepository : CrudRepository<Schedule, Int> {
+    @Query(
+        value =
+            "SELECT * FROM schedule WHERE COALESCE(finished, 0) = 0 AND (venue = ?1 OR ((venue IS NULL OR venue = '') " +
+                "AND neutral_site = 0 AND home_team IN (SELECT name FROM team WHERE stadium = ?1))) ORDER BY season, week",
+        nativeQuery = true,
+    )
+    fun findUpcomingAtVenue(venue: String): List<Schedule>
+
     fun findByGameId(gameId: Int): Schedule?
 
     @Query(value = "SELECT * FROM schedule WHERE season = ? AND week = ? AND started = false", nativeQuery = true)

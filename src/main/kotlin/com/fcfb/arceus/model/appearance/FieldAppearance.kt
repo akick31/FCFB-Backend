@@ -1,5 +1,6 @@
 package com.fcfb.arceus.model.appearance
 
+import com.fcfb.arceus.util.copyProperties
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.MappedSuperclass
@@ -9,6 +10,14 @@ abstract class FieldAppearance {
     @Basic
     @Column(name = "turf_color")
     var turfColor: String = DEFAULT_TURF_COLOR
+
+    @Basic
+    @Column(name = "surface")
+    var surface: String? = null
+
+    @Basic
+    @Column(name = "mowing_pattern")
+    var mowingPattern: String? = null
 
     @Basic
     @Column(name = "end_zone_color")
@@ -186,53 +195,7 @@ abstract class FieldAppearance {
     @Column(name = "wall_text_outline_width")
     var wallTextOutlineWidth: Double = 1.0
 
-    fun copyAppearanceInto(target: FieldAppearance) {
-        target.turfColor = turfColor
-        target.endZoneColor = endZoneColor
-        target.endZoneTextColor = endZoneTextColor
-        target.endZoneOutlineColor = endZoneOutlineColor
-        target.endZoneTextLeft = endZoneTextLeft
-        target.endZoneTextRight = endZoneTextRight
-        target.endZoneLogoEnabled = endZoneLogoEnabled
-        target.endZoneLogoSource = endZoneLogoSource
-        target.endZoneLogoUrl = endZoneLogoUrl
-        target.endZoneLogoSize = endZoneLogoSize
-        target.endZoneOutlineEnabled = endZoneOutlineEnabled
-        target.wallLogoSource = wallLogoSource
-        target.wallLogoUrl = wallLogoUrl
-        target.rightWallLogoSource = rightWallLogoSource
-        target.rightWallLogoUrl = rightWallLogoUrl
-        target.rightWallColor = rightWallColor
-        target.rightWallTextOutlineColor = rightWallTextOutlineColor
-        target.endZoneFont = endZoneFont
-        target.midfieldLogoUrl = midfieldLogoUrl
-        target.midfieldLogoSource = midfieldLogoSource
-        target.fieldNumberOutlineColor = fieldNumberOutlineColor
-        target.redZoneBorderColor = redZoneBorderColor
-        target.midfieldBorderColor = midfieldBorderColor
-        target.oobLineColor = oobLineColor
-        target.wallColor = wallColor
-        target.wallDesign = wallDesign
-        target.wallText = wallText
-        target.wallTextOutlineColor = wallTextOutlineColor
-        target.wallTextFont = wallTextFont
-        target.goalPostColor = goalPostColor
-        target.goalPostStyle = goalPostStyle
-        target.quarterLogoUrl = quarterLogoUrl
-        target.quarterLogoSource = quarterLogoSource
-        target.midfieldLogoSize = midfieldLogoSize
-        target.conferenceLogoSize = conferenceLogoSize
-        target.leftEndZoneFont = leftEndZoneFont
-        target.rightEndZoneFont = rightEndZoneFont
-        target.rightWallDesign = rightWallDesign
-        target.rightWallText = rightWallText
-        target.yardNumberFont = yardNumberFont
-        target.conferenceLogoColorMap = conferenceLogoColorMap
-        target.yardNumberArrowAlign = yardNumberArrowAlign
-        target.yardNumberOutlineWidth = yardNumberOutlineWidth
-        target.endZoneOutlineWidth = endZoneOutlineWidth
-        target.wallTextOutlineWidth = wallTextOutlineWidth
-    }
+    fun copyAppearanceInto(target: FieldAppearance) = FieldAppearance::class.copyProperties(this, target)
 
     companion object {
         const val DEFAULT_TURF_COLOR = "#226633"

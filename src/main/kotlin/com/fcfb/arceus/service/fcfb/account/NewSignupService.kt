@@ -2,6 +2,7 @@ package com.fcfb.arceus.service.fcfb.account
 
 import com.fcfb.arceus.dto.response.NewSignupDTO
 import com.fcfb.arceus.enums.user.UserRole
+import com.fcfb.arceus.exception.signup.InvalidNewSignupException
 import com.fcfb.arceus.exception.signup.NewSignupNotFoundException
 import com.fcfb.arceus.model.account.NewSignup
 import com.fcfb.arceus.model.account.User
@@ -20,14 +21,19 @@ class NewSignupService(
     private val userService: UserService,
     private val newSignupRepository: NewSignupRepository,
 ) {
+    companion object {
+        private val DISCORD_MARKUP = Regex("<[@#:]")
+    }
+
     fun createNewSignup(newSignup: NewSignup): NewSignup {
+        val username = validUsername(newSignup.username)
         val passwordEncoder = BCryptPasswordEncoder()
         val salt = passwordEncoder.encode(newSignup.password)
         val verificationToken = UUID.randomUUID().toString()
 
         val newSignup =
             NewSignup(
-                newSignup.username,
+                username,
                 newSignup.coachName,
                 newSignup.discordTag,
                 newSignup.discordId,
@@ -48,6 +54,14 @@ class NewSignupService(
 
         saveNewSignup(newSignup)
         return newSignup
+    }
+
+    private fun validUsername(requested: String): String {
+        val username = requested.trim()
+        if (username.isEmpty() || DISCORD_MARKUP.containsMatchIn(username)) {
+            throw InvalidNewSignupException("Username must be a plain name, not a Discord mention")
+        }
+        return username
     }
 
     fun approveNewSignup(newSignup: NewSignup): Boolean {

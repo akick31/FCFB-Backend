@@ -118,52 +118,6 @@ class WinProbabilityCalculator(private val xgboostPredictor: XGBoostPredictor) {
         )
     }
 
-    fun calculateTwoPointWinProbability(
-        margin: Int,
-        timeRemaining: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val probIfSuccess =
-            calculateWinProbabilityForScenario(
-                75,
-                -(margin + 2),
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                hadFirstPossession,
-                -eloDiffTime,
-            )
-        val probIfFail =
-            calculateWinProbabilityForScenario(
-                75,
-                -margin,
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                1 - hadFirstPossession,
-                -eloDiffTime,
-            )
-        val probIfReturn =
-            calculateWinProbabilityForScenario(
-                75,
-                -(margin - 2),
-                timeRemaining,
-                secondsLeftHalf,
-                half,
-                1 - hadFirstPossession,
-                -eloDiffTime,
-            )
-
-        return 1.0 - (
-            ((301.0 / 751.0) * probIfSuccess) +
-                ((447.0 / 751.0) * probIfFail) +
-                ((3.0 / 751.0) * probIfReturn)
-        )
-    }
-
     fun calculateKickoffWinProbability(
         margin: Int,
         timeRemaining: Int,
@@ -177,77 +131,6 @@ class WinProbabilityCalculator(private val xgboostPredictor: XGBoostPredictor) {
                 75, -margin, timeRemaining, secondsLeftHalf,
                 half, 1 - hadFirstPossession, -eloDiffTime,
             )
-
-    fun calculateKickoffSquibWinProbability(
-        margin: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val slg = ((2 - half) * 840) + secondsLeftHalf
-
-        return 1.0 -
-            calculateWinProbabilityForScenario(
-                65, -margin, slg, secondsLeftHalf,
-                half, 1 - hadFirstPossession, -eloDiffTime,
-            )
-    }
-
-    fun calculateKickoffOnsideWinProbability(
-        margin: Int,
-        secondsLeftHalf: Int,
-        half: Int,
-        hadFirstPossession: Int,
-        eloDiffTime: Double,
-    ): Double {
-        val slg = ((2 - half) * 840) + secondsLeftHalf
-
-        val probIfSuccess =
-            calculateWinProbabilityForScenario(55, margin, slg, secondsLeftHalf, half, hadFirstPossession, eloDiffTime)
-        val probIfFail =
-            1.0 -
-                calculateWinProbabilityForScenario(
-                    45, -margin, slg, secondsLeftHalf,
-                    half, 1 - hadFirstPossession, -eloDiffTime,
-                )
-        val slhr = maxOf(secondsLeftHalf - 10, 0)
-        val slgr = ((2 - half) * 840) + slhr
-        val probIfReturn =
-            1.0 -
-                calculateWinProbabilityForScenario(
-                    75, margin - 6, slgr, slhr,
-                    half, 1 - hadFirstPossession, -eloDiffTime,
-                )
-
-        return (
-            ((140.0 / 751.0) * probIfSuccess) +
-                ((611.0 / 751.0) * probIfFail) +
-                ((1.0 / 751.0) * probIfReturn)
-        )
-    }
-
-    fun calculateWinProbabilityAdded(
-        currentWinProbability: Double,
-        previousWinProbability: Double,
-        currentPossession: TeamSide,
-        previousPlayWinProbability: Double?,
-        previousPlayPossession: TeamSide?,
-    ): Double {
-        if (previousPlayPossession == null) {
-            return currentWinProbability - previousWinProbability
-        }
-
-        val previousWinProb = previousPlayWinProbability ?: 0.0
-
-        if (currentPossession != previousPlayPossession) {
-            val previousHomeWinProb = if (previousPlayPossession == TeamSide.HOME) previousWinProb else 1.0 - previousWinProb
-            val currentHomeWinProb = if (currentPossession == TeamSide.HOME) currentWinProbability else 1.0 - currentWinProbability
-            return currentHomeWinProb - previousHomeWinProb
-        }
-
-        return currentWinProbability - previousWinProb
-    }
 
     private fun calculateWinProbabilityForScenario(
         position: Int,

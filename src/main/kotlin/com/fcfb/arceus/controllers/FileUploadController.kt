@@ -1,5 +1,6 @@
 package com.fcfb.arceus.controllers
 
+import com.fcfb.arceus.enums.system.LogoKind
 import com.fcfb.arceus.service.FileUploadService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.ResponseEntity
@@ -16,9 +17,10 @@ import org.springframework.web.multipart.MultipartFile
 class FileUploadController(
     private val fileUploadService: FileUploadService,
 ) {
-    @Operation(summary = "Upload postseason logo")
-    @PostMapping("/postseason-logo")
-    fun uploadPostseasonLogo(
+    @Operation(summary = "Upload a logo to FCFB image hosting")
+    @PostMapping("/logo")
+    fun uploadLogo(
         @RequestParam("file") file: MultipartFile,
-    ): ResponseEntity<Map<String, String>> = fileUploadService.uploadPostseasonLogo(file)
+        @RequestParam("kind") kind: LogoKind,
+    ): ResponseEntity<Map<String, String>> = fileUploadService.uploadLogo(file, kind)
 }

@@ -73,6 +73,7 @@ class GameFinalizationTransactionTest {
             mockk(relaxed = true),
             probability,
             fields,
+            mockk(relaxed = true),
             DataSourceTransactionManager(dataSource),
         )
     private val service =

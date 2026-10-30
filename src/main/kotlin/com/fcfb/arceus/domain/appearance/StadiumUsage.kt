@@ -20,9 +20,11 @@ class StadiumUsage(
 
     fun describe(venue: Venue): StadiumResponse =
         StadiumResponse(
+            id = venue.venueId,
             name = venue.name,
             city = venue.city,
             state = venue.state,
+            country = venue.country,
             capacity = venue.capacity,
             active = venue.active,
             design = venue.design,

@@ -85,6 +85,7 @@ class GameServiceTest {
                 coachStatsService,
                 winProbabilityService,
                 gameFieldService,
+                mockk(relaxed = true),
                 DataSourceTransactionManager(DriverManagerDataSource("jdbc:h2:mem:${UUID.randomUUID()}", "sa", "")),
             )
         gameService =

@@ -15,6 +15,7 @@ import com.fcfb.arceus.repositories.play.PlayRepository
 import com.fcfb.arceus.service.discord.DiscordService
 import com.fcfb.arceus.service.fcfb.account.UserService
 import com.fcfb.arceus.service.fcfb.appearance.GameFieldService
+import com.fcfb.arceus.service.fcfb.appearance.GameLookService
 import com.fcfb.arceus.service.fcfb.probability.WinProbabilityService
 import com.fcfb.arceus.service.fcfb.schedule.ScheduleService
 import com.fcfb.arceus.service.fcfb.season.SeasonService
@@ -47,6 +48,7 @@ class GameFinalizationService(
     private val coachStatsService: CoachStatsService,
     private val winProbabilityService: WinProbabilityService,
     private val gameFieldService: GameFieldService,
+    private val gameLookService: GameLookService,
     private val transactionManager: PlatformTransactionManager,
 ) {
     private val finalizationTransaction = TransactionTemplate(transactionManager)
@@ -113,6 +115,7 @@ class GameFinalizationService(
         try {
             game.gameStatus = GameStatus.FINAL
             gameFieldService.snapshotIfAbsent(game)
+            gameLookService.capture(game)
             appendEndOfGamePlay(game)
             if (game.gameType != GameType.SCRIMMAGE && !wasAlreadyFinal) {
                 teamService.updateTeamWinsAndLosses(game)

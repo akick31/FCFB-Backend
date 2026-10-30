@@ -12,6 +12,7 @@ import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
+import java.awt.Rectangle
 import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
 import java.awt.geom.Line2D
@@ -29,6 +30,7 @@ object FieldBackgroundPainter {
     const val MARGIN = 80
 
     private const val OOB_INSET = 28
+    private const val MOWING_BAND_WIDTH = (WIDTH - 2 * MARGIN) / 20f
     private const val TOP_NUMBER_Y = 84
     private const val BOTTOM_NUMBER_Y = 370
     private const val DIGIT_GAP = 4
@@ -87,6 +89,7 @@ object FieldBackgroundPainter {
 
         g.color = theme.turf
         g.fillRect(0, 0, WIDTH, HEIGHT)
+        MowingPainter.paintOverhead(g, theme, Rectangle(MARGIN, 0, WIDTH - 2 * MARGIN, HEIGHT), MOWING_BAND_WIDTH)
 
         val homeEndZone = theme.endZoneOf(theme.leftSide())
         val awayEndZone = theme.endZoneOf(theme.rightSide())

@@ -7,6 +7,7 @@ import com.fcfb.arceus.dto.request.PostseasonPreviewRequest
 import com.fcfb.arceus.dto.request.TeamColorsRequest
 import com.fcfb.arceus.dto.request.TeamFieldRequest
 import com.fcfb.arceus.dto.request.TeamUniformRequest
+import com.fcfb.arceus.enums.animation.PostseasonCategory
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
 import com.fcfb.arceus.enums.play.PlayType
@@ -41,7 +42,6 @@ class AppearancePreviewService(
     private val teamService: TeamService,
     private val teamAppearanceService: TeamAppearanceService,
     private val espnScorebugRenderer: EspnScorebugRenderer,
-    private val gameRepository: com.fcfb.arceus.repositories.game.GameRepository,
     private val fieldThemeService: FieldThemeService,
     private val bowlFieldService: BowlFieldService,
     private val playoffFieldService: PlayoffFieldService,
@@ -49,6 +49,7 @@ class AppearancePreviewService(
     private val fieldAppearanceService: FieldAppearanceService,
     private val postseasonFieldUpdateService: PostseasonFieldUpdateService,
     private val thumbnailCache: AppearanceThumbnailCache,
+    private val postseasonSampleGameService: PostseasonSampleGameService,
 ) {
     fun preview(request: AppearancePreviewRequest): ResponseEntity<ByteArray> = respond(renderImage(request))
 
@@ -233,17 +234,10 @@ class AppearancePreviewService(
     fun previewPostseason(request: PostseasonPreviewRequest): ResponseEntity<ByteArray> {
         val category = request.category.uppercase()
         val game =
-            when (category) {
-                "BOWL" -> gameRepository.getLastBowlGame(request.key)
-                "PLAYOFF" ->
-                    if (request.key.equals(NATIONAL_CHAMPIONSHIP, ignoreCase = true)) {
-                        gameRepository.getLastNationalChampionshipGame()
-                    } else {
-                        gameRepository.getLastPlayoffGame(request.key)
-                    }
-                "CCG" -> gameRepository.getLastConferenceChampionshipGame(request.key)
-                else -> null
-            } ?: return ResponseEntity(HttpStatus.NOT_FOUND)
+            PostseasonCategory.entries
+                .find { it.name == category }
+                ?.let { postseasonSampleGameService.lastGame(it, request.key) }
+                ?: return ResponseEntity(HttpStatus.NOT_FOUND)
 
         val home = teamService.getTeamByName(game.homeTeam)
         val away = teamService.getTeamByName(game.awayTeam)
@@ -321,6 +315,5 @@ class AppearancePreviewService(
         private const val SAMPLE_HOME_SCORE = 21
         private const val SAMPLE_AWAY_SCORE = 17
         private const val PAT_BALL_LOCATION = 97
-        private const val NATIONAL_CHAMPIONSHIP = "National Championship"
     }
 }

@@ -103,7 +103,7 @@ internal val ADMIN_ONLY_POST_PATHS =
         "$FULL_PATH/win-probability/calculate/all",
         "$FULL_PATH/elo/rebuild",
         "$FULL_PATH/team",
-        "$FULL_PATH/upload/postseason-logo",
+        "$FULL_PATH/upload/logo",
         "$FULL_PATH/user/hash_emails",
         "$FULL_PATH/stadium",
     )
@@ -121,6 +121,7 @@ internal val ADMIN_ONLY_PUT_PATHS =
         "$FULL_PATH/game-field",
         "$FULL_PATH/team-appearance/logos",
         "$FULL_PATH/stadium/active",
+        "$FULL_PATH/stadium/merge",
         "$FULL_PATH/stadium/game",
         "$FULL_PATH/stadium/event",
     )

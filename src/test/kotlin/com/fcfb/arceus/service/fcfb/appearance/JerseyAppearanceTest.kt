@@ -120,8 +120,8 @@ class JerseyAppearanceTest {
         }
         val preview =
             AppearancePreviewService(
-                teamService, appearance, mockk(), mockk(), resolver, mockk(), mockk(), mockk(), FieldAppearanceService(),
-                PostseasonFieldUpdateService(), cache,
+                teamService, appearance, mockk(), resolver, mockk(), mockk(), mockk(), FieldAppearanceService(),
+                PostseasonFieldUpdateService(), cache, mockk(),
             )
         preview.preview(AppearancePreviewRequest(team = "Test", view = "JERSEY"))
         assertEquals("STORED", captured.captured.numberTopText)

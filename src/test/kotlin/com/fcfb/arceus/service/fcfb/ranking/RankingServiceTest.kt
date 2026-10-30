@@ -9,6 +9,7 @@ import com.fcfb.arceus.repositories.ranking.RankingRepository
 import com.fcfb.arceus.repositories.team.TeamRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
@@ -72,11 +73,34 @@ class RankingServiceTest {
         every { rankingRepository.findLatest(PollType.COACHES_POLL.name) } returns ranking(PollType.COACHES_POLL, 1, 10)
         every { rankingRepository.findBySeasonWeekAndPollType(season, week, PollType.COACHES_POLL.name) } returns
             listOf(ranking(PollType.COACHES_POLL, 1, 10))
-        every { teamRepository.findById(10) } returns java.util.Optional.empty()
+        every { teamRepository.findAllById(listOf(10)) } returns emptyList()
 
         val latest = rankingService.getLatestRankings("COACHES_POLL")
 
         assertEquals(listOf(season to week), latest.map { it.season to it.week })
+    }
+
+    @Test
+    fun `a week's poll resolves every team name with one lookup`() {
+        every { rankingRepository.findBySeasonWeekAndPollType(season, week, PollType.COACHES_POLL.name) } returns
+            listOf(ranking(PollType.COACHES_POLL, 1, 10), ranking(PollType.COACHES_POLL, 2, 20))
+        every { teamRepository.findAllById(listOf(10, 20)) } returns
+            listOf(
+                Team().apply {
+                    id = 10
+                    name = "Army"
+                },
+                Team().apply {
+                    id = 20
+                    name = "Navy"
+                },
+            )
+
+        val poll = rankingService.getRankings(season, week, "COACHES_POLL")
+
+        assertEquals(listOf("Army", "Navy"), poll.map { it.teamName })
+        verify(exactly = 1) { teamRepository.findAllById(any()) }
+        verify(exactly = 0) { teamRepository.findById(any()) }
     }
 
     @Test

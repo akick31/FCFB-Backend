@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.appearance
 
+import com.fcfb.arceus.domain.appearance.Countries
 import com.fcfb.arceus.domain.appearance.StadiumUsage
 import com.fcfb.arceus.dto.request.EventStadiumRequest
 import com.fcfb.arceus.dto.request.GameStadiumRequest
@@ -9,8 +10,10 @@ import com.fcfb.arceus.dto.request.StadiumUpdateRequest
 import com.fcfb.arceus.dto.request.TeamStadiumRequest
 import com.fcfb.arceus.dto.response.StadiumResponse
 import com.fcfb.arceus.enums.animation.PostseasonCategory
+import com.fcfb.arceus.enums.animation.StadiumChangeAction
 import com.fcfb.arceus.exception.team.InvalidUniformException
 import com.fcfb.arceus.model.appearance.StadiumDesign
+import com.fcfb.arceus.model.appearance.StadiumSnapshot
 import com.fcfb.arceus.model.appearance.Venue
 import com.fcfb.arceus.model.team.Team
 import com.fcfb.arceus.repositories.appearance.BowlFieldRepository
@@ -44,7 +47,11 @@ class StadiumService(
     private val playoffFieldService: PlayoffFieldService,
     private val conferenceService: ConferenceService,
     private val thumbnailCache: AppearanceThumbnailCache,
+    private val venueReferenceService: VenueReferenceService,
+    private val stadiumChangeLogService: StadiumChangeLogService,
 ) {
+    fun countries(): List<String> = Countries.ALL
+
     fun getAll(includeInactive: Boolean): List<StadiumResponse> {
         val venues = if (includeInactive) venueRepository.findAllByOrderByNameAsc() else venueRepository.findAllByActiveTrueOrderByNameAsc()
         val usage = usage()
@@ -52,6 +59,9 @@ class StadiumService(
     }
 
     fun get(name: String): StadiumResponse = usage().describe(venue(name))
+
+    fun getById(id: Long): StadiumResponse =
+        usage().describe(venueRepository.findByVenueId(id) ?: throw InvalidUniformException("No stadium with id $id"))
 
     fun designOf(name: String?): StadiumDesign? =
         name?.trim()?.takeIf {
@@ -64,9 +74,19 @@ class StadiumService(
         val venue = newVenue(request.name)
         venue.city = request.city
         venue.state = request.state
+        request.country?.let { venue.country = knownCountry(it) }
         venue.capacity = request.capacity
         request.copyFrom?.let { venue(it).design.copyInto(venue.design) }
         venueRepository.save(venue)
+        stadiumChangeLogService.record(
+            venue.name,
+            StadiumChangeAction.CREATE,
+            null,
+            StadiumSnapshot.of(venue),
+            request.copyFrom?.let {
+                "Copied from $it"
+            },
+        )
         return get(venue.name)
     }
 
@@ -74,17 +94,35 @@ class StadiumService(
     fun update(
         name: String,
         request: StadiumUpdateRequest,
+        action: StadiumChangeAction = StadiumChangeAction.UPDATE,
     ): StadiumResponse {
         requireCanEdit(name)
+        val before = StadiumSnapshot.of(venue(name))
+        requireCanMove(venue(name), request)
         val target = request.name?.trim()?.takeIf { it.isNotBlank() && it != name }?.also { rename(name, it) } ?: name
         val venue = venue(target)
         request.city?.let { venue.city = it }
         request.state?.let { venue.state = it }
+        request.country?.let { venue.country = knownCountry(it) }
         request.capacity?.let { venue.capacity = it }
+        request.domeStyle?.let { venue.design.domeStyle = it }
         request.design?.let { applyDesign(venue.design, it) }
         venueRepository.save(venue)
+        val logged = if (action == StadiumChangeAction.UPDATE && target != name) StadiumChangeAction.RENAME else action
+        stadiumChangeLogService.record(target, logged, before, StadiumSnapshot.of(venue))
         evictThumbnails(target)
         return get(target)
+    }
+
+    private fun requireCanMove(
+        venue: Venue,
+        request: StadiumUpdateRequest,
+    ) {
+        val moves =
+            request.city?.let { it != venue.city } == true ||
+                request.state?.let { it != venue.state } == true ||
+                request.country?.let { it != venue.country } == true
+        if (moves) AuthContext().requireAdminOrCommissioner()
     }
 
     @Transactional
@@ -94,8 +132,11 @@ class StadiumService(
     ): StadiumResponse {
         AuthContext().requireAdminOrCommissioner()
         val venue = venue(name)
+        val before = StadiumSnapshot.of(venue)
         venue.active = active
         venueRepository.save(venue)
+        val logged = if (active) StadiumChangeAction.RESTORE else StadiumChangeAction.RETIRE
+        stadiumChangeLogService.record(name, logged, before, StadiumSnapshot.of(venue))
         return get(name)
     }
 
@@ -149,12 +190,15 @@ class StadiumService(
             playoffFieldRepository.findAll().toList(),
         )
 
-    private fun evictThumbnails(venue: String) =
+    fun evictThumbnails(venue: String) =
         teamRepository.findAllByStadium(
             venue,
         ).forEach { thumbnailCache.evictTeam(it.name.orEmpty()) }
 
     private fun requireCanEdit(name: String) = teamEditPermissionService.requireCoachOfAny(teamRepository.findAllByStadium(name))
+
+    private fun knownCountry(country: String): String =
+        country.trim().takeIf { Countries.isKnown(it) } ?: throw InvalidUniformException("Unknown country $country")
 
     private fun venue(name: String): Venue =
         venueRepository.findById(name.trim()).orElseThrow { InvalidUniformException("No stadium named $name") }
@@ -172,15 +216,7 @@ class StadiumService(
     ) {
         if (venueRepository.existsById(newName)) throw InvalidUniformException("A stadium named $newName already exists")
         venueRepository.renameVenue(oldName, newName)
-        venueRepository.renameTeamStadiums(oldName, newName)
-        venueRepository.renameGameVenues(oldName, newName)
-        venueRepository.renamePresentationVenues(oldName, newName)
-        venueRepository.renameScheduleVenues(oldName, newName)
-        venueRepository.renameChampionshipVenues(oldName, newName)
-        venueRepository.renameBowlLastVenues(oldName, newName)
-        venueRepository.renameBowlVenues(oldName, newName)
-        venueRepository.renameBowlFieldVenues(oldName, newName)
-        venueRepository.renamePlayoffFieldVenues(oldName, newName)
+        venueReferenceService.repoint(oldName, newName)
     }
 
     fun draftDesign(

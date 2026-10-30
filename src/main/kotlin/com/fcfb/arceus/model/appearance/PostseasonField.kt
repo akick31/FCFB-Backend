@@ -1,5 +1,6 @@
 package com.fcfb.arceus.model.appearance
 
+import com.fcfb.arceus.util.copyProperties
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.MappedSuperclass
@@ -146,41 +147,5 @@ abstract class PostseasonField {
     @Column(name = "yard_number_team_slot")
     var yardNumberTeamSlot: String? = null
 
-    fun copyInto(target: PostseasonField) {
-        target.turfColor = turfColor
-        target.endZoneFont = endZoneFont
-        target.centerLogoUrl = centerLogoUrl
-        target.wallColor = wallColor
-        target.wallDesign = wallDesign
-        target.wallText = wallText
-        target.wallTextOutlineColor = wallTextOutlineColor
-        target.wallTextFont = wallTextFont
-        target.goalPostColor = goalPostColor
-        target.goalPostStyle = goalPostStyle
-        target.yardNumberOutlineColor = yardNumberOutlineColor
-        target.redZoneBorderColor = redZoneBorderColor
-        target.midfieldBorderColor = midfieldBorderColor
-        target.sidelineAccentColor = sidelineAccentColor
-        target.leftSidelineColor = leftSidelineColor
-        target.rightSidelineColor = rightSidelineColor
-        target.leftRedZoneColor = leftRedZoneColor
-        target.rightRedZoneColor = rightRedZoneColor
-        target.leftEndZoneText = leftEndZoneText
-        target.rightEndZoneText = rightEndZoneText
-        target.leftEndZoneLogoUrl = leftEndZoneLogoUrl
-        target.rightEndZoneLogoUrl = rightEndZoneLogoUrl
-        target.leftEndZoneLogoSource = leftEndZoneLogoSource
-        target.rightEndZoneLogoSource = rightEndZoneLogoSource
-        target.leftEndZoneFont = leftEndZoneFont
-        target.rightEndZoneFont = rightEndZoneFont
-        target.rightWallDesign = rightWallDesign
-        target.rightWallText = rightWallText
-        target.yardNumberFont = yardNumberFont
-        target.yardNumberArrowAlign = yardNumberArrowAlign
-        target.yardNumberOutlineWidth = yardNumberOutlineWidth
-        target.endZoneOutlineWidth = endZoneOutlineWidth
-        target.wallTextOutlineWidth = wallTextOutlineWidth
-        target.yardNumberSource = yardNumberSource
-        target.yardNumberTeamSlot = yardNumberTeamSlot
-    }
+    fun copyInto(target: PostseasonField) = PostseasonField::class.copyProperties(this, target)
 }

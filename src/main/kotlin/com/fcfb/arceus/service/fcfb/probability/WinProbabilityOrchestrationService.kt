@@ -1,11 +1,14 @@
 package com.fcfb.arceus.service.fcfb.probability
 
+import com.fcfb.arceus.domain.probability.WinProbabilityState
 import com.fcfb.arceus.dto.response.GameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.PlayWinProbabilityResponse
 import com.fcfb.arceus.dto.response.ProcessedGameResult
 import com.fcfb.arceus.dto.response.SingleGameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.SinglePlayWinProbabilityResponse
 import com.fcfb.arceus.dto.response.WinProbabilitiesForAllGamesResponse
+import com.fcfb.arceus.enums.game.GameStatus
+import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.play.Play
@@ -73,41 +76,19 @@ class WinProbabilityOrchestrationService(
         val currentHomeElo = statsMap[game.homeTeam]?.teamElo ?: homeTeam.currentElo
         val currentAwayElo = statsMap[game.awayTeam]?.teamElo ?: awayTeam.currentElo
 
-        var previousPlay: Play? = null
-        val processedPlays = mutableListOf<SinglePlayWinProbabilityResponse>()
-
         val sortedPlays = plays.sortedBy { it.playNumber }
+        val finishedPlays = sortedPlays.filter { it.playFinished }
+        var previousHome =
+            finishedPlays.firstOrNull()?.let {
+                winProbabilityService.homeWinProbability(game, WinProbabilityState.beforeSnap(it, 0, 0), currentHomeElo, currentAwayElo)
+            } ?: 0.5
 
-        for (play in sortedPlays) {
-            val homeElo = statsMap[game.homeTeam]?.teamElo ?: homeTeam.currentElo
-            val awayElo = statsMap[game.awayTeam]?.teamElo ?: awayTeam.currentElo
-
-            val winProbability = winProbabilityService.calculateWinProbability(game, play, homeElo, awayElo)
-
-            val winProbabilityAdded =
-                previousPlay?.let { prev ->
-                    val prevWinProb =
-                        if (prev.possession == TeamSide.HOME) {
-                            prev.winProbability ?: 0.0
-                        } else {
-                            1.0 - (prev.winProbability ?: 0.0)
-                        }
-                    val currentWinProb =
-                        if (play.possession == TeamSide.HOME) {
-                            winProbability
-                        } else {
-                            1.0 - winProbability
-                        }
-
-                    currentWinProb - prevWinProb
-                } ?: 0.0
-
-            play.winProbability = winProbability
-            play.winProbabilityAdded = winProbabilityAdded
-
-            playService.updatePlay(play)
-
-            processedPlays.add(
+        val processedPlays =
+            finishedPlays.map { play ->
+                val homeAfter = homeAfter(game, play, sortedPlays, currentHomeElo, currentAwayElo)
+                winProbabilityService.applyToPlay(play, homeAfter, previousHome)
+                previousHome = homeAfter
+                playService.updatePlay(play)
                 SinglePlayWinProbabilityResponse(
                     playId = play.playId,
                     playNumber = play.playNumber,
@@ -115,8 +96,8 @@ class WinProbabilityOrchestrationService(
                     clock = play.clock,
                     homeScore = play.homeScore,
                     awayScore = play.awayScore,
-                    winProbability = winProbability,
-                    winProbabilityAdded = winProbabilityAdded,
+                    winProbability = play.winProbability ?: 0.5,
+                    winProbabilityAdded = play.winProbabilityAdded ?: 0.0,
                     possession = play.possession.name,
                     possessionTeam = if (play.possession == TeamSide.HOME) game.homeTeam else game.awayTeam,
                     ballLocation = play.ballLocation,
@@ -125,11 +106,8 @@ class WinProbabilityOrchestrationService(
                     playCall = play.playCall?.name,
                     homeElo = currentHomeElo,
                     awayElo = currentAwayElo,
-                ),
-            )
-
-            previousPlay = play
-        }
+                )
+            }
 
         return SingleGameWinProbabilitiesResponse(
             gameId = gameId,
@@ -139,6 +117,27 @@ class WinProbabilityOrchestrationService(
             processedPlays = processedPlays.size,
             plays = processedPlays,
         )
+    }
+
+    private fun homeAfter(
+        game: Game,
+        play: Play,
+        sortedPlays: List<Play>,
+        homeElo: Double,
+        awayElo: Double,
+    ): Double {
+        val next = sortedPlays.getOrNull(sortedPlays.indexOf(play) + 1)
+        return when {
+            next != null && next.actualResult != ActualResult.END_OF_GAME ->
+                winProbabilityService.homeWinProbability(
+                    game,
+                    WinProbabilityState.beforeSnap(next, play.homeScore, play.awayScore),
+                    homeElo,
+                    awayElo,
+                )
+            game.gameStatus == GameStatus.FINAL -> winProbabilityService.finalHomeWinProbability(game)
+            else -> winProbabilityService.homeWinProbability(game, WinProbabilityState.afterPlay(game), homeElo, awayElo)
+        }
     }
 
     fun calculateWinProbabilitiesForAllGames(games: List<Game>): WinProbabilitiesForAllGamesResponse {

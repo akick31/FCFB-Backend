@@ -21,14 +21,15 @@ data class BackdropArea(
 
     fun yAt(fractionOfHeight: Float): Int = groundY - (height * fractionOfHeight).toInt()
 
-    /** Scenery [yards] behind the end zone shrinks less than the posts as the camera closes in, like a real dolly shot. */
+    val frameTopY: Int get() = groundY - (CLOSE_ROOM * scale).toInt()
+
     fun atDepth(yards: Float): BackdropArea {
-        val layerScale = REFERENCE_SCALE * (REFERENCE_CAMERA_YARDS + yards) / (CAMERA_YARDS / scale + yards)
-        val canvas = (height * minOf(1f, layerScale / scale)).toInt()
-        return copy(topY = groundY - canvas, scale = minOf(scale, layerScale))
+        val closeScale = minOf(1f, REFERENCE_SCALE * (REFERENCE_CAMERA_YARDS + yards) / (CAMERA_YARDS + yards))
+        return copy(topY = groundY - (height * closeScale).toInt(), scale = scale * closeScale)
     }
 
     companion object {
+        const val CLOSE_ROOM = 250f
         private const val MIN_HEIGHT = 10
         private const val CAMERA_YARDS = 25f
         private const val REFERENCE_SCALE = 0.74f

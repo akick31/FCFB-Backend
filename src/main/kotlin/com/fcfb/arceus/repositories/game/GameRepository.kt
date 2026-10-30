@@ -13,6 +13,9 @@ import javax.transaction.Transactional
 
 @Repository
 interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<Game> {
+    @Query(value = "SELECT * FROM game WHERE venue = ?1 ORDER BY season DESC, week DESC, game_id DESC", nativeQuery = true)
+    fun findAllAtVenue(venue: String): List<Game>
+
     @Query(value = "SELECT * FROM game WHERE game_id =?", nativeQuery = true)
     fun getGameById(gameId: Int): Game?
 
@@ -208,6 +211,17 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
         season: Int,
         week: Int,
     ): List<Game>
+
+    @Query(
+        value =
+            "SELECT DISTINCT week FROM game " +
+                "WHERE season = :season " +
+                "AND game_type != 'SCRIMMAGE' " +
+                "AND game_status = 'FINAL' " +
+                "ORDER BY week",
+        nativeQuery = true,
+    )
+    fun getFinishedWeeksBySeason(season: Int): List<Int>
 
     @Query(
         value =

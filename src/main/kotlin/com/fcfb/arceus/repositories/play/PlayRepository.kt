@@ -42,6 +42,27 @@ interface PlayRepository : CrudRepository<Play, Int> {
     )
     fun getAllPlaysByTeam(team: String): List<Play>
 
+    @Query(
+        value = """
+            SELECT p.* FROM play p
+            JOIN game g ON g.game_id = p.game_id
+            WHERE g.season = ?1 AND g.week = ?2 AND (g.game_type IS NULL OR g.game_type <> 'SCRIMMAGE')
+              AND p.play_finished = true AND p.win_probability_added IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM play dog
+                  WHERE dog.game_id = p.game_id AND dog.actual_result = 'DELAY_OF_GAME'
+                    AND dog.play_number BETWEEN p.play_number - 1 AND p.play_number
+              )
+            ORDER BY ABS(p.win_probability_added) DESC
+            LIMIT 1
+        """,
+        nativeQuery = true,
+    )
+    fun findBiggestSwingInWeek(
+        season: Int,
+        week: Int,
+    ): Play?
+
     @Query(value = "SELECT * FROM play WHERE game_id = ? AND play_finished = false ORDER BY play_id DESC LIMIT 1", nativeQuery = true)
     fun getCurrentPlay(gameId: Int): Play?
 

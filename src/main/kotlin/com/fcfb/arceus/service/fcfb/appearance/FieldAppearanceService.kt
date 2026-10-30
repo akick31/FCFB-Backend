@@ -24,6 +24,8 @@ class FieldAppearanceService {
         request: TeamFieldRequest,
     ): T {
         request.turfColor?.let { field.turfColor = it }
+        request.surface?.let { field.surface = it }
+        request.mowingPattern?.let { field.mowingPattern = it }
         request.endZoneColor?.let { field.endZoneColor = it }
         field.endZoneTextColor = request.endZoneTextColor
         field.endZoneOutlineColor = request.endZoneOutlineColor
