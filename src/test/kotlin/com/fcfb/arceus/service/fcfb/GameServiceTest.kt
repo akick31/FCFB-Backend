@@ -4,6 +4,8 @@ import com.fcfb.arceus.dto.request.StartRequest
 import com.fcfb.arceus.dto.response.VegasOddsResponse
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.game.GameType
+import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.system.Platform
 import com.fcfb.arceus.enums.team.DefensivePlaybook
 import com.fcfb.arceus.enums.team.OffensivePlaybook
@@ -18,7 +20,9 @@ import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.repositories.RankingRepository
 import com.fcfb.arceus.service.discord.DiscordService
+import com.fcfb.arceus.service.fcfb.elo.EloService
 import com.fcfb.arceus.service.specification.GameSpecificationService
+import com.fcfb.arceus.util.InvalidGameReopenException
 import com.fcfb.arceus.util.UnableToCreateGameThreadException
 import io.mockk.coEvery
 import io.mockk.every
@@ -48,6 +52,7 @@ class GameServiceTest {
     private val gameStatsRepository: GameStatsRepository = mockk(relaxed = true)
     private val rankingRepository: RankingRepository = mockk(relaxed = true)
     private val rankingService: RankingService = mockk()
+    private val eloService: EloService = mockk(relaxed = true)
 
     private lateinit var gameService: GameService
 
@@ -83,6 +88,7 @@ class GameServiceTest {
                 gameStatsRepository,
                 rankingRepository,
                 rankingService,
+                eloService,
             )
 
         every { teamService.getTeamByName("Ohio State") } returns team(1, "Ohio State", "coachA", "111")
@@ -180,6 +186,107 @@ class GameServiceTest {
         verify(exactly = 1) { teamService.updateTeamWinsAndLosses(game) }
     }
 
+    @Test
+    fun `reopening a game that ended on a final touchdown restores the scorer's pending conversion`() {
+        val game = finalGame(homeScore = 24, awayScore = 22)
+        val touchdown =
+            Play().apply {
+                homeTeam = "Ohio State"
+                awayTeam = "Michigan"
+                possession = TeamSide.AWAY
+                actualResult = ActualResult.TOUCHDOWN
+                playId = TOUCHDOWN_PLAY_ID
+                playFinished = true
+                homeScore = 22
+                awayScore = 24
+            }
+        val endOfGame =
+            Play().apply {
+                playId = END_OF_GAME_PLAY_ID
+                playFinished = true
+                homeTeam = "Ohio State"
+                awayTeam = "Michigan"
+                actualResult = ActualResult.END_OF_GAME
+            }
+        every { gameRepository.getGameById(SAVED_GAME_ID) } returns game
+        every { playRepository.getAllPlaysByGameId(SAVED_GAME_ID) } returns listOf(touchdown, endOfGame)
+        every { playRepository.getPreviousPlay(SAVED_GAME_ID) } returns endOfGame
+
+        val reopened = gameService.reopenGame(SAVED_GAME_ID)
+
+        assertEquals(GameStatus.IN_PROGRESS, reopened.gameStatus)
+        assertEquals(TeamSide.AWAY, reopened.possession)
+        assertEquals(TeamSide.HOME, reopened.waitingOn)
+        assertEquals(PlayType.PAT, reopened.currentPlayType)
+        assertEquals(22, reopened.homeScore)
+        assertEquals(24, reopened.awayScore)
+        verify(exactly = 1) { playRepository.deleteById(END_OF_GAME_PLAY_ID) }
+        verify(exactly = 1) { teamService.revertTeamWinsAndLosses(game) }
+        verify(exactly = 1) { userService.revertUserWinsAndLosses(game) }
+        verify(exactly = 1) { scheduleService.markGameAsUnfinished(game) }
+        verify(exactly = 1) { eloService.rebuild(true) }
+    }
+
+    @Test
+    fun `a game whose last real play was not a touchdown cannot be reopened and nothing is reverted`() {
+        val game = finalGame(homeScore = 24, awayScore = 22)
+        val punt =
+            Play().apply {
+                homeTeam = "Ohio State"
+                awayTeam = "Michigan"
+                playId = TOUCHDOWN_PLAY_ID
+                playFinished = true
+                actualResult = ActualResult.PUNT
+            }
+        val endOfGame =
+            Play().apply {
+                playId = END_OF_GAME_PLAY_ID
+                homeTeam = "Ohio State"
+                awayTeam = "Michigan"
+                playFinished = true
+                actualResult = ActualResult.END_OF_GAME
+            }
+        every { gameRepository.getGameById(SAVED_GAME_ID) } returns game
+        every { playRepository.getAllPlaysByGameId(SAVED_GAME_ID) } returns listOf(punt, endOfGame)
+
+        assertFailsWith<InvalidGameReopenException> { gameService.reopenGame(SAVED_GAME_ID) }
+
+        verify(exactly = 0) { teamService.revertTeamWinsAndLosses(any()) }
+        verify(exactly = 0) { playRepository.deleteById(any()) }
+        assertEquals(GameStatus.FINAL, game.gameStatus)
+    }
+
+    @Test
+    fun `a game that is not final cannot be reopened`() {
+        val game = finalGame(homeScore = 24, awayScore = 22).apply { gameStatus = GameStatus.IN_PROGRESS }
+        every { gameRepository.getGameById(SAVED_GAME_ID) } returns game
+
+        assertFailsWith<InvalidGameReopenException> { gameService.reopenGame(SAVED_GAME_ID) }
+    }
+
+    @Test
+    fun `a national championship cannot be reopened`() {
+        val game = finalGame(homeScore = 24, awayScore = 22).apply { gameType = GameType.NATIONAL_CHAMPIONSHIP }
+        every { gameRepository.getGameById(SAVED_GAME_ID) } returns game
+
+        assertFailsWith<InvalidGameReopenException> { gameService.reopenGame(SAVED_GAME_ID) }
+    }
+
+    private fun finalGame(
+        homeScore: Int,
+        awayScore: Int,
+    ) = Game().apply {
+        gameId = SAVED_GAME_ID
+        homeTeam = "Ohio State"
+        awayTeam = "Michigan"
+        gameType = GameType.OUT_OF_CONFERENCE
+        gameStatus = GameStatus.FINAL
+        quarter = 4
+        this.homeScore = homeScore
+        this.awayScore = awayScore
+        possession = TeamSide.AWAY
+    }
+
     private fun team(
         teamId: Int,
         teamName: String,
@@ -198,5 +305,7 @@ class GameServiceTest {
 
     companion object {
         private const val SAVED_GAME_ID = 2211
+        private const val END_OF_GAME_PLAY_ID = 9002
+        private const val TOUCHDOWN_PLAY_ID = 9001
     }
 }

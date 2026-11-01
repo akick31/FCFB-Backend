@@ -30,6 +30,7 @@ import com.fcfb.arceus.repositories.GameStatsRepository
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.repositories.RankingRepository
 import com.fcfb.arceus.service.discord.DiscordService
+import com.fcfb.arceus.service.fcfb.elo.EloService
 import com.fcfb.arceus.service.fcfb.game.GameRules
 import com.fcfb.arceus.service.specification.GameSpecificationService
 import com.fcfb.arceus.service.specification.GameSpecificationService.GameCategory
@@ -39,6 +40,7 @@ import com.fcfb.arceus.util.AuthContext
 import com.fcfb.arceus.util.GameNotFoundException
 import com.fcfb.arceus.util.GameWeekJobNotFoundException
 import com.fcfb.arceus.util.InvalidCoinTossChoiceException
+import com.fcfb.arceus.util.InvalidGameReopenException
 import com.fcfb.arceus.util.InvalidHalfTimePossessionChangeException
 import com.fcfb.arceus.util.Logger
 import com.fcfb.arceus.util.NoCoachDiscordIdsFoundException
@@ -88,6 +90,7 @@ class GameService(
     private val gameStatsRepository: GameStatsRepository,
     private val rankingRepository: RankingRepository,
     private val rankingService: RankingService,
+    private val eloService: EloService,
 ) {
     companion object {
         private val activeJobs = ConcurrentHashMap<String, GameWeekJob>()
@@ -95,6 +98,7 @@ class GameService(
         const val DELAY_BETWEEN_GAMES_MS = 3000L
         const val BATCH_SIZE = 25
         const val BATCH_COOLDOWN_MS = 60000L
+        const val TOUCHDOWN_BALL_LOCATION = 97
     }
 
     fun saveGame(game: Game): Game = gameRepository.save(game)
@@ -1028,6 +1032,70 @@ class GameService(
                     "Error Message: ${e.message ?: "Unknown error"}",
             )
             throw e
+        }
+    }
+
+    fun reopenGame(gameId: Int): Game {
+        val game = getGameById(gameId)
+        if (game.gameStatus != GameStatus.FINAL) {
+            throw InvalidGameReopenException("Game $gameId is not final")
+        }
+        if (game.gameType == GameType.NATIONAL_CHAMPIONSHIP) {
+            throw InvalidGameReopenException("National championship games cannot be reopened")
+        }
+        val lastPlay = getLastPlayedPlay(gameId)
+        if (!GameRules.isTouchdownPlay(lastPlay.actualResult)) {
+            throw InvalidGameReopenException("Game $gameId did not end on a touchdown")
+        }
+        val countsTowardStandings = game.gameType != GameType.SCRIMMAGE
+        if (countsTowardStandings) {
+            teamService.revertTeamWinsAndLosses(game)
+            userService.revertUserWinsAndLosses(game)
+            scheduleService.markGameAsUnfinished(game)
+        }
+        deleteEndOfGamePlay(gameId)
+        restoreStateFromTouchdown(game, lastPlay)
+        saveGame(game)
+        gameStatsService.generateGameStats(gameId)
+        if (countsTowardStandings) {
+            refreshSeasonStatsForGame(game)
+            eloService.rebuild(apply = true)
+        }
+        return game
+    }
+
+    private fun deleteEndOfGamePlay(gameId: Int) {
+        playRepository.getPreviousPlay(gameId)
+            ?.takeIf { it.actualResult == ActualResult.END_OF_GAME }
+            ?.let { playRepository.deleteById(it.playId) }
+    }
+
+    private fun getLastPlayedPlay(gameId: Int) =
+        playRepository.getAllPlaysByGameId(gameId)
+            .filter { it.playFinished && it.actualResult != ActualResult.END_OF_GAME }
+            .maxByOrNull { it.playId }
+            ?: throw InvalidGameReopenException("Game $gameId has no plays to reopen from")
+
+    private fun restoreStateFromTouchdown(
+        game: Game,
+        touchdownPlay: Play,
+    ) {
+        game.homeScore = touchdownPlay.homeScore
+        game.awayScore = touchdownPlay.awayScore
+        game.possession = GameRules.touchdownScoringSide(touchdownPlay.possession, touchdownPlay.actualResult)
+        game.ballLocation = TOUCHDOWN_BALL_LOCATION
+        game.currentPlayType = PlayType.PAT
+        game.waitingOn = updateWaitingOn(game.possession)
+        game.gameStatus = if (game.quarter <= 4) GameStatus.IN_PROGRESS else GameStatus.OVERTIME
+        game.gameTimer = calculateDelayOfGameTimer()
+        game.gameWarning = GameWarning.NONE
+    }
+
+    private fun refreshSeasonStatsForGame(game: Game) {
+        val gameStats = gameStatsRepository.findByGameId(game.gameId)
+        gameStats.forEach { seasonStatsService.updateSeasonStatsForGame(it) }
+        if ((game.week ?: 0) >= POSTSEASON_START_WEEK) {
+            gameStats.forEach { postseasonSeasonStatsService.updateSeasonStatsForGame(it) }
         }
     }
 

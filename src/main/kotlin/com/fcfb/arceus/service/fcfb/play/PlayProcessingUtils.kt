@@ -14,6 +14,7 @@ import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.fcfb.GameService
 import com.fcfb.arceus.service.fcfb.GameStatsService
 import com.fcfb.arceus.service.fcfb.ScorebugService
+import com.fcfb.arceus.service.fcfb.game.GameRules
 import org.springframework.stereotype.Component
 
 @Component
@@ -114,7 +115,7 @@ class PlayProcessingUtils(
         } else if ((clock - playTime) <= 0 && gameService.isTouchdownPlay(actualResult)) {
             clock = 0
             if (quarter == 4 &&
-                ((homeScore - awayScore) >= 2 || (awayScore - homeScore) >= 2)
+                GameRules.isRegulationOverAfterFinalTouchdown(gamePlay.possession, actualResult, homeScore, awayScore)
             ) {
                 quarter = 0
             }
@@ -137,7 +138,7 @@ class PlayProcessingUtils(
             } else if (clock <= 0 && gameService.isTouchdownPlay(actualResult)) {
                 clock = 0
                 if (quarter == 4 &&
-                    ((homeScore - awayScore) >= 2 || (awayScore - homeScore) >= 2)
+                    GameRules.isRegulationOverAfterFinalTouchdown(gamePlay.possession, actualResult, homeScore, awayScore)
                 ) {
                     quarter = 0
                 }
