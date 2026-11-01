@@ -36,11 +36,18 @@ class UserService(
     private val usernameHistoryService: UsernameHistoryService,
     private val coachStintService: CoachStintService,
 ) {
-    fun updateUserWinsAndLosses(game: Game) {
+    fun updateUserWinsAndLosses(game: Game) = adjustUserWinsAndLosses(game, 1)
+
+    fun revertUserWinsAndLosses(game: Game) = adjustUserWinsAndLosses(game, -1)
+
+    private fun adjustUserWinsAndLosses(
+        game: Game,
+        delta: Int,
+    ) {
         val gameType = game.gameType ?: GameType.SCRIMMAGE
         val timestamp = coachStintService.parseGameTimestamp(game.timestamp) ?: return
-        creditCoaches(game.homeCoachDiscordIds, game.homeTeam, game.homeScore > game.awayScore, gameType, timestamp)
-        creditCoaches(game.awayCoachDiscordIds, game.awayTeam, game.awayScore > game.homeScore, gameType, timestamp)
+        creditCoaches(game.homeCoachDiscordIds, game.homeTeam, game.homeScore > game.awayScore, gameType, timestamp, delta)
+        creditCoaches(game.awayCoachDiscordIds, game.awayTeam, game.awayScore > game.homeScore, gameType, timestamp, delta)
     }
 
     private fun creditCoaches(
@@ -49,12 +56,13 @@ class UserService(
         isWin: Boolean,
         gameType: GameType,
         timestamp: LocalDateTime,
+        delta: Int,
     ) {
         for (discordId in coachDiscordIds ?: emptyList()) {
             val user = userRepository.getByDiscordId(discordId) ?: continue
             val stints = coachStintService.getStintsForCoach(user.username, user)
             if (!coachStintService.countsForCoach(stints, user.team, team, timestamp)) continue
-            updateUserRecord(dtoConverter.convertToUserDTO(user), gameType, isWin)
+            updateUserRecord(dtoConverter.convertToUserDTO(user), gameType, isWin, delta)
         }
     }
 
@@ -69,38 +77,39 @@ class UserService(
         user: UserDTO,
         gameType: GameType,
         isWin: Boolean,
+        delta: Int,
     ) {
         if (isWin) {
-            user.wins += 1
+            user.wins += delta
             when (gameType) {
-                GameType.CONFERENCE_GAME -> user.conferenceWins += 1
-                GameType.CONFERENCE_CHAMPIONSHIP -> user.conferenceChampionshipWins += 1
-                GameType.BOWL -> user.bowlWins += 1
+                GameType.CONFERENCE_GAME -> user.conferenceWins += delta
+                GameType.CONFERENCE_CHAMPIONSHIP -> user.conferenceChampionshipWins += delta
+                GameType.BOWL -> user.bowlWins += delta
                 GameType.PLAYOFFS -> {
-                    user.bowlWins += 1
-                    user.playoffWins += 1
+                    user.bowlWins += delta
+                    user.playoffWins += delta
                 }
                 GameType.NATIONAL_CHAMPIONSHIP -> {
-                    user.bowlWins += 1
-                    user.playoffWins += 1
-                    user.nationalChampionshipWins += 1
+                    user.bowlWins += delta
+                    user.playoffWins += delta
+                    user.nationalChampionshipWins += delta
                 }
                 else -> {}
             }
         } else {
-            user.losses += 1
+            user.losses += delta
             when (gameType) {
-                GameType.CONFERENCE_GAME -> user.conferenceLosses += 1
-                GameType.CONFERENCE_CHAMPIONSHIP -> user.conferenceChampionshipLosses += 1
-                GameType.BOWL -> user.bowlLosses += 1
+                GameType.CONFERENCE_GAME -> user.conferenceLosses += delta
+                GameType.CONFERENCE_CHAMPIONSHIP -> user.conferenceChampionshipLosses += delta
+                GameType.BOWL -> user.bowlLosses += delta
                 GameType.PLAYOFFS -> {
-                    user.bowlLosses += 1
-                    user.playoffLosses += 1
+                    user.bowlLosses += delta
+                    user.playoffLosses += delta
                 }
                 GameType.NATIONAL_CHAMPIONSHIP -> {
-                    user.bowlLosses += 1
-                    user.playoffLosses += 1
-                    user.nationalChampionshipLosses += 1
+                    user.bowlLosses += delta
+                    user.playoffLosses += delta
+                    user.nationalChampionshipLosses += delta
                 }
                 else -> {}
             }

@@ -83,6 +83,14 @@ open class ScheduleService(
         scheduleRepository.save(gameInSchedule)
     }
 
+    fun markGameAsUnfinished(game: Game) {
+        val gameInSchedule = findGameInSchedule(game)
+        gameInSchedule.finished = false
+        gameInSchedule.homeScore = null
+        gameInSchedule.awayScore = null
+        scheduleRepository.save(gameInSchedule)
+    }
+
     fun markGameAsFinished(game: Game) {
         try {
             val gameInSchedule = findGameInSchedule(game)

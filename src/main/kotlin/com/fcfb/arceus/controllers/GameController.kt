@@ -117,6 +117,12 @@ class GameController(
         @RequestParam("gameId") gameId: Int,
     ): ResponseEntity<Game> = ResponseEntity.ok(gameService.endSingleGameByGameId(gameId))
 
+    @Operation(summary = "Reopen a finished game")
+    @PostMapping("/reopen")
+    fun reopenGame(
+        @RequestParam("gameId") gameId: Int,
+    ): ResponseEntity<Game> = ResponseEntity.ok(gameService.reopenGame(gameId))
+
     @Operation(summary = "End all ongoing games")
     @PostMapping("/end-all")
     fun endAllGames(): ResponseEntity<List<Game>> = ResponseEntity.ok(gameService.endAllGames())

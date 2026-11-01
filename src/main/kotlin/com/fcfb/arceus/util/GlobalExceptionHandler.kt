@@ -30,6 +30,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(
         InvalidCoinTossChoiceException::class,
+        InvalidGameReopenException::class,
         InvalidGameStatsRequestException::class,
         InvalidRankingsException::class,
         InvalidConferenceException::class,

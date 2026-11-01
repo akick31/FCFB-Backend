@@ -32,67 +32,74 @@ class TeamService(
     private val conferenceService: ConferenceService,
     private val teamScheduleCleanupService: TeamScheduleCleanupService,
 ) {
-    fun updateTeamWinsAndLosses(game: Game) {
+    fun updateTeamWinsAndLosses(game: Game) = adjustTeamWinsAndLosses(game, 1)
+
+    fun revertTeamWinsAndLosses(game: Game) = adjustTeamWinsAndLosses(game, -1)
+
+    private fun adjustTeamWinsAndLosses(
+        game: Game,
+        delta: Int,
+    ) {
         val homeTeam = getTeamByName(game.homeTeam)
         val awayTeam = getTeamByName(game.awayTeam)
 
         if (game.homeScore > game.awayScore) {
-            homeTeam.currentWins += 1
-            awayTeam.currentLosses += 1
-            homeTeam.overallWins += 1
-            awayTeam.overallLosses += 1
+            homeTeam.currentWins += delta
+            awayTeam.currentLosses += delta
+            homeTeam.overallWins += delta
+            awayTeam.overallLosses += delta
             if (game.gameType == GameType.CONFERENCE_GAME) {
-                homeTeam.currentConferenceWins += 1
-                awayTeam.currentConferenceLosses += 1
-                homeTeam.overallConferenceWins += 1
-                awayTeam.overallConferenceLosses += 1
+                homeTeam.currentConferenceWins += delta
+                awayTeam.currentConferenceLosses += delta
+                homeTeam.overallConferenceWins += delta
+                awayTeam.overallConferenceLosses += delta
             } else if (game.gameType == GameType.CONFERENCE_CHAMPIONSHIP) {
-                homeTeam.conferenceChampionshipWins += 1
-                awayTeam.conferenceChampionshipLosses += 1
+                homeTeam.conferenceChampionshipWins += delta
+                awayTeam.conferenceChampionshipLosses += delta
             } else if (game.gameType == GameType.BOWL) {
-                homeTeam.bowlWins += 1
-                awayTeam.bowlLosses += 1
+                homeTeam.bowlWins += delta
+                awayTeam.bowlLosses += delta
             } else if (game.gameType == GameType.PLAYOFFS) {
-                homeTeam.bowlWins += 1
-                awayTeam.bowlLosses += 1
-                homeTeam.playoffWins += 1
-                awayTeam.playoffLosses += 1
+                homeTeam.bowlWins += delta
+                awayTeam.bowlLosses += delta
+                homeTeam.playoffWins += delta
+                awayTeam.playoffLosses += delta
             } else if (game.gameType == GameType.NATIONAL_CHAMPIONSHIP) {
-                homeTeam.bowlWins += 1
-                awayTeam.bowlLosses += 1
-                homeTeam.playoffWins += 1
-                awayTeam.playoffLosses += 1
-                homeTeam.nationalChampionshipWins += 1
-                awayTeam.nationalChampionshipLosses += 1
+                homeTeam.bowlWins += delta
+                awayTeam.bowlLosses += delta
+                homeTeam.playoffWins += delta
+                awayTeam.playoffLosses += delta
+                homeTeam.nationalChampionshipWins += delta
+                awayTeam.nationalChampionshipLosses += delta
             }
         } else {
-            homeTeam.currentLosses += 1
-            awayTeam.currentWins += 1
-            homeTeam.overallLosses += 1
-            awayTeam.overallWins += 1
+            homeTeam.currentLosses += delta
+            awayTeam.currentWins += delta
+            homeTeam.overallLosses += delta
+            awayTeam.overallWins += delta
             if (game.gameType == GameType.CONFERENCE_GAME) {
-                homeTeam.currentConferenceLosses += 1
-                awayTeam.currentConferenceWins += 1
-                homeTeam.overallConferenceLosses += 1
-                awayTeam.overallConferenceWins += 1
+                homeTeam.currentConferenceLosses += delta
+                awayTeam.currentConferenceWins += delta
+                homeTeam.overallConferenceLosses += delta
+                awayTeam.overallConferenceWins += delta
             } else if (game.gameType == GameType.CONFERENCE_CHAMPIONSHIP) {
-                homeTeam.conferenceChampionshipLosses += 1
-                awayTeam.conferenceChampionshipWins += 1
+                homeTeam.conferenceChampionshipLosses += delta
+                awayTeam.conferenceChampionshipWins += delta
             } else if (game.gameType == GameType.BOWL) {
-                homeTeam.bowlLosses += 1
-                awayTeam.bowlWins += 1
+                homeTeam.bowlLosses += delta
+                awayTeam.bowlWins += delta
             } else if (game.gameType == GameType.PLAYOFFS) {
-                homeTeam.bowlLosses += 1
-                awayTeam.bowlWins += 1
-                homeTeam.playoffLosses += 1
-                awayTeam.playoffWins += 1
+                homeTeam.bowlLosses += delta
+                awayTeam.bowlWins += delta
+                homeTeam.playoffLosses += delta
+                awayTeam.playoffWins += delta
             } else if (game.gameType == GameType.NATIONAL_CHAMPIONSHIP) {
-                homeTeam.bowlLosses += 1
-                awayTeam.bowlWins += 1
-                homeTeam.playoffLosses += 1
-                awayTeam.playoffWins += 1
-                homeTeam.nationalChampionshipLosses += 1
-                awayTeam.nationalChampionshipWins += 1
+                homeTeam.bowlLosses += delta
+                awayTeam.bowlWins += delta
+                homeTeam.playoffLosses += delta
+                awayTeam.playoffWins += delta
+                homeTeam.nationalChampionshipLosses += delta
+                awayTeam.nationalChampionshipWins += delta
             }
         }
         updateTeam(homeTeam)

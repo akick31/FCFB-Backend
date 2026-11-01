@@ -224,3 +224,9 @@ class RecordGenerationInProgressException : Exception("Record generation is alre
         return "RecordGenerationInProgressException: ${super.message}"
     }
 }
+
+class InvalidGameReopenException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidGameReopenException: ${super.message}"
+    }
+}
