@@ -50,6 +50,7 @@ private val PRE_AUTH_GET_PATHS =
         "$FULL_PATH/appearance-preview/thumb",
     )
 
+private const val ERROR_PATH = "/error"
 private const val ACTUATOR_HEALTH_PATH = "/actuator/health"
 private const val ACTUATOR_WILDCARD_PATH = "/actuator/**"
 
@@ -231,6 +232,7 @@ open class WebConfig(
             .antMatchers(HttpMethod.OPTIONS).permitAll()
             .antMatchers(HttpMethod.POST, *PRE_AUTH_POST_PATHS).permitAll()
             .antMatchers(HttpMethod.GET, *PRE_AUTH_GET_PATHS).permitAll()
+            .antMatchers(ERROR_PATH).permitAll()
             .antMatchers(HttpMethod.GET, ACTUATOR_HEALTH_PATH).permitAll()
             .antMatchers(ACTUATOR_WILDCARD_PATH).hasAnyRole(*ADMIN_ROLES)
             .antMatchers(HttpMethod.GET, PUBLIC_API_DOCS_PATH).permitAll()

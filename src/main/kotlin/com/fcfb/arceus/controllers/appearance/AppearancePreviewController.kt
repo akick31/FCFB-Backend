@@ -5,6 +5,7 @@ import com.fcfb.arceus.dto.request.AppearancePreviewRequest
 import com.fcfb.arceus.dto.request.PostseasonPreviewRequest
 import com.fcfb.arceus.dto.request.StadiumPreviewRequest
 import com.fcfb.arceus.service.fcfb.appearance.AppearancePreviewService
+import com.fcfb.arceus.service.fcfb.appearance.GameFieldPreviewService
 import com.fcfb.arceus.service.fcfb.appearance.StadiumPreviewService
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 class AppearancePreviewController(
     private val appearancePreviewService: AppearancePreviewService,
     private val stadiumPreviewService: StadiumPreviewService,
+    private val gameFieldPreviewService: GameFieldPreviewService,
 ) {
     @Operation(summary = "Render a draft uniform or field without saving it")
     @PostMapping("")
@@ -46,4 +48,10 @@ class AppearancePreviewController(
     fun previewStadium(
         @RequestBody request: StadiumPreviewRequest,
     ) = stadiumPreviewService.preview(request)
+
+    @Operation(summary = "A game's overhead field with no players, for drive charts")
+    @GetMapping("/game-field")
+    fun gameField(
+        @RequestParam gameId: Int,
+    ) = gameFieldPreviewService.gameField(gameId)
 }
