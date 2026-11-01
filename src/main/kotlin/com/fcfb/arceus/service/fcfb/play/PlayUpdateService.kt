@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.play
 
+import com.fcfb.arceus.domain.game.GameConditions
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.Scenario
@@ -19,6 +20,8 @@ class PlayUpdateService(
     private val gameStatsService: GameStatsService,
     private val scorebugService: ScorebugService,
 ) {
+    private val gameConditions = GameConditions()
+
     private fun handleEndOfQuarterNormalScenarios(
         game: Game,
         gamePlay: Play,
@@ -52,7 +55,7 @@ class PlayUpdateService(
         } else if ((clock - playTime) <= 0 && gameService.isTouchdownPlay(actualResult)) {
             clock = 0
             if (quarter == 4 &&
-                ((homeScore - awayScore) >= 2 || (awayScore - homeScore) >= 2)
+                gameConditions.isRegulationOverAfterFinalTouchdown(gamePlay.possession, actualResult, homeScore, awayScore)
             ) {
                 quarter = 0
             }
@@ -75,7 +78,7 @@ class PlayUpdateService(
             } else if (clock <= 0 && gameService.isTouchdownPlay(actualResult)) {
                 clock = 0
                 if (quarter == 4 &&
-                    ((homeScore - awayScore) >= 2 || (awayScore - homeScore) >= 2)
+                    gameConditions.isRegulationOverAfterFinalTouchdown(gamePlay.possession, actualResult, homeScore, awayScore)
                 ) {
                     quarter = 0
                 }

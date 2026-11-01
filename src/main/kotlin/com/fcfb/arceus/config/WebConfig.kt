@@ -145,6 +145,7 @@ internal val PRIVILEGED_POST_PATHS =
         "$FULL_PATH/start-game-week-job/retry",
         "$FULL_PATH/game-finalization",
         "$FULL_PATH/game-finalization/all",
+        "$FULL_PATH/game-finalization/reopen",
         "$FULL_PATH/game-creation/restart",
         "$FULL_PATH/team/hire",
         "$FULL_PATH/team/hire/interim",

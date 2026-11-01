@@ -16,6 +16,7 @@ import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.service.fcfb.game.GameCreationService
 import com.fcfb.arceus.service.fcfb.game.GameFinalizationService
+import com.fcfb.arceus.service.fcfb.game.GameReopenService
 import com.fcfb.arceus.service.fcfb.game.GameService
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -37,7 +38,8 @@ class GameControllerTest {
     private val creation = mockk<GameCreationService>()
     private val finalization = mockk<GameFinalizationService>()
     private val creationController = GameCreationController(creation)
-    private val finalizationController = GameFinalizationController(finalization)
+    private val reopen = mockk<GameReopenService>()
+    private val finalizationController = GameFinalizationController(finalization, reopen)
 
     @BeforeEach
     fun setUp() {

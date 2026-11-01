@@ -5,6 +5,7 @@ import com.fcfb.arceus.exception.discord.UnableToCreateGameThreadException
 import com.fcfb.arceus.exception.game.GameNotFoundException
 import com.fcfb.arceus.exception.game.GameWeekJobNotFoundException
 import com.fcfb.arceus.exception.game.InvalidCoinTossChoiceException
+import com.fcfb.arceus.exception.game.InvalidGameReopenException
 import com.fcfb.arceus.exception.game.NoGameFoundException
 import com.fcfb.arceus.exception.play.PlayNotFoundException
 import com.fcfb.arceus.exception.ranking.InvalidRankingMetricException
@@ -61,6 +62,7 @@ class GlobalExceptionHandler {
 
     @ExceptionHandler(
         InvalidCoinTossChoiceException::class,
+        InvalidGameReopenException::class,
         InvalidGameStatsRequestException::class,
         InvalidRankingsException::class,
         InvalidConferenceException::class,
