@@ -3,6 +3,7 @@ package com.fcfb.arceus.service.fcfb.play
 import com.fcfb.arceus.enums.game.GameMode
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
+import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.DefensivePlaybook
@@ -244,7 +245,7 @@ class PlayProcessingUtils(
         var possession = initialPossession
         var finalPlayTime = playTime
 
-        if (playCall != PlayCall.PAT && playCall != PlayCall.TWO_POINT) {
+        if (game.currentPlayType != PlayType.PAT) {
             val (updatedPossession, updatedClock, updatedQuarter) =
                 handleEndOfQuarterNormalScenarios(
                     game,

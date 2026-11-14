@@ -1,6 +1,5 @@
 package com.fcfb.arceus.service.fcfb.chart
 
-import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.GameRepository
@@ -39,7 +38,7 @@ class ScoreChartRenderer(
             val homeTeam = teamService.getTeamByName(game.homeTeam)
             val awayTeam = teamService.getTeamByName(game.awayTeam)
 
-            val chartImage = createScoreChart(game, plays, homeTeam, awayTeam)
+            val chartImage = createScoreChart(plays, homeTeam, awayTeam)
             val chartBytes = saveChartImage(chartImage, "score_$gameId")
 
             return chartBytes
@@ -50,7 +49,6 @@ class ScoreChartRenderer(
     }
 
     private fun createScoreChart(
-        game: Game,
         plays: List<Play>,
         homeTeam: Team,
         awayTeam: Team,
@@ -78,11 +76,11 @@ class ScoreChartRenderer(
                 chartWidth
             }
 
-        g.color = Color(40, 40, 40)
+        val plotBackground = Color(40, 40, 40)
+        g.color = plotBackground
         g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
-        val homeColor = parseColor(homeTeam.primaryColor ?: "#FF0000")
-        val awayColor = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        val (homeColor, awayColor) = selectMatchupColors(homeTeam, awayTeam, plotBackground)
 
         val actualMaxScore =
             maxOf(
@@ -95,7 +93,7 @@ class ScoreChartRenderer(
 
         drawScoreLines(g, plays, homeColor, awayColor, padding, chartWidth, chartHeight, scaleMax)
 
-        drawScoreAxes(g, padding, chartWidth, chartHeight, scaleMax, homeTeam, awayTeam, plays, game)
+        drawScoreAxes(g, padding, chartWidth, chartHeight, scaleMax, homeTeam, awayTeam, homeColor, awayColor, plays)
 
         g.dispose()
         return image
@@ -154,8 +152,9 @@ class ScoreChartRenderer(
         maxScore: Int,
         homeTeam: Team,
         awayTeam: Team,
+        homeColor: Color,
+        awayColor: Color,
         plays: List<Play>,
-        game: Game,
     ) {
         g.font = Font("Arial", Font.BOLD, 24)
         g.color = Color.WHITE
@@ -168,13 +167,13 @@ class ScoreChartRenderer(
         g.font = Font("Arial", Font.BOLD, 15)
 
         val homeLogoSize = 20
-        g.color = parseColor(homeTeam.primaryColor ?: "#FF0000")
+        g.color = homeColor
         g.fillRect(padding + 20, padding + 20, 12, 12)
         g.color = Color.WHITE
         g.drawString(homeTeamAbbr, padding + 40, padding + 32)
         drawTeamLogo(g, homeTeam, padding + 80, padding + 15, homeLogoSize, homeLogoSize)
 
-        g.color = parseColor(awayTeam.primaryColor ?: "#0000FF")
+        g.color = awayColor
         g.fillRect(padding + 20, padding + 45, 12, 12)
         g.color = Color.WHITE
         g.drawString(awayTeamAbbr, padding + 40, padding + 57)

@@ -124,6 +124,15 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
     @Query(value = "UPDATE game SET upset_alert_pinged = true WHERE game_id = ?", nativeQuery = true)
     fun markUpsetAlertPinged(gameId: Int)
 
+    @Query(
+        value =
+            "SELECT * FROM game WHERE game_type != 'SCRIMMAGE' AND (" +
+                "JSON_CONTAINS(home_coach_discord_ids, JSON_QUOTE(:discordId), '\$') OR " +
+                "JSON_CONTAINS(away_coach_discord_ids, JSON_QUOTE(:discordId), '\$'))",
+        nativeQuery = true,
+    )
+    fun findNonScrimmageGamesByCoachDiscordId(discordId: String): List<Game>
+
     fun findByHomeTeam(homeTeam: String): List<Game>
 
     fun findByAwayTeam(awayTeam: String): List<Game>

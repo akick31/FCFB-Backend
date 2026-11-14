@@ -100,7 +100,7 @@ class CoachStatsServiceTest {
             seasonStatsService.aggregateGameStatsToSeasonStats(any(), "Arkansas", 13, any(), null)
         } returns seasonStats
 
-        val result = coachStatsService.getCoachStats("cyclone_puffin")
+        val result = coachStatsService.getCoachStats("cyclone_puffin", false)
 
         assertEquals(1, result.size)
         assertTrue(result.contains(seasonStats))
@@ -134,7 +134,7 @@ class CoachStatsServiceTest {
             seasonStatsService.aggregateGameStatsToSeasonStats(any(), "Wyoming", 10, any(), null)
         } returns seasonStats
 
-        val result = coachStatsService.getCoachStats("cyclone_puffin")
+        val result = coachStatsService.getCoachStats("cyclone_puffin", false)
 
         assertEquals(1, result.size)
         assertTrue(result.contains(seasonStats))
@@ -155,8 +155,60 @@ class CoachStatsServiceTest {
                 ),
             )
 
-        val result = coachStatsService.getCoachStats("cyclone_puffin")
+        val result = coachStatsService.getCoachStats("cyclone_puffin", false)
 
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `getCoachStats includes games coached as a sub only when requested`() {
+        currentUser.team = "Wyoming"
+        every { coachTransactionLogRepository.getEntireCoachTransactionLog() } returns emptyList()
+
+        val mainTeamGame =
+            Game().apply {
+                gameId = 7
+                homeTeam = "Wyoming"
+                awayTeam = "Air Force"
+                gameType = GameType.CONFERENCE_GAME
+                timestamp = "2023-09-01 12:00:00"
+                homeCoachDiscordIds = listOf(discordId)
+            }
+        val subGame =
+            Game().apply {
+                gameId = 9
+                homeTeam = "Montana"
+                awayTeam = "UC Davis"
+                gameType = GameType.CONFERENCE_GAME
+                timestamp = "2023-09-08 12:00:00"
+                homeCoachDiscordIds = listOf("444555666")
+                awayCoachDiscordIds = listOf(discordId)
+            }
+        every { gameRepository.findByHomeTeam("Wyoming") } returns listOf(mainTeamGame)
+        every { gameRepository.findByAwayTeam("Wyoming") } returns emptyList()
+        every { gameRepository.findNonScrimmageGamesByCoachDiscordId(discordId) } returns listOf(mainTeamGame, subGame)
+
+        val mainTeamStats = GameStats(gameId = 7, team = "Wyoming", season = 10, week = 1)
+        val subGameStats = GameStats(gameId = 9, team = "UC Davis", season = 10, week = 2)
+        val subOpponentStats = GameStats(gameId = 9, team = "Montana", season = 10, week = 2)
+        every { gameStatsRepository.findByTeam("Wyoming") } returns listOf(mainTeamStats)
+        every { gameStatsRepository.findByGameIdIn(setOf(7)) } returns listOf(mainTeamStats)
+        every { gameStatsRepository.findByGameIdIn(setOf(7, 9)) } returns listOf(mainTeamStats, subGameStats, subOpponentStats)
+
+        val wyomingSeason = mockk<SeasonStats>()
+        val ucDavisSeason = mockk<SeasonStats>()
+        every { wyomingSeason.seasonNumber } returns 10
+        every { wyomingSeason.team } returns "Wyoming"
+        every { ucDavisSeason.seasonNumber } returns 10
+        every { ucDavisSeason.team } returns "UC Davis"
+        every {
+            seasonStatsService.aggregateGameStatsToSeasonStats(listOf(mainTeamStats), "Wyoming", 10, any(), null)
+        } returns wyomingSeason
+        every {
+            seasonStatsService.aggregateGameStatsToSeasonStats(listOf(subGameStats), "UC Davis", 10, any(), null)
+        } returns ucDavisSeason
+
+        assertEquals(listOf(wyomingSeason), coachStatsService.getCoachStats("cyclone_puffin", false))
+        assertEquals(listOf(ucDavisSeason, wyomingSeason), coachStatsService.getCoachStats("cyclone_puffin", true))
     }
 }

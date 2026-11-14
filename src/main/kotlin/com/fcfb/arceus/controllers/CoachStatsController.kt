@@ -18,5 +18,6 @@ class CoachStatsController(
     @GetMapping
     fun getCoachStats(
         @RequestParam coach: String,
-    ) = coachStatsService.getCoachStats(coach)
+        @RequestParam(defaultValue = "false") includeSubGames: Boolean,
+    ) = coachStatsService.getCoachStats(coach, includeSubGames)
 }

@@ -3,6 +3,7 @@ package com.fcfb.arceus.service.fcfb
 import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
+import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.play.RunoffType
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
@@ -167,7 +168,23 @@ class PlayService(
             val decryptedDefensiveNumber = encryptionUtils.decrypt(gamePlay.defensiveNumber ?: throw DefensiveNumberNotFound())
 
             when (playCall) {
-                PlayCall.PASS, PlayCall.RUN, PlayCall.SPIKE, PlayCall.KNEEL ->
+                PlayCall.SPIKE, PlayCall.KNEEL ->
+                    gamePlay =
+                        if (game.currentPlayType == PlayType.PAT) {
+                            pointAfterPlayProcessor.forgoPointAfter(gamePlay, game, playCall, decryptedDefensiveNumber)
+                        } else {
+                            normalPlayProcessor.runNormalPlay(
+                                gamePlay,
+                                game,
+                                playCall,
+                                runoffType,
+                                offensiveTimeoutCalled,
+                                offensiveNumber,
+                                decryptedDefensiveNumber,
+                            )
+                        }
+
+                PlayCall.PASS, PlayCall.RUN ->
                     gamePlay =
                         normalPlayProcessor.runNormalPlay(
                             gamePlay,

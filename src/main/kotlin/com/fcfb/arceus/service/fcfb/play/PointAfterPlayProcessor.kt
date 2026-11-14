@@ -106,4 +106,35 @@ class PointAfterPlayProcessor(
             false,
         )
     }
+
+    fun forgoPointAfter(
+        gamePlay: Play,
+        game: Game,
+        playCall: PlayCall,
+        decryptedDefensiveNumber: String,
+    ): Play {
+        val result = if (playCall == PlayCall.KNEEL) Scenario.KNEEL else Scenario.SPIKE
+        return playProcessingUtils.updatePlayValues(
+            game,
+            gamePlay,
+            playCall,
+            result,
+            ActualResult.NO_GOOD,
+            gamePlay.possession,
+            game.homeScore,
+            game.awayScore,
+            0,
+            0,
+            35,
+            1,
+            10,
+            decryptedDefensiveNumber,
+            null,
+            null,
+            0,
+            false,
+            false,
+            false,
+        )
+    }
 }

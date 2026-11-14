@@ -90,8 +90,7 @@ class WinProbabilityChartRenderer(
         g.color = plotBackground
         g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
-        val homeColor = selectTeamColor(homeTeam, plotBackground)
-        val awayColor = selectTeamColor(awayTeam, plotBackground)
+        val (homeColor, awayColor) = selectMatchupColors(homeTeam, awayTeam, plotBackground)
 
         drawQuarterDivisions(g, plays, padding, chartWidth, chartHeight)
 
@@ -105,11 +104,6 @@ class WinProbabilityChartRenderer(
         g.dispose()
         return image
     }
-
-    private fun selectTeamColor(
-        team: Team,
-        background: Color,
-    ): Color = ChartColor.select(team.primaryColor?.let { parseColor(it) }, team.secondaryColor?.let { parseColor(it) }, background)
 
     private fun drawWinProbabilityLine(
         g: Graphics2D,
