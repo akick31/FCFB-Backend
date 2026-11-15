@@ -14,7 +14,7 @@ object GameStatsCalculator {
         return allPlays.count { play ->
             when {
                 play.playCall == PlayCall.PASS && play.actualResult == ActualResult.LOSS -> false
-                play.playCall == PlayCall.SPIKE -> !GameRules.isForgonePointAfter(play)
+                play.playCall == PlayCall.SPIKE -> !GameRules.isDeclinedPointAfter(play)
                 play.playCall == PlayCall.PASS -> true
                 else -> false
             }

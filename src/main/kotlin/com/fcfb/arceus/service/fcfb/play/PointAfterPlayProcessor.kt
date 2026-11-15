@@ -107,7 +107,7 @@ class PointAfterPlayProcessor(
         )
     }
 
-    fun forgoPointAfter(
+    fun declinePointAfter(
         gamePlay: Play,
         game: Game,
         playCall: PlayCall,

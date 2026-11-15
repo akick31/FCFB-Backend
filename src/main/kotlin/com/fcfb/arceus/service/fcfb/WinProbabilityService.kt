@@ -83,8 +83,15 @@ class WinProbabilityService(
                             eloDiffTime,
                         )
                     PlayCall.KNEEL, PlayCall.SPIKE ->
-                        if (GameRules.isForgonePointAfter(play)) {
-                            calculateForgonePatWinProbability(margin, timeRemaining, secondsLeftHalf, half, hadFirstPossession, eloDiffTime)
+                        if (GameRules.isDeclinedPointAfter(play)) {
+                            calculateDeclinedPatWinProbability(
+                                margin,
+                                timeRemaining,
+                                secondsLeftHalf,
+                                half,
+                                hadFirstPossession,
+                                eloDiffTime,
+                            )
                         } else {
                             xgboostPredictor.predict(features)
                         }
@@ -315,7 +322,7 @@ class WinProbabilityService(
         )
     }
 
-    private fun calculateForgonePatWinProbability(
+    private fun calculateDeclinedPatWinProbability(
         margin: Int,
         timeRemaining: Int,
         secondsLeftHalf: Int,

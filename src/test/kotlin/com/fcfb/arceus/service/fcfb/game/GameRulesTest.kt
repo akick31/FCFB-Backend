@@ -48,21 +48,21 @@ class GameRulesTest {
     }
 
     @Test
-    fun `kneel or spike with no point awarded is a forgone point after attempt`() {
-        val forgoneKneel =
+    fun `kneel or spike with no point awarded is a declined point after attempt`() {
+        val declinedKneel =
             Play().apply {
                 playCall = PlayCall.KNEEL
                 actualResult = ActualResult.NO_GOOD
             }
-        val forgoneSpike =
+        val declinedSpike =
             Play().apply {
                 playCall = PlayCall.SPIKE
                 actualResult = ActualResult.NO_GOOD
             }
 
-        assertTrue(GameRules.isForgonePointAfter(forgoneKneel))
-        assertTrue(GameRules.isForgonePointAfter(forgoneSpike))
-        assertTrue(GameRules.isPointAfterAttempt(forgoneKneel))
+        assertTrue(GameRules.isDeclinedPointAfter(declinedKneel))
+        assertTrue(GameRules.isDeclinedPointAfter(declinedSpike))
+        assertTrue(GameRules.isPointAfterAttempt(declinedKneel))
     }
 
     @Test
@@ -78,7 +78,7 @@ class GameRulesTest {
                 actualResult = ActualResult.SPIKE
             }
 
-        assertFalse(GameRules.isForgonePointAfter(kneel))
+        assertFalse(GameRules.isDeclinedPointAfter(kneel))
         assertFalse(GameRules.isPointAfterAttempt(spike))
     }
 

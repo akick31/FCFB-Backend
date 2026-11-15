@@ -171,7 +171,7 @@ class PlayService(
                 PlayCall.SPIKE, PlayCall.KNEEL ->
                     gamePlay =
                         if (game.currentPlayType == PlayType.PAT) {
-                            pointAfterPlayProcessor.forgoPointAfter(gamePlay, game, playCall, decryptedDefensiveNumber)
+                            pointAfterPlayProcessor.declinePointAfter(gamePlay, game, playCall, decryptedDefensiveNumber)
                         } else {
                             normalPlayProcessor.runNormalPlay(
                                 gamePlay,

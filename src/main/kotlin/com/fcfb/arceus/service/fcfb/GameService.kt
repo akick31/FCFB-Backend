@@ -1874,7 +1874,7 @@ class GameService(
         game.clockStopped = play.playCall == PlayCall.SPIKE || play.result == Scenario.INCOMPLETE ||
             play.actualResult == ActualResult.TURNOVER_ON_DOWNS ||
             play.actualResult == ActualResult.TOUCHDOWN || play.playCall == PlayCall.FIELD_GOAL ||
-            play.playCall == PlayCall.PAT || GameRules.isForgonePointAfter(play) || play.playCall == PlayCall.KICKOFF_NORMAL ||
+            play.playCall == PlayCall.PAT || GameRules.isDeclinedPointAfter(play) || play.playCall == PlayCall.KICKOFF_NORMAL ||
             play.playCall == PlayCall.KICKOFF_ONSIDE || play.playCall == PlayCall.KICKOFF_SQUIB ||
             play.playCall == PlayCall.PUNT || play.actualResult == ActualResult.TURNOVER ||
             play.actualResult == ActualResult.TURNOVER_TOUCHDOWN || play.actualResult == ActualResult.SAFETY ||
