@@ -1,5 +1,6 @@
 package com.fcfb.arceus.domain.probability
 
+import com.fcfb.arceus.domain.game.GameConditions
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.TeamSide
@@ -45,7 +46,7 @@ data class WinProbabilityState(
             yardsToGo = play.yardsToGo,
             homeScore = homeScore,
             awayScore = awayScore,
-            playType = playTypeOf(play.playCall),
+            playType = playTypeOf(play),
         )
 
         fun sidePerspective(
@@ -53,10 +54,14 @@ data class WinProbabilityState(
             side: TeamSide,
         ) = if (side == TeamSide.HOME) probability else 1.0 - probability
 
-        private fun playTypeOf(playCall: PlayCall?) =
-            when (playCall) {
-                PlayCall.PAT, PlayCall.TWO_POINT -> PlayType.PAT
-                PlayCall.KICKOFF_NORMAL, PlayCall.KICKOFF_ONSIDE, PlayCall.KICKOFF_SQUIB -> PlayType.KICKOFF
+        private val gameConditions = GameConditions()
+
+        private fun playTypeOf(play: Play) =
+            when {
+                gameConditions.isPointAfterAttempt(play) -> PlayType.PAT
+                play.playCall == PlayCall.KICKOFF_NORMAL ||
+                    play.playCall == PlayCall.KICKOFF_ONSIDE ||
+                    play.playCall == PlayCall.KICKOFF_SQUIB -> PlayType.KICKOFF
                 else -> PlayType.NORMAL
             }
     }

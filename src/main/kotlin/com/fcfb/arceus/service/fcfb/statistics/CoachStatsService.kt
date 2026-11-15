@@ -30,9 +30,16 @@ class CoachStatsService(
 ) {
     private val seasonStatsCalculator = SeasonStatsCalculator(StatsAverageCalculator())
 
-    fun getCoachStats(coach: String): List<CoachSeasonStats> {
+    fun getCoachStats(
+        coach: String,
+        includeSubGames: Boolean,
+    ): List<CoachSeasonStats> {
         val user = userRepository.findByUsername(coach) ?: return emptyList()
-        return coachSeasonStatsRepository.findByUserIdOrderBySeasonNumberDescTeamAsc(user.id)
+        return if (includeSubGames) {
+            coachSeasonStatsRepository.findByUserIdOrderBySeasonNumberDescTeamAsc(user.id)
+        } else {
+            coachSeasonStatsRepository.findByUserIdAndSubGamesFalseOrderBySeasonNumberDescTeamAsc(user.id)
+        }
     }
 
     fun regenerateForCoach(coach: String) {
@@ -42,17 +49,25 @@ class CoachStatsService(
     }
 
     fun regenerateForCoach(user: User) {
-        val freshStats = computeSeasonStats(user).map { it.toCoachSeasonStats(user.id) }
+        val stintGameStats = gameStatsDuringStints(user)
+        val subGameStats = gameStatsCoachedAsSub(user, stintGameStats)
+        val freshStats =
+            aggregateBySeasonAndTeam(stintGameStats).map { it.toCoachSeasonStats(user.id, subGames = false) } +
+                aggregateBySeasonAndTeam(subGameStats).map { it.toCoachSeasonStats(user.id, subGames = true) }
         freshStats.forEach { stats ->
-            coachSeasonStatsRepository.findByUserIdAndTeamAndSeasonNumber(user.id, stats.team, stats.seasonNumber)
-                ?.let { stats.id = it.id }
+            coachSeasonStatsRepository.findByUserIdAndTeamAndSeasonNumberAndSubGames(
+                user.id,
+                stats.team,
+                stats.seasonNumber,
+                stats.subGames,
+            )?.let { stats.id = it.id }
             coachSeasonStatsRepository.save(stats)
         }
 
-        val freshKeys = freshStats.map { "${it.team}_${it.seasonNumber}" }.toSet()
+        val freshKeys = freshStats.map { seasonKey(it) }.toSet()
         val staleStats =
             coachSeasonStatsRepository.findByUserId(user.id)
-                .filterNot { "${it.team}_${it.seasonNumber}" in freshKeys }
+                .filterNot { seasonKey(it) in freshKeys }
         if (staleStats.isNotEmpty()) {
             coachSeasonStatsRepository.deleteAll(staleStats)
         }
@@ -69,7 +84,9 @@ class CoachStatsService(
         Logger().info("Completed generation of all coach season stats")
     }
 
-    private fun computeSeasonStats(user: User): List<SeasonStats> {
+    private fun seasonKey(stats: CoachSeasonStats) = "${stats.team}_${stats.seasonNumber}_${stats.subGames}"
+
+    private fun gameStatsDuringStints(user: User): List<GameStats> {
         val stints = coachStintService.getStintsForCoach(user.username, user)
         val currentTeam = user.team
         val teams = (stints.map { it.team } + listOfNotNull(currentTeam)).toSet()
@@ -94,6 +111,27 @@ class CoachStatsService(
                 }
             }
         }
+        return coachGameStats
+    }
+
+    private fun gameStatsCoachedAsSub(
+        user: User,
+        stintGameStats: List<GameStats>,
+    ): List<GameStats> {
+        val discordId = user.discordId ?: return emptyList()
+        val countedDuringStints = stintGameStats.map { it.gameId to it.team }.toSet()
+        val coachedTeamByGameId =
+            gameRepository.findNonScrimmageGamesByCoachDiscordId(discordId).associate { game ->
+                game.gameId to if (game.homeCoachDiscordIds.orEmpty().contains(discordId)) game.homeTeam else game.awayTeam
+            }
+        if (coachedTeamByGameId.isEmpty()) {
+            return emptyList()
+        }
+        return gameStatsRepository.findByGameIdIn(coachedTeamByGameId.keys)
+            .filter { it.team == coachedTeamByGameId[it.gameId] && (it.gameId to it.team) !in countedDuringStints }
+    }
+
+    private fun aggregateBySeasonAndTeam(coachGameStats: List<GameStats>): List<SeasonStats> {
         if (coachGameStats.isEmpty()) {
             return emptyList()
         }
@@ -126,11 +164,15 @@ class CoachStatsService(
         }.toMap()
 }
 
-private fun SeasonStats.toCoachSeasonStats(userId: Long): CoachSeasonStats {
+private fun SeasonStats.toCoachSeasonStats(
+    userId: Long,
+    subGames: Boolean,
+): CoachSeasonStats {
     return CoachSeasonStats(
         userId = userId,
         team = team,
         seasonNumber = seasonNumber,
+        subGames = subGames,
         wins = wins,
         losses = losses,
         subdivision = subdivision,

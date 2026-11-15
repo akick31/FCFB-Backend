@@ -20,7 +20,8 @@ class CoachStatsController(
     @GetMapping
     fun getCoachStats(
         @RequestParam coach: String,
-    ) = coachStatsService.getCoachStats(coach)
+        @RequestParam(defaultValue = "false") includeSubGames: Boolean,
+    ) = coachStatsService.getCoachStats(coach, includeSubGames)
 
     @Operation(summary = "Generate all coach season stats")
     @PostMapping("/generate/all")

@@ -28,6 +28,9 @@ class CoachSeasonStats(
     @Column(name = "season_number", nullable = false)
     var seasonNumber: Int,
     @Basic
+    @Column(name = "sub_games", nullable = false)
+    var subGames: Boolean = false,
+    @Basic
     @Column(name = "wins")
     var wins: Int = 0,
     @Basic

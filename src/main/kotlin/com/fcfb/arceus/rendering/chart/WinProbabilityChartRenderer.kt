@@ -50,14 +50,7 @@ class WinProbabilityChartRenderer : ChartRendererBase() {
         g.color = plotBackground
         g.fillRect(padding, padding, actualChartWidth, chartHeight)
 
-        val (homeColor, awayColor) =
-            ChartColor().selectPair(
-                homeTeam.primaryColor?.let { parseColor(it) },
-                homeTeam.secondaryColor?.let { parseColor(it) },
-                awayTeam.primaryColor?.let { parseColor(it) },
-                awayTeam.secondaryColor?.let { parseColor(it) },
-                plotBackground,
-            )
+        val (homeColor, awayColor) = selectMatchupColors(homeTeam, awayTeam, plotBackground)
 
         drawQuarterDivisions(g, plays, padding, chartWidth, chartHeight)
 

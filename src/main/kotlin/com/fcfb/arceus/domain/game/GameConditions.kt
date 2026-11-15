@@ -1,6 +1,7 @@
 package com.fcfb.arceus.domain.game
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.play.Play
 import kotlin.math.abs
@@ -59,6 +60,11 @@ class GameConditions {
         val scoringTeamMargin = if (scoringSide == TeamSide.HOME) homeScore - awayScore else awayScore - homeScore
         return abs(homeScore - awayScore) >= 2 && scoringTeamMargin != -2
     }
+
+    fun isDeclinedPointAfter(play: Play) =
+        (play.playCall == PlayCall.KNEEL || play.playCall == PlayCall.SPIKE) && play.actualResult == ActualResult.NO_GOOD
+
+    fun isPointAfterAttempt(play: Play) = play.playCall == PlayCall.PAT || play.playCall == PlayCall.TWO_POINT || isDeclinedPointAfter(play)
 
     fun isEndOfOvertimeHalf(play: Play) =
         play.actualResult == ActualResult.GOOD ||

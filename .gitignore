@@ -49,16 +49,7 @@ build/
 .vscode/
 /src/main/resources/application.properties
 
-### Claude Code ###
-.claude/
-.agents/
-/AGENTS.md
-/CLAUDE.md
-.aider.tags.cache*/
-
 ### Animation previews ###
 /animation-previews/
 /animation-previews-postseason/
 /animation-preview-checks/
-
-HANDOFF.md

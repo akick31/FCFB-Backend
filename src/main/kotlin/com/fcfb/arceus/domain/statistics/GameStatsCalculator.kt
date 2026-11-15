@@ -1,5 +1,6 @@
 package com.fcfb.arceus.domain.statistics
 
+import com.fcfb.arceus.domain.game.GameConditions
 import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.Scenario
@@ -10,6 +11,8 @@ import com.fcfb.arceus.util.statistics.StatsAverageCalculator
 class GameStatsCalculator(
     private val statsAverageCalculator: StatsAverageCalculator,
 ) {
+    private val gameConditions = GameConditions()
+
     companion object {
         private const val RED_ZONE_BALL_LOCATION = 80
     }
@@ -18,7 +21,7 @@ class GameStatsCalculator(
         return allPlays.count { play ->
             when {
                 play.playCall == PlayCall.PASS && play.actualResult == ActualResult.LOSS -> false
-                play.playCall == PlayCall.SPIKE -> true
+                play.playCall == PlayCall.SPIKE -> !gameConditions.isDeclinedPointAfter(play)
                 play.playCall == PlayCall.PASS -> true
                 else -> false
             }

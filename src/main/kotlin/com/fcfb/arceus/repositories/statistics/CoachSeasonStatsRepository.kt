@@ -10,9 +10,12 @@ interface CoachSeasonStatsRepository : JpaRepository<CoachSeasonStats, Int> {
 
     fun findByUserIdOrderBySeasonNumberDescTeamAsc(userId: Long): List<CoachSeasonStats>
 
-    fun findByUserIdAndTeamAndSeasonNumber(
+    fun findByUserIdAndSubGamesFalseOrderBySeasonNumberDescTeamAsc(userId: Long): List<CoachSeasonStats>
+
+    fun findByUserIdAndTeamAndSeasonNumberAndSubGames(
         userId: Long,
         team: String,
         seasonNumber: Int,
+        subGames: Boolean,
     ): CoachSeasonStats?
 }

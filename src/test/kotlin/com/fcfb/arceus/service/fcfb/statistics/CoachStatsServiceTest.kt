@@ -68,7 +68,8 @@ class CoachStatsServiceTest {
         every { usernameHistoryService.getHistoricalUsernames(1L) } returns emptyList()
         every { teamRepository.findAll() } returns emptyList()
         every { coachSeasonStatsRepository.findByUserId(1L) } returns emptyList()
-        every { coachSeasonStatsRepository.findByUserIdAndTeamAndSeasonNumber(any(), any(), any()) } returns null
+        every { coachSeasonStatsRepository.findByUserIdAndTeamAndSeasonNumberAndSubGames(any(), any(), any(), any()) } returns null
+        every { gameRepository.findNonScrimmageGamesByCoachDiscordId(discordId) } returns emptyList()
         every { coachSeasonStatsRepository.save(any()) } answers { firstArg() }
         every { coachSeasonStatsRepository.deleteAll(any<List<CoachSeasonStats>>()) } returns Unit
         SecurityContextHolder.getContext().authentication =
@@ -194,21 +195,78 @@ class CoachStatsServiceTest {
     }
 
     @Test
-    fun `getCoachStats reads persisted rows for the resolved user`() {
-        val persisted = listOf(CoachSeasonStats(userId = 1L, team = "Arkansas", seasonNumber = 13))
+    fun `regenerateForCoach stores games coached as a sub in separate flagged rows`() {
+        currentUser.team = "Wyoming"
+        every { coachTransactionLogRepository.getEntireCoachTransactionLog() } returns emptyList()
+
+        val mainTeamGame =
+            Game().apply {
+                gameId = 7
+                homeTeam = "Wyoming"
+                awayTeam = "Air Force"
+                gameType = GameType.CONFERENCE_GAME
+                timestamp = "2023-09-01 12:00:00"
+                homeCoachDiscordIds = listOf(discordId)
+            }
+        val subGame =
+            Game().apply {
+                gameId = 9
+                homeTeam = "Montana"
+                awayTeam = "UC Davis"
+                gameType = GameType.CONFERENCE_GAME
+                timestamp = "2023-09-08 12:00:00"
+                homeCoachDiscordIds = listOf("444555666")
+                awayCoachDiscordIds = listOf(discordId)
+            }
+        every { gameRepository.findByHomeTeam("Wyoming") } returns listOf(mainTeamGame)
+        every { gameRepository.findByAwayTeam("Wyoming") } returns emptyList()
+        every { gameRepository.findNonScrimmageGamesByCoachDiscordId(discordId) } returns listOf(mainTeamGame, subGame)
+
+        val mainTeamStats = GameStats(gameId = 7, team = "Wyoming", season = 10, week = 1)
+        val subGameStats = GameStats(gameId = 9, team = "UC Davis", season = 10, week = 2)
+        val subOpponentStats = GameStats(gameId = 9, team = "Montana", season = 10, week = 2)
+        every { gameStatsRepository.findByTeam("Wyoming") } returns listOf(mainTeamStats)
+        every { gameStatsRepository.findByGameIdIn(setOf(7)) } returns listOf(mainTeamStats)
+        every { gameStatsRepository.findByGameIdIn(setOf(7, 9)) } returns listOf(mainTeamStats, subGameStats, subOpponentStats)
+        every { gameStatsRepository.findByGameIdIn(setOf(9)) } returns listOf(subGameStats, subOpponentStats)
+
+        coachStatsService.regenerateForCoach("cyclone_puffin")
+
+        verify(exactly = 1) { coachSeasonStatsRepository.save(match { it.team == "Wyoming" && !it.subGames }) }
+        verify(exactly = 1) { coachSeasonStatsRepository.save(match { it.team == "UC Davis" && it.subGames }) }
+        verify(exactly = 0) { coachSeasonStatsRepository.save(match { it.team == "Wyoming" && it.subGames }) }
+        verify(exactly = 0) { coachSeasonStatsRepository.save(match { it.team == "Montana" }) }
+    }
+
+    @Test
+    fun `getCoachStats reads every persisted row when sub games are included`() {
+        val persisted =
+            listOf(
+                CoachSeasonStats(userId = 1L, team = "Arkansas", seasonNumber = 13),
+                CoachSeasonStats(userId = 1L, team = "UC Davis", seasonNumber = 13, subGames = true),
+            )
         every { coachSeasonStatsRepository.findByUserIdOrderBySeasonNumberDescTeamAsc(1L) } returns persisted
 
-        val result = coachStatsService.getCoachStats("cyclone_puffin")
+        val result = coachStatsService.getCoachStats("cyclone_puffin", true)
 
-        assertEquals(1, result.size)
-        assertTrue(result.contains(persisted.first()))
+        assertEquals(persisted, result)
+    }
+
+    @Test
+    fun `getCoachStats leaves out sub game rows by default`() {
+        val persisted = listOf(CoachSeasonStats(userId = 1L, team = "Arkansas", seasonNumber = 13))
+        every { coachSeasonStatsRepository.findByUserIdAndSubGamesFalseOrderBySeasonNumberDescTeamAsc(1L) } returns persisted
+
+        val result = coachStatsService.getCoachStats("cyclone_puffin", false)
+
+        assertEquals(persisted, result)
     }
 
     @Test
     fun `getCoachStats returns empty when the coach does not resolve to a user`() {
         every { userRepository.findByUsername("unknown_coach") } returns null
 
-        val result = coachStatsService.getCoachStats("unknown_coach")
+        val result = coachStatsService.getCoachStats("unknown_coach", false)
 
         assertTrue(result.isEmpty())
     }

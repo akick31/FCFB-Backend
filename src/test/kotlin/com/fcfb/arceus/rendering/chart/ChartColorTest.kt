@@ -7,10 +7,6 @@ import java.awt.Color
 class ChartColorTest {
     private val background = Color(40, 40, 40)
 
-    // A reddish shade close enough to Color.RED to be flagged "too similar" by ColorSimilarity,
-    // while still reading on its own against `background` (contrast >= 3.0).
-    private val clashingRed = Color(240, 40, 40)
-
     @Test
     fun `keeps a visible primary color`() {
         assertEquals(Color.RED, ChartColor().select(Color.RED, Color.WHITE, background))
@@ -39,48 +35,58 @@ class ChartColorTest {
         assertEquals(Color.WHITE, ChartColor().select(Color.BLACK, null, background))
     }
 
+    private val darkSurface = Color.decode("#102433")
+
+    private fun matchup(
+        homePrimary: String,
+        homeSecondary: String,
+        awayPrimary: String,
+        awaySecondary: String,
+    ) = ChartColor().selectMatchup(
+        Color.decode(homePrimary),
+        Color.decode(homeSecondary),
+        Color.decode(awayPrimary),
+        Color.decode(awaySecondary),
+        darkSurface,
+    )
+
     @Test
-    fun `selectPair keeps both primaries when they are distinct`() {
-        val (home, away) = ChartColor().selectPair(Color.RED, Color.WHITE, Color.YELLOW, Color.CYAN, background)
-        assertEquals(Color.RED, home)
-        assertEquals(Color.YELLOW, away)
+    fun `keeps both primaries when they contrast with the background and each other`() {
+        assertEquals(Color.decode("#e03030") to Color.decode("#3399ff"), matchup("#e03030", "#000000", "#3399ff", "#ffffff"))
     }
 
     @Test
-    fun `selectPair sends the away team to its secondary when primaries clash`() {
-        val (home, away) = ChartColor().selectPair(Color.RED, Color.WHITE, clashingRed, Color.YELLOW, background)
-        assertEquals(Color.RED, home)
-        assertEquals(Color.YELLOW, away)
+    fun `moves the away team to its secondary when both primaries are the same red`() {
+        assertEquals(Color.decode("#e03030") to Color.decode("#ffcc00"), matchup("#e03030", "#ffffff", "#e53a3a", "#ffcc00"))
     }
 
     @Test
-    fun `selectPair also sends the home team to its secondary when the away secondary still blends into the background`() {
-        val homePrimary = Color.RED
-        val homeSecondary = Color.CYAN
-        val awaySecondary = Color.BLACK
-
-        val (home, away) = ChartColor().selectPair(homePrimary, homeSecondary, clashingRed, awaySecondary, background)
-
-        assertEquals(homeSecondary, home)
-        assertEquals(awaySecondary, away)
+    fun `skips a dark purple primary on the dark surface`() {
+        assertEquals(Color.decode("#c0c0c0"), matchup("#3b1a6b", "#c0c0c0", "#0033a0", "#ffffff").first)
     }
 
     @Test
-    fun `selectPair forces the away team to white when neither secondary reads against the background`() {
-        val homePrimary = Color.RED
-        val homeSecondary = Color.BLACK
-        val awaySecondary = Color.BLACK
-
-        val (home, away) = ChartColor().selectPair(homePrimary, homeSecondary, clashingRed, awaySecondary, background)
-
-        assertEquals(homePrimary, home)
-        assertEquals(Color.WHITE, away)
+    fun `falls back to an accent when nothing distinct is visible`() {
+        assertEquals(Color.decode("#3d8bd9"), matchup("#ffffff", "#ffffff", "#fefefe", "#fdfdfd").second)
     }
 
     @Test
-    fun `selectPair falls back to white for a clashing team with no secondary color`() {
-        val (home, away) = ChartColor().selectPair(Color.RED, null, clashingRed, null, background)
-        assertEquals(Color.RED, home)
-        assertEquals(Color.WHITE, away)
+    fun `does not pair silver against white`() {
+        assertEquals(Color.WHITE to Color.decode("#f0405a"), matchup("#ffffff", "#000000", "#c0c0c0", "#f0405a"))
+    }
+
+    @Test
+    fun `uses the accent when both teams are neutral`() {
+        assertEquals(Color.decode("#3d8bd9"), matchup("#ffffff", "#000000", "#c0c0c0", "#d0d0d0").second)
+    }
+
+    @Test
+    fun `never gives the away team the same blue as a blue home team`() {
+        assertEquals(Color.WHITE, matchup("#3d8bd9", "#3d8bd9", "#111111", "#151515").second)
+    }
+
+    @Test
+    fun `avoids an accent that matches the home brand blue even when home shows white`() {
+        assertEquals(Color.WHITE to Color.decode("#e0a526"), matchup("#002e5d", "#ffffff", "#512888", "#d1d1d1"))
     }
 }

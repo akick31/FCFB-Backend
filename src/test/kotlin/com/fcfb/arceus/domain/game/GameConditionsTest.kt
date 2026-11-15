@@ -1,7 +1,9 @@
 package com.fcfb.arceus.domain.game
 
 import com.fcfb.arceus.enums.play.ActualResult
+import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
+import com.fcfb.arceus.model.play.Play
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -37,5 +39,32 @@ class GameConditionsTest {
     fun `scoring team still trailing by three or more ends the game`() {
         assertTrue(conditions.isRegulationOverAfterFinalTouchdown(TeamSide.AWAY, ActualResult.TOUCHDOWN, 27, 24))
         assertTrue(conditions.isRegulationOverAfterFinalTouchdown(TeamSide.HOME, ActualResult.TOUCHDOWN, 20, 28))
+    }
+
+    private fun play(
+        call: PlayCall,
+        result: ActualResult,
+    ) = Play().apply {
+        playCall = call
+        actualResult = result
+    }
+
+    @Test
+    fun `kneel or spike with no point awarded is a declined point after attempt`() {
+        assertTrue(conditions.isDeclinedPointAfter(play(PlayCall.KNEEL, ActualResult.NO_GOOD)))
+        assertTrue(conditions.isDeclinedPointAfter(play(PlayCall.SPIKE, ActualResult.NO_GOOD)))
+        assertTrue(conditions.isPointAfterAttempt(play(PlayCall.KNEEL, ActualResult.NO_GOOD)))
+    }
+
+    @Test
+    fun `an ordinary kneel or spike is not a point after attempt`() {
+        assertFalse(conditions.isDeclinedPointAfter(play(PlayCall.KNEEL, ActualResult.KNEEL)))
+        assertFalse(conditions.isPointAfterAttempt(play(PlayCall.SPIKE, ActualResult.SPIKE)))
+    }
+
+    @Test
+    fun `kicked and two point conversions are point after attempts`() {
+        assertTrue(conditions.isPointAfterAttempt(play(PlayCall.PAT, ActualResult.NO_GOOD)))
+        assertTrue(conditions.isPointAfterAttempt(play(PlayCall.TWO_POINT, ActualResult.FAILED)))
     }
 }

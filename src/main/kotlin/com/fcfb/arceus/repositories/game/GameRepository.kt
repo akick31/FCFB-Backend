@@ -185,6 +185,15 @@ interface GameRepository : CrudRepository<Game, Int>, JpaSpecificationExecutor<G
         newName: String,
     )
 
+    @Query(
+        value =
+            "SELECT * FROM game WHERE game_type != 'SCRIMMAGE' AND (" +
+                "JSON_CONTAINS(home_coach_discord_ids, JSON_QUOTE(:discordId), '\$') OR " +
+                "JSON_CONTAINS(away_coach_discord_ids, JSON_QUOTE(:discordId), '\$'))",
+        nativeQuery = true,
+    )
+    fun findNonScrimmageGamesByCoachDiscordId(discordId: String): List<Game>
+
     fun findByHomeTeam(homeTeam: String): List<Game>
 
     fun findByAwayTeam(awayTeam: String): List<Game>
