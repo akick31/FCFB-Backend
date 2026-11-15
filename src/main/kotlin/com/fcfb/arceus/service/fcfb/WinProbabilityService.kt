@@ -14,6 +14,7 @@ import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.fcfb.elo.EloCalculator
+import com.fcfb.arceus.service.fcfb.game.GameRules
 import com.fcfb.arceus.util.ml.XGBoostPredictor
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -81,6 +82,19 @@ class WinProbabilityService(
                             hadFirstPossession,
                             eloDiffTime,
                         )
+                    PlayCall.KNEEL, PlayCall.SPIKE ->
+                        if (GameRules.isDeclinedPointAfter(play)) {
+                            calculateDeclinedPatWinProbability(
+                                margin,
+                                timeRemaining,
+                                secondsLeftHalf,
+                                half,
+                                hadFirstPossession,
+                                eloDiffTime,
+                            )
+                        } else {
+                            xgboostPredictor.predict(features)
+                        }
                     PlayCall.TWO_POINT ->
                         calculateTwoPointWinProbability(
                             margin,
@@ -307,6 +321,25 @@ class WinProbabilityService(
                 ((3.0 / 751.0) * probIfReturn)
         )
     }
+
+    private fun calculateDeclinedPatWinProbability(
+        margin: Int,
+        timeRemaining: Int,
+        secondsLeftHalf: Int,
+        half: Int,
+        hadFirstPossession: Int,
+        eloDiffTime: Double,
+    ): Double =
+        1.0 -
+            calculateWinProbabilityForScenario(
+                75,
+                -margin,
+                timeRemaining,
+                secondsLeftHalf,
+                half,
+                1 - hadFirstPossession,
+                -eloDiffTime,
+            )
 
     private fun calculateTwoPointWinProbability(
         margin: Int,

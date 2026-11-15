@@ -561,6 +561,9 @@ class GameService(
                 }
                 game.currentPlayType = PlayType.NORMAL
             }
+            if (GameRules.isPointAfterAttempt(gamePlay)) {
+                game.currentPlayType = PlayType.PAT
+            }
             if (previousPlay.playCall == PlayCall.KICKOFF_NORMAL ||
                 previousPlay.playCall == PlayCall.KICKOFF_ONSIDE ||
                 previousPlay.playCall == PlayCall.KICKOFF_SQUIB
@@ -1491,8 +1494,7 @@ class GameService(
             game.currentPlayType = PlayType.PAT
         } else if (play.actualResult == ActualResult.SAFETY ||
             (play.playCall == PlayCall.FIELD_GOAL && play.result == Scenario.GOOD) ||
-            play.playCall == PlayCall.PAT ||
-            play.playCall == PlayCall.TWO_POINT
+            GameRules.isPointAfterAttempt(play)
         ) {
             if (game.gameStatus == GameStatus.OVERTIME) {
                 game.currentPlayType = PlayType.NORMAL
@@ -1872,7 +1874,7 @@ class GameService(
         game.clockStopped = play.playCall == PlayCall.SPIKE || play.result == Scenario.INCOMPLETE ||
             play.actualResult == ActualResult.TURNOVER_ON_DOWNS ||
             play.actualResult == ActualResult.TOUCHDOWN || play.playCall == PlayCall.FIELD_GOAL ||
-            play.playCall == PlayCall.PAT || play.playCall == PlayCall.KICKOFF_NORMAL ||
+            play.playCall == PlayCall.PAT || GameRules.isDeclinedPointAfter(play) || play.playCall == PlayCall.KICKOFF_NORMAL ||
             play.playCall == PlayCall.KICKOFF_ONSIDE || play.playCall == PlayCall.KICKOFF_SQUIB ||
             play.playCall == PlayCall.PUNT || play.actualResult == ActualResult.TURNOVER ||
             play.actualResult == ActualResult.TURNOVER_TOUCHDOWN || play.actualResult == ActualResult.SAFETY ||

@@ -5,6 +5,7 @@ import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.play.Scenario
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Play
+import com.fcfb.arceus.service.fcfb.game.GameRules
 
 object GameStatsCalculator {
     private const val RED_ZONE_BALL_LOCATION = 80
@@ -13,7 +14,7 @@ object GameStatsCalculator {
         return allPlays.count { play ->
             when {
                 play.playCall == PlayCall.PASS && play.actualResult == ActualResult.LOSS -> false
-                play.playCall == PlayCall.SPIKE -> true
+                play.playCall == PlayCall.SPIKE -> !GameRules.isDeclinedPointAfter(play)
                 play.playCall == PlayCall.PASS -> true
                 else -> false
             }

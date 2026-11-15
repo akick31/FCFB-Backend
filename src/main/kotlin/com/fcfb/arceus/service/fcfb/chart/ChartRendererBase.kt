@@ -115,6 +115,19 @@ abstract class ChartRendererBase(
         }
     }
 
+    protected fun selectMatchupColors(
+        homeTeam: Team,
+        awayTeam: Team,
+        background: Color,
+    ): Pair<Color, Color> =
+        ChartColor.selectMatchup(
+            parseColor(homeTeam.primaryColor ?: DEFAULT_PRIMARY_COLOR),
+            parseColor(homeTeam.secondaryColor ?: DEFAULT_SECONDARY_COLOR),
+            parseColor(awayTeam.primaryColor ?: DEFAULT_PRIMARY_COLOR),
+            parseColor(awayTeam.secondaryColor ?: DEFAULT_SECONDARY_COLOR),
+            background,
+        )
+
     protected fun parseColor(colorString: String): Color {
         return try {
             Color.decode(colorString)
@@ -136,5 +149,10 @@ abstract class ChartRendererBase(
 
         ImageIO.write(image, "png", outputFile)
         return outputFile.readBytes()
+    }
+
+    private companion object {
+        const val DEFAULT_PRIMARY_COLOR = "#004260"
+        const val DEFAULT_SECONDARY_COLOR = "#888888"
     }
 }
