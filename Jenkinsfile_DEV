@@ -16,8 +16,6 @@ pipeline {
         DB_PASSWORD = credentials('DB_PASSWORD')
         JWT_ENCRYPTION_KEY = credentials('JWT_ENCRYPTION_KEY')
         JWT_SECRET = credentials('JWT_SECRET')
-        EMAIL_HOST = credentials('EMAIL_HOST')
-        EMAIL_PORT = credentials('EMAIL_PORT')
         EMAIL = credentials('EMAIL')
         EMAIL_PASSWORD = credentials('EMAIL_PASSWORD')
         DISCORD_TOKEN = credentials('DEV_REFBOT_DISCORD_TOKEN')
@@ -101,14 +99,13 @@ pipeline {
                         jwt.secret=${env.JWT_SECRET}
 
                         # Email configuration
-                        spring.mail.host=${env.EMAIL_HOST}
-                        spring.mail.port=${env.EMAIL_PORT}
+                        spring.mail.host=smtp.fastmail.com
+                        spring.mail.port=587
                         spring.mail.username=${env.EMAIL}
                         spring.mail.password=${env.EMAIL_PASSWORD}
                         spring.mail.properties.mail.smtp.auth=true
                         spring.mail.properties.mail.smtp.starttls.enable=true
                         spring.mail.properties.mail.smtp.starttls.required=true
-                        spring.mail.properties.mail.smtp.ssl.trust=${env.EMAIL_HOST}
                         spring.mail.default-encoding=UTF-8
 
                         # Health check configuration
