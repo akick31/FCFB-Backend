@@ -230,3 +230,21 @@ class InvalidGameReopenException(message: String) : Exception(message) {
         return "InvalidGameReopenException: ${super.message}"
     }
 }
+
+class InvalidContactRequestException(message: String) : Exception(message) {
+    override fun toString(): String {
+        return "InvalidContactRequestException: ${super.message}"
+    }
+}
+
+class ContactRateLimitedException : Exception("Too many messages sent. Please wait a few minutes and try again.") {
+    override fun toString(): String {
+        return "ContactRateLimitedException: ${super.message}"
+    }
+}
+
+class ContactDeliveryException : Exception("Your message couldn't be sent right now. Please try again later.") {
+    override fun toString(): String {
+        return "ContactDeliveryException: ${super.message}"
+    }
+}

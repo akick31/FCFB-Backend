@@ -37,6 +37,7 @@ private val PRE_AUTH_POST_PATHS =
         "$FULL_PATH/auth/forgot-password",
         "$FULL_PATH/auth/reset-password",
         "$FULL_PATH/internal/frontend-errors",
+        "$FULL_PATH/contact",
         "$FULL_PATH/user/validate",
     )
 

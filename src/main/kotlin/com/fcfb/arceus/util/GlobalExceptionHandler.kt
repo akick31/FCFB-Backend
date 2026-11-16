@@ -37,6 +37,7 @@ class GlobalExceptionHandler {
         InvalidNewSignupException::class,
         MetricNotImplementedException::class,
         InvalidRankingMetricException::class,
+        InvalidContactRequestException::class,
     )
     fun handleBadRequest(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.BAD_REQUEST, e)
 
@@ -54,6 +55,12 @@ class GlobalExceptionHandler {
         RecordGenerationInProgressException::class,
     )
     fun handleConflict(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.CONFLICT, e)
+
+    @ExceptionHandler(ContactRateLimitedException::class)
+    fun handleTooManyRequests(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.TOO_MANY_REQUESTS, e)
+
+    @ExceptionHandler(ContactDeliveryException::class)
+    fun handleServiceUnavailable(e: Exception): ResponseEntity<Map<String, String>> = errorResponse(HttpStatus.SERVICE_UNAVAILABLE, e)
 
     @ExceptionHandler(UnableToCreateGameThreadException::class)
     fun handleDiscordUnavailable(e: Exception): ResponseEntity<Map<String, String>> {
