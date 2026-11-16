@@ -102,6 +102,7 @@ pipeline {
                         spring.mail.host=smtp.fastmail.com
                         spring.mail.port=587
                         mail.from=noreply@fakecollegefootball.com
+                        contact.email=contact@fakecollegefootball.com
                         spring.mail.username=${env.EMAIL_USERNAME}
                         spring.mail.password=${env.FCFB_EMAIL_PASSWORD}
                         spring.mail.properties.mail.smtp.auth=true
