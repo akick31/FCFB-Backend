@@ -15,7 +15,7 @@ class EmailService(
     private val mailSender: JavaMailSender,
     @Value("\${website.url}")
     private val websiteUrl: String,
-    @Value("\${spring.mail.username}")
+    @Value("\${mail.from}")
     private val fromEmail: String,
 ) {
     private val logoDataUri: String by lazy {
