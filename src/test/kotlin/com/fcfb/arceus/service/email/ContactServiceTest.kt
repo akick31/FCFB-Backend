@@ -19,6 +19,7 @@ import org.springframework.mail.javamail.JavaMailSender
 import javax.servlet.http.HttpServletRequest
 
 private const val CONTACT_EMAIL = "contact@fakecollegefootball.com"
+private const val FROM_EMAIL = "noreply@fakecollegefootball.com"
 
 class ContactServiceTest {
     private val mailSender: JavaMailSender = mockk(relaxed = true)
@@ -26,18 +27,18 @@ class ContactServiceTest {
 
     @BeforeEach
     fun setup() {
-        contactService = ContactService(mailSender, InMemoryRateLimiter(), CONTACT_EMAIL)
+        contactService = ContactService(mailSender, InMemoryRateLimiter(), CONTACT_EMAIL, FROM_EMAIL)
     }
 
     @Test
-    fun `should send to and from the contact address with reply-to set to the sender`() {
+    fun `should send from the noreply address to the contact address with reply-to set to the sender`() {
         val sent = slot<SimpleMailMessage>()
         every { mailSender.send(capture(sent)) } returns Unit
 
         contactService.sendContactMessage(validRequest(), requestFrom("1.1.1.1"))
 
         assertEquals(CONTACT_EMAIL, sent.captured.to?.single())
-        assertEquals(CONTACT_EMAIL, sent.captured.from)
+        assertEquals(FROM_EMAIL, sent.captured.from)
         assertEquals("coach@example.com", sent.captured.replyTo)
         assertEquals("[FCFB] Bug report", sent.captured.subject)
     }

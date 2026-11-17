@@ -28,6 +28,8 @@ class ContactService(
     private val rateLimiter: InMemoryRateLimiter,
     @Value("\${contact.email}")
     private val contactEmail: String,
+    @Value("\${mail.from}")
+    private val fromEmail: String,
 ) {
     fun sendContactMessage(
         request: ContactRequest,
@@ -80,7 +82,7 @@ class ContactService(
     private fun buildMessage(contact: ContactRequest) =
         SimpleMailMessage().apply {
             setTo(contactEmail)
-            setFrom(contactEmail)
+            setFrom(fromEmail)
             replyTo = contact.email
             subject = "[FCFB] ${contact.subject}"
             text = "From: ${contact.name} <${contact.email}>\n\n${contact.message}"
