@@ -161,6 +161,22 @@ class GameStatsCalculatorTest {
     }
 
     @Test
+    fun `a two point try after a touchdown is not a new red zone trip`() {
+        val plays =
+            listOf(
+                redZonePlay(1, PlayCall.PASS, ActualResult.FIRST_DOWN, 75),
+                redZonePlay(2, PlayCall.RUN, ActualResult.TOUCHDOWN, 85),
+                redZonePlay(3, PlayCall.TWO_POINT, ActualResult.FAILED, 97),
+                redZonePlay(4, PlayCall.KICKOFF_NORMAL, ActualResult.KICKOFF, 35),
+            )
+
+        val trips = GameStatsCalculator.calculateRedZoneTrips(plays, TeamSide.HOME)
+
+        assertEquals(1, trips.attempts)
+        assertEquals(1, trips.successes)
+    }
+
+    @Test
     fun `reaching the red zone twice on one drive still counts one trip`() {
         val plays =
             listOf(
