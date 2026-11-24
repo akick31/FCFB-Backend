@@ -1,0 +1,907 @@
+{
+  "yardsToGoalBounds": [
+    3,
+    6,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    50,
+    99
+  ],
+  "distanceBounds": [
+    2,
+    5,
+    10,
+    99
+  ],
+  "patSuccessRate": 0.961,
+  "twoPointSuccessRate": 0.4503,
+  "touchdownNeededFieldGoalConversion": 0.6576,
+  "fieldGoalSufficientNoScoreReduction": 0.4063,
+  "cells": {
+    "1:0:0": {
+      "touchdown": 0.9151,
+      "fieldGoal": 0.0191,
+      "defensiveTouchdown": 0.0121
+    },
+    "1:0:1": {
+      "touchdown": 0.8533,
+      "fieldGoal": 0.0533,
+      "defensiveTouchdown": 0.0078
+    },
+    "1:0:2": {
+      "touchdown": 0.7173,
+      "fieldGoal": 0.1336,
+      "defensiveTouchdown": 0.0103
+    },
+    "1:0:3": {
+      "touchdown": 0.6723,
+      "fieldGoal": 0.1649,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:0:4": {
+      "touchdown": 0.6123,
+      "fieldGoal": 0.1896,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:0:5": {
+      "touchdown": 0.5383,
+      "fieldGoal": 0.2101,
+      "defensiveTouchdown": 0.0204
+    },
+    "1:0:6": {
+      "touchdown": 0.4909,
+      "fieldGoal": 0.1998,
+      "defensiveTouchdown": 0.0224
+    },
+    "1:0:7": {
+      "touchdown": 0.4455,
+      "fieldGoal": 0.2088,
+      "defensiveTouchdown": 0.0202
+    },
+    "1:0:8": {
+      "touchdown": 0.4366,
+      "fieldGoal": 0.1596,
+      "defensiveTouchdown": 0.0213
+    },
+    "1:0:9": {
+      "touchdown": 0.3987,
+      "fieldGoal": 0.1177,
+      "defensiveTouchdown": 0.0287
+    },
+    "1:0:10": {
+      "touchdown": 0.3184,
+      "fieldGoal": 0.0547,
+      "defensiveTouchdown": 0.0366
+    },
+    "1:1:0": {
+      "touchdown": 0.9053,
+      "fieldGoal": 0.037,
+      "defensiveTouchdown": 0.0041
+    },
+    "1:1:1": {
+      "touchdown": 0.8752,
+      "fieldGoal": 0.0486,
+      "defensiveTouchdown": 0.0081
+    },
+    "1:1:2": {
+      "touchdown": 0.7173,
+      "fieldGoal": 0.1336,
+      "defensiveTouchdown": 0.0103
+    },
+    "1:1:3": {
+      "touchdown": 0.6723,
+      "fieldGoal": 0.1649,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:1:4": {
+      "touchdown": 0.6123,
+      "fieldGoal": 0.1896,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:1:5": {
+      "touchdown": 0.5383,
+      "fieldGoal": 0.2101,
+      "defensiveTouchdown": 0.0204
+    },
+    "1:1:6": {
+      "touchdown": 0.4909,
+      "fieldGoal": 0.1998,
+      "defensiveTouchdown": 0.0224
+    },
+    "1:1:7": {
+      "touchdown": 0.4455,
+      "fieldGoal": 0.2088,
+      "defensiveTouchdown": 0.0202
+    },
+    "1:1:8": {
+      "touchdown": 0.4366,
+      "fieldGoal": 0.1596,
+      "defensiveTouchdown": 0.0213
+    },
+    "1:1:9": {
+      "touchdown": 0.3987,
+      "fieldGoal": 0.1177,
+      "defensiveTouchdown": 0.0287
+    },
+    "1:1:10": {
+      "touchdown": 0.3184,
+      "fieldGoal": 0.0547,
+      "defensiveTouchdown": 0.0366
+    },
+    "1:2:0": {
+      "touchdown": 0.9122,
+      "fieldGoal": 0.0244,
+      "defensiveTouchdown": 0.0098
+    },
+    "1:2:1": {
+      "touchdown": 0.8057,
+      "fieldGoal": 0.0636,
+      "defensiveTouchdown": 0.0071
+    },
+    "1:2:2": {
+      "touchdown": 0.7173,
+      "fieldGoal": 0.1336,
+      "defensiveTouchdown": 0.0103
+    },
+    "1:2:3": {
+      "touchdown": 0.6723,
+      "fieldGoal": 0.1649,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:2:4": {
+      "touchdown": 0.6123,
+      "fieldGoal": 0.1896,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:2:5": {
+      "touchdown": 0.5383,
+      "fieldGoal": 0.2101,
+      "defensiveTouchdown": 0.0204
+    },
+    "1:2:6": {
+      "touchdown": 0.4909,
+      "fieldGoal": 0.1998,
+      "defensiveTouchdown": 0.0224
+    },
+    "1:2:7": {
+      "touchdown": 0.4455,
+      "fieldGoal": 0.2088,
+      "defensiveTouchdown": 0.0202
+    },
+    "1:2:8": {
+      "touchdown": 0.4366,
+      "fieldGoal": 0.1596,
+      "defensiveTouchdown": 0.0213
+    },
+    "1:2:9": {
+      "touchdown": 0.3987,
+      "fieldGoal": 0.1177,
+      "defensiveTouchdown": 0.0287
+    },
+    "1:2:10": {
+      "touchdown": 0.3184,
+      "fieldGoal": 0.0547,
+      "defensiveTouchdown": 0.0366
+    },
+    "1:3:0": {
+      "touchdown": 0.9122,
+      "fieldGoal": 0.0244,
+      "defensiveTouchdown": 0.0098
+    },
+    "1:3:1": {
+      "touchdown": 0.8533,
+      "fieldGoal": 0.0533,
+      "defensiveTouchdown": 0.0078
+    },
+    "1:3:2": {
+      "touchdown": 0.7173,
+      "fieldGoal": 0.1336,
+      "defensiveTouchdown": 0.0103
+    },
+    "1:3:3": {
+      "touchdown": 0.6723,
+      "fieldGoal": 0.1649,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:3:4": {
+      "touchdown": 0.6123,
+      "fieldGoal": 0.1896,
+      "defensiveTouchdown": 0.0169
+    },
+    "1:3:5": {
+      "touchdown": 0.5383,
+      "fieldGoal": 0.2101,
+      "defensiveTouchdown": 0.0204
+    },
+    "1:3:6": {
+      "touchdown": 0.4909,
+      "fieldGoal": 0.1998,
+      "defensiveTouchdown": 0.0224
+    },
+    "1:3:7": {
+      "touchdown": 0.4455,
+      "fieldGoal": 0.2088,
+      "defensiveTouchdown": 0.0202
+    },
+    "1:3:8": {
+      "touchdown": 0.4366,
+      "fieldGoal": 0.1596,
+      "defensiveTouchdown": 0.0213
+    },
+    "1:3:9": {
+      "touchdown": 0.3987,
+      "fieldGoal": 0.1177,
+      "defensiveTouchdown": 0.0287
+    },
+    "1:3:10": {
+      "touchdown": 0.3184,
+      "fieldGoal": 0.0547,
+      "defensiveTouchdown": 0.0366
+    },
+    "2:0:0": {
+      "touchdown": 0.8977,
+      "fieldGoal": 0.0349,
+      "defensiveTouchdown": 0.0116
+    },
+    "2:0:1": {
+      "touchdown": 0.8491,
+      "fieldGoal": 0.0189,
+      "defensiveTouchdown": 0.0
+    },
+    "2:0:2": {
+      "touchdown": 0.8356,
+      "fieldGoal": 0.0685,
+      "defensiveTouchdown": 0.0
+    },
+    "2:0:3": {
+      "touchdown": 0.7563,
+      "fieldGoal": 0.1176,
+      "defensiveTouchdown": 0.0
+    },
+    "2:0:4": {
+      "touchdown": 0.6688,
+      "fieldGoal": 0.1465,
+      "defensiveTouchdown": 0.0064
+    },
+    "2:0:5": {
+      "touchdown": 0.6333,
+      "fieldGoal": 0.1667,
+      "defensiveTouchdown": 0.025
+    },
+    "2:0:6": {
+      "touchdown": 0.5166,
+      "fieldGoal": 0.1987,
+      "defensiveTouchdown": 0.0132
+    },
+    "2:0:7": {
+      "touchdown": 0.4571,
+      "fieldGoal": 0.1786,
+      "defensiveTouchdown": 0.0214
+    },
+    "2:0:8": {
+      "touchdown": 0.4881,
+      "fieldGoal": 0.1607,
+      "defensiveTouchdown": 0.0298
+    },
+    "2:0:9": {
+      "touchdown": 0.4406,
+      "fieldGoal": 0.1187,
+      "defensiveTouchdown": 0.0211
+    },
+    "2:0:10": {
+      "touchdown": 0.3517,
+      "fieldGoal": 0.0735,
+      "defensiveTouchdown": 0.0305
+    },
+    "2:1:0": {
+      "touchdown": 0.8557,
+      "fieldGoal": 0.0567,
+      "defensiveTouchdown": 0.0052
+    },
+    "2:1:1": {
+      "touchdown": 0.8005,
+      "fieldGoal": 0.0872,
+      "defensiveTouchdown": 0.0
+    },
+    "2:1:2": {
+      "touchdown": 0.7742,
+      "fieldGoal": 0.106,
+      "defensiveTouchdown": 0.0184
+    },
+    "2:1:3": {
+      "touchdown": 0.6828,
+      "fieldGoal": 0.1343,
+      "defensiveTouchdown": 0.0187
+    },
+    "2:1:4": {
+      "touchdown": 0.5945,
+      "fieldGoal": 0.1644,
+      "defensiveTouchdown": 0.0164
+    },
+    "2:1:5": {
+      "touchdown": 0.5405,
+      "fieldGoal": 0.1652,
+      "defensiveTouchdown": 0.018
+    },
+    "2:1:6": {
+      "touchdown": 0.4921,
+      "fieldGoal": 0.2079,
+      "defensiveTouchdown": 0.0158
+    },
+    "2:1:7": {
+      "touchdown": 0.4249,
+      "fieldGoal": 0.1763,
+      "defensiveTouchdown": 0.0202
+    },
+    "2:1:8": {
+      "touchdown": 0.4428,
+      "fieldGoal": 0.1512,
+      "defensiveTouchdown": 0.0324
+    },
+    "2:1:9": {
+      "touchdown": 0.3982,
+      "fieldGoal": 0.1293,
+      "defensiveTouchdown": 0.0195
+    },
+    "2:1:10": {
+      "touchdown": 0.316,
+      "fieldGoal": 0.0641,
+      "defensiveTouchdown": 0.0341
+    },
+    "2:2:0": {
+      "touchdown": 0.8846,
+      "fieldGoal": 0.0417,
+      "defensiveTouchdown": 0.0096
+    },
+    "2:2:1": {
+      "touchdown": 0.6433,
+      "fieldGoal": 0.1592,
+      "defensiveTouchdown": 0.0064
+    },
+    "2:2:2": {
+      "touchdown": 0.6148,
+      "fieldGoal": 0.2131,
+      "defensiveTouchdown": 0.0109
+    },
+    "2:2:3": {
+      "touchdown": 0.5557,
+      "fieldGoal": 0.2523,
+      "defensiveTouchdown": 0.017
+    },
+    "2:2:4": {
+      "touchdown": 0.5172,
+      "fieldGoal": 0.2698,
+      "defensiveTouchdown": 0.0107
+    },
+    "2:2:5": {
+      "touchdown": 0.4602,
+      "fieldGoal": 0.2651,
+      "defensiveTouchdown": 0.0223
+    },
+    "2:2:6": {
+      "touchdown": 0.3961,
+      "fieldGoal": 0.2643,
+      "defensiveTouchdown": 0.0152
+    },
+    "2:2:7": {
+      "touchdown": 0.3777,
+      "fieldGoal": 0.225,
+      "defensiveTouchdown": 0.0149
+    },
+    "2:2:8": {
+      "touchdown": 0.3617,
+      "fieldGoal": 0.1701,
+      "defensiveTouchdown": 0.0173
+    },
+    "2:2:9": {
+      "touchdown": 0.3424,
+      "fieldGoal": 0.1045,
+      "defensiveTouchdown": 0.0288
+    },
+    "2:2:10": {
+      "touchdown": 0.2634,
+      "fieldGoal": 0.0414,
+      "defensiveTouchdown": 0.0365
+    },
+    "2:3:0": {
+      "touchdown": 0.8846,
+      "fieldGoal": 0.0417,
+      "defensiveTouchdown": 0.0096
+    },
+    "2:3:1": {
+      "touchdown": 0.7663,
+      "fieldGoal": 0.0991,
+      "defensiveTouchdown": 0.0015
+    },
+    "2:3:2": {
+      "touchdown": 0.6644,
+      "fieldGoal": 0.18,
+      "defensiveTouchdown": 0.0117
+    },
+    "2:3:3": {
+      "touchdown": 0.497,
+      "fieldGoal": 0.3195,
+      "defensiveTouchdown": 0.0
+    },
+    "2:3:4": {
+      "touchdown": 0.4,
+      "fieldGoal": 0.3405,
+      "defensiveTouchdown": 0.0108
+    },
+    "2:3:5": {
+      "touchdown": 0.2873,
+      "fieldGoal": 0.442,
+      "defensiveTouchdown": 0.0055
+    },
+    "2:3:6": {
+      "touchdown": 0.3074,
+      "fieldGoal": 0.3893,
+      "defensiveTouchdown": 0.0205
+    },
+    "2:3:7": {
+      "touchdown": 0.2447,
+      "fieldGoal": 0.308,
+      "defensiveTouchdown": 0.0169
+    },
+    "2:3:8": {
+      "touchdown": 0.2346,
+      "fieldGoal": 0.2346,
+      "defensiveTouchdown": 0.0423
+    },
+    "2:3:9": {
+      "touchdown": 0.2596,
+      "fieldGoal": 0.1055,
+      "defensiveTouchdown": 0.0218
+    },
+    "2:3:10": {
+      "touchdown": 0.2243,
+      "fieldGoal": 0.0407,
+      "defensiveTouchdown": 0.0386
+    },
+    "3:0:0": {
+      "touchdown": 0.7939,
+      "fieldGoal": 0.0702,
+      "defensiveTouchdown": 0.0044
+    },
+    "3:0:1": {
+      "touchdown": 0.8022,
+      "fieldGoal": 0.044,
+      "defensiveTouchdown": 0.0
+    },
+    "3:0:2": {
+      "touchdown": 0.6832,
+      "fieldGoal": 0.1485,
+      "defensiveTouchdown": 0.0396
+    },
+    "3:0:3": {
+      "touchdown": 0.6235,
+      "fieldGoal": 0.1481,
+      "defensiveTouchdown": 0.0185
+    },
+    "3:0:4": {
+      "touchdown": 0.6,
+      "fieldGoal": 0.2,
+      "defensiveTouchdown": 0.005
+    },
+    "3:0:5": {
+      "touchdown": 0.5823,
+      "fieldGoal": 0.1646,
+      "defensiveTouchdown": 0.0063
+    },
+    "3:0:6": {
+      "touchdown": 0.4456,
+      "fieldGoal": 0.1451,
+      "defensiveTouchdown": 0.0311
+    },
+    "3:0:7": {
+      "touchdown": 0.4335,
+      "fieldGoal": 0.1734,
+      "defensiveTouchdown": 0.0231
+    },
+    "3:0:8": {
+      "touchdown": 0.448,
+      "fieldGoal": 0.132,
+      "defensiveTouchdown": 0.024
+    },
+    "3:0:9": {
+      "touchdown": 0.3758,
+      "fieldGoal": 0.1437,
+      "defensiveTouchdown": 0.0246
+    },
+    "3:0:10": {
+      "touchdown": 0.3115,
+      "fieldGoal": 0.0555,
+      "defensiveTouchdown": 0.0349
+    },
+    "3:1:0": {
+      "touchdown": 0.7667,
+      "fieldGoal": 0.075,
+      "defensiveTouchdown": 0.0167
+    },
+    "3:1:1": {
+      "touchdown": 0.6403,
+      "fieldGoal": 0.1763,
+      "defensiveTouchdown": 0.0072
+    },
+    "3:1:2": {
+      "touchdown": 0.5821,
+      "fieldGoal": 0.2388,
+      "defensiveTouchdown": 0.0199
+    },
+    "3:1:3": {
+      "touchdown": 0.5161,
+      "fieldGoal": 0.2535,
+      "defensiveTouchdown": 0.0092
+    },
+    "3:1:4": {
+      "touchdown": 0.4232,
+      "fieldGoal": 0.287,
+      "defensiveTouchdown": 0.0116
+    },
+    "3:1:5": {
+      "touchdown": 0.3579,
+      "fieldGoal": 0.262,
+      "defensiveTouchdown": 0.0295
+    },
+    "3:1:6": {
+      "touchdown": 0.3291,
+      "fieldGoal": 0.2812,
+      "defensiveTouchdown": 0.016
+    },
+    "3:1:7": {
+      "touchdown": 0.3538,
+      "fieldGoal": 0.1908,
+      "defensiveTouchdown": 0.0185
+    },
+    "3:1:8": {
+      "touchdown": 0.3037,
+      "fieldGoal": 0.1565,
+      "defensiveTouchdown": 0.0257
+    },
+    "3:1:9": {
+      "touchdown": 0.3437,
+      "fieldGoal": 0.0967,
+      "defensiveTouchdown": 0.0251
+    },
+    "3:1:10": {
+      "touchdown": 0.2358,
+      "fieldGoal": 0.0382,
+      "defensiveTouchdown": 0.0304
+    },
+    "3:2:0": {
+      "touchdown": 0.7845,
+      "fieldGoal": 0.0718,
+      "defensiveTouchdown": 0.0086
+    },
+    "3:2:1": {
+      "touchdown": 0.5045,
+      "fieldGoal": 0.2613,
+      "defensiveTouchdown": 0.0
+    },
+    "3:2:2": {
+      "touchdown": 0.4203,
+      "fieldGoal": 0.3544,
+      "defensiveTouchdown": 0.0076
+    },
+    "3:2:3": {
+      "touchdown": 0.3341,
+      "fieldGoal": 0.432,
+      "defensiveTouchdown": 0.0072
+    },
+    "3:2:4": {
+      "touchdown": 0.361,
+      "fieldGoal": 0.4122,
+      "defensiveTouchdown": 0.0073
+    },
+    "3:2:5": {
+      "touchdown": 0.2826,
+      "fieldGoal": 0.3829,
+      "defensiveTouchdown": 0.0167
+    },
+    "3:2:6": {
+      "touchdown": 0.2645,
+      "fieldGoal": 0.343,
+      "defensiveTouchdown": 0.0102
+    },
+    "3:2:7": {
+      "touchdown": 0.2209,
+      "fieldGoal": 0.293,
+      "defensiveTouchdown": 0.0164
+    },
+    "3:2:8": {
+      "touchdown": 0.2478,
+      "fieldGoal": 0.1845,
+      "defensiveTouchdown": 0.0105
+    },
+    "3:2:9": {
+      "touchdown": 0.2282,
+      "fieldGoal": 0.0656,
+      "defensiveTouchdown": 0.0243
+    },
+    "3:2:10": {
+      "touchdown": 0.1673,
+      "fieldGoal": 0.0279,
+      "defensiveTouchdown": 0.033
+    },
+    "3:3:0": {
+      "touchdown": 0.7845,
+      "fieldGoal": 0.0718,
+      "defensiveTouchdown": 0.0086
+    },
+    "3:3:1": {
+      "touchdown": 0.6396,
+      "fieldGoal": 0.1708,
+      "defensiveTouchdown": 0.0042
+    },
+    "3:3:2": {
+      "touchdown": 0.505,
+      "fieldGoal": 0.2912,
+      "defensiveTouchdown": 0.0158
+    },
+    "3:3:3": {
+      "touchdown": 0.2662,
+      "fieldGoal": 0.4748,
+      "defensiveTouchdown": 0.0072
+    },
+    "3:3:4": {
+      "touchdown": 0.2208,
+      "fieldGoal": 0.5325,
+      "defensiveTouchdown": 0.0
+    },
+    "3:3:5": {
+      "touchdown": 0.1944,
+      "fieldGoal": 0.5,
+      "defensiveTouchdown": 0.0139
+    },
+    "3:3:6": {
+      "touchdown": 0.1978,
+      "fieldGoal": 0.4451,
+      "defensiveTouchdown": 0.0275
+    },
+    "3:3:7": {
+      "touchdown": 0.162,
+      "fieldGoal": 0.3981,
+      "defensiveTouchdown": 0.0046
+    },
+    "3:3:8": {
+      "touchdown": 0.1116,
+      "fieldGoal": 0.2747,
+      "defensiveTouchdown": 0.0172
+    },
+    "3:3:9": {
+      "touchdown": 0.166,
+      "fieldGoal": 0.066,
+      "defensiveTouchdown": 0.016
+    },
+    "3:3:10": {
+      "touchdown": 0.1234,
+      "fieldGoal": 0.0193,
+      "defensiveTouchdown": 0.0351
+    },
+    "4:0:0": {
+      "touchdown": 0.5455,
+      "fieldGoal": 0.0909,
+      "defensiveTouchdown": 0.0
+    },
+    "4:0:1": {
+      "touchdown": 0.4762,
+      "fieldGoal": 0.1905,
+      "defensiveTouchdown": 0.0
+    },
+    "4:0:2": {
+      "touchdown": 0.5176,
+      "fieldGoal": 0.1294,
+      "defensiveTouchdown": 0.0118
+    },
+    "4:0:3": {
+      "touchdown": 0.3153,
+      "fieldGoal": 0.3423,
+      "defensiveTouchdown": 0.009
+    },
+    "4:0:4": {
+      "touchdown": 0.3803,
+      "fieldGoal": 0.2394,
+      "defensiveTouchdown": 0.0141
+    },
+    "4:0:5": {
+      "touchdown": 0.3231,
+      "fieldGoal": 0.2077,
+      "defensiveTouchdown": 0.0077
+    },
+    "4:0:6": {
+      "touchdown": 0.2885,
+      "fieldGoal": 0.2308,
+      "defensiveTouchdown": 0.0064
+    },
+    "4:0:7": {
+      "touchdown": 0.2246,
+      "fieldGoal": 0.1667,
+      "defensiveTouchdown": 0.0217
+    },
+    "4:0:8": {
+      "touchdown": 0.2395,
+      "fieldGoal": 0.1557,
+      "defensiveTouchdown": 0.024
+    },
+    "4:0:9": {
+      "touchdown": 0.2865,
+      "fieldGoal": 0.0716,
+      "defensiveTouchdown": 0.0287
+    },
+    "4:0:10": {
+      "touchdown": 0.2742,
+      "fieldGoal": 0.0383,
+      "defensiveTouchdown": 0.0242
+    },
+    "4:1:0": {
+      "touchdown": 0.4286,
+      "fieldGoal": 0.1633,
+      "defensiveTouchdown": 0.0
+    },
+    "4:1:1": {
+      "touchdown": 0.2759,
+      "fieldGoal": 0.3586,
+      "defensiveTouchdown": 0.0069
+    },
+    "4:1:2": {
+      "touchdown": 0.2615,
+      "fieldGoal": 0.4846,
+      "defensiveTouchdown": 0.0154
+    },
+    "4:1:3": {
+      "touchdown": 0.0611,
+      "fieldGoal": 0.6031,
+      "defensiveTouchdown": 0.0
+    },
+    "4:1:4": {
+      "touchdown": 0.1514,
+      "fieldGoal": 0.4817,
+      "defensiveTouchdown": 0.0138
+    },
+    "4:1:5": {
+      "touchdown": 0.1105,
+      "fieldGoal": 0.4421,
+      "defensiveTouchdown": 0.0053
+    },
+    "4:1:6": {
+      "touchdown": 0.1232,
+      "fieldGoal": 0.4138,
+      "defensiveTouchdown": 0.0099
+    },
+    "4:1:7": {
+      "touchdown": 0.1667,
+      "fieldGoal": 0.2476,
+      "defensiveTouchdown": 0.0143
+    },
+    "4:1:8": {
+      "touchdown": 0.1633,
+      "fieldGoal": 0.1434,
+      "defensiveTouchdown": 0.008
+    },
+    "4:1:9": {
+      "touchdown": 0.2105,
+      "fieldGoal": 0.0526,
+      "defensiveTouchdown": 0.0105
+    },
+    "4:1:10": {
+      "touchdown": 0.2111,
+      "fieldGoal": 0.0298,
+      "defensiveTouchdown": 0.0162
+    },
+    "4:2:0": {
+      "touchdown": 0.5156,
+      "fieldGoal": 0.1094,
+      "defensiveTouchdown": 0.0
+    },
+    "4:2:1": {
+      "touchdown": 0.1667,
+      "fieldGoal": 0.5833,
+      "defensiveTouchdown": 0.0167
+    },
+    "4:2:2": {
+      "touchdown": 0.061,
+      "fieldGoal": 0.6901,
+      "defensiveTouchdown": 0.0141
+    },
+    "4:2:3": {
+      "touchdown": 0.0537,
+      "fieldGoal": 0.7122,
+      "defensiveTouchdown": 0.0049
+    },
+    "4:2:4": {
+      "touchdown": 0.0309,
+      "fieldGoal": 0.6753,
+      "defensiveTouchdown": 0.0103
+    },
+    "4:2:5": {
+      "touchdown": 0.029,
+      "fieldGoal": 0.6226,
+      "defensiveTouchdown": 0.0032
+    },
+    "4:2:6": {
+      "touchdown": 0.0105,
+      "fieldGoal": 0.4808,
+      "defensiveTouchdown": 0.0105
+    },
+    "4:2:7": {
+      "touchdown": 0.0396,
+      "fieldGoal": 0.4026,
+      "defensiveTouchdown": 0.0033
+    },
+    "4:2:8": {
+      "touchdown": 0.0856,
+      "fieldGoal": 0.2257,
+      "defensiveTouchdown": 0.0039
+    },
+    "4:2:9": {
+      "touchdown": 0.1571,
+      "fieldGoal": 0.0272,
+      "defensiveTouchdown": 0.0121
+    },
+    "4:2:10": {
+      "touchdown": 0.1159,
+      "fieldGoal": 0.015,
+      "defensiveTouchdown": 0.0129
+    },
+    "4:3:0": {
+      "touchdown": 0.5156,
+      "fieldGoal": 0.1094,
+      "defensiveTouchdown": 0.0
+    },
+    "4:3:1": {
+      "touchdown": 0.2985,
+      "fieldGoal": 0.3694,
+      "defensiveTouchdown": 0.0075
+    },
+    "4:3:2": {
+      "touchdown": 0.2126,
+      "fieldGoal": 0.5164,
+      "defensiveTouchdown": 0.014
+    },
+    "4:3:3": {
+      "touchdown": 0.0235,
+      "fieldGoal": 0.7647,
+      "defensiveTouchdown": 0.0
+    },
+    "4:3:4": {
+      "touchdown": 0.0168,
+      "fieldGoal": 0.7059,
+      "defensiveTouchdown": 0.0084
+    },
+    "4:3:5": {
+      "touchdown": 0.0101,
+      "fieldGoal": 0.6768,
+      "defensiveTouchdown": 0.0202
+    },
+    "4:3:6": {
+      "touchdown": 0.0161,
+      "fieldGoal": 0.5161,
+      "defensiveTouchdown": 0.0081
+    },
+    "4:3:7": {
+      "touchdown": 0.0076,
+      "fieldGoal": 0.5344,
+      "defensiveTouchdown": 0.0
+    },
+    "4:3:8": {
+      "touchdown": 0.0142,
+      "fieldGoal": 0.3191,
+      "defensiveTouchdown": 0.0
+    },
+    "4:3:9": {
+      "touchdown": 0.0833,
+      "fieldGoal": 0.0238,
+      "defensiveTouchdown": 0.0
+    },
+    "4:3:10": {
+      "touchdown": 0.1135,
+      "fieldGoal": 0.0071,
+      "defensiveTouchdown": 0.0071
+    }
+  }
+}
