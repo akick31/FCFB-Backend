@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb
 
 import com.fcfb.arceus.repositories.PlayRepository
+import com.fcfb.arceus.service.fcfb.winprobability.OvertimeWinProbabilityCalculator
 import com.fcfb.arceus.util.ml.XGBoostPredictor
 import io.mockk.every
 import io.mockk.mockk
@@ -14,7 +15,9 @@ class WinProbabilityServiceTest {
     private val xgboostPredictor = mockk<XGBoostPredictor>(relaxed = true)
     private val playRepository = mockk<PlayRepository>(relaxed = true)
     private val gameStatsService = mockk<GameStatsService>(relaxed = true)
-    private val winProbabilityService = WinProbabilityService(xgboostPredictor, playRepository, gameStatsService)
+    private val overtimeWinProbabilityCalculator = mockk<OvertimeWinProbabilityCalculator>(relaxed = true)
+    private val winProbabilityService =
+        WinProbabilityService(xgboostPredictor, playRepository, gameStatsService, overtimeWinProbabilityCalculator)
 
     @Test
     fun `should calculate win probability successfully`() {

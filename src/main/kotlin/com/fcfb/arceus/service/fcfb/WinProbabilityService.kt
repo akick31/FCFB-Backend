@@ -6,15 +6,20 @@ import com.fcfb.arceus.dto.response.ProcessedGameResult
 import com.fcfb.arceus.dto.response.SingleGameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.SinglePlayWinProbabilityResponse
 import com.fcfb.arceus.dto.response.WinProbabilitiesForAllGamesResponse
+import com.fcfb.arceus.enums.game.GameStatus
 import com.fcfb.arceus.enums.gameflow.CoinTossChoice
+import com.fcfb.arceus.enums.play.ActualResult
 import com.fcfb.arceus.enums.play.PlayCall
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.Game
 import com.fcfb.arceus.model.Play
 import com.fcfb.arceus.model.Team
+import com.fcfb.arceus.model.winprobability.OvertimeState
 import com.fcfb.arceus.repositories.PlayRepository
 import com.fcfb.arceus.service.fcfb.elo.EloCalculator
 import com.fcfb.arceus.service.fcfb.game.GameRules
+import com.fcfb.arceus.service.fcfb.winprobability.OvertimeStateResolver
+import com.fcfb.arceus.service.fcfb.winprobability.OvertimeWinProbabilityCalculator
 import com.fcfb.arceus.util.ml.XGBoostPredictor
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -24,6 +29,7 @@ class WinProbabilityService(
     private val xgboostPredictor: XGBoostPredictor,
     private val playRepository: PlayRepository,
     private val gameStatsService: GameStatsService,
+    private val overtimeWinProbabilityCalculator: OvertimeWinProbabilityCalculator,
 ) {
     private val logger = LoggerFactory.getLogger(WinProbabilityService::class.java)
 
@@ -34,105 +40,11 @@ class WinProbabilityService(
         awayElo: Double,
     ): Double {
         try {
-            val scoreDiff = play.homeScore - play.awayScore
-            val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
-            val down = play.down
-            val yardsToGo = play.yardsToGo
-            val ballLocation = 100 - play.ballLocation
-
-            val secondsLeftGame = timeRemaining
-            val secondsLeftHalf = calculateSecondsLeftHalf(play.quarter, play.clock)
-            val half = if (play.quarter <= 2) 1 else 2
-            val hadFirstPossession = calculateHadFirstPossession(game, play.possession)
-            val eloDiffTime =
-                if (play.possession == TeamSide.HOME) {
-                    calculateEloDiffTime(homeElo, awayElo, secondsLeftGame)
-                } else {
-                    calculateEloDiffTime(awayElo, homeElo, secondsLeftGame)
-                }
-
-            val margin =
-                if (play.possession == TeamSide.HOME) {
-                    scoreDiff
-                } else {
-                    -scoreDiff
-                }
-
-            val features =
-                xgboostPredictor.createFeatureArray(
-                    down = down,
-                    distance = yardsToGo,
-                    position = ballLocation,
-                    margin = margin,
-                    secondsLeftGame = secondsLeftGame,
-                    secondsLeftHalf = secondsLeftHalf,
-                    half = half,
-                    hadFirstPossession = hadFirstPossession,
-                    eloDiffTime = eloDiffTime,
-                )
-
             val winProbability =
-                when (play.playCall) {
-                    PlayCall.PAT ->
-                        calculatePatWinProbability(
-                            margin,
-                            timeRemaining,
-                            secondsLeftHalf,
-                            half,
-                            hadFirstPossession,
-                            eloDiffTime,
-                        )
-                    PlayCall.KNEEL, PlayCall.SPIKE ->
-                        if (GameRules.isDeclinedPointAfter(play)) {
-                            calculateDeclinedPatWinProbability(
-                                margin,
-                                timeRemaining,
-                                secondsLeftHalf,
-                                half,
-                                hadFirstPossession,
-                                eloDiffTime,
-                            )
-                        } else {
-                            xgboostPredictor.predict(features)
-                        }
-                    PlayCall.TWO_POINT ->
-                        calculateTwoPointWinProbability(
-                            margin,
-                            timeRemaining,
-                            secondsLeftHalf,
-                            half,
-                            hadFirstPossession,
-                            eloDiffTime,
-                        )
-                    PlayCall.KICKOFF_NORMAL ->
-                        calculateKickoffWinProbability(
-                            margin,
-                            timeRemaining,
-                            secondsLeftHalf,
-                            half,
-                            hadFirstPossession,
-                            eloDiffTime,
-                        )
-                    PlayCall.KICKOFF_ONSIDE ->
-                        calculateKickoffOnsideWinProbability(
-                            margin,
-                            secondsLeftHalf,
-                            half,
-                            hadFirstPossession,
-                            eloDiffTime,
-                        )
-                    PlayCall.KICKOFF_SQUIB ->
-                        calculateKickoffSquibWinProbability(
-                            margin,
-                            secondsLeftHalf,
-                            half,
-                            hadFirstPossession,
-                            eloDiffTime,
-                        )
-                    else -> {
-                        val rawWinProbability = xgboostPredictor.predict(features)
-                        rawWinProbability
-                    }
+                if (isOvertime(play)) {
+                    liveOvertimeWinProbability(game, play)
+                } else {
+                    regulationWinProbability(game, play, homeElo, awayElo)
                 }
 
             val winProbabilityAdded = calculateWinProbabilityAdded(game, play, winProbability)
@@ -147,6 +59,152 @@ class WinProbabilityService(
             play.winProbability = defaultProbability
             play.winProbabilityAdded = 0.0
             return defaultProbability
+        }
+    }
+
+    private fun isOvertime(play: Play) = play.quarter > REGULATION_QUARTERS
+
+    private fun liveOvertimeWinProbability(
+        game: Game,
+        play: Play,
+    ) = if (game.gameStatus == GameStatus.FINAL) {
+        decidedWinProbability(play)
+    } else {
+        overtimeWinProbabilityFor(play, OvertimeStateResolver.fromLiveGame(game, play))
+    }
+
+    private fun recalculatedOvertimeWinProbability(
+        game: Game,
+        play: Play,
+        followingPlay: Play?,
+        periodFirstPossession: Map<Int, TeamSide>,
+    ) = when {
+        followingPlay == null -> liveOvertimeWinProbability(game, play)
+        followingPlay.actualResult == ActualResult.END_OF_GAME -> decidedWinProbability(play)
+        else ->
+            overtimeWinProbabilityFor(
+                play,
+                OvertimeStateResolver.fromFollowingPlay(play, followingPlay, periodFirstPossession.getValue(followingPlay.quarter)),
+            )
+    }
+
+    private fun overtimeWinProbabilityFor(
+        play: Play,
+        state: OvertimeState,
+    ): Double {
+        val offenseWinProbability = overtimeWinProbabilityCalculator.winProbability(state)
+        return if (state.offense == play.possession) offenseWinProbability else 1.0 - offenseWinProbability
+    }
+
+    private fun decidedWinProbability(play: Play): Double {
+        val possessionMargin = if (play.possession == TeamSide.HOME) play.homeScore - play.awayScore else play.awayScore - play.homeScore
+        return if (possessionMargin > 0) 1.0 else 0.0
+    }
+
+    private fun regulationWinProbability(
+        game: Game,
+        play: Play,
+        homeElo: Double,
+        awayElo: Double,
+    ): Double {
+        val scoreDiff = play.homeScore - play.awayScore
+        val timeRemaining = calculateTimeRemaining(play.quarter, play.clock).toInt()
+        val down = play.down
+        val yardsToGo = play.yardsToGo
+        val ballLocation = 100 - play.ballLocation
+
+        val secondsLeftGame = timeRemaining
+        val secondsLeftHalf = calculateSecondsLeftHalf(play.quarter, play.clock)
+        val half = if (play.quarter <= 2) 1 else 2
+        val hadFirstPossession = calculateHadFirstPossession(game, play.possession)
+        val eloDiffTime =
+            if (play.possession == TeamSide.HOME) {
+                calculateEloDiffTime(homeElo, awayElo, secondsLeftGame)
+            } else {
+                calculateEloDiffTime(awayElo, homeElo, secondsLeftGame)
+            }
+
+        val margin =
+            if (play.possession == TeamSide.HOME) {
+                scoreDiff
+            } else {
+                -scoreDiff
+            }
+
+        val features =
+            xgboostPredictor.createFeatureArray(
+                down = down,
+                distance = yardsToGo,
+                position = ballLocation,
+                margin = margin,
+                secondsLeftGame = secondsLeftGame,
+                secondsLeftHalf = secondsLeftHalf,
+                half = half,
+                hadFirstPossession = hadFirstPossession,
+                eloDiffTime = eloDiffTime,
+            )
+
+        return when (play.playCall) {
+            PlayCall.PAT ->
+                calculatePatWinProbability(
+                    margin,
+                    timeRemaining,
+                    secondsLeftHalf,
+                    half,
+                    hadFirstPossession,
+                    eloDiffTime,
+                )
+            PlayCall.KNEEL, PlayCall.SPIKE ->
+                if (GameRules.isDeclinedPointAfter(play)) {
+                    calculateDeclinedPatWinProbability(
+                        margin,
+                        timeRemaining,
+                        secondsLeftHalf,
+                        half,
+                        hadFirstPossession,
+                        eloDiffTime,
+                    )
+                } else {
+                    xgboostPredictor.predict(features)
+                }
+            PlayCall.TWO_POINT ->
+                calculateTwoPointWinProbability(
+                    margin,
+                    timeRemaining,
+                    secondsLeftHalf,
+                    half,
+                    hadFirstPossession,
+                    eloDiffTime,
+                )
+            PlayCall.KICKOFF_NORMAL ->
+                calculateKickoffWinProbability(
+                    margin,
+                    timeRemaining,
+                    secondsLeftHalf,
+                    half,
+                    hadFirstPossession,
+                    eloDiffTime,
+                )
+            PlayCall.KICKOFF_ONSIDE ->
+                calculateKickoffOnsideWinProbability(
+                    margin,
+                    secondsLeftHalf,
+                    half,
+                    hadFirstPossession,
+                    eloDiffTime,
+                )
+            PlayCall.KICKOFF_SQUIB ->
+                calculateKickoffSquibWinProbability(
+                    margin,
+                    secondsLeftHalf,
+                    half,
+                    hadFirstPossession,
+                    eloDiffTime,
+                )
+            else -> {
+                val rawWinProbability = xgboostPredictor.predict(features)
+                rawWinProbability
+            }
         }
     }
 
@@ -527,12 +585,22 @@ class WinProbabilityService(
             val processedPlays = mutableListOf<SinglePlayWinProbabilityResponse>()
 
             val sortedPlays = plays.sortedBy { it.playNumber }
+            val periodFirstPossession =
+                sortedPlays.filter { isOvertime(it) }.groupBy { it.quarter }.mapValues {
+                        (_, periodPlays) ->
+                    periodPlays.first().possession
+                }
 
-            for (play in sortedPlays) {
+            for ((index, play) in sortedPlays.withIndex()) {
                 val homeElo = statsMap[game.homeTeam]?.teamElo ?: homeTeam.currentElo
                 val awayElo = statsMap[game.awayTeam]?.teamElo ?: awayTeam.currentElo
 
-                val winProbability = calculateWinProbability(game, play, homeElo, awayElo)
+                val winProbability =
+                    if (isOvertime(play)) {
+                        recalculatedOvertimeWinProbability(game, play, sortedPlays.getOrNull(index + 1), periodFirstPossession)
+                    } else {
+                        calculateWinProbability(game, play, homeElo, awayElo)
+                    }
 
                 val winProbabilityAdded =
                     previousPlay?.let { prev ->
@@ -683,4 +751,8 @@ class WinProbabilityService(
             logger.error("Error getting team win probabilities response: ${e.message}", e)
             throw e
         }
+
+    companion object {
+        private const val REGULATION_QUARTERS = 4
+    }
 }
