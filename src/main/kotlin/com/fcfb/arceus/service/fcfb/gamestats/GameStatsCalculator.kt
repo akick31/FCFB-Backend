@@ -529,7 +529,7 @@ object GameStatsCalculator {
                 return@forEach
             }
 
-            if (play.playCall == PlayCall.PAT) return@forEach
+            if (play.playCall == PlayCall.PAT || play.playCall == PlayCall.TWO_POINT) return@forEach
 
             if (!driveInProgress) {
                 driveInProgress = true
