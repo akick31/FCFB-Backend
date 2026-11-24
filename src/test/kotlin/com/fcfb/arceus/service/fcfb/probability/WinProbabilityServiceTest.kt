@@ -1,6 +1,7 @@
 package com.fcfb.arceus.service.fcfb.probability
 
 import com.fcfb.arceus.enums.game.GameStatus
+import com.fcfb.arceus.enums.play.PlayType
 import com.fcfb.arceus.enums.team.TeamSide
 import com.fcfb.arceus.model.game.Game
 import com.fcfb.arceus.model.play.Play
@@ -15,6 +16,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class WinProbabilityServiceTest {
@@ -46,6 +48,26 @@ class WinProbabilityServiceTest {
         assertEquals(0.3, play.winProbability!!, 0.000001)
         assertEquals(-0.3, play.winProbabilityAdded!!, 0.000001)
         assertEquals(0.7, game.winProbability!!, 0.000001)
+    }
+
+    @Test
+    fun `an overtime touchdown awaiting its PAT is valued by overtime rules instead of the regulation model`() {
+        val game =
+            gameAfterPlay(TeamSide.HOME).apply {
+                quarter = 5
+                clock = "0:00"
+                overtimeHalf = 1
+                currentPlayType = PlayType.PAT
+                ballLocation = 97
+                homeScore = 41
+                awayScore = 35
+            }
+        val play = Play().apply { possession = TeamSide.HOME }
+
+        winProbabilityService.recordPlayResult(game, play, 0.6, 1500.0, 1500.0)
+
+        verify(exactly = 0) { xgboostPredictor.predict(any()) }
+        assertTrue(play.winProbability!! in 0.6..0.8)
     }
 
     @Test

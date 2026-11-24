@@ -1,6 +1,8 @@
 package com.fcfb.arceus.service.fcfb.probability
 
 import com.fcfb.arceus.domain.elo.EloCalculator
+import com.fcfb.arceus.domain.probability.DriveOutcomeTable
+import com.fcfb.arceus.domain.probability.OvertimeWinProbabilityCalculator
 import com.fcfb.arceus.domain.probability.WinProbabilityCalculator
 import com.fcfb.arceus.domain.probability.WinProbabilityState
 import com.fcfb.arceus.enums.game.GameStatus
@@ -19,6 +21,7 @@ class WinProbabilityService(
 ) {
     private val eloCalculator = EloCalculator()
     private val winProbabilityCalculator = WinProbabilityCalculator(xgboostPredictor)
+    private val overtimeWinProbabilityCalculator = OvertimeWinProbabilityCalculator(DriveOutcomeTable())
     private val logger = LoggerFactory.getLogger(WinProbabilityService::class.java)
 
     fun homeWinProbability(
@@ -65,7 +68,11 @@ class WinProbabilityService(
         awayElo: Double,
     ): Double =
         try {
-            predict(game, state, homeElo, awayElo)
+            if (state.quarter > OvertimeWinProbabilityCalculator.REGULATION_QUARTERS) {
+                overtimeWinProbabilityCalculator.offenseWinProbability(state)
+            } else {
+                predict(game, state, homeElo, awayElo)
+            }
         } catch (e: Exception) {
             logger.error("Error calculating win probability for game ${game.gameId}: ${e.message}", e)
             DEFAULT_WIN_PROBABILITY

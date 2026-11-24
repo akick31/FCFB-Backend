@@ -18,6 +18,7 @@ data class WinProbabilityState(
     val homeScore: Int,
     val awayScore: Int,
     val playType: PlayType,
+    val overtimeHalf: Int = 0,
 ) {
     companion object {
         fun afterPlay(game: Game) =
@@ -31,12 +32,14 @@ data class WinProbabilityState(
                 homeScore = game.homeScore,
                 awayScore = game.awayScore,
                 playType = game.currentPlayType ?: PlayType.NORMAL,
+                overtimeHalf = game.overtimeHalf ?: 0,
             )
 
         fun beforeSnap(
             play: Play,
             homeScore: Int,
             awayScore: Int,
+            overtimeHalf: Int = 0,
         ) = WinProbabilityState(
             possession = play.possession,
             quarter = play.quarter,
@@ -47,6 +50,7 @@ data class WinProbabilityState(
             homeScore = homeScore,
             awayScore = awayScore,
             playType = playTypeOf(play),
+            overtimeHalf = overtimeHalf,
         )
 
         fun sidePerspective(

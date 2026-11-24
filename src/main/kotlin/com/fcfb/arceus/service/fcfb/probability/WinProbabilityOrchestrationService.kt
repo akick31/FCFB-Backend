@@ -1,5 +1,6 @@
 package com.fcfb.arceus.service.fcfb.probability
 
+import com.fcfb.arceus.domain.probability.OvertimeWinProbabilityCalculator
 import com.fcfb.arceus.domain.probability.WinProbabilityState
 import com.fcfb.arceus.dto.response.GameWinProbabilitiesResponse
 import com.fcfb.arceus.dto.response.PlayWinProbabilityResponse
@@ -78,6 +79,11 @@ class WinProbabilityOrchestrationService(
 
         val sortedPlays = plays.sortedBy { it.playNumber }
         val finishedPlays = sortedPlays.filter { it.playFinished }
+        val overtimePeriodFirstPossession =
+            sortedPlays
+                .filter { it.quarter > OvertimeWinProbabilityCalculator.REGULATION_QUARTERS }
+                .groupBy { it.quarter }
+                .mapValues { (_, periodPlays) -> periodPlays.first().possession }
         var previousHome =
             finishedPlays.firstOrNull()?.let {
                 winProbabilityService.homeWinProbability(game, WinProbabilityState.beforeSnap(it, 0, 0), currentHomeElo, currentAwayElo)
@@ -85,7 +91,7 @@ class WinProbabilityOrchestrationService(
 
         val processedPlays =
             finishedPlays.map { play ->
-                val homeAfter = homeAfter(game, play, sortedPlays, currentHomeElo, currentAwayElo)
+                val homeAfter = homeAfter(game, play, sortedPlays, overtimePeriodFirstPossession, currentHomeElo, currentAwayElo)
                 winProbabilityService.applyToPlay(play, homeAfter, previousHome)
                 previousHome = homeAfter
                 playService.updatePlay(play)
@@ -123,6 +129,7 @@ class WinProbabilityOrchestrationService(
         game: Game,
         play: Play,
         sortedPlays: List<Play>,
+        overtimePeriodFirstPossession: Map<Int, TeamSide>,
         homeElo: Double,
         awayElo: Double,
     ): Double {
@@ -131,13 +138,27 @@ class WinProbabilityOrchestrationService(
             next != null && next.actualResult != ActualResult.END_OF_GAME ->
                 winProbabilityService.homeWinProbability(
                     game,
-                    WinProbabilityState.beforeSnap(next, play.homeScore, play.awayScore),
+                    WinProbabilityState.beforeSnap(
+                        next,
+                        play.homeScore,
+                        play.awayScore,
+                        overtimeHalfOf(next, overtimePeriodFirstPossession),
+                    ),
                     homeElo,
                     awayElo,
                 )
             game.gameStatus == GameStatus.FINAL -> winProbabilityService.finalHomeWinProbability(game)
             else -> winProbabilityService.homeWinProbability(game, WinProbabilityState.afterPlay(game), homeElo, awayElo)
         }
+    }
+
+    private fun overtimeHalfOf(
+        play: Play,
+        overtimePeriodFirstPossession: Map<Int, TeamSide>,
+    ) = when (overtimePeriodFirstPossession[play.quarter]) {
+        null -> 0
+        play.possession -> 1
+        else -> 2
     }
 
     fun calculateWinProbabilitiesForAllGames(games: List<Game>): WinProbabilitiesForAllGamesResponse {

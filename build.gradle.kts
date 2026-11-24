@@ -20,6 +20,11 @@ kotlin {
 }
 
 repositories {
+    maven {
+        name = "Maven Central (Google Mirror)"
+        url = uri("https://maven-central.storage-download.googleapis.com/maven2/")
+    }
+
     mavenCentral()
 
     maven {
