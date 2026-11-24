@@ -16,6 +16,11 @@ description = "FCFB-Arceus"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {
+    maven {
+        name = "Maven Central (Google Mirror)"
+        url = uri("https://maven-central.storage-download.googleapis.com/maven2/")
+    }
+
     mavenCentral()
 
     maven {
