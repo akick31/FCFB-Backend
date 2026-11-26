@@ -534,7 +534,7 @@ class GameStatsCalculator(
                 return@forEach
             }
 
-            if (play.playCall == PlayCall.PAT) return@forEach
+            if (gameConditions.isPointAfterAttempt(play)) return@forEach
 
             if (!driveInProgress) {
                 driveInProgress = true
